@@ -1,0 +1,68 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "attach",
+        "name": "Attach to Docker",
+        "address": "localhost",
+        "port": 9220,
+        "localRoot": "${workspaceFolder}/server",
+        "remoteRoot": "/usr/src/app/server",
+        "protocol": "inspector",
+        "restart": true,
+        "sourceMaps": true,
+        "skipFiles": ["<node_internals>/**"],
+        "outFiles": ["${workspaceFolder}/server/**/*.js"]
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Launch node",
+        "program": "${workspaceFolder}/node/src/index.ts",
+        "runtimeExecutable": "/usr/local/bin/node",
+        "sourceMaps": true,
+        "trace": "all",
+        "outFiles": [
+            "${workspaceFolder}/build/**/*.js"
+        ]
+      },
+      {
+        "name": "Attach",
+        "type": "node",
+        "request": "attach",
+        "port": 9220,
+        "address": "localhost",
+        "protocol": "inspector",
+        "skipFiles": ["<node_internals>/**"],
+        "restart": true,
+        "sourceMaps": true,
+      },
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Launch Program",
+        "runtimeExecutable": "/usr/local/bin/node",
+        "program": "${workspaceFolder}/node/src/index.ts",
+      }
+    ],
+    "tasks": [
+        {
+          "label": "loadEnvFile",
+          "type": "shell",
+          "command": "node -r dotenv/config",
+          "args": ["-r", "dotenv/config", "${workspaceFolder}/node/src/index.ts"],
+          "options": {
+            "cwd": "${workspaceFolder}"
+          },
+          "group": {
+            "kind": "build",
+            "isDefault": true
+          },
+          "presentation": {
+            "reveal": "always"
+          },
+          "problemMatcher": []
+        },
+      ]
+}

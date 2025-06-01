@@ -1,0 +1,31 @@
+@media print {
+    /* Hide buttons, including the print button */
+    .MuiButton-root,
+    .MuiIconButton-root {
+      display: none !important;
+    }
+  
+    /* Hide unnecessary elements */
+    body {
+      font-family: Arial, sans-serif;
+    }
+  
+    /* Ensure the layout is clean */
+    .invoice-container {
+      width: 100%;
+      padding: 20px;
+    }
+  
+    .MuiFormControl-root {
+      margin-bottom: 15px;
+    }
+  
+    .MuiTextField-root {
+      margin: 10px 0;
+    }
+  
+    .MuiTypography-h4 {
+      text-align: center;
+    }
+  }
+  

@@ -1,0 +1,1 @@
+export { ITransportationDetails } from './transportatiom';

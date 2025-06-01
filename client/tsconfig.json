@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "lib": ["dom", "es2022"],
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "pdfjs-dist/build/pdf": ["node_modules/pdfjs-dist/build/pdf.js"],
+      "@common/*": ["../common/*"]
+    },
+    "target": "ES2022",
+    "module": "ES2022", // or "ESNext" if you prefer
+    "moduleResolution": "bundler" // this helps Vite handle module imports better
+  }
+}

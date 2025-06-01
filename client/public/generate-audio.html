@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Teacher Audio</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #f0f0f0;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .status {
+            margin-top: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Generate Teacher Audio</h1>
+        <p>Click the button below to generate the "hello.mp3" file.</p>
+        <button onclick="generateAudio()">Generate Hello Audio</button>
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        async function generateAudio() {
+            try {
+                updateStatus('Initializing...');
+                
+                // Create a new speech synthesis utterance
+                const utterance = new SpeechSynthesisUtterance('Hello');
+                
+                // Configure the voice
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+
+                // Wait for voices to be loaded
+                let voices = speechSynthesis.getVoices();
+                if (voices.length === 0) {
+                    await new Promise(resolve => {
+                        speechSynthesis.onvoiceschanged = resolve;
+                    });
+                    voices = speechSynthesis.getVoices();
+                }
+
+                // Try to find a female voice
+                const femaleVoice = voices.find(voice => 
+                    voice.name.includes('female') || 
+                    voice.name.includes('Samantha') || 
+                    voice.name.includes('Karen')
+                );
+                
+                if (femaleVoice) {
+                    utterance.voice = femaleVoice;
+                }
+
+                updateStatus('Recording audio...');
+
+                // Create audio context and recorder
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const mediaStreamDestination = audioContext.createMediaStreamDestination();
+                const mediaRecorder = new MediaRecorder(mediaStreamDestination.stream);
+                const audioChunks = [];
+
+                // Set up the recorder
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    // Create the audio blob
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                    
+                    // Create a download link
+                    const url = URL.createObjectURL(audioBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'hello.mp3';
+                    a.click();
+                    
+                    // Clean up
+                    URL.revokeObjectURL(url);
+                    updateStatus('Audio generated successfully! Check your downloads folder.');
+                };
+
+                // Start recording
+                mediaRecorder.start();
+
+                // Speak the text
+                window.speechSynthesis.speak(utterance);
+
+                // Stop recording after the speech is done
+                utterance.onend = () => {
+                    setTimeout(() => {
+                        mediaRecorder.stop();
+                    }, 500);
+                };
+
+            } catch (error) {
+                updateStatus('Error: ' + error.message);
+                console.error('Error generating audio:', error);
+            }
+        }
+    </script>
+</body>
+</html> 

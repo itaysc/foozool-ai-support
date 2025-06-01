@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+      "foozool-mcp-server": {
+        "command": "/usr/local/bin/node",
+        "args": ["/Users/itay.s/Projects/private/foozool-support-ai/server/src/mcp/index.ts"],
+        "env": {
+          "API_KEY": "abc-1234567890"
+        }
+      }
+    }
+  }

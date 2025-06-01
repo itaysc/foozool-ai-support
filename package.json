@@ -1,0 +1,26 @@
+{
+  "name": "foozool-finance",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start-ml": "cd python-ml-service && source venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+    "start-server": "cd server && yarn dev",
+    "start-client": "cd client && yarn dev",
+    "start:mongodb": "brew services stop mongodb/brew/mongodb-community@6.0 && brew services start mongodb/brew/mongodb-community@6.0",
+    "start-es": "elasticsearch",
+    "start-kibana": "wait-on http://localhost:9200 && brew services stop kibana-full && brew services start kibana-full",
+    "start-all": "run-p start*",
+    "stop": "brew services stop elasticsearch-full && brew services stop kibana-full"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "mongoose": "^8.13.2",
+    "npm-run-all": "^4.1.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "wait-on": "^8.0.3"
+  }
+}
