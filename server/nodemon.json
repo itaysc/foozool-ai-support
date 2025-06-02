@@ -1,0 +1,14 @@
+{
+  "watch": ["src", "../common"],
+  "ext": "ts,js,json",
+  "ignore": ["node_modules", "dist", "*.test.ts"],
+  "exec": "node --inspect=0.0.0.0:9220 -r ts-node/register -r tsconfig-paths/register src/index.ts",
+  "env": {
+    "NODE_ENV": "development",
+    "TS_NODE_PROJECT": "./tsconfig.json"
+  },
+  "restartable": "rs",
+  "delay": 1000,
+  "verbose": true,
+  "legacyWatch": true
+} 

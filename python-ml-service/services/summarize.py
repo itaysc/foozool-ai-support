@@ -1,7 +1,16 @@
 from transformers import pipeline
+import os
 
-# Load the summarization model
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+# Set cache directory
+cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
+
+# Load the summarization model with error handling
+try:
+    summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+    print("BART summarization model loaded successfully")
+except Exception as e:
+    print(f"Error loading BART model: {e}")
+    summarizer = None
 
 def summarize_text(texts):
     """
@@ -9,6 +18,9 @@ def summarize_text(texts):
     :param texts: List of strings to summarize.
     :return: List of summarized texts.
     """
+    if summarizer is None:
+        raise RuntimeError("Summarization model not available. Please check model loading.")
+    
     summaries = []
 
     for text in texts:

@@ -22,3 +22,30 @@ __pycache__/
 # Ignore Python wheels and other distribution artifacts
 *.egg
 *.whl
+
+# Ignore Python lock files
+Pipfile.lock
+poetry.lock
+requirements.lock
+requirements.txt.lock
+pdm.lock
+pyproject.lock
+*.lock
+*__pycache__
+*models--*
+*models/sentence-transformers*
+*models/transformers*
+
+# Ignore model files and blobs completely
+**/models/**
+**/blobs/**
+**/*models*/**
+*.bin
+*.safetensors
+*.onnx
+*.pt
+*.pth
+*.pkl
+*.h5
+*.tflite
+*.pb

@@ -13,22 +13,17 @@
         "restart": true,
         "sourceMaps": true,
         "skipFiles": ["<node_internals>/**"],
-        "outFiles": ["${workspaceFolder}/server/**/*.js"]
-      },
-      {
-        "type": "node",
-        "request": "launch",
-        "name": "Launch node",
-        "program": "${workspaceFolder}/node/src/index.ts",
-        "runtimeExecutable": "/usr/local/bin/node",
-        "sourceMaps": true,
-        "trace": "all",
+        "resolveSourceMapLocations": [
+          "${workspaceFolder}/**",
+          "!**/node_modules/**"
+        ],
         "outFiles": [
-            "${workspaceFolder}/build/**/*.js"
+          "${workspaceFolder}/server/**/*.js",
+          "/usr/src/app/server/**/*.js"
         ]
       },
       {
-        "name": "Attach",
+        "name": "Attach to Server",
         "type": "node",
         "request": "attach",
         "port": 9220,
@@ -37,32 +32,10 @@
         "skipFiles": ["<node_internals>/**"],
         "restart": true,
         "sourceMaps": true,
-      },
-      {
-        "type": "node",
-        "request": "launch",
-        "name": "Launch Program",
-        "runtimeExecutable": "/usr/local/bin/node",
-        "program": "${workspaceFolder}/node/src/index.ts",
+        "resolveSourceMapLocations": [
+          "${workspaceFolder}/**",
+          "!**/node_modules/**"
+        ]
       }
-    ],
-    "tasks": [
-        {
-          "label": "loadEnvFile",
-          "type": "shell",
-          "command": "node -r dotenv/config",
-          "args": ["-r", "dotenv/config", "${workspaceFolder}/node/src/index.ts"],
-          "options": {
-            "cwd": "${workspaceFolder}"
-          },
-          "group": {
-            "kind": "build",
-            "isDefault": true
-          },
-          "presentation": {
-            "reveal": "always"
-          },
-          "problemMatcher": []
-        },
-      ]
+    ]
 }

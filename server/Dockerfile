@@ -18,18 +18,16 @@ RUN npm rebuild bcrypt --build-from-source
 # Clean up
 RUN apt-get remove -y build-essential python3 && apt-get autoremove -y && apt-get clean
 
+# Install nodemon globally using npm (more reliable than yarn global)
+RUN npm install -g nodemon
 
-# Set the PATH for nodemon
-RUN yarn global add nodemon
-ENV PATH="/usr/local/share/.config/yarn/global/node_modules/.bin:${PATH}"
 WORKDIR /usr/src/app
 # Copy common folder and server source
 COPY server ./server 
 
 WORKDIR /usr/src/app/server
-ENV NODE_OPTIONS="--inspect=0.0.0.0:9220"
 # Start the server
 EXPOSE 9220
-CMD ["node", "--inspect=0.0.0.0:9220", "-r", "ts-node/register", "-r", "tsconfig-paths/register", "src/index.ts"]
-# CMD ["/usr/local/share/.config/yarn/global/node_modules/.bin/nodemon", "-r", "dotenv/config", "--legacy-watch", "--ext", "ts", "--inspect=0.0.0.0:9220", "--exec", "node -r ts-node/register -r tsconfig-paths/register", "src/index.ts"]
+# CMD ["node", "--inspect=0.0.0.0:9220", "-r", "ts-node/register", "-r", "tsconfig-paths/register", "src/index.ts"]
+CMD ["nodemon"]
 

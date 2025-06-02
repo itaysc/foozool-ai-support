@@ -90,10 +90,45 @@ export default class Server{
       throw new Error('Invalid env name was provided in config');
     }
     try {
-      await mongoose.connect(`${connectionString}/foozool`);
+      await mongoose.connect(`${connectionString}/foozool`, {
+        // Connection timeout settings
+        serverSelectionTimeoutMS: 5000, // 5 seconds
+        connectTimeoutMS: 10000, // 10 seconds
+        socketTimeoutMS: 45000, // 45 seconds
+        
+        // Connection pool settings
+        maxPoolSize: 10, // Maximum number of connections
+        minPoolSize: 2,  // Minimum number of connections
+        
+        // Retry settings
+        maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
+        retryWrites: true, // Retry failed writes
+        
+        // Heartbeat settings
+        heartbeatFrequencyMS: 10000, // 10 seconds
+      });
+      
+      // Configure mongoose buffer settings
+      mongoose.set('bufferCommands', false);
+      
       console.log('connected successfully to db');
+      
+      // Handle connection events
+      mongoose.connection.on('error', (err) => {
+        console.error('MongoDB connection error:', err);
+      });
+      
+      mongoose.connection.on('disconnected', () => {
+        console.log('MongoDB disconnected');
+      });
+      
+      mongoose.connection.on('reconnected', () => {
+        console.log('MongoDB reconnected');
+      });
+      
     } catch (err) {
-      console.log(err);
+      console.log('MongoDB connection failed:', err);
+      throw err;
     }
   }
 

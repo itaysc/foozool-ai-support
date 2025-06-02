@@ -1,8 +1,12 @@
 import sys
 import json
 import torch
+import os
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
+
+# Set cache directory
+cache_dir = os.environ.get('SENTENCE_TRANSFORMERS_HOME', '/app/models/sentence-transformers')
 
 def get_embedded_text(tickets: List[Dict[str, str]], model_name='all-mpnet-base-v2') -> List[List[float]]:
     """
@@ -10,7 +14,12 @@ def get_embedded_text(tickets: List[Dict[str, str]], model_name='all-mpnet-base-
     all-mpnet-base-v2
     Extract embeddings using SBERT (Sentence-BERT).
     """
-    model = SentenceTransformer(model_name)
+    try:
+        model = SentenceTransformer(model_name, cache_folder=cache_dir)
+    except Exception as e:
+        print(f"Error loading model {model_name}: {e}")
+        raise RuntimeError(f"SentenceTransformer model {model_name} not available. Please check model loading.")
+    
     embeddings = []
     for ticket in tickets:
         # Ensure 'subject' and 'description' are not None

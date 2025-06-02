@@ -12,7 +12,7 @@
     "stop": "brew services stop elasticsearch",
     "serve": "node dist/index.js",
     "lint": "tsc --noEmit && eslint \"src/**/*.{tsx,ts,js}\"",
-    "start-mcp": "nodemon -r dotenv/config --ext ts --exec 'node --inspect=9220 -r ts-node/register -r tsconfig-paths/register' src/mcp/index.ts",
+    "start-mcp": "nodemon -r dotenv/config --ext ts --exec 'node -r ts-node/register -r tsconfig-paths/register' src/mcp/index.ts",
     "test-mcp": "npx @modelcontextprotocol/inspector node dist/server/src/mcp/index.js",
     "build": "tsc"
   },

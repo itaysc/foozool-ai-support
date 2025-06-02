@@ -5,6 +5,8 @@ networks:
 volumes:
   mongo-data:
   es-data:
+  ml-pip-cache:
+  ml-torch-cache:
 
 services:
   app:
@@ -25,9 +27,12 @@ services:
     networks:
       - foozool-net
     depends_on:
-      - mongodb
-      - redis
-      - elasticsearch
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_started
+      elasticsearch:
+        condition: service_healthy
   ml-service:
     build:
       context: .
@@ -36,10 +41,22 @@ services:
     working_dir: /app
     volumes:
       - ./python-ml-service:/app
+      - ml-pip-cache:/root/.cache/pip  # Cache pip downloads
+      - ml-torch-cache:/root/.cache/torch  # Cache torch models
     networks:
       - foozool-net
     ports:
       - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    # Resource limits for better performance
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
   
   # frontend:
   #   build:
@@ -99,6 +116,12 @@ services:
       - es-data:/usr/share/elasticsearch/data
     networks:
       - foozool-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     logging:
       driver: "json-file"
       options:

@@ -19,6 +19,12 @@
       "@common/*": ["../common/*"]
     }
   },
+  "ts-node": {
+    "typeCheck": true,
+    "transpileOnly": false,
+    "files": true,
+    "experimentalSpecifierResolution": "node"
+  },
   "exclude": ["node_modules"],
   "include": ["src/**/*.ts", "src/types/**/*.d.ts"]
 }

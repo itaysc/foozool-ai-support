@@ -1,15 +1,28 @@
 from transformers import pipeline
+import os
 
-# Load models
-qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
+# Set cache directory
+cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
+
+# Load the QA model with error handling
+try:
+    qa_pipeline = pipeline("question-answering", model="deepset/roberta-base-squad2")
+    print("RoBERTa QA model loaded successfully")
+except Exception as e:
+    print(f"Error loading RoBERTa QA model: {e}")
+    qa_pipeline = None
 
 def get_answer_from_tickets(question, tickets):
     """
-    Finds an answer to a question based on a list of tickets.
-    :param question: The question being asked.
-    :param tickets: List of ticket dicts, each containing 'subject' and 'description'.
-    :return: Extracted answer.
+    Answers a question based on the content of multiple support tickets.
     """
-    context = " ".join([t["description"] for t in tickets])  # Combine descriptions
+    if qa_pipeline is None:
+        raise RuntimeError("Question-answering model not available. Please check model loading.")
+    
+    # Combine all ticket information into a single context
+    context = " ".join([f"{ticket.get('subject', '')} {ticket.get('description', '')}" for ticket in tickets])
+    
+    # Get the answer using the QA pipeline
     answer = qa_pipeline(question=question, context=context)
-    return answer["answer"]
+    
+    return answer

@@ -85,7 +85,7 @@ const data =   [
     try {
       const llmPricingSeeded = await SeedTrackModel.findOne({ name: 'llmPricing', status: 'completed' });
       if (llmPricingSeeded) {
-        return null;
+        return LLMPricesModel.findOne({ isRecommended: true });
       }
       await LLMPricesModel.insertMany(data);
       console.log(`Inserted ${data.length} LLM pricings`);
