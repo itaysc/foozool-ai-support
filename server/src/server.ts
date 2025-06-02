@@ -10,7 +10,7 @@ import Config from './config';
 import authRoutesV1 from './routes/auth/v1';
 import usersRoutesV1 from './routes/users/v1';
 import { NodeClickHouseClient } from "@clickhouse/client/dist/client";
-import ElasticsearchService from "./services/elasticsearch/service";
+import ElasticsearchService from "./elasticsearch/service";
 import zendeskWebhookRoutesV1 from './routes/webhooks/zendesk/v1';
 import { mapping as ticketsMapping, settings as ticketsSettings } from "./elasticsearch/schemas/ticket";
 import modelTrainingRoutesV1 from './routes/model-training/v1';

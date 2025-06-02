@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Client as ESClient, ClientOptions } from '@elastic/elasticsearch';
-import Config from '../../../config'
+import Config from '../config'
 import { WriteResponseBase } from '@elastic/elasticsearch/lib/api/types';
 import { ITicket, IESTicket } from '@common/types';
 

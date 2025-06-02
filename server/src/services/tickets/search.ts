@@ -1,7 +1,7 @@
 import { IProduct, IResponse } from '@common/types';
 import { getSBERTEmbedding } from '../call-python';
 import keyBy from 'lodash/keyBy';
-import ElasticsearchService from '../elasticsearch/service';
+import ElasticsearchService from '../../elasticsearch/service';
 import { ITicket, IESTicket } from '@common/types';
 import { TicketModel } from 'src/schemas/ticket.schema';
 import { cosineSimilarity } from './utils';

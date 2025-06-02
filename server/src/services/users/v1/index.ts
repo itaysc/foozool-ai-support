@@ -1,6 +1,6 @@
 import { UserModel, OrganizationModel } from '../../../schemas';
 import { IUser, IResponse, IOrganization } from '@common/types';
-import ElasticsearchService from '../../../services/elasticsearch/service';
+import ElasticsearchService from '../../../elasticsearch/service';
 
 export async function getUserByEmail({ email }) : Promise<IResponse> {
   const user = await UserModel.findOne({ email }).lean();

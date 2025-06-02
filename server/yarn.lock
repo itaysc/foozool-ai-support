@@ -1204,6 +1204,20 @@
   resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.9.0.tgz#d03eba68273dc0f7509e2a3d5cba21eae10379fe"
   integrity sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==
 
+"@qdrant/js-client-rest@^1.14.1":
+  version "1.14.1"
+  resolved "https://registry.yarnpkg.com/@qdrant/js-client-rest/-/js-client-rest-1.14.1.tgz#2d01c5ddf6789004a2bf7ece28fb57b6401eea2e"
+  integrity sha512-CkCCTDc4gCXq+hhjB3yDw9Hs/PxCJ0bKqk/LjAAmuL9+nDm/RPue4C/tGOIMlzouTQ2l6J6t+JPeM//j38VFug==
+  dependencies:
+    "@qdrant/openapi-typescript-fetch" "1.2.6"
+    "@sevinf/maybe" "0.5.0"
+    undici "^6.0.0"
+
+"@qdrant/openapi-typescript-fetch@1.2.6":
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/@qdrant/openapi-typescript-fetch/-/openapi-typescript-fetch-1.2.6.tgz#c2682a9fa26ded86384f421c991f6c461785af7e"
+  integrity sha512-oQG/FejNpItrxRHoyctYvT3rwGZOnK4jr3JdppO/c78ktDvkWiPXPHNsrDf33K9sZdRb6PR7gi4noIapu5q4HA==
+
 "@redis/bloom@1.2.0":
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/@redis/bloom/-/bloom-1.2.0.tgz#d3fd6d3c0af3ef92f26767b56414a370c7b63b71"
@@ -1237,6 +1251,11 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@redis/time-series/-/time-series-1.1.0.tgz#cba454c05ec201bd5547aaf55286d44682ac8eb5"
   integrity sha512-c1Q99M5ljsIuc4YdaCwfUEXsofakb9c8+Zse2qxTadu8TalLXuAESzLvFAvNVbkmSlvlzIQOLpBCmWI9wTOt+g==
+
+"@sevinf/maybe@0.5.0":
+  version "0.5.0"
+  resolved "https://registry.yarnpkg.com/@sevinf/maybe/-/maybe-0.5.0.tgz#e59fcea028df615fe87d708bb30e1f338e46bb44"
+  integrity sha512-ARhyoYDnY1LES3vYI0fiG6e9esWfTNcXcO6+MPJJXcnyMV3bim4lnFt45VXouV7y82F4x3YH8nOQ6VztuvUiWg==
 
 "@sideway/address@^4.1.5":
   version "4.1.5"
@@ -6128,6 +6147,11 @@ undici-types@~6.20.0:
   version "6.20.0"
   resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.20.0.tgz#8171bf22c1f588d1554d55bf204bc624af388433"
   integrity sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==
+
+undici@^6.0.0:
+  version "6.21.3"
+  resolved "https://registry.yarnpkg.com/undici/-/undici-6.21.3.tgz#185752ad92c3d0efe7a7d1f6854a50f83b552d7a"
+  integrity sha512-gBLkYIlEnSp8pFbT64yFgGE6UIB9tAkhukC23PmMDCe5Nd+cRqKxSjw5y54MK2AZMgZfJWMaNE4nYUHgi1XEOw==
 
 undici@^6.21.1:
   version "6.21.2"

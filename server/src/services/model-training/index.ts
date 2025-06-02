@@ -3,7 +3,7 @@ import { faker } from '@faker-js/faker';
 import { chunk } from 'lodash';
 import csvtojson from "csvtojson";
 import { getSBERTEmbedding, summarizeTickets } from '../call-python';
-import ElasticsearchService from '../elasticsearch/service';
+import ElasticsearchService from '../../elasticsearch/service';
 import fetchTickets from '../zendesk';
 import { IESTicket, IResponse, ITicket } from '@common/types';
 import { analyzeSentiment } from '../nlp';

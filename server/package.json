@@ -31,6 +31,7 @@
     "@faker-js/faker": "^9.8.0",
     "@json2csv/plainjs": "^7.0.6",
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "@qdrant/js-client-rest": "^1.14.1",
     "@sinclair/typebox": "^0.34.31",
     "@types/mongoose": "^5.11.97",
     "axios": "^1.8.3",

@@ -35,6 +35,8 @@ const {
     ZENDESK_URL,
     ZENDESK_TOKEN,
     PYTHON_ML_SERVICE_URL,
+    QDRANT_API_KEY,
+    QDRANT_API_URL,
 } = process.env;
 
 export default {
@@ -74,4 +76,6 @@ export default {
     ZENDESK_URL,
     ZENDESK_TOKEN,
     PYTHON_ML_SERVICE_URL,
+    QDRANT_API_KEY,
+    QDRANT_API_URL,
 }
