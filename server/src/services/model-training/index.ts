@@ -4,6 +4,8 @@ import { chunk } from 'lodash';
 import csvtojson from "csvtojson";
 import { getSBERTEmbedding, summarizeTickets } from '../call-python';
 import ElasticsearchService from '../../elasticsearch/service';
+import QdrantService from '../../qdrant/service';
+import { ticketCollectionConfig, QdrantTicketPoint } from '../../qdrant/schemas/ticket';
 import fetchTickets from '../zendesk';
 import { IESTicket, IResponse, ITicket } from '@common/types';
 import { analyzeSentiment } from '../nlp';
@@ -17,7 +19,7 @@ export async function loadStubData(): Promise<IResponse<any>> {
     const EMBEDDING_CHUNK_SIZE = 10;
 
     const totalBatches = Math.ceil(stub.length / BATCH_SIZE);
-    const esClient = new ElasticsearchService();
+    const qdrantService = new QdrantService();
 
     for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
         const start = batchIndex * BATCH_SIZE;
@@ -40,7 +42,7 @@ export async function loadStubData(): Promise<IResponse<any>> {
             embeddings = embeddings.concat(embeddingsChunk);
         }
 
-        const esTickets: IESTicket[] = [];
+        const qdrantPoints: QdrantTicketPoint[] = [];
         const tickets: ITicket[] = [];
 
         batch.forEach((ticket: any, index: number) => {
@@ -53,14 +55,24 @@ export async function loadStubData(): Promise<IResponse<any>> {
             if (!subject) {
                 return;
             }
-            esTickets.push({
-                ticket_id: ticketId,
-                organization: org!._id!,
-                embedding: embeddings[index],
-                sentiment_score: sentiment.score,
-                sentiment: sentiment.sentiment,
-                customer_id: customerId,
-                created_at: createdAt,
+            
+            // Prepare data for Qdrant
+            qdrantPoints.push({
+                id: ticketId,
+                vector: embeddings[index],
+                payload: {
+                    ticket_id: ticketId,
+                    subject: subject,
+                    description: ticket['Ticket Description'],
+                    organization: org!._id!.toString(),
+                    sentiment_score: sentiment.score,
+                    sentiment: sentiment.sentiment,
+                    customer_id: customerId,
+                    created_at: createdAt,
+                    channel: channel,
+                    status: ticket['Ticket Status'],
+                    tags: [ticket['Product Purchased']]
+                }
             });
 
             tickets.push({
@@ -81,15 +93,19 @@ export async function loadStubData(): Promise<IResponse<any>> {
             });
         });
 
-        await esClient.bulkInsert({ index: 'tickets', data: esTickets });
+        // Insert into Qdrant instead of Elasticsearch
+        await qdrantService.bulkInsert({ 
+            collectionName: ticketCollectionConfig.name, 
+            points: qdrantPoints 
+        });
         await TicketModel.insertMany(tickets);
 
-        console.log(`Batch ${batchIndex + 1} processed and inserted.`);
+        console.log(`Batch ${batchIndex + 1} processed and inserted to Qdrant and MongoDB.`);
     }
 
     return {
         status: 200,
-        payload: `Successfully loaded ${stub.length} tickets to Elasticsearch and MongoDB in ${totalBatches} batches.`,
+        payload: `Successfully loaded ${stub.length} tickets to Qdrant and MongoDB in ${totalBatches} batches.`,
     };
 }
 
@@ -103,7 +119,7 @@ export async function trainModel(params: {
     console.log(`Starting model training with maxPages: ${maxPages}, perPage: ${perPage}`);
 
     const BATCH_SIZE = 5;
-    const esClient = new ElasticsearchService();
+    const qdrantService = new QdrantService();
 
     try {
         for (let pageStart = fromPage; pageStart <= fromPage + maxPages - 1; pageStart += BATCH_SIZE) {
@@ -133,25 +149,33 @@ export async function trainModel(params: {
                     // summarizeTickets(chunk),
                 ]);
 
-                const chunkForEs = chunk.map((t: ITicket, index) => {
+                const qdrantPoints: QdrantTicketPoint[] = chunk.map((t: ITicket, index) => {
                     const sentiment = analyzeSentiment(t.subject + ' ' + t.description);
                     return {
-                        ticket_id: t._id,
-                        embedding: embeddings[index],
-                        subject: t.subject,
-                        description: t.description,
-                        sentiment: sentiment.sentiment,
-                        sentiment_score: sentiment.score,
-                        channel: t.channel,
-                        customerId: t.customerId,
-                        createdAt: t.createdAt,
-                        tags: t.tags,
-                        status: t.status,
+                        id: t._id?.toString() || faker.string.uuid(),
+                        vector: embeddings[index],
+                        payload: {
+                            ticket_id: t._id?.toString() || '',
+                            subject: t.subject,
+                            description: t.description,
+                            organization: t.organization.toString(),
+                            sentiment_score: sentiment.score,
+                            sentiment: sentiment.sentiment,
+                            customer_id: t.customerId,
+                            created_at: t.createdAt,
+                            channel: t.channel,
+                            status: t.status,
+                            tags: t.tags
+                        }
                     };
                 });
 
-                await esClient.bulkInsert({ index: 'tickets', data: chunkForEs });
-                console.log(`✅ Finished loading ${chunkForEs.length} tickets to Elasticsearch.`);
+                // Insert into Qdrant instead of Elasticsearch
+                await qdrantService.bulkInsert({ 
+                    collectionName: ticketCollectionConfig.name, 
+                    points: qdrantPoints 
+                });
+                console.log(`✅ Finished loading ${qdrantPoints.length} tickets to Qdrant.`);
             }
         }
 

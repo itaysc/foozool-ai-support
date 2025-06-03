@@ -1,7 +1,8 @@
 import { IProduct, IResponse } from '@common/types';
 import { getSBERTEmbedding } from '../call-python';
 import keyBy from 'lodash/keyBy';
-import ElasticsearchService from '../../elasticsearch/service';
+import QdrantService from '../../qdrant/service';
+import { ticketCollectionConfig } from '../../qdrant/schemas/ticket';
 import { ITicket, IESTicket } from '@common/types';
 import { TicketModel } from 'src/schemas/ticket.schema';
 import { cosineSimilarity } from './utils';
@@ -9,57 +10,40 @@ import { cosineSimilarity } from './utils';
 export type SimilarTicket = ITicket & { similarity: number };
 
 /**
- * KNN search can only be used in elastic version > 18
+ * KNN search using Qdrant vector database
  */
 export async function knnSearch({ 
   ticket, 
   k = 5, 
-  useBM25 = false 
 }: { 
   ticket: Partial<ITicket> & { embedding: number[] }; 
   k: number; 
-  useBM25: boolean 
 }): Promise<IESTicket[]> {
-  const esClient = new ElasticsearchService();
-  if (!esClient) return [];
-
-  // Build the KNN search body
-  const knnSearchBody: any = {
-      index: 'tickets',
-      size: k,
-      knn: {
-          field: 'embedding',
-          query_vector: ticket.embedding,
-          k,
-          num_candidates: 1000,
-      }
-  };
-
-  // If BM25 is enabled, it needs to be a separate query:
-  if (useBM25) {
-      knnSearchBody.query = {
-          bool: {
-              should: [
-                  {
-                      match: {
-                          description: {
-                              query: ticket.description,
-                              boost: 0.5,
-                          },
-                      },
-                  }
-              ],
-              minimum_should_match: 1,
-          }
-      };
-  }
+  const qdrantService = new QdrantService();
 
   try {
-      const response = await esClient.search(knnSearchBody);
-      return response.hits.hits.map((hit) => hit._source as IESTicket);
+    const searchResults = await qdrantService.knnSearch({
+      collectionName: ticketCollectionConfig.name,
+      queryVector: ticket.embedding,
+      limit: k,
+      withPayload: true,
+      scoreThreshold: 0.1 // Minimum similarity threshold
+    });
+
+    // Transform Qdrant results to match the expected IESTicket format
+    return searchResults.map((result) => ({
+      ticket_id: result.payload?.ticket_id || '',
+      organization: result.payload?.organization || '',
+      sentiment_score: result.payload?.sentiment_score || 0,
+      sentiment: result.payload?.sentiment || 'neutral',
+      customer_id: result.payload?.customer_id || '',
+      created_at: result.payload?.created_at || new Date().toISOString(),
+      embedding: result.vector || []
+    } as IESTicket));
+
   } catch (error) {
-      console.error('Elasticsearch search error:', error);
-      return [];
+    console.error('Qdrant search error:', error);
+    return [];
   }
 }
 
@@ -69,11 +53,9 @@ export async function knnSearch({
 export async function findZendeskSimilarTickets({
   ticket,
   k = 5,
-  useBM25 = false,
 }: {
   ticket: Partial<ITicket>;
   k: number;
-  useBM25: boolean;
 }): Promise<IResponse<SimilarTicket[]>> {
   // Step 1: Get SBERT embedding for the new ticket
   const [sbertEmbedding] = await getSBERTEmbedding([ticket]);
@@ -82,7 +64,6 @@ export async function findZendeskSimilarTickets({
   const similarTickets = await knnSearch({
     ticket: { ...ticket, embedding: sbertEmbedding },
     k,
-    useBM25,
   });
 
   // TODO: in real app fetch from CRM here

@@ -99,7 +99,6 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
   const similarTickets = await findZendeskSimilarTickets({
     ticket: ticketPayload,
     k: 5,
-    useBM25: false,
   });
 
   // Generate or extract product information

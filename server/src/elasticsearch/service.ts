@@ -156,7 +156,7 @@ class ElasticsearchService {
     }
   }
 
-  async knnSearch({ ticket, k = 5, useBM25 = false } : { ticket: ITicket & { embedding: number[] }, k: number, useBM25: boolean }) :Promise<IESTicket[]> {
+  async knnSearch({ ticket, k = 5} : { ticket: ITicket & { embedding: number[] }, k: number }) :Promise<IESTicket[]> {
     const esClient = new ElasticsearchService();
     if (!esClient) return [];
   
@@ -170,18 +170,9 @@ class ElasticsearchService {
     const query: any = {
       index: 'tickets',
       knn: knnQuery,
-      size: k,
+      size: k,  
     }
-    if (useBM25) {
-      query.query = {
-        bool: {
-          should: [
-            { match: { description: { query: ticket.description, boost: 0.5 } } }
-          ],
-          minimum_should_match: 1,
-        },
-      };
-    }
+    
     try {
       const response = await esClient.search(query);
       return response.hits.hits.map(hit => hit._source as IESTicket);

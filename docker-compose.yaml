@@ -24,6 +24,8 @@ services:
       - "9220:9220"
     env_file:
       - ./server/.env
+    environment:
+      - IS_DOCKER_DEV=true
     networks:
       - foozool-net
     depends_on:
@@ -31,8 +33,8 @@ services:
         condition: service_started
       redis:
         condition: service_started
-      elasticsearch:
-        condition: service_healthy
+      # elasticsearch:
+      #   condition: service_healthy
   ml-service:
     build:
       context: .
@@ -100,34 +102,34 @@ services:
         max-file: "2"
         tag: "redis"
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
-    container_name: foozool-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-XX:UseSVE=0
-      - CLI_JAVA_OPTS=-XX:UseSVE=0
-      - logger.org.elasticsearch=ERROR    # Only log errors
-    ports:
-      - "9200:9200"
-      - "9300:9300"
-    volumes:
-      - es-data:/usr/share/elasticsearch/data
-    networks:
-      - foozool-net
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "2"
-        tag: "elasticsearch"
+  # elasticsearch:
+  #   image: docker.elastic.co/elasticsearch/elasticsearch:8.7.0
+  #   container_name: foozool-elasticsearch
+  #   environment:
+  #     - discovery.type=single-node
+  #     - xpack.security.enabled=false
+  #     - ES_JAVA_OPTS=-XX:UseSVE=0
+  #     - CLI_JAVA_OPTS=-XX:UseSVE=0
+  #     - logger.org.elasticsearch=ERROR    # Only log errors
+  #   ports:
+  #     - "9200:9200"
+  #     - "9300:9300"
+  #   volumes:
+  #     - es-data:/usr/share/elasticsearch/data
+  #   networks:
+  #     - foozool-net
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 60s
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "2"
+  #       tag: "elasticsearch"
 
   nginx:
     image: nginx:alpine

@@ -8,7 +8,8 @@ async function start() {
    });
   await server.connectDB()
   await server.seedDB();
-  await server.initElasticSearch();
+  // await server.initElasticSearch();
+  await server.initQdrant();
 }
 
 start();

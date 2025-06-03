@@ -16,6 +16,9 @@ import { mapping as ticketsMapping, settings as ticketsSettings } from "./elasti
 import modelTrainingRoutesV1 from './routes/model-training/v1';
 import ticketsRoutesV1 from './routes/tickets/v1';
 import seed from "./seeds";
+import QdrantService from "./qdrant/service";
+import { migrateTicketsFromESToQdrant } from "./qdrant/migrate-tickets";
+import config from "./config";
 
 export interface IServer {
   startServer: (callback: (port: number) => void) => void;
@@ -78,14 +81,23 @@ export default class Server{
     const esService = new ElasticsearchService();
     await esService.createIndex({ indexName: 'tickets', mapping: ticketsMapping, settings: ticketsSettings });
   }
+
+  public async initQdrant() {
+    const qdrantService = new QdrantService();
+    await qdrantService.createCollection({ collectionName: 'tickets', vectorSize: 768 });
+  }
+
   public async connectDB() {
     console.log('connecting to db...');
-    let connectionString = '';
+    let connectionString: string = '';
     if (Config.NODE_ENV === 'development') {
-      // connectionString = Config.DB_CONNECTION_STRING_LOCAL || '';
-      connectionString = Config.DB_CONNECTION_STRING_LOCAL_DOCKER || '';
+      connectionString = Config.IS_DOCKER_DEV === 'true'
+      ? Config.DB_CONNECTION_STRING_LOCAL_DOCKER || ''
+      : Config.DB_CONNECTION_STRING_LOCAL || '';
     } else if (Config.NODE_ENV === 'production') {
-      connectionString = Config.DB_CONNECTION_STRING_PROD || '';
+      connectionString = Config.ATLAS_CONNECTION_STRING || '';
+      connectionString = connectionString.replace('<db_username>', Config.ATLAS_USERNAME || '');
+      connectionString = connectionString.replace('<db_password>', Config.ATLAS_PASSWORD || '');
     } else {
       throw new Error('Invalid env name was provided in config');
     }
