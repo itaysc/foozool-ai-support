@@ -4,7 +4,8 @@ import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
 import { buildAgentSuggestionPrompt, buildPrompt } from './prompts';
 import { callLLM } from '../together.ai';
-import { TicketModel } from 'src/schemas/ticket.schema';
+import { insightsService } from '../insights';
+import { ticketAnalyticsService } from '../ticket-analytics';
 
 /**
  * Process intent classification for a ticket
@@ -53,33 +54,51 @@ async function generateTicketResponse(
 }
 
 /**
- * Create and save ticket entry to database
+ * Create and save ticket analytics entry to database (privacy-compliant)
  */
-async function saveTicketEntry(
+async function saveTicketAnalytics(
   ticketPayload: { subject: string; description: string },
   externalId: string,
-  aiResponse: string
+  organizationId?: string,
+  productId?: string
 ) {
-  const ticketEntry = new TicketModel({
+  await ticketAnalyticsService.processTicketForAnalytics({
+    ticketId: externalId,
     subject: ticketPayload.subject,
     description: ticketPayload.description,
-    externalId: externalId,
-    comments: [],
-    chatHistory: [{
-      role: 'user',
-      content: ticketPayload.description,
-      createdAt: new Date(),
-    }, {
-      role: 'agent',
-      content: aiResponse,
-      createdAt: new Date(),
-    }],
+    organization: organizationId,
+    productId: productId,
+    channelSource: 'zendesk'
   });
-  
-  // Currently commented out in original - uncomment when ready to save
-  // await ticketEntry.save();
-  
-  return ticketEntry;
+}
+
+/**
+ * Process ticket for insights generation
+ */
+async function processTicketInsights(
+  ticketId: string,
+  ticketPayload: { subject: string; description: string },
+  product: any,
+  organizationId?: string
+) {
+  try {
+    // Process the ticket for insights and return the results
+    const analysisResult = await insightsService.processNewTicket({
+      ticketId,
+      subject: ticketPayload.subject,
+      description: ticketPayload.description,
+      organization: organizationId,
+      productId: product?.serialNumber,
+      tags: [], // Could extract tags from ticket or product
+      satisfactionRating: undefined // Would come from actual ticket data
+    });
+    
+    return analysisResult;
+  } catch (error) {
+    console.error('Error processing ticket for insights:', error);
+    // Return null instead of throwing to keep backward compatibility
+    return null;
+  }
 }
 
 /**
@@ -107,7 +126,6 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
 
   const agentSuggestion = await getAgentSuggestion(userId, ticketPayload, product, similarTickets.payload);
 
-
   // Generate AI response
   const aiResponse = await generateTicketResponse(
     userId,
@@ -116,8 +134,20 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
     product
   );
 
-  // Save ticket entry
-  await saveTicketEntry(ticketPayload, ticket.ticket.id.toString(), aiResponse);
+  // Save ticket analytics
+  const organizationId = ticket.ticket.organization_id?.toString();
+  await saveTicketAnalytics(ticketPayload, ticket.ticket.id.toString(), organizationId, product?.serialNumber);
+
+  // TODO: make this non blocking
+  const insightsResult = await processTicketInsights(
+    ticket.ticket.id.toString(),
+    ticketPayload,
+    product,
+    organizationId
+  ).catch(error => {
+    console.error('Failed to process insights for ticket:', ticket.ticket.id, error);
+    return null;
+  });
 
   return {
     status: 200,
@@ -126,6 +156,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
       agentSuggestion,
       similarTickets: similarTickets.payload,
       product,
+      insights: insightsResult,
     },
   };
 } 

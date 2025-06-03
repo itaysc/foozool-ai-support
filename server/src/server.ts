@@ -15,6 +15,7 @@ import zendeskWebhookRoutesV1 from './routes/webhooks/zendesk/v1';
 import { mapping as ticketsMapping, settings as ticketsSettings } from "./elasticsearch/schemas/ticket";
 import modelTrainingRoutesV1 from './routes/model-training/v1';
 import ticketsRoutesV1 from './routes/tickets/v1';
+import insightsDashboardRoutes from './routes/insights-dashboard';
 import seed from "./seeds";
 import QdrantService from "./qdrant/service";
 import { migrateTicketsFromESToQdrant } from "./qdrant/migrate-tickets";
@@ -47,6 +48,7 @@ export default class Server{
       this.app.use('/api/v1/train', modelTrainingRoutesV1);
       this.app.use('/api/v1/tickets', ticketsRoutesV1);
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
+      this.app.use('/api/v1/insights-dashboard', insightsDashboardRoutes);
     } catch (err) {
       console.log(err);
     }

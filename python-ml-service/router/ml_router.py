@@ -6,6 +6,7 @@ from services.extract_keywords import extract_keywords_from_embedding
 from services.summarize import summarize_text
 from services.answer import get_answer_from_tickets
 from services.intent_classification import classify_ticket_intent
+from services.insight_analysis import analyze_tickets_for_insights
 from pydantic import BaseModel
 from typing import List, Dict, Optional
 import numpy as np
@@ -20,6 +21,16 @@ class Ticket(BaseModel):
 class QuestionRequest(BaseModel):
     question: str
     tickets: List[Ticket]
+
+class InsightTicket(BaseModel):
+    ticketId: str
+    subject: str
+    description: str
+    organization: Optional[str] = None
+    productId: Optional[str] = None
+    tags: List[str] = []
+    createdAt: str
+    satisfactionRating: Optional[int] = None
 
 @router.post("/distilbert-embed")
 async def embed_ticket(tickets: list[dict[str, str]]):
@@ -82,5 +93,21 @@ async def classify_intent(ticket: Ticket):
     try:
         intents = classify_ticket_intent(ticket.subject, ticket.description)
         return intents
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/analyze-insights")
+async def analyze_insights(tickets: List[InsightTicket]):
+    """
+    API endpoint to analyze tickets and generate insights about patterns and issues.
+    """
+    try:
+        # Convert tickets to the format expected by the analysis service
+        tickets_data = [ticket.dict() for ticket in tickets]
+        
+        # Analyze tickets for insights
+        analysis_result = analyze_tickets_for_insights(tickets_data)
+        
+        return analysis_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

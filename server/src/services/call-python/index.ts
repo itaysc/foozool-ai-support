@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ITicket } from '@common/types';
+import { ITicket, IInsightAnalysisInput, IInsightAnalysisResult } from '@common/types';
 import Config from '../../config';
 
 const api = axios.create({
@@ -46,4 +46,18 @@ export async function classifyIntent(ticket: Partial<ITicket>) : Promise<string[
     const _ticket = { subject: ticket.subject, description: ticket.description }
     const res = await api.post('/classify-intent', _ticket);
     return res.data;
+}
+
+export async function analyzeTicketsForInsights(tickets: IInsightAnalysisInput[]) : Promise<IInsightAnalysisResult> {
+    try {
+        const res = await api.post('/analyze-insights', tickets);
+        return res.data;
+    } catch (err) {
+        console.error('Error analyzing tickets for insights:', err);
+        return {
+            insights: [],
+            confidence: 0,
+            recommendations: []
+        };
+    }
 }

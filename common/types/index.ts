@@ -7,3 +7,15 @@ export { ITicket } from './ticket';
 export { IESTicket } from './esTicket';
 export { IProduct } from './product';
 export { ZendeskTicket } from './zendeskTicket';
+export { ITicketAnalytics } from './ticket-analytics';
+export { 
+  IInsight, 
+  IInsightAnalysisInput, 
+  IInsightAnalysisResult,
+  InsightType,
+  InsightSeverity,
+  InsightStatus,
+  InsightTrend,
+  InsightCategory
+} from './insight';
+export * from './dashboard-types';
