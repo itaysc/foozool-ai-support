@@ -2,7 +2,7 @@
 export const ticketCollectionConfig = {
     name: 'tickets',
     vectorConfig: {
-        size: 768, // SBERT embedding dimension
+        size: 384, // SBERT embedding dimension (all-MiniLM-L6-v2)
         distance: 'Cosine' as const, // Cosine similarity for semantic search
     },
     // Optional: Define payload schema for type safety and filtering

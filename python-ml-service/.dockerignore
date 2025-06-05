@@ -1,0 +1,32 @@
+# Ignore model directories
+models/
+/app/models/
+/app/models/sentence-transformers/
+/app/models/transformers/
+/app/models/spacy/
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore virtual environment
+venv/
+env/
+.env
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore any downloaded models
+*.bin
+*.pt
+*.pth
+*.onnx
+*.h5
+*.hdf5
+*.model
+*.joblib 

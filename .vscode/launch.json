@@ -36,6 +36,15 @@
           "${workspaceFolder}/**",
           "!**/node_modules/**"
         ]
+      },
+      {
+        "name": "Python: ML Service",
+        "type": "python",
+        "request": "launch",
+        "program": "${workspaceFolder}/python-ml-service/services/extract_keywords.py",
+        "console": "integratedTerminal",
+        "justMyCode": true,
+        "cwd": "${workspaceFolder}/python-ml-service"
       }
     ]
 }

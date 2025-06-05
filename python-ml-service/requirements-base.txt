@@ -1,0 +1,11 @@
+# Pin exact versions for consistent Docker layer caching
+# Core dependencies
+fastapi==0.115.8
+pydantic==2.10.6
+typing_extensions==4.12.2
+uvicorn==0.34.0
+
+# Web framework
+starlette==0.45.3
+pydantic_core==2.27.2
+uvloop==0.21.0 

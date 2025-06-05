@@ -191,9 +191,9 @@ export class AdvancedInsightsService {
     }];
   }
   
-  private async analyzeCustomerJourneyIssues(tickets: ITicketAnalytics[], filters?: any) {
+  private async analyzeCustomerJourneyIssues(tickets: ITicketAnalytics[], filters?: any): Promise<Partial<IInsight>[]> {
     const journeyIssues = this.groupByField(tickets, 'customerJourneyStage');
-    const insights = [];
+    const insights: Partial<IInsight>[] = [];
     
     for (const [stage, stageTickets] of Object.entries(journeyIssues)) {
       if (stageTickets.length >= 3) {
@@ -204,7 +204,7 @@ export class AdvancedInsightsService {
         if (stage === 'churning' || avgSatisfaction < 4) severity = InsightSeverity.HIGH;
         if (stage === 'onboarding' && stageTickets.length >= 5) severity = InsightSeverity.HIGH;
         
-        insights.push({
+        insights.push(this.createInsight({
           type: InsightType.CUSTOMER_JOURNEY_ISSUE,
           title: `Issues detected in ${stage} customer journey stage`,
           description: `${stageTickets.length} customers experiencing issues during ${stage}. Common problems: ${commonIssues.slice(0, 3).join(', ')}`,
@@ -215,12 +215,14 @@ export class AdvancedInsightsService {
           keywords: commonIssues,
           ticketIds: stageTickets.map(t => t.externalTicketId),
           patterns: [`journey_${stage}`],
+          organization: filters?.organization,
+          productId: filters?.productId,
           metadata: {
             journeyStage: stage,
             avgSatisfaction,
             interventionOpportunities: this.identifyJourneyInterventions(stage, stageTickets)
           }
-        });
+        }));
       }
     }
     
@@ -312,17 +314,17 @@ export class AdvancedInsightsService {
     }];
   }
   
-  private async analyzeSpecialistDemand(tickets: ITicketAnalytics[], filters?: any) {
+  private async analyzeSpecialistDemand(tickets: ITicketAnalytics[], filters?: any): Promise<Partial<IInsight>[]> {
     const specialistTickets = tickets.filter(t => t.requiresSpecialist);
     
     if (specialistTickets.length < 3) return [];
     
     const specialistAreas = this.groupByField(specialistTickets, 'topics');
-    const insights = [];
+    const insights: Partial<IInsight>[] = [];
     
     for (const [area, areaTickets] of Object.entries(specialistAreas)) {
       if (areaTickets.length >= 2) {
-        insights.push({
+        insights.push(this.createInsight({
           type: InsightType.SPECIALIST_DEMAND,
           title: `Specialist demand in ${area}`,
           description: `${areaTickets.length} tickets requiring specialist expertise in ${area}`,
@@ -333,12 +335,14 @@ export class AdvancedInsightsService {
           keywords: [area, ...this.extractCommonKeywords(areaTickets)],
           ticketIds: areaTickets.map(t => t.externalTicketId),
           patterns: [`specialist_${area}`],
+          organization: filters?.organization,
+          productId: filters?.productId,
           metadata: {
             specialistArea: area,
             skillGap: this.assessSkillGap(areaTickets),
             trainingRecommendations: this.generateTrainingRecommendations(area, areaTickets)
           }
-        });
+        }));
       }
     }
     
@@ -495,8 +499,8 @@ export class AdvancedInsightsService {
     return factors;
   }
   
-  private analyzeEscalationTriggers(tickets: ITicketAnalytics[]): string[] {
-    const triggers = [];
+  private analyzeEscalationTriggers(tickets: ITicketAnalytics[]): any[] {
+    const triggers: any[] = [];
     
     if (tickets.filter(t => t.sentiment === 'negative').length > tickets.length * 0.6) {
       triggers.push('negative_sentiment');
@@ -513,8 +517,8 @@ export class AdvancedInsightsService {
     return triggers;
   }
   
-  private identifyEscalationPrevention(tickets: ITicketAnalytics[]): string[] {
-    const prevention = [];
+  private identifyEscalationPrevention(tickets: ITicketAnalytics[]): any[] {
+    const prevention: any[] = [];
     
     if (tickets.filter(t => t.responseExpectation === 'immediate').length > tickets.length * 0.5) {
       prevention.push('faster_response_times');
@@ -531,18 +535,20 @@ export class AdvancedInsightsService {
     return prevention;
   }
   
-  private identifyJourneyInterventions(stage: string, tickets: ITicketAnalytics[]): string[] {
-    const interventions = [];
+  private identifyJourneyInterventions(stage: string, tickets: ITicketAnalytics[]): any[] {
+    const interventions: any[] = [];
     
     switch (stage) {
       case 'onboarding':
-        interventions.push('improved_onboarding_docs', 'proactive_outreach');
+        interventions.push('improved_onboarding_docs');
+        interventions.push('customer_success_intervention');
         break;
       case 'at_risk':
-        interventions.push('customer_success_intervention', 'satisfaction_survey');
+        interventions.push('customer_success_intervention');
+        interventions.push('retention_campaign');
         break;
       case 'churning':
-        interventions.push('retention_campaign', 'executive_escalation');
+        interventions.push('retention_campaign');
         break;
     }
     
@@ -565,8 +571,8 @@ export class AdvancedInsightsService {
     return peakHours;
   }
   
-  private generateResourceRecommendations(tickets: ITicketAnalytics[]): string[] {
-    const recommendations = [];
+  private generateResourceRecommendations(tickets: ITicketAnalytics[]): any[] {
+    const recommendations: any[] = [];
     
     const avgComplexity = this.calculateAverage(tickets, 'complexityScore');
     if (avgComplexity >= 8) {
@@ -587,8 +593,8 @@ export class AdvancedInsightsService {
     return recentTickets.length >= tickets.length * 0.5; // 50% of tickets in last 24h
   }
   
-  private analyzeComplexityFactors(tickets: ITicketAnalytics[]): string[] {
-    const factors = [];
+  private analyzeComplexityFactors(tickets: ITicketAnalytics[]): any[] {
+    const factors: any[] = [];
     
     if (tickets.filter(t => t.integrationRelated).length > tickets.length * 0.5) {
       factors.push('integration_issues');
@@ -674,8 +680,8 @@ export class AdvancedInsightsService {
     ];
   }
   
-  private categorizeUpsellOpportunities(tickets: ITicketAnalytics[]): string[] {
-    const opportunities = [];
+  private categorizeUpsellOpportunities(tickets: ITicketAnalytics[]): any[] {
+    const opportunities: any[] = [];
     
     if (tickets.filter(t => t.featuresAffected?.includes('enterprise')).length > 0) {
       opportunities.push('enterprise_upgrade');
@@ -739,14 +745,14 @@ export class AdvancedInsightsService {
     return Array.from(recommendations);
   }
   
-  private analyzeAnomalyFactors(tickets: ITicketAnalytics[]): string[] {
-    const factors = [];
+  private analyzeAnomalyFactors(tickets: ITicketAnalytics[]): any[] {
+    const factors: any[] = [];
     
-    if (tickets.filter(t => t.complexityScore >= 8).length > tickets.length * 0.5) {
+    if (tickets.filter(t => t.complexityScore >= 8).length > tickets.length * 0.4) {
       factors.push('high_complexity');
     }
     
-    if (tickets.filter(t => t.technicalComplexity >= 8).length > tickets.length * 0.4) {
+    if (tickets.filter(t => t.category === 'technical_issues').length > tickets.length * 0.5) {
       factors.push('technical_issues');
     }
     

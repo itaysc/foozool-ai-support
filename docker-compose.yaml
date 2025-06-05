@@ -7,6 +7,9 @@ volumes:
   es-data:
   ml-pip-cache:
   ml-torch-cache:
+  ml-transformers-cache:
+  ml-sentence-transformers-cache:
+  ml-spacy-cache:
 
 services:
   app:
@@ -26,11 +29,12 @@ services:
       - ./server/.env
     environment:
       - IS_DOCKER_DEV=true
+      - MONGODB_URI=mongodb://mongodb:27017/foozool
     networks:
       - foozool-net
     depends_on:
       mongodb:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_started
       # elasticsearch:
@@ -45,6 +49,9 @@ services:
       - ./python-ml-service:/app
       - ml-pip-cache:/root/.cache/pip  # Cache pip downloads
       - ml-torch-cache:/root/.cache/torch  # Cache torch models
+      - ml-transformers-cache:/app/models/transformers
+      - ml-sentence-transformers-cache:/app/models/sentence-transformers
+      - ml-spacy-cache:/app/models/spacy
     networks:
       - foozool-net
     ports:
@@ -52,13 +59,22 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
+      - TRANSFORMERS_CACHE=/app/models/transformers
+      - SENTENCE_TRANSFORMERS_HOME=/app/models/sentence-transformers
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+      - OMP_NUM_THREADS=1
+      - MKL_NUM_THREADS=1
+      - NUMEXPR_NUM_THREADS=1
+      - OPENBLAS_NUM_THREADS=1
+      - VECLIB_MAXIMUM_THREADS=1
     # Resource limits for better performance
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
         reservations:
-          memory: 2G
+          memory: 4G
+    restart: unless-stopped
   
   # frontend:
   #   build:
@@ -81,12 +97,19 @@ services:
       - mongo-data:/data/db
     networks:
       - foozool-net
+    command: ["mongod", "--logpath", "/dev/stdout", "--logappend", "--setParameter", "logLevel=0", "--setParameter", "logComponentVerbosity={storage:{verbosity:0},network:{verbosity:0},command:{verbosity:0},control:{verbosity:0},replication:{verbosity:0},sharding:{verbosity:0},write:{verbosity:0},query:{verbosity:0}}"]
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "2"
         tag: "mongodb"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   redis:
     image: redis:7

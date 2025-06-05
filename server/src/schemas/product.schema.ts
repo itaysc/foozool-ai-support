@@ -47,7 +47,11 @@ const ProductSchema = new Schema<Product>(
     storeLocation: { type: String, required: true },
     customerName: { type: String, required: true },
     customerEmail: { type: String, required: true, match: /.+@.+\..+/ },
-    metadata: { type: Map, of: String, required: false },
+    metadata: {
+      type: Map,
+      of: String,
+      required: false
+    },
   },
   {
     timestamps: true, // adds createdAt and updatedAt

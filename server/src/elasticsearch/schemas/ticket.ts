@@ -17,8 +17,8 @@ const mapping = {
     organization: { type: 'keyword' },
     sentiment_score: { type: 'float' },
     sentiment: { type: 'keyword' },
-    embedding: { type: 'dense_vector', dims: 768, similarity: 'cosine', index: true },  // For Sentence-SBERT embeddings
-    // embedding: { type: 'dense_vector', dims: 384, similarity: 'cosine', index: true },  // For Sentence-SBERT embeddings
+    embedding: { type: 'dense_vector', dims: 384, similarity: 'cosine', index: true },  // For Sentence-SBERT embeddings (all-MiniLM-L6-v2)
+    // embedding: { type: 'dense_vector', dims: 768, similarity: 'cosine', index: true },  // For Sentence-SBERT embeddings (all-mpnet-base-v2)
     description: {
       type: 'text',
       analyzer: 'standard',
