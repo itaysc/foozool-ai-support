@@ -8,14 +8,9 @@ const api = axios.create({
 });
 
 export async function getSBERTEmbedding(tickets: Partial<ITicket>[]) : Promise<[number[]]> {
-    try {
-        const _tickets = tickets.map(t => ({ subject: t.subject, description: t.description }))
-        const res = await api.post('/sbert-embed', _tickets);   
-        return res.data;
-    } catch (err) {
-        console.log(err);
-        return [[]];
-    }
+    const _tickets = tickets.map(t => ({ subject: t.subject, description: t.description }))
+    const res = await api.post('/sbert-embed', _tickets);   
+    return res.data;
 }
 
 export async function getDistilBERTEmbedding(tickets: Partial<ITicket>[]) : Promise<[number[]]> {

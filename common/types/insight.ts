@@ -41,9 +41,6 @@ export interface IInsight {
     performedAt: Date;
   };
   
-  // Additional metadata for insights
-  metadata?: Record<string, any>;
-  
   // Metadata
   createdAt: Date;
   updatedAt: Date;

@@ -1,8 +1,0 @@
-# Core ML dependencies
-numpy==1.24.3
-scikit-learn==1.3.0
-
-# NLP dependencies
-transformers==4.35.0
-sentence-transformers==2.2.2
-spacy==3.7.0 

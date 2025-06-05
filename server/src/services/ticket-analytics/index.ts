@@ -120,7 +120,7 @@ export class TicketAnalyticsService {
       
       // Extract intent labels (handle different response formats)
       if (Array.isArray(intentResult)) {
-        return intentResult.map((intent: any) => intent.intent || intent.toString());
+        return intentResult.map((intent: any) => intent.label || intent.toString());
       } else if (intentResult && typeof intentResult === 'object' && 'intents' in intentResult) {
         const intents = (intentResult as any).intents;
         if (Array.isArray(intents)) {

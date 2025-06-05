@@ -20,7 +20,6 @@ import seed from "./seeds";
 import QdrantService from "./qdrant/service";
 import { migrateTicketsFromESToQdrant } from "./qdrant/migrate-tickets";
 import config from "./config";
-import { ticketCollectionConfig } from './qdrant/schemas/ticket';
 
 export interface IServer {
   startServer: (callback: (port: number) => void) => void;
@@ -87,11 +86,7 @@ export default class Server{
 
   public async initQdrant() {
     const qdrantService = new QdrantService();
-    await qdrantService.createCollection({ 
-      collectionName: ticketCollectionConfig.name, 
-      vectorSize: ticketCollectionConfig.vectorConfig.size,
-      distance: ticketCollectionConfig.vectorConfig.distance
-    });
+    await qdrantService.createCollection({ collectionName: 'tickets', vectorSize: 768 });
   }
 
   public async connectDB() {

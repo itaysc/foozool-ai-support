@@ -4,15 +4,25 @@ export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
   firstName: string;
   lastName: string;
-  fullName?: string;
-  avatarImage?: string;
-  llmModel?: mongoose.Types.ObjectId;
-  email: string;
-  password?: string;
-  registered: boolean;
-  organization: mongoose.Types.ObjectId;
-  department?: string;
-  group?: string;
+  llmModel: mongoose.Types.ObjectId;
+  email: {
+    type: string;
+  };
+  password: {
+    type: string;
+  };
+  registered: {
+    type: boolean;
+  };
+  organization: {
+    type: typeof mongoose.Schema.Types.ObjectId;
+  };
+  department: {
+    type: string;
+  };
+  group?: {
+    type: string;
+  };
   roles: string[];
   scopes: string[];
   createdAt: Date;

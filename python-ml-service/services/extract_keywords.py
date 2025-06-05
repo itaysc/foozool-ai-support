@@ -2,20 +2,11 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-# Global model instance
-_model = None
-
-def get_model():
-    """
-    Get or initialize the SBERT model.
-    Uses all-mpnet-base-v2 model (768 dimensions) to match existing Qdrant data.
-    """
-    global _model
-    if _model is None:
-        _model = SentenceTransformer('all-mpnet-base-v2')
-    return _model
+# ✅ Define the model at the top level
+  # Load the model globally once
 
 def extract_keywords_from_embedding(ticket, embedding, top_n=5):
+    model = SentenceTransformer('all-MiniLM-L6-v2')
     """
     Extracts key phrases from a ticket using its SBERT embedding.
     
@@ -36,10 +27,7 @@ def extract_keywords_from_embedding(ticket, embedding, top_n=5):
         if len(embedding.shape) == 1:
             embedding = embedding.reshape(1, -1)
 
-        # Get model instance
-        model = get_model()
-
-        # Encode each word using SBERT
+        # ✅ Encode each word using SBERT
         word_embeddings = np.array([model.encode(word) for word in words])
 
         if word_embeddings.size == 0:  # No valid words

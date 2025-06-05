@@ -45,15 +45,8 @@ async def sbert_embed_tickets(tickets: list[dict[str, str]]):
     """
     API endpoint to generate SBERT embeddings for multiple tickets.
     """
-    try:
-        print(f"Received request for {len(tickets)} tickets")
-        print(f"First ticket sample: {tickets[0] if tickets else 'No tickets'}")
-        embeddings = get_embedded_text(tickets)
-        print(f"Generated {len(embeddings)} embeddings")
-        return embeddings
-    except Exception as e:
-        print(f"Error in sbert_embed_tickets: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+    embeddings = get_embedded_text(tickets)
+    return embeddings
 
 @router.post("/extract-keywords")
 async def extract_ticket_keywords(ticket: Ticket):

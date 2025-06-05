@@ -1,4 +1,0 @@
-# Transformer model dependencies
-transformers==4.35.0
-sentence-transformers==2.2.2
-torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu 

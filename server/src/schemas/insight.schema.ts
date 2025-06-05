@@ -1,14 +1,6 @@
 import { IInsight, InsightType, InsightSeverity, InsightStatus, InsightTrend, InsightCategory } from '@common/types';
 import mongoose, { Schema } from 'mongoose';
 
-// Define action schema separately to avoid type conflicts
-const ActionSchema = new Schema({
-  type: { type: String },
-  description: { type: String },
-  performedBy: { type: String },
-  performedAt: { type: Date }
-}, { _id: false });
-
 const InsightSchema: Schema = new Schema<IInsight>({
   type: { 
     type: String, 
@@ -88,7 +80,12 @@ const InsightSchema: Schema = new Schema<IInsight>({
   // Action tracking
   actionRequired: { type: Boolean, default: false },
   actionTaken: {
-    type: ActionSchema,
+    type: {
+      type: { type: String },
+      description: { type: String },
+      performedBy: { type: String },
+      performedAt: { type: Date }
+    },
     required: false
   }
 }, {
