@@ -10,6 +10,7 @@
     "start-es": "elasticsearch",
     "start-kibana": "wait-on http://localhost:9200 && brew services stop kibana-full && brew services start kibana-full",
     "start-all": "run-p start*",
+    "start-python-ml": "cd python-ml-service && source venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
     "stop": "brew services stop elasticsearch-full && brew services stop kibana-full"
   },
   "author": "",

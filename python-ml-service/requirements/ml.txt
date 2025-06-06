@@ -1,0 +1,9 @@
+# Machine Learning Dependencies
+torch
+transformers>=4.20.0,<4.40.0
+sentence_transformers
+
+# Optional: Add specific model versions if needed
+# Example:
+# transformers[sentencepiece]>=4.20.0,<4.40.0
+# torch==2.1.0 

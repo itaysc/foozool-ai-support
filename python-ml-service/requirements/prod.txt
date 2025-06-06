@@ -1,0 +1,9 @@
+-r base.txt
+-r ml.txt
+
+# Production-specific optimizations
+gunicorn==21.2.0
+uvicorn[standard]==0.34.0  # Includes additional production features
+python-json-logger==2.0.7  # For structured logging
+prometheus-client==0.17.1  # For metrics
+sentry-sdk==1.32.0  # For error tracking 

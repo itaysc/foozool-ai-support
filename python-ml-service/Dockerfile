@@ -18,12 +18,12 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
-# Copy only requirements first for better Docker layer caching
-COPY python-ml-service/requirements.txt /app/requirements.txt
+# Copy requirements files for better Docker layer caching
+COPY python-ml-service/requirements/base.txt python-ml-service/requirements/ml.txt python-ml-service/requirements/prod.txt /app/requirements/
 
 # Install dependencies with pip cache and optimizations
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r /app/requirements.txt
+    pip install --no-cache-dir -r /app/requirements/prod.txt
 
 # Set up model cache directories
 ENV TRANSFORMERS_CACHE=/app/models
@@ -40,5 +40,5 @@ COPY python-ml-service /app
 # Expose port
 EXPOSE 8000
 
-# Use uvicorn with optimized settings for production
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--workers", "1"]
+# Use gunicorn with uvicorn workers for production
+CMD ["gunicorn", "main:app", "--workers", "1", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8000"]

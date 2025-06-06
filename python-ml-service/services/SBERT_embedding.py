@@ -1,6 +1,3 @@
-import sys
-import json
-import torch
 import os
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
