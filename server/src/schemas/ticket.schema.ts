@@ -8,8 +8,6 @@ const TicketSchema: Schema = new Schema<ITicket>({
   priority: { type: String },
   organization: { type: mongoose.Schema.Types.ObjectId, ref: 'Organization', required: true },
   externalId: { type: String, required: true },
-  createdAt: { type: String },
-  updatedAt: { type: String },
   status: { type: String },
   channel: { type: String },
   satisfactionRating: { type: Number },

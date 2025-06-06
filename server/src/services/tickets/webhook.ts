@@ -5,6 +5,8 @@ import { generateMockProduct } from './product';
 import { buildAgentSuggestionPrompt, buildPrompt } from './prompts';
 import { callLLM } from '../together.ai';
 import { TicketModel } from 'src/schemas/ticket.schema';
+import { analyzeTicket } from '../insights/analyzer';
+import { InsightModel } from 'src/schemas/insight.schema';
 
 /**
  * Process intent classification for a ticket
@@ -76,10 +78,7 @@ async function saveTicketEntry(
     }],
   });
   
-  // Currently commented out in original - uncomment when ready to save
-  // await ticketEntry.save();
-  
-  return ticketEntry;
+  return ticketEntry.save();
 }
 
 /**
@@ -105,8 +104,38 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
   const product = generateMockProduct();
   // Alternative: const product = await extractProductFromTicket(userId, ticket);
 
-  const agentSuggestion = await getAgentSuggestion(userId, ticketPayload, product, similarTickets.payload);
+  // Get recent tickets for anomaly detection (last 100 tickets)
+  const recentTickets = await TicketModel.find({
+    // Only get tickets from the last 30 days
+    createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+    // Exclude the current ticket
+    externalId: { $ne: ticket.ticket.id.toString() },
+    // Only include tickets that have been processed (have a response)
+    'chatHistory.1': { $exists: true }
+  })
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .select({
+      subject: 1,
+      description: 1,
+      externalId: 1,
+      createdAt: 1,
+      'chatHistory.role': 1,
+      'chatHistory.content': 1,
+      'chatHistory.createdAt': 1
+    })
+    .lean();
 
+  // Analyze ticket and generate insights
+  const insightAnalysis = await analyzeTicket({
+    subject: ticketPayload.subject,
+    description: ticketPayload.description,
+    ticketId: ticket.ticket.id.toString(),
+    product,
+    similarTickets: similarTickets.payload,
+  }, recentTickets);
+
+  const agentSuggestion = await getAgentSuggestion(userId, ticketPayload, product, similarTickets.payload);
 
   // Generate AI response
   const aiResponse = await generateTicketResponse(
@@ -126,6 +155,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
       agentSuggestion,
       similarTickets: similarTickets.payload,
       product,
+      insights: insightAnalysis,
     },
   };
 } 
