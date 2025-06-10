@@ -152,10 +152,7 @@ export async function loadStubData3(): Promise<IResponse<any>> {
             const ticketId = faker.string.uuid();
             const response = ticket['response'];
             const subject = '';
-            if (!subject) {
-                return;
-            }
-            
+
             // Prepare data for Qdrant
             qdrantPoints.push({
                 id: ticketId,

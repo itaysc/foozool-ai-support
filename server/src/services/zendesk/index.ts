@@ -25,40 +25,60 @@ export async function fetchAvailableTags() : Promise<string[]> {
 }
 
 export async function createDemoZendeskTickets(tickets: ITicket[]) {
-  console.log(headers);
+  const CHUNK_SIZE = 100;
+
+  const ticketChunks: any[] = [];
+
   const ticketsData = tickets.map((ticket) => {
     const name = faker.person.fullName();
     const email = faker.internet.email();
     const fakeExternalId = faker.string.uuid();
-    return  {
-        subject: ticket.subject,
-        comment: {
-          body: ticket.description,
-          public: true,
-          via: {
-            channel: faker.helpers.arrayElement(['email', 'web', 'api', 'whatsapp']),
-            source: {
-              from: {
-                name,
-                email,
-              },
-            },
+
+    return {
+      subject: ticket.subject,
+      comment: {
+        body: ticket.description,
+        public: true,
+        via: {
+          channel: faker.helpers.arrayElement(['email', 'web', 'api', 'whatsapp']),
+          source: {
+            from: { name, email },
           },
         },
-        priority: faker.helpers.arrayElement(['low', 'medium', 'high']),
-        requester: {
-          name,
-          email,
-        },
-        tags: ticket.tags,
-        status: ticket.status || faker.helpers.arrayElement(['new', 'open', 'pending', 'hold', 'solved', 'closed']),
-        assignee_email: faker.internet.email(),
-        external_id: ticket.externalId || fakeExternalId,
+      },
+      priority: faker.helpers.arrayElement(['low', 'medium', 'high']),
+      requester: {
+        name,
+        email,
+      },
+      tags: ticket.tags,
+      status: ticket.status || faker.helpers.arrayElement(['new', 'open', 'pending', 'hold', 'solved', 'closed']),
+      assignee_email: faker.internet.email(),
+      external_id: ticket.externalId || fakeExternalId,
     };
   });
-  const response = await axios.post(`${Config.ZENDESK_URL}/tickets/create_many.json`, ticketsData, { headers });
-  return response.data;
+
+  // Split into chunks of 100
+  for (let i = 0; i < ticketsData.length; i += CHUNK_SIZE) {
+    ticketChunks.push(ticketsData.slice(i, i + CHUNK_SIZE));
+  }
+
+  const results: any[] = [];
+
+  for (const chunk of ticketChunks) {
+    const res = await axios.post(
+      `${Config.ZENDESK_URL}/tickets/create_many.json`,
+      { tickets: chunk },
+      { headers }
+    );
+    results.push(res.data);
+    // Optional: Add delay between chunks if needed
+    // await sleep(1000);
+  }
+
+  return results;
 }
+
 
 async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { maxPages?: number, perPage?: number, fromPage?: number } = {}): Promise<IResponse<ITicket[]>> {
   try {
