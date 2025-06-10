@@ -2,7 +2,7 @@ import { IOrganization } from '@common/types';
 import { OrganizationModel } from '../schemas/organization.schema';
 
 export const getDemoOrganization = async (): Promise<IOrganization | null> => {
-  return OrganizationModel.findOne({ name: 'demo' });
+  return OrganizationModel.findOne({}).lean();
 };
 
 export const create = async (organization: IOrganization): Promise<IOrganization> => {

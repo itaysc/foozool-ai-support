@@ -3,8 +3,8 @@ import { OrganizationModel, SeedTrackModel } from "src/schemas";
 
 const organizationsSeed: IOrganization[] = [
   {
-    name: 'demo',
-    details: 'Electronics and more',
+    name: 'demo organization',
+    details: 'demo organization',
     signature: 'demo',
     url: 'https://demo.com',
     contact: {
@@ -13,9 +13,9 @@ const organizationsSeed: IOrganization[] = [
       phone: '+1234567890',
       notes: 'John Doe is the CEO of the company',
     },
-    tags: ['electronics', 'electronics and more'],
+    tags: ['demo', 'demo organization'],
     notes: ['This is a demo organization'],
-    externalId: 'demo',
+    externalId: 'demo-organization',
     createdAt: new Date(),
     updatedAt: new Date(),
   },

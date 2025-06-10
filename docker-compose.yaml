@@ -38,7 +38,7 @@ services:
   ml-service:
     build:
       context: .
-      dockerfile: python-ml-service/Dockerfile.optimized
+      dockerfile: python-ml-service/Dockerfile
     container_name: foozool-ml-service
     working_dir: /app
     volumes:

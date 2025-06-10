@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from services.DistilBERT_embedding import get_distilbert_embeddings
 from services.SBERT_embedding import get_embedded_text
 from services.extract_keywords import extract_keywords_from_embedding
-from services.summarize import summarize_text
+from services.summarize import summarize_texts
 from services.answer import get_answer_from_tickets
 from services.intent_classification import classify_ticket_intent
 from pydantic import BaseModel
@@ -56,7 +56,7 @@ async def summarize_ticket_text(tickets: List[Ticket]):
         texts = [f"{ticket.subject} {ticket.description}" for ticket in tickets]
         
         # Get summaries for the list of texts
-        summaries = summarize_text(texts)
+        summaries = summarize_texts(texts)
         
         # Return summaries with corresponding ticket ids or other identifiers if needed
         return summaries

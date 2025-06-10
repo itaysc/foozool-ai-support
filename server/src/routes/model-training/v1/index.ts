@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { trainModel, loadStubData } from '../../../services/model-training';
+import { trainModel, loadStubData3 } from '../../../services/model-training';
 import { validateRequest } from 'src/middleware/validateRequest';
 import { trainModelSchema } from './validations';
 
@@ -16,7 +16,7 @@ router.post('/zendesk', validateRequest(trainModelSchema), async (req: Request, 
 
 router.post('/stub', async (req: Request, res: Response): Promise<void> => {
   try {
-    const userRes = await loadStubData();
+    const userRes = await loadStubData3();
     res.status(userRes.status).json(userRes.payload);
   } catch (err) {
     console.log(err);

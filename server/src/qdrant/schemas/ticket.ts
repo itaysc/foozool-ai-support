@@ -18,6 +18,7 @@ export const ticketCollectionConfig = {
         channel: 'string',
         status: 'string',
         tags: 'array', // array of strings
+        intent: 'string',
     } as const,
 };
 
@@ -27,16 +28,12 @@ export interface QdrantTicketPoint {
     vector: number[]; // 768-dimensional SBERT embedding
     payload: {
         ticket_id: string;
-        subject: string;
-        description: string;
         organization: string;
         sentiment_score: number;
         sentiment: string;
-        customer_id: string;
         created_at: string;
-        channel?: string;
-        status?: string;
         tags?: string[];
+        intent?: string;
     };
 }
 

@@ -1,6 +1,6 @@
 import AvatarScene from "@/3d";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import Test from "@/pages/test";
 
 export const supportedRoutes = [
     '/invoice',
@@ -12,6 +12,7 @@ const Roter = () => {
         <BrowserRouter>
             <Routes>
                 <Route path="/avatar" element={<AvatarScene />} />
+                <Route path="/test" element={<Test />} />
             </Routes>
         </BrowserRouter>
     );

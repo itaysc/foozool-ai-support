@@ -1,10 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
+import { faker } from '@faker-js/faker';
 import Config from '../../config';
 import sanitizeText from '../../utils/text-sanitize';
 import { IOrganization, IResponse, ITicket } from '@common/types';
 import { getDemoOrganization } from '../../dal/organization.dal';
-const headers = { Authorization: `Basic ${Config.ZENDESK_TOKEN}` };
+
+const authString = Buffer.from(`${Config.ZENDESK_USERNAME}/token:${Config.ZENDESK_TOKEN}`).toString('base64');
+
+const headers = { Authorization: `Basic ${authString}` };
 
 type channel = 'email' | 'facebook' | 'web' | 'native_messaging' | 'api' | 'whatsapp';
 type stringOrUndefined = 'string' | undefined;
@@ -16,9 +20,44 @@ export async function handleZendeskWebhook(organization: IOrganization, data: an
 
 
 export async function fetchAvailableTags() : Promise<string[]> {
-  const headers = { Authorization: `Basic ${Config.ZENDESK_TOKEN}` };
   const possibleTags = await axios.get(`${Config.ZENDESK_URL}/tags`, { headers });
   return possibleTags.data.tags.map((d) => d.name);
+}
+
+export async function createDemoZendeskTickets(tickets: ITicket[]) {
+
+  const ticketsData = tickets.map((ticket) => {
+    const name = faker.person.fullName();
+    const email = faker.internet.email();
+    const fakeExternalId = faker.string.uuid();
+    return  {
+        subject: ticket.subject,
+        comment: {
+          body: ticket.description,
+          public: true,
+          via: {
+            channel: faker.helpers.arrayElement(['email', 'web', 'api', 'whatsapp']),
+            source: {
+              from: {
+                name,
+                email,
+              },
+            },
+          },
+        },
+        priority: faker.helpers.arrayElement(['low', 'medium', 'high']),
+        requester: {
+          name,
+          email,
+        },
+        tags: ticket.tags,
+        status: ticket.status || faker.helpers.arrayElement(['new', 'open', 'pending', 'hold', 'solved', 'closed']),
+        assignee_email: faker.internet.email(),
+        external_id: ticket.externalId || fakeExternalId,
+    };
+  });
+  const response = await axios.post(`${Config.ZENDESK_URL}/tickets/create_many.json`, ticketsData, { headers });
+  return response.data;
 }
 
 async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { maxPages?: number, perPage?: number, fromPage?: number } = {}): Promise<IResponse<ITicket[]>> {

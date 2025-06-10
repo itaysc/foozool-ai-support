@@ -1,5 +1,5 @@
 import { IResponse, ZendeskTicket } from '@common/types';
-import { classifyIntent } from '../call-python';
+import { classifyIntent, summarizeTickets } from '../call-python';
 import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
 import { buildAgentSuggestionPrompt, buildPrompt } from './prompts';
@@ -85,6 +85,7 @@ async function saveTicketEntry(
  * Main webhook handler for processing Zendesk tickets
  */
 export async function handleWebhook(userId: string, ticket: ZendeskTicket): Promise<IResponse> {
+  try {
   // Extract ticket payload
   const ticketPayload = {
     subject: ticket.ticket.subject,
@@ -93,7 +94,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
 
   // Process intent classification
   const intents = await processTicketIntent(ticketPayload);
-
+  const summary = await summarizeTickets([ticketPayload]);
   // Find similar tickets
   const similarTickets = await findZendeskSimilarTickets({
     ticket: ticketPayload,
@@ -157,5 +158,12 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
       product,
       insights: insightAnalysis,
     },
-  };
+    };
+  } catch (error) {
+    console.error('Error handling webhook:', error);
+    return {
+      status: 500,
+      payload: { error: 'Internal server error' },
+    };
+  }
 } 

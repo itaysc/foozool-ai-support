@@ -2,6 +2,7 @@ import { TicketInsight, InsightAnalysisResult } from '@common/types/insights';
 import { callLLM } from '../together.ai';
 import { InsightModel } from '../../schemas/insight.schema';
 import { v4 as uuidv4 } from 'uuid';
+import config from '../../config';
 
 interface TicketData {
   subject: string;
