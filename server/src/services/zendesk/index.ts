@@ -25,7 +25,7 @@ export async function fetchAvailableTags() : Promise<string[]> {
 }
 
 export async function createDemoZendeskTickets(tickets: ITicket[]) {
-
+  console.log(headers);
   const ticketsData = tickets.map((ticket) => {
     const name = faker.person.fullName();
     const email = faker.internet.email();

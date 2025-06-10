@@ -12,6 +12,10 @@ import { getDemoOrganization } from '../../dal/organization.dal';
 import { TicketModel } from "src/schemas/ticket.schema";
 import { createDemoZendeskTickets } from '../zendesk';
 
+function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
 export async function loadStubData(): Promise<IResponse<any>> {
     const stub = await csvtojson().fromFile(path.join(__dirname, 'stub2.csv'));
     const org = await getDemoOrganization();
@@ -107,7 +111,7 @@ export async function loadStubData3(): Promise<IResponse<any>> {
     const stub = await csvtojson().fromFile(path.join(__dirname, 'stub3.csv'));
     const org = await getDemoOrganization();
     const BATCH_SIZE = 300;
-    const EMBEDDING_CHUNK_SIZE = 10;
+    const EMBEDDING_CHUNK_SIZE = 50;
 
     const totalBatches = Math.ceil(stub.length / BATCH_SIZE);
     const qdrantService = new QdrantService();
@@ -128,6 +132,7 @@ export async function loadStubData3(): Promise<IResponse<any>> {
 
         for (const [i, chunkData] of embeddingChunks.entries()) {
             console.log(`Embedding chunk ${i + 1} of ${embeddingChunks.length}...`);
+            await sleep(5000);
             const embeddingsChunk: [number[]] = await getSBERTEmbedding(chunkData);
             embeddings = embeddings.concat(embeddingsChunk);
         }
