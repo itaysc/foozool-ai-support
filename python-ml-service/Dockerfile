@@ -23,7 +23,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python dependencies with BuildKit cache mount
 WORKDIR /build
-COPY python-ml-service/requirements/base.txt python-ml-service/requirements/ml.txt python-ml-service/requirements/prod.txt python-ml-service/requirements/dev.txt ./
+COPY ./requirements/base.txt ./requirements/ml.txt ./requirements/prod.txt ./requirements/dev.txt ./
 
 # Install dependencies based on environment
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -134,7 +134,7 @@ ENV SENTENCE_TRANSFORMERS_HOME=/app/models/sentence-transformers
 WORKDIR /app
 
 # Copy application code
-COPY python-ml-service .
+COPY . .
 
 # Expose port
 EXPOSE 8000

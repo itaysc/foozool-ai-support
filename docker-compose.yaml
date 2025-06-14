@@ -7,6 +7,7 @@ volumes:
   es-data:
   ml-pip-cache:
   ml-torch-cache:
+  ml-models:
 
 services:
   app:
@@ -37,28 +38,37 @@ services:
       #   condition: service_healthy
   ml-service:
     build:
-      context: .
-      dockerfile: python-ml-service/Dockerfile
+      context: ./python-ml-service
+      dockerfile: Dockerfile
     container_name: foozool-ml-service
     working_dir: /app
     volumes:
-      - ./python-ml-service:/app
-      - ml-pip-cache:/root/.cache/pip  # Cache pip downloads
-      - ml-torch-cache:/root/.cache/torch  # Cache torch models
+      - ml-models:/app/models
+      - ml-pip-cache:/root/.cache/pip
+      - ml-torch-cache:/root/.cache/torch
     networks:
       - foozool-net
     ports:
       - "8000:8000"
     environment:
+      - TRANSFORMERS_CACHE=/app/models
+      - TORCH_HOME=/app/models
       - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-    # Resource limits for better performance
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+      - TRANSFORMERS_OFFLINE=1
+      - HF_HOME=/app/models
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 8G
         reservations:
-          memory: 2G
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
   
   # frontend:
   #   build:

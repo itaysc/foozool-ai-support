@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
+import bluebird from 'bluebird';
 import { faker } from '@faker-js/faker';
 import Config from '../../config';
 import sanitizeText from '../../utils/text-sanitize';
@@ -9,6 +10,11 @@ import { getDemoOrganization } from '../../dal/organization.dal';
 const authString = Buffer.from(`${Config.ZENDESK_USERNAME}/token:${Config.ZENDESK_TOKEN}`).toString('base64');
 
 const headers = { Authorization: `Basic ${authString}` };
+
+const api = axios.create({
+  baseURL: Config.ZENDESK_URL,
+  headers,
+});
 
 type channel = 'email' | 'facebook' | 'web' | 'native_messaging' | 'api' | 'whatsapp';
 type stringOrUndefined = 'string' | undefined;
@@ -20,19 +26,45 @@ export async function handleZendeskWebhook(organization: IOrganization, data: an
 
 
 export async function fetchAvailableTags() : Promise<string[]> {
-  const possibleTags = await axios.get(`${Config.ZENDESK_URL}/tags`, { headers });
+  const possibleTags = await api.get(`/tags`);
   return possibleTags.data.tags.map((d) => d.name);
 }
 
+export async function addCommentToTicket(ticketId: string, comment: string) {
+  const res = await api.put(`/tickets/${ticketId}.json`, { 
+    ticket: {
+      comment: {
+        body: comment,
+        public: true,
+      },
+    },
+  }, { headers });
+  return res.data;
+}
+
+const waitForJob = async (url: string) => {
+  while (true) {
+    const jobResponse = await api.get(url);
+
+    const { status, results } = jobResponse.data.job_status;
+    if (status === 'completed') return results;
+    if (status === 'failed') throw new Error('Ticket creation job failed');
+
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // wait 2 sec
+  }
+};
+
 export async function createDemoZendeskTickets(tickets: ITicket[]) {
   const CHUNK_SIZE = 100;
+  const externalIdToTicketMap = new Map<string, ITicket>();
 
   const ticketChunks: any[] = [];
-
-  const ticketsData = tickets.map((ticket) => {
+  const ticketsData = tickets.map((ticket, index) => {
     const name = faker.person.fullName();
     const email = faker.internet.email();
     const fakeExternalId = faker.string.uuid();
+    externalIdToTicketMap.set(index.toString(), ticket);
+
 
     return {
       subject: ticket.subject,
@@ -66,15 +98,26 @@ export async function createDemoZendeskTickets(tickets: ITicket[]) {
   const results: any[] = [];
 
   for (const chunk of ticketChunks) {
-    const res = await axios.post(
-      `${Config.ZENDESK_URL}/tickets/create_many.json`,
-      { tickets: chunk },
-      { headers }
-    );
+    const res = await api.post(`/tickets/create_many.json`, { tickets: chunk });
     results.push(res.data);
     // Optional: Add delay between chunks if needed
-    // await sleep(1000);
+    // await sleep(1000);d
   }
+  // Add comments after tickets are created
+   bluebird.map(results, async (result) => {
+    const jobStatusUrl = result.job_status.url;
+    const createdTickets = await waitForJob(jobStatusUrl);
+
+     bluebird.map(createdTickets, async (created: any) => {
+      const ticketId = created.id;
+      const index = created.index;
+      const originalTicket = externalIdToTicketMap.get(index.toString());
+      if (!originalTicket || !originalTicket.comments?.length) return;
+
+      const firstComment = originalTicket.comments[0];
+      await addCommentToTicket(ticketId, firstComment);
+    }, { concurrency: 2 });
+  }, { concurrency: 1 });
 
   return results;
 }
@@ -89,7 +132,7 @@ async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { max
     let hasMore = true;
     while (hasMore && pagesFetched < maxPages) {
       console.log('Fetching zendesk tickets page ', pagesFetched + 1, ' of ', maxPages, ' at ', nextPageUrl);
-      const response = await axios.get(nextPageUrl, { headers });
+      const response = await api.get(nextPageUrl);
       pagesFetched++;
       const { tickets, links: {next}, meta } = response.data;
       if (pagesFetched < fromPage) {
