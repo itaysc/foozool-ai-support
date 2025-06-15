@@ -219,7 +219,7 @@ export async function loadStubData3(): Promise<IResponse<any>> {
                         const sentiment = analyzeSentiment(description);
                         const channel = faker.helpers.arrayElement(['email', 'web', 'api', 'whatsapp']);
                         const priority = faker.helpers.arrayElement(['low', 'medium', 'high']);
-                        const status = faker.helpers.arrayElement(['new', 'open', 'pending', 'hold', 'solved', 'closed']);
+                        const status = faker.helpers.arrayElement(['new', 'open', 'pending']);
                         const createdAt = faker.date.recent().toISOString();
                         const intent = ticket['intent'];
                         const ticketId = faker.string.uuid();

@@ -31,15 +31,20 @@ export async function fetchAvailableTags() : Promise<string[]> {
 }
 
 export async function addCommentToTicket(ticketId: string, comment: string) {
-  const res = await api.put(`/tickets/${ticketId}.json`, { 
-    ticket: {
-      comment: {
-        body: comment,
-        public: true,
+  try {
+    const res = await api.put(`/tickets/${ticketId}.json`, { 
+      ticket: {
+        comment: {
+          body: comment,
+          public: true,
+        },
       },
-    },
-  }, { headers });
-  return res.data;
+    }, { headers });
+    return res.data;
+  } catch (error) {
+    console.error('Error adding comment to ticket:', error);
+    throw error;
+  }
 }
 
 const waitForJob = async (url: string) => {

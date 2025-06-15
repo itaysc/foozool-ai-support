@@ -43,6 +43,7 @@ const {
     ATLAS_USERNAME,
     ATLAS_CONNECTION_STRING,
     IS_DOCKER_DEV,
+    ZENDESK_WEBHOOK_TOKEN,
 } = process.env;
 
 export default {
@@ -90,4 +91,5 @@ export default {
     ATLAS_USERNAME,
     ATLAS_CONNECTION_STRING,
     IS_DOCKER_DEV,
+    ZENDESK_WEBHOOK_TOKEN,
 }

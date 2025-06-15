@@ -11,6 +11,16 @@ declare global {
   }
 }
 
+export const authenticateWebhook = (req: Request, res: Response, next: NextFunction) => {
+  const orgId = req.headers['x-organization-id'];
+  const bearerToken = req.headers['authorization'];
+  if (!orgId || !bearerToken) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  
+  next();
+};
+
 export const authenticateJWT = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate('jwt', { session: false }, async (err, { user }, info) => {
     if (err) {

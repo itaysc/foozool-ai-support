@@ -17,8 +17,6 @@ import modelTrainingRoutesV1 from './routes/model-training/v1';
 import ticketsRoutesV1 from './routes/tickets/v1';
 import seed from "./seeds";
 import QdrantService from "./qdrant/service";
-import { migrateTicketsFromESToQdrant } from "./qdrant/migrate-tickets";
-import config from "./config";
 
 export interface IServer {
   startServer: (callback: (port: number) => void) => void;
@@ -156,9 +154,9 @@ export default class Server{
 
   public startServer = (callback: (port: number) => void) => {
     if (this.app) {
-      this.app.listen(this.appDefaultPort || 80, () =>
-        callback(this.appDefaultPort || 80)
-      );
+      this.app.listen(this.appDefaultPort || 80, () => {
+        callback(this.appDefaultPort || 80);
+      });
     }
   };
 }

@@ -6,7 +6,7 @@ import { authenticateJWT } from 'src/middleware/authenticate';
 
 const router = express.Router();
 
-router.post('/webhook', authenticateJWT, validateRequest(newTicket), async (req: Request, res: Response): Promise<void> => {
+router.post('/zendesk/webhook', authenticateJWT, validateRequest(newTicket), async (req: Request, res: Response): Promise<void> => {
   try {
     const webhookRes = await handleWebhook(req.user!._id.toString(), req.body);
     res.status(webhookRes.status).json(webhookRes.payload);
