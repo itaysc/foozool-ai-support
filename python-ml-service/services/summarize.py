@@ -57,15 +57,29 @@ def summarize_texts(texts: List[str], max_summary_len: int = 50, min_summary_len
     # Preprocess each conversation before summarization
     preprocessed_texts = [preprocess_conversation(text) for text in texts]
 
-    # Run summarization in batch
-    summaries = summarizer(
-        preprocessed_texts,
-        max_length=max_summary_len,
-        min_length=min_summary_len,
-        do_sample=False,
-        truncation=True,
-        batch_size=4
-    )
+    # Calculate dynamic max_length and min_length based on input lengths
+    summaries = []
+    for text in preprocessed_texts:
+        # Tokenize the text to get actual token count
+        tokens = summarizer.tokenizer(text, return_tensors="pt", truncation=True)
+        input_length = tokens['input_ids'].shape[1]
+        
+        # Adjust max_length to be less than input_length, with a minimum of 8
+        dynamic_max_length = min(max_summary_len, max(8, input_length - 1))
+        
+        # Adjust min_length to be less than max_length, with a minimum of 5
+        dynamic_min_length = min(min_summary_len, max(5, dynamic_max_length - 5))
+        
+        # Run summarization for this single text
+        summary = summarizer(
+            text,
+            max_length=dynamic_max_length,
+            min_length=dynamic_min_length,
+            do_sample=False,
+            truncation=True
+        )
+        
+        summaries.append(summary[0]["summary_text"])
 
-    return [s["summary_text"] for s in summaries]
+    return summaries
 

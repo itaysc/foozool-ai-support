@@ -1,4 +1,4 @@
-import { IResponse, ZendeskTicket } from '@common/types';
+import { IResponse, ZendeskTicket, ZendeskTicketWebhookPayload } from '@common/types';
 import { classifyIntent, summarizeTickets } from '../call-python';
 import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
@@ -84,12 +84,12 @@ async function saveTicketEntry(
 /**
  * Main webhook handler for processing Zendesk tickets
  */
-export async function handleWebhook(userId: string, ticket: ZendeskTicket): Promise<IResponse> {
+export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
   try {
   // Extract ticket payload
   const ticketPayload = {
-    subject: ticket.ticket.subject,
-    description: ticket.ticket.description,
+    subject: ticket.subject,
+    description: ticket.description,
   };
 
   // Process intent classification
@@ -110,7 +110,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
     // Only get tickets from the last 30 days
     createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
     // Exclude the current ticket
-    externalId: { $ne: ticket.ticket.id.toString() },
+    externalId: { $ne: ticket.ticket_id.toString() },
     // Only include tickets that have been processed (have a response)
     'chatHistory.1': { $exists: true }
   })
@@ -131,7 +131,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
   const insightAnalysis = await analyzeTicket({
     subject: ticketPayload.subject,
     description: ticketPayload.description,
-    ticketId: ticket.ticket.id.toString(),
+    ticketId: ticket.ticket_id.toString(),
     product,
     similarTickets: similarTickets.payload,
   }, recentTickets);
@@ -147,7 +147,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicket): Prom
   );
 
   // Save ticket entry
-  await saveTicketEntry(ticketPayload, ticket.ticket.id.toString(), aiResponse);
+  await saveTicketEntry(ticketPayload, ticket.ticket_id.toString(), aiResponse);
 
   return {
     status: 200,

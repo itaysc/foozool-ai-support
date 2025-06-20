@@ -35,9 +35,14 @@ export async function extractKeywordsFromTicket(ticket: Partial<ITicket> & { emb
 }
 
 export async function summarizeTickets(tickets: Partial<ITicket>[]) : Promise<string[]> {
+    try {
     const _tickets = tickets.map(t => ({ subject: t.subject, description: t.description }))
-    const res = await api.post('/api/v1/summarize', _tickets);
-    return res.data;
+        const res = await api.post('/api/v1/summarize', _tickets);
+        return res.data;
+    } catch (err) {
+        console.log(err);
+        return [];
+    }
 }
 
 export async function answerTicket({ question, tickets } : {question: string, tickets: Partial<ITicket>[]}) : Promise<string> {

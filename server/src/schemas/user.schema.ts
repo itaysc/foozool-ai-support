@@ -1,5 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import bcrypt from 'bcrypt';
+import { IUser } from '@common/types';
 
 export const userSchema = new Schema({
     firstName: String,
@@ -49,7 +50,7 @@ export const userSchema = new Schema({
 });
 
 // Pre-save hook to hash the password
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function(this: any, next) {
     if (this.isModified('firstName') || this.isModified('lastName')) {
         this.fullName = `${this.firstName} ${this.lastName}`;
     }
@@ -71,7 +72,7 @@ userSchema.methods.comparePassword = function(candidatePassword: string): Promis
 };
 
 // Create and export the User model
-export const UserModel = mongoose.model('User', userSchema);
+export const UserModel = mongoose.model<IUser>('User', userSchema);
 export function getUserModel(dbConnection) {
     return dbConnection.model('User', userSchema);
 }

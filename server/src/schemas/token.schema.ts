@@ -1,9 +1,11 @@
 import mongoose, { Schema } from "mongoose";
+import { IToken } from "@common/types";
 
-const tokenSchema = new Schema({
+const tokenSchema = new Schema<IToken>({
   token: { type: String, required: true, unique: true },
-  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-  type: { type: String, required: true, enum: ['zendesk'] },
+  organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true , index: true},
+  type: { type: String, required: true, enum: ['zendesk-webhook'] },
+  description: String,
 }, { timestamps: true });
 
-export const TokenModel = mongoose.model('Token', tokenSchema);
+export const TokenModel = mongoose.model<IToken>('Token', tokenSchema);

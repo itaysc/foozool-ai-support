@@ -30,13 +30,13 @@ export async function fetchAvailableTags() : Promise<string[]> {
   return possibleTags.data.tags.map((d) => d.name);
 }
 
-export async function addCommentToTicket(ticketId: string, comment: string) {
+export async function addCommentToTicket(ticketId: string, comment: string, isPublic: boolean = true) {
   try {
     const res = await api.put(`/tickets/${ticketId}.json`, { 
       ticket: {
         comment: {
           body: comment,
-          public: true,
+          public: isPublic,
         },
       },
     }, { headers });

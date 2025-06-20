@@ -5,7 +5,7 @@ import { LLMPricesModel } from './LLMPrices.schema';
 import { TicketModel } from './ticket.schema';
 import { SeedTrackModel } from './seedTrack.schema';
 import { ProductModel } from './product.schema';
-
+import { TokenModel } from './token.schema';
 export {
   UserModel,
   OrganizationModel,
@@ -14,4 +14,5 @@ export {
   TicketModel,
   SeedTrackModel,
   ProductModel,
+  TokenModel,
 };

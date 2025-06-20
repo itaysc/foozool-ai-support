@@ -7,3 +7,5 @@ export { ITicket } from './ticket';
 export { IESTicket } from './esTicket';
 export { IProduct } from './product';
 export { ZendeskTicket } from './zendeskTicket';
+export { IToken } from './token';
+export { ZendeskTicketWebhookPayload } from './zendesk/webhookPayload';

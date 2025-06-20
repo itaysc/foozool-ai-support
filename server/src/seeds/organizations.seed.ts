@@ -26,7 +26,7 @@ export async function seedOrganizations(): Promise<IOrganization | null> {
       const org = await OrganizationModel.findOne({}).lean();
       const organizationsSeeded = await SeedTrackModel.findOne({ name: 'organizations', status: 'completed' }).lean();
       if (organizationsSeeded) {
-        const org = await OrganizationModel.findOne({ name: 'Test Organization' }).lean();
+        const org = await OrganizationModel.findOne({ name: 'demo organization' }).lean();
         return org;
       }
       const result = await OrganizationModel.insertMany(organizationsSeed);

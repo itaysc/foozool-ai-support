@@ -1,10 +1,12 @@
 import mongoose, { Document } from 'mongoose';
 
-export interface IUser extends Document {
+export interface IUser {
   _id: mongoose.Types.ObjectId;
   firstName: string;
   lastName: string;
-  llmModel: mongoose.Types.ObjectId;
+  fullName: string;
+  avatarImage: string;
+  llmModel: string | mongoose.Types.ObjectId;
   email: {
     type: string;
   };
@@ -14,9 +16,7 @@ export interface IUser extends Document {
   registered: {
     type: boolean;
   };
-  organization: {
-    type: typeof mongoose.Schema.Types.ObjectId;
-  };
+  organization: string | mongoose.Types.ObjectId;
   department: {
     type: string;
   };

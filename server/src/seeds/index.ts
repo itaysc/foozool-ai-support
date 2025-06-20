@@ -3,7 +3,7 @@ import { seedLLMUsage } from "./LLMUsage.seed";
 import { seedLLMPricings } from "./LLMPricing.seed";
 import { seedUsers } from "./users.seed";
 import { IUser } from "@common/types";
-
+import { seedTokens } from "./tokens.seed";
 export default async function seed() {
     const organization = await seedOrganizations();
     const recommendedLLMId = await seedLLMPricings();
@@ -13,5 +13,8 @@ export default async function seed() {
     }
     if (users) {
       await seedLLMUsage(users);
+    }
+    if (organization) {
+      await seedTokens(organization._id!);
     }
   }
