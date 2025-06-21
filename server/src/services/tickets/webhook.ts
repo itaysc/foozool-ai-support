@@ -7,6 +7,7 @@ import { callLLM } from '../together.ai';
 import { TicketModel } from 'src/schemas/ticket.schema';
 import { analyzeTicket } from '../insights/analyzer';
 import { InsightModel } from 'src/schemas/insight.schema';
+import { addCommentToTicket } from '../zendesk';
 
 /**
  * Process intent classification for a ticket
@@ -144,7 +145,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhook
   // }, recentTickets);
 
   const agentSuggestion = await getAgentSuggestion(userId, ticketPayload, product, similarTickets.payload);
-
+  await addCommentToTicket(ticket.ticket_id.toString(), agentSuggestion, false);
   // Generate AI response
   const aiResponse = await generateTicketResponse(
     userId,
@@ -163,7 +164,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhook
       agentSuggestion,
       similarTickets: similarTickets.payload,
       product,
-      insights: insightAnalysis,
+      // insights: insightAnalysis,
     },
     };
   } catch (error) {
