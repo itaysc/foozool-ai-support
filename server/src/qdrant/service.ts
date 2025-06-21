@@ -122,6 +122,7 @@ class QdrantService {
                 filter,
                 with_payload: withPayload,
                 score_threshold: scoreThreshold,
+                with_vector: true,
             });
             
             console.log(`KNN search returned ${searchResult.length} results from collection "${collectionName}".`);

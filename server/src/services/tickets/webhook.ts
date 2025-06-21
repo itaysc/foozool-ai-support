@@ -101,40 +101,47 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhook
     k: 5,
   });
 
+  // Summarize similar tickets to reduce llm token usage
+  const similarTicketsSummary = await summarizeTickets(similarTickets.payload);
+  similarTickets.payload.forEach((sTicket, index) => {
+    if (similarTicketsSummary[index]) {
+      sTicket.description = similarTicketsSummary[index];
+    }
+  });
   // Generate or extract product information
   const product = generateMockProduct();
   // Alternative: const product = await extractProductFromTicket(userId, ticket);
 
   // Get recent tickets for anomaly detection (last 100 tickets)
-  const recentTickets = await TicketModel.find({
-    // Only get tickets from the last 30 days
-    createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-    // Exclude the current ticket
-    externalId: { $ne: ticket.ticket_id.toString() },
-    // Only include tickets that have been processed (have a response)
-    'chatHistory.1': { $exists: true }
-  })
-    .sort({ createdAt: -1 })
-    .limit(100)
-    .select({
-      subject: 1,
-      description: 1,
-      externalId: 1,
-      createdAt: 1,
-      'chatHistory.role': 1,
-      'chatHistory.content': 1,
-      'chatHistory.createdAt': 1
-    })
-    .lean();
+  // const recentTickets = await TicketModel.find({
+  //   // Only get tickets from the last 30 days
+  //   createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+  //   // Exclude the current ticket
+  //   externalId: { $ne: ticket.ticket_id.toString() },
+  //   // Only include tickets that have been processed (have a response)
+  //   'chatHistory.1': { $exists: true }
+  // })
+  //   .sort({ createdAt: -1 })
+  //   .limit(100)
+  //   .select({
+  //     subject: 1,
+  //     description: 1,
+  //     externalId: 1,
+  //     createdAt: 1,
+  //     'chatHistory.role': 1,
+  //     'chatHistory.content': 1,
+  //     'chatHistory.createdAt': 1
+  //   })
+  //   .lean();
 
-  // Analyze ticket and generate insights
-  const insightAnalysis = await analyzeTicket({
-    subject: ticketPayload.subject,
-    description: ticketPayload.description,
-    ticketId: ticket.ticket_id.toString(),
-    product,
-    similarTickets: similarTickets.payload,
-  }, recentTickets);
+  // // Analyze ticket and generate insights
+  // const insightAnalysis = await analyzeTicket({
+  //   subject: ticketPayload.subject,
+  //   description: ticketPayload.description,
+  //   ticketId: ticket.ticket_id.toString(),
+  //   product,
+  //   similarTickets: similarTickets.payload,
+  // }, recentTickets);
 
   const agentSuggestion = await getAgentSuggestion(userId, ticketPayload, product, similarTickets.payload);
 

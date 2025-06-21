@@ -6,6 +6,7 @@ import { ticketCollectionConfig } from '../../qdrant/schemas/ticket';
 import { ITicket, IESTicket } from '@common/types';
 import { TicketModel } from 'src/schemas/ticket.schema';
 import { cosineSimilarity } from './utils';
+import { fetchTicketsByExternalIds, getTicketsByIds } from '../zendesk';
 
 export type SimilarTicket = ITicket & { similarity: number };
 
@@ -67,10 +68,8 @@ export async function findZendeskSimilarTickets({
   });
 
   // TODO: in real app fetch from CRM here
-  const tickets = await TicketModel.find({
-    externalId: { $in: similarTickets.map((ticket) => ticket.ticket_id) },
-  }).lean();
-  const ticketsById = keyBy(tickets, 'externalId');
+  const tickets = await fetchTicketsByExternalIds(similarTickets.map((ticket) => ticket.ticket_id));
+  const ticketsById = keyBy(tickets, 'external_id');
 
   if (similarTickets.length === 0) {
     return {

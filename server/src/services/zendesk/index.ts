@@ -30,6 +30,41 @@ export async function fetchAvailableTags() : Promise<string[]> {
   return possibleTags.data.tags.map((d) => d.name);
 }
 
+export async function fetchTicketsByExternalIds(ids: string[]) {
+  const results = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const response = await api.get('/search.json',
+          {
+            params: { query: `type:ticket external_id:${id}` },
+          }
+        );
+        return response.data.results[0] || null; // assuming one match per ID
+      } catch (error) {
+        console.error(`Error for external_id ${id}:`, error);
+        return null;
+      }
+    })
+  );
+
+  // Filter out any nulls (failed searches)
+  return results.filter(ticket => ticket !== null);
+}
+
+
+export async function getTicketsByIds(ids: string[]) : Promise<ITicket[]> {
+  const tickets = await api.get(`/tickets/show_many.json`, {
+    params: {
+      ids: ids.join(','),
+    },
+  });
+  return tickets.data.tickets.map((ticket: any) => {
+    return {
+      ...ticket,
+    };
+  });
+}
+
 export async function addCommentToTicket(ticketId: string, comment: string, isPublic: boolean = true) {
   try {
     const res = await api.put(`/tickets/${ticketId}.json`, { 
