@@ -1,0 +1,14 @@
+[phases.setup]
+nixPkgs = ["nodejs", "yarn"]
+
+[phases.install]
+cmds = ["yarn install --frozen-lockfile"]
+
+[phases.build]
+cmds = [
+    "cd server && yarn build",
+    "cd server && (cp dist/server/src/index.js dist/index.js 2>/dev/null || true)"
+]
+
+[start]
+cmd = "cd server && yarn serve"

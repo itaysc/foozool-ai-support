@@ -11,6 +11,7 @@
     "dev:kibana": "wait-on http://localhost:9200 && brew services stop kibana-full && brew services start kibana-full",
     "stop": "brew services stop elasticsearch",
     "serve": "node dist/index.js",
+    "postinstall": "yarn build",
     "ngrok": "ngrok http 3000",
     "lint": "tsc --noEmit && eslint \"src/**/*.{tsx,ts,js}\"",
     "start-mcp": "nodemon -r dotenv/config --ext ts --exec 'node -r ts-node/register -r tsconfig-paths/register' src/mcp/index.ts",
