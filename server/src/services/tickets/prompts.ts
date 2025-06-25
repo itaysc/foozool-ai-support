@@ -157,6 +157,8 @@ Example:
 ---
 `;
 
+const similarTicketsLength = similarTickets ? similarTickets.length : 0;
+
   const newTicketSection = `
 New Ticket to Analyze:
 Subject: ${newTicket.subject}
@@ -168,17 +170,22 @@ Created: ${newTicket.createdAt}
   const similarTicketLimit = 5;
   const descriptionLimit = 150;
 
-  const pastTicketsSection = similarTickets.length
+  const pastTicketsSection = similarTicketsLength
     ? `
 Similar Past Tickets (for context):
 ${similarTickets
   .slice(0, similarTicketLimit)
   .map(
-    (t, index) =>
-      `${index + 1}. Subject: "${t.subject}"
-   Description: "${t.description.slice(0, descriptionLimit)}${t.description.length > descriptionLimit ? '...' : ''}"
-   Status: ${t.status}
-   Resolution: ${t.comments.length > 0 ? t.comments[t.comments.length - 1] : 'No resolution recorded'}`
+    (t, index) => {
+      const comments = t.comments || [];
+      const description = t.description || '';
+      return (
+        `${index + 1}. Subject: "${t.subject}"
+        Description: "${description.slice(0, descriptionLimit)}${description.length > descriptionLimit ? '...' : ''}"
+        Status: ${t.status}
+        Resolution: ${comments.length > 0 ? comments[comments.length - 1] : 'No resolution recorded'}`
+      )
+    }
   )
   .join('\n\n')}`
     : `

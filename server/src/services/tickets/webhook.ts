@@ -1,4 +1,4 @@
-import { IResponse, ZendeskTicket, ZendeskTicketWebhookPayload } from '@common/types';
+import { IResponse, IAgentSuggestion, ZendeskTicketWebhookPayload } from '@common/types';
 import { classifyIntent, summarizeTickets } from '../call-python';
 import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
@@ -8,7 +8,7 @@ import { TicketModel } from 'src/schemas/ticket.schema';
 import { analyzeTicket } from '../insights/analyzer';
 import { InsightModel } from 'src/schemas/insight.schema';
 import { addCommentToTicket } from '../zendesk';
-
+import { extractCustomerMessage } from 'src/utils/text-sanitize';
 /**
  * Process intent classification for a ticket
  */
@@ -17,7 +17,7 @@ async function processTicketIntent(ticketPayload: { subject: string; description
   return intents;
 }
 
-async function getAgentSuggestion(userId: string, ticketPayload: { subject: string; description: string }, product: any, similarTickets: any[]) {
+async function getAgentSuggestion(userId: string, ticketPayload: { subject: string; description: string }, product: any, similarTickets: any[]) : Promise<IAgentSuggestion> {
   const prompt = buildAgentSuggestionPrompt(ticketPayload, product, similarTickets);
   const response = await callLLM({
     userId,
@@ -28,7 +28,9 @@ async function getAgentSuggestion(userId: string, ticketPayload: { subject: stri
     isChat: true,
     systemMsg: 'You are a helpful AI assistant that can answer questions and help with tasks.',
   });
-  return response.data || '';
+  const data = response.data || '';
+  const parsedResponse = JSON.parse(data) as IAgentSuggestion;
+  return parsedResponse;
 }
 
 /**
@@ -90,7 +92,7 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhook
   // Extract ticket payload
   const ticketPayload = {
     subject: ticket.subject,
-    description: ticket.description,
+    description: extractCustomerMessage(ticket.description),
   };
 
   // Process intent classification
@@ -144,8 +146,11 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhook
   //   similarTickets: similarTickets.payload,
   // }, recentTickets);
 
-  const agentSuggestion = await getAgentSuggestion(userId, ticketPayload, product, similarTickets.payload);
-  await addCommentToTicket(ticket.ticket_id.toString(), agentSuggestion, false);
+  const agentSuggestion = await getAgentSuggestion(userId, {
+    subject: ticketPayload.subject,
+    description: summary[0] || ticketPayload.description,
+  }, product, similarTickets.payload);
+  await addCommentToTicket(ticket.ticket_id.toString(), agentSuggestion.reasoning, false);
   // Generate AI response
   const aiResponse = await generateTicketResponse(
     userId,

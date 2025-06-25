@@ -46,7 +46,7 @@ export async function loadStubData(): Promise<IResponse<any>> {
         // Process each embedding chunk and immediately create points
         for (const [i, chunkData] of embeddingChunks.entries()) {
             console.log(`Embedding chunk ${i + 1} of ${embeddingChunks.length}...`);
-            const embeddingsChunk: [number[]] = await getSBERTEmbedding(chunkData);
+            const embeddingsChunk: number[][] = await getSBERTEmbedding(chunkData);
             
             // Process this chunk's data immediately
             for (let j = 0; j < chunkData.length; j++) {
@@ -205,7 +205,7 @@ export async function loadStubData3(): Promise<IResponse<any>> {
             for (const [i, chunkData] of embeddingChunks.entries()) {
                 console.log(`Embedding chunk ${i + 1} of ${embeddingChunks.length}...`);
                 await sleep(7000);
-                const embeddingsChunk: [number[]] = await getSBERTEmbedding(chunkData);
+                const embeddingsChunk: number[][] = await getSBERTEmbedding(chunkData);
                 
                 // Process this chunk's data immediately
                 for (let j = 0; j < chunkData.length; j++) {
