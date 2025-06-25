@@ -45,6 +45,12 @@ export default class Server{
       this.app.use('/api/v1/train', modelTrainingRoutesV1);
       this.app.use('/api/v1/tickets', ticketsRoutesV1);
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
+      this.app.get('/api/v1/health', (req, res) => {
+        res.status(200).json({ 
+          status: 'healthy', 
+          timestamp: new Date().toISOString() 
+        });
+      });
     } catch (err) {
       console.log(err);
     }
