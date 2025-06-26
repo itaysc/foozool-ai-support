@@ -5,13 +5,32 @@ import Server from "./server";
 
 async function start() {
   const server: Server = new Server();
-  server.startServer((port: number) => {
-    console.log(`server is listening on port ${port}`);
-   });
-  await server.connectDB()
-  await server.seedDB();
-  // await server.initElasticSearch();
-  await server.initQdrant();
+  
+  try {
+    // Start the server first
+    server.startServer((port: number) => {
+      console.log(`server is listening on port ${port}`);
+    });
+    
+    // Try to connect to database, but don't fail if it doesn't work
+    try {
+      await server.connectDB();
+      await server.seedDB();
+    } catch (dbError) {
+      console.log('Database connection failed, but server is running:', dbError);
+    }
+    
+    // Try to initialize services, but don't fail if they don't work
+    try {
+      await server.initQdrant();
+    } catch (qdrantError) {
+      console.log('Qdrant initialization failed, but server is running:', qdrantError);
+    }
+    
+  } catch (error) {
+    console.error('Server startup failed:', error);
+    process.exit(1);
+  }
 }
 
 start();

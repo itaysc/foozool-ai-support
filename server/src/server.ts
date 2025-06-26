@@ -48,7 +48,16 @@ export default class Server{
       this.app.get('/api/v1/health', (req, res) => {
         res.status(200).json({ 
           status: 'healthy', 
-          timestamp: new Date().toISOString() 
+          timestamp: new Date().toISOString(),
+          uptime: process.uptime()
+        });
+      });
+      
+      // Add a simple health check that doesn't depend on database
+      this.app.get('/health', (req, res) => {
+        res.status(200).json({ 
+          status: 'ok',
+          timestamp: new Date().toISOString()
         });
       });
     } catch (err) {
