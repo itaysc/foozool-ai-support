@@ -5,7 +5,7 @@ import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import rateLimit from "express-rate-limit";
-import { passport } from './middleware/passport';
+import { passport, initializeJWTStrategies } from './middleware/passport';
 import Config from './config';
 import authRoutesV1 from './routes/auth/v1';
 import usersRoutesV1 from './routes/users/v1';
@@ -34,6 +34,11 @@ export default class Server{
       this.initialize();
       this.configureApp();
       this.initRoutes();
+      
+      // Initialize JWT strategies after environment variables are loaded
+      console.log('Initializing JWT strategies...');
+      initializeJWTStrategies();
+      
       console.log('✅ Server instance created successfully');
     } catch (error) {
       console.error('❌ Error creating server instance:', error);

@@ -71,7 +71,4 @@ function initializeJWTStrategies() {
   console.log('JWT strategies initialized successfully');
 }
 
-// Initialize strategies when this module is imported
-initializeJWTStrategies();
-
-export { passport };
+export { passport, initializeJWTStrategies };
