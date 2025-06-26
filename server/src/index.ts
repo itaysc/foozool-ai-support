@@ -1,7 +1,7 @@
 import 'module-alias/register';
 
 import Server from "./server";
-// require('dotenv').config();
+require('dotenv').config();
 
 async function start() {
   const server: Server = new Server();

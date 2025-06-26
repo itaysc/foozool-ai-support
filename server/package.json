@@ -16,7 +16,7 @@
     "lint": "tsc --noEmit && eslint \"src/**/*.{tsx,ts,js}\"",
     "start-mcp": "nodemon -r dotenv/config --ext ts --exec 'node -r ts-node/register -r tsconfig-paths/register' src/mcp/index.ts",
     "test-mcp": "npx @modelcontextprotocol/inspector node dist/server/src/mcp/index.js",
-    "build": "tsc"
+    "build": "tsc -p tsconfig.json"
   },
   "author": "Itay Schmidt",
   "license": "ISC",
@@ -47,6 +47,7 @@
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "csvtojson": "^2.0.10",
+    "dotenv": "^16.6.0",
     "dotenv-cli": "^8.0.0",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
@@ -93,10 +94,6 @@
   },
   "build": {
     "builder": "NIXPACKS"
-  },
-  "deploy": {
-    "startCommand": "yarn build && yarn serve",
-    "healthcheckPath": "/api/v1/health"
   },
   "_moduleAliases": {
     "src": "dist/server/src"
