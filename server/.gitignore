@@ -3,7 +3,7 @@
 # Ignore virtual environment folders
 venv/
 .env/
-*.env
+.env
 
 # Ignore Python bytecode files
 __pycache__/

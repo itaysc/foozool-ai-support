@@ -4,12 +4,29 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 import Server from "./server";
-require('dotenv').config();
+
+// Load environment variables
+console.log('Loading environment variables...');
+let result = require('dotenv').config();
+if (result.error) {
+  console.log('No .env file found, trying to load prod.env...');
+  result = require('dotenv').config({ path: './prod.env' });
+  if (result.error) {
+    console.log('No prod.env file found either, using system environment variables');
+  } else {
+    console.log('Environment variables loaded from prod.env file');
+  }
+} else {
+  console.log('Environment variables loaded from .env file');
+}
 
 async function start() {
   console.log('Starting server...');
   console.log('Environment:', process.env.NODE_ENV);
   console.log('Port:', process.env.PORT);
+  console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+  console.log('ATLAS_CONNECTION_STRING exists:', !!process.env.ATLAS_CONNECTION_STRING);
+  console.log('QDRANT_API_KEY exists:', !!process.env.QDRANT_API_KEY);
   
   try {
     const server: Server = new Server();

@@ -90,8 +90,16 @@ export default class Server{
         res.status(200).json({ 
           status: 'ok',
           message: 'Server is running',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          env: process.env.NODE_ENV || 'unknown',
+          port: process.env.PORT || 'unknown'
         });
+      });
+      
+      // Add a simple ping endpoint
+      this.app.get('/ping', (req, res) => {
+        console.log('Ping requested');
+        res.status(200).send('pong');
       });
       
       console.log("✅ All routes initialized successfully");

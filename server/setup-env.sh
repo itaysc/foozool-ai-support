@@ -7,6 +7,8 @@ if [ -f "prod.env" ]; then
     echo "Found prod.env, copying to .env"
     cp prod.env .env
     echo "Environment file created successfully"
+    echo "Contents of .env file:"
+    head -5 .env
 else
     echo "prod.env not found, creating empty .env file"
     touch .env
