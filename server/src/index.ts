@@ -7,12 +7,17 @@ import Server from "./server";
 require('dotenv').config();
 
 async function start() {
+  console.log('Starting server...');
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Port:', process.env.PORT);
+  
   const server: Server = new Server();
   
   try {
     // Start the server first
     server.startServer((port: number) => {
-      console.log(`server is listening on port ${port}`);
+      console.log(`Server is listening on port ${port}`);
+      console.log(`Health check available at http://0.0.0.0:${port}/api/v1/health`);
     });
     
     // Try to connect to database, but don't fail if it doesn't work

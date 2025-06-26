@@ -169,8 +169,9 @@ export default class Server{
 
   public startServer = (callback: (port: number) => void) => {
     if (this.app) {
-      this.app.listen(this.appDefaultPort || 80, () => {
-        callback(this.appDefaultPort || 80);
+      const port = this.appDefaultPort || 80;
+      this.app.listen(port, '0.0.0.0', () => {
+        callback(port);
       });
     }
   };

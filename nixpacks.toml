@@ -12,4 +12,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd server && yarn serve"
+cmd = "cd server && yarn start"
