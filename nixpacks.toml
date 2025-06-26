@@ -5,7 +5,10 @@ nixPkgs = ["nodejs", "yarn"]
 cmds = ["cd server && yarn install --frozen-lockfile"]
 
 [phases.build]
-cmds = ["cd server && yarn build"]
+cmds = [
+    "cd server && yarn build",
+    "cd server && cp prod.env .env"
+]
 
 [start]
 cmd = "cd server && yarn serve"
