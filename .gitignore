@@ -49,3 +49,9 @@ pyproject.lock
 *.h5
 *.tflite
 *.pb
+
+# Python ML Service specific ignores
+python-ml-service/venv/
+python-ml-service/models/
+python-ml-service/path/
+python-ml-service/__pycache__/
