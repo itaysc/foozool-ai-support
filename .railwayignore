@@ -1,0 +1,9 @@
+# Ignore large files for Railway deployment
+python-ml-service/venv/
+python-ml-service/models/
+python-ml-service/path/
+python-ml-service/__pycache__/
+**/node_modules/
+**/dist/
+*.log
+*.lock 
