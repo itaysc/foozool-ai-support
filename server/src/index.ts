@@ -1,4 +1,7 @@
-import 'module-alias/register';
+// Only load module-alias in production
+if (process.env.NODE_ENV === 'production') {
+  require('module-alias/register');
+}
 
 import Server from "./server";
 require('dotenv').config();
