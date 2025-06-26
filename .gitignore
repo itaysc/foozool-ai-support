@@ -15,7 +15,7 @@ __pycache__/
 .pip/
 *.egg-info/
 *.dist-info/
-
+*dist/*
 # Ignore Jupyter Notebook checkpoints
 .ipynb_checkpoints/
 

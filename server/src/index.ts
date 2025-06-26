@@ -1,3 +1,5 @@
+import 'module-alias/register';
+
 import Server from "./server";
 // require('dotenv').config();
 

@@ -10,7 +10,7 @@
     "dev:clickhouse": "brew services stop clickhouse && brew services start clickhouse",
     "dev:kibana": "wait-on http://localhost:9200 && brew services stop kibana-full && brew services start kibana-full",
     "stop": "brew services stop elasticsearch",
-    "serve": "node dist/index.js",
+    "serve": "node -r dotenv/config dist/server/src/index.js",
     "postinstall": "yarn build",
     "ngrok": "ngrok http 3000",
     "lint": "tsc --noEmit && eslint \"src/**/*.{tsx,ts,js}\"",
@@ -54,6 +54,7 @@
     "joi": "^17.13.3",
     "joi-objectid": "^4.0.2",
     "lodash": "^4.17.21",
+    "module-alias": "^2.2.3",
     "moment-timezone": "^0.5.47",
     "multer": "^1.4.5-lts.2",
     "node-quickbooks": "^2.0.45",
@@ -89,5 +90,15 @@
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.1",
     "wait-on": "^8.0.3"
+  },
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "yarn build && yarn serve",
+    "healthcheckPath": "/api/v1/health"
+  },
+  "_moduleAliases": {
+    "src": "dist/server/src"
   }
 }
