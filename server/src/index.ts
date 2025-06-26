@@ -1,13 +1,7 @@
-// Only load module-alias in production
-if (process.env.NODE_ENV === 'production') {
-  require('module-alias/register');
-}
-
-import Server from "./server";
+// Load environment variables FIRST, before any other imports
 import path from 'path';
 import fs from 'fs';
 
-// Load environment variables
 console.log('Loading environment variables...');
 console.log('Current working directory:', process.cwd());
 console.log('Files in current directory:', fs.readdirSync('.'));
@@ -53,6 +47,24 @@ console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT:', process.env.PORT);
 console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
 console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
+console.log('JWT_SECRET value (first 10 chars):', process.env.JWT_SECRET ? process.env.JWT_SECRET.substring(0, 10) + '...' : 'undefined');
+
+// List all environment variables for debugging
+console.log('All environment variables:');
+Object.keys(process.env).forEach(key => {
+  if (key.includes('JWT') || key.includes('SECRET') || key.includes('KEY') || key.includes('PASSWORD')) {
+    console.log(`${key}: ${process.env[key] ? '***SET***' : 'undefined'}`);
+  } else {
+    console.log(`${key}: ${process.env[key]}`);
+  }
+});
+
+// Only load module-alias in production
+if (process.env.NODE_ENV === 'production') {
+  require('module-alias/register');
+}
+
+import Server from "./server";
 
 async function start() {
   console.log('Starting server...');
