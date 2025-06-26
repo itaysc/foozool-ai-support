@@ -8,7 +8,8 @@ cmds = ["cd server && yarn install --frozen-lockfile"]
 cmds = [
     "cd server && yarn build",
     "cd server && chmod +x setup-env.sh",
-    "cd server && ./setup-env.sh"
+    "cd server && ./setup-env.sh",
+    "cd server && cp prod.env .env || echo 'prod.env not found, will use system env vars'"
 ]
 
 [start]

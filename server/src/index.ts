@@ -4,21 +4,55 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 import Server from "./server";
+import path from 'path';
+import fs from 'fs';
 
 // Load environment variables
 console.log('Loading environment variables...');
+console.log('Current working directory:', process.cwd());
+console.log('Files in current directory:', fs.readdirSync('.'));
+
+// Try multiple possible paths for prod.env
+const possiblePaths = [
+  './prod.env',
+  '../prod.env',
+  './server/prod.env',
+  path.join(__dirname, '../prod.env'),
+  path.join(__dirname, '../../prod.env')
+];
+
 let result = require('dotenv').config();
 if (result.error) {
   console.log('No .env file found, trying to load prod.env...');
-  result = require('dotenv').config({ path: './prod.env' });
-  if (result.error) {
-    console.log('No prod.env file found either, using system environment variables');
-  } else {
-    console.log('Environment variables loaded from prod.env file');
+  
+  let prodEnvFound = false;
+  for (const envPath of possiblePaths) {
+    console.log(`Checking for prod.env at: ${envPath}`);
+    if (fs.existsSync(envPath)) {
+      console.log(`Found prod.env at: ${envPath}`);
+      result = require('dotenv').config({ path: envPath });
+      if (!result.error) {
+        console.log(`Environment variables loaded from ${envPath}`);
+        prodEnvFound = true;
+        break;
+      }
+    }
+  }
+  
+  if (!prodEnvFound) {
+    console.log('No prod.env file found in any location, using system environment variables');
+    console.log('Error details:', result.error);
   }
 } else {
   console.log('Environment variables loaded from .env file');
 }
+
+// Debug: Show some key environment variables
+console.log('Environment variables after loading:');
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('PORT:', process.env.PORT);
+console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
 
 async function start() {
   console.log('Starting server...');
