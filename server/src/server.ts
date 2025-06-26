@@ -28,10 +28,17 @@ export default class Server{
   clickhouseClient: NodeClickHouseClient;
 
   constructor() { 
-    this.app = express();
-    this.initialize();
-    this.configureApp();
-    this.initRoutes();
+    try {
+      console.log('Creating server instance...');
+      this.app = express();
+      this.initialize();
+      this.configureApp();
+      this.initRoutes();
+      console.log('✅ Server instance created successfully');
+    } catch (error) {
+      console.error('❌ Error creating server instance:', error);
+      throw error;
+    }
   }
 
   private initRoutes() {
@@ -40,38 +47,70 @@ export default class Server{
     }
     try {
       console.log("Initializing Routes ");
+      
+      console.log("Adding auth routes...");
       this.app.use('/api/v1/auth', authRoutesV1);
+      
+      console.log("Adding user routes...");
       this.app.use('/api/v1/users', usersRoutesV1);
+      
+      console.log("Adding model training routes...");
       this.app.use('/api/v1/train', modelTrainingRoutesV1);
+      
+      console.log("Adding ticket routes...");
       this.app.use('/api/v1/tickets', ticketsRoutesV1);
+      
+      console.log("Adding webhook routes...");
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
+      
+      console.log("Adding health check routes...");
       this.app.get('/api/v1/health', (req, res) => {
+        console.log('Health check requested');
         res.status(200).json({ 
           status: 'healthy', 
           timestamp: new Date().toISOString(),
-          uptime: process.uptime()
+          uptime: process.uptime(),
+          environment: process.env.NODE_ENV,
+          port: process.env.PORT
         });
       });
       
       // Add a simple health check that doesn't depend on database
       this.app.get('/health', (req, res) => {
+        console.log('Simple health check requested');
         res.status(200).json({ 
           status: 'ok',
           timestamp: new Date().toISOString()
         });
       });
+      
+      // Add a minimal health check for Railway
+      this.app.get('/', (req, res) => {
+        console.log('Root health check requested');
+        res.status(200).json({ 
+          status: 'ok',
+          message: 'Server is running',
+          timestamp: new Date().toISOString()
+        });
+      });
+      
+      console.log("✅ All routes initialized successfully");
     } catch (err) {
-      console.log(err);
+      console.error("❌ Error initializing routes:", err);
+      throw err;
     }
   }
 
   private async initialize() {
     try {
+      console.log("Initializing middleware...");
+      
       this.app.use(bodyParser.json({ limit: '50mb' }));
       this.app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
       this.app.use(cookieParser());
       this.app.use(express.json());
       this.app.use(passport.initialize());
+      
       const limiter = rateLimit({
         windowMs: 1 * 60 * 1000, // 1 minute
         max: 100, // limit each IP to 100 requests per windowMs
@@ -85,9 +124,13 @@ export default class Server{
         optionsSuccessStatus: 200,
         credentials: true
       }));
+      
       this.appDefaultPort = process.env.PORT ? Number(process.env.PORT) : 80;
+      
+      console.log("✅ Middleware initialized successfully");
     } catch (err) {
-      console.log(err);
+      console.error("❌ Error initializing middleware:", err);
+      throw err;
     }
   }
   public async initElasticSearch() {
@@ -162,8 +205,16 @@ export default class Server{
   }
 
   private configureApp() {
-    if (this.app) {
-      this.app.use(express.static(path.join(__dirname, "../public")));
+    try {
+      if (this.app) {
+        this.app.use(express.static(path.join(__dirname, "../public")));
+        console.log("✅ App configuration completed");
+      } else {
+        throw new Error("App is not initialized");
+      }
+    } catch (error) {
+      console.error("❌ Error configuring app:", error);
+      throw error;
     }
   }
 
