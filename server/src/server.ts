@@ -152,8 +152,15 @@ export default class Server{
     }
   }
   public async initElasticSearch() {
-    const esService = new ElasticsearchService();
-    await esService.createIndex({ indexName: 'tickets', mapping: ticketsMapping, settings: ticketsSettings });
+    try {
+      console.log('Initializing Elasticsearch...');
+      const esService = new ElasticsearchService();
+      await esService.createIndex({ indexName: 'tickets', mapping: ticketsMapping, settings: ticketsSettings });
+      console.log('✅ Elasticsearch initialized successfully');
+    } catch (error) {
+      console.error('❌ Elasticsearch initialization failed:', error);
+      throw error;
+    }
   }
 
   public async initQdrant() {

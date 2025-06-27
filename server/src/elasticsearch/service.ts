@@ -5,26 +5,58 @@ import { WriteResponseBase } from '@elastic/elasticsearch/lib/api/types';
 import { ITicket, IESTicket } from '@common/types';
 
 type CreateIndexStatus = 'created' | 'alreadyExist' | 'error';
-const isProd = Config.ELASTIC_SEARCH_ENV === 'prod';
-const connectionObj: ClientOptions = {
+
+let esClient: ESClient | null = null;
+
+function getESClient(): ESClient {
+  if (esClient) {
+    return esClient;
+  }
+
+  console.log('Initializing Elasticsearch client...');
+  console.log('ELASTIC_SEARCH_ENV:', Config.ELASTIC_SEARCH_ENV);
+  console.log('BONSAI_ES_URL exists:', !!Config.BONSAI_ES_URL);
+  console.log('ELASTIC_SEARCH_URL_LOCAL_DOCKER exists:', !!Config.ELASTIC_SEARCH_URL_LOCAL_DOCKER);
+
+  const isProd = Config.ELASTIC_SEARCH_ENV === 'prod';
+  
+  if (isProd && !Config.BONSAI_ES_URL) {
+    console.error('BONSAI_ES_URL is not set for production environment');
+    throw new Error('BONSAI_ES_URL is required for production environment');
+  }
+  
+  if (!isProd && !Config.ELASTIC_SEARCH_URL_LOCAL_DOCKER) {
+    console.error('ELASTIC_SEARCH_URL_LOCAL_DOCKER is not set for local environment');
+    throw new Error('ELASTIC_SEARCH_URL_LOCAL_DOCKER is required for local environment');
+  }
+
+  const connectionObj: ClientOptions = {
     node: isProd
     ? `https://${Config.BONSAI_ES_ACCESS_KEY}:${Config.BONSAI_ES_ACCESS_SECRET}@${Config.BONSAI_ES_URL}`
     : Config.ELASTIC_SEARCH_URL_LOCAL_DOCKER,
-};
+  };
 
-
-if (isProd) {
+  if (isProd) {
     connectionObj.tls = {
-        rejectUnauthorized: false, // Ensure SSL certificates are accepted (depending on Bonsai setup)
+      rejectUnauthorized: false, // Ensure SSL certificates are accepted (depending on Bonsai setup)
     };
+  }
+
+  console.log('Creating Elasticsearch client with config:', {
+    isProd,
+    node: connectionObj.node ? '***SET***' : 'undefined'
+  });
+
+  esClient = new ESClient(connectionObj);
+  console.log('Elasticsearch client created successfully');
+  
+  return esClient;
 }
 
-
-export const esClient = new ESClient(connectionObj);
 class ElasticsearchService {
   client: ESClient;
   constructor() {
-   this.client = esClient;
+   this.client = getESClient();
   }
   async search(conf: any) {
       return this.client.search(conf);
@@ -157,8 +189,7 @@ class ElasticsearchService {
   }
 
   async knnSearch({ ticket, k = 5} : { ticket: ITicket & { embedding: number[] }, k: number }) :Promise<IESTicket[]> {
-    const esClient = new ElasticsearchService();
-    if (!esClient) return [];
+    if (!this.client) return [];
   
     const knnQuery = {
       field: 'embedding',
@@ -174,7 +205,7 @@ class ElasticsearchService {
     }
     
     try {
-      const response = await esClient.search(query);
+      const response = await this.client.search(query);
       return response.hits.hits.map(hit => hit._source as IESTicket);
     } catch (error) {
       console.error('Elasticsearch search error:', error);
