@@ -67,7 +67,7 @@ if (process.env.NODE_ENV === 'production') {
 import Server from "./server";
 
 async function start() {
-  console.log('Starting server...');
+  console.log('🚀 Starting server...');
   console.log('Environment:', process.env.NODE_ENV);
   console.log('Port:', process.env.PORT);
   console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
@@ -75,13 +75,17 @@ async function start() {
   console.log('QDRANT_API_KEY exists:', !!process.env.QDRANT_API_KEY);
   
   try {
+    console.log('Creating server instance...');
     const server: Server = new Server();
-    console.log('Server instance created successfully');
+    console.log('✅ Server instance created successfully');
     
     // Start the server first
+    console.log('Starting server...');
     server.startServer((port: number) => {
       console.log(`✅ Server is listening on port ${port}`);
       console.log(`✅ Health check available at http://0.0.0.0:${port}/api/v1/health`);
+      console.log(`✅ Root health check available at http://0.0.0.0:${port}/`);
+      console.log(`✅ Ping health check available at http://0.0.0.0:${port}/ping`);
     });
     
     // Try to connect to database, but don't fail if it doesn't work
@@ -110,6 +114,7 @@ async function start() {
     
   } catch (error) {
     console.error('❌ Server startup failed:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
     process.exit(1);
   }
 }

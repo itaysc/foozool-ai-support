@@ -107,6 +107,11 @@ export default class Server{
         res.status(200).send('pong');
       });
       
+      this.app.get('/health-simple', (req, res) => {
+        console.log('Simple health check requested');
+        res.status(200).send('OK');
+      });
+      
       console.log("✅ All routes initialized successfully");
     } catch (err) {
       console.error("❌ Error initializing routes:", err);
@@ -234,9 +239,22 @@ export default class Server{
   public startServer = (callback: (port: number) => void) => {
     if (this.app) {
       const port = this.appDefaultPort || 80;
-      this.app.listen(port, '0.0.0.0', () => {
-        callback(port);
-      });
+      const host = '0.0.0.0'; // Bind to all interfaces for Railway
+      
+      console.log(`Attempting to start server on ${host}:${port}...`);
+      
+      try {
+        this.app.listen(port, host, () => {
+          console.log(`🚀 Server started on ${host}:${port}`);
+          callback(port);
+        });
+      } catch (error) {
+        console.error('❌ Error starting server:', error);
+        throw error;
+      }
+    } else {
+      console.error('❌ Cannot start server: app is not initialized');
+      throw new Error('App is not initialized');
     }
   };
 }
