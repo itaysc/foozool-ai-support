@@ -10,7 +10,9 @@ restartPolicyMaxRetries = 10
 [[services]]
 name = "nodejs-api"
 sourceDir = "server"
+healthcheckPath = "/health-simple"
 
 [[services]]
 name = "python-ml"
 sourceDir = "python-ml-service"
+healthcheckPath = "/health"
