@@ -221,13 +221,32 @@ export default class Server{
       : Config.DB_CONNECTION_STRING_LOCAL || '';
     } else if (Config.NODE_ENV === 'production') {
       connectionString = Config.ATLAS_CONNECTION_STRING || '';
-      connectionString = connectionString.replace('<db_username>', Config.ATLAS_USERNAME || '');
-      connectionString = connectionString.replace('<db_password>', Config.ATLAS_PASSWORD || '');
+      // Only replace placeholders if they exist in the connection string
+      if (connectionString.includes('<db_username>')) {
+        connectionString = connectionString.replace('<db_username>', Config.ATLAS_USERNAME || '');
+      }
+      if (connectionString.includes('<db_password>')) {
+        connectionString = connectionString.replace('<db_password>', Config.ATLAS_PASSWORD || '');
+      }
     } else {
       throw new Error('Invalid env name was provided in config');
     }
+    
+    console.log('Connection string (masked):', connectionString.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
+    console.log('NODE_ENV:', Config.NODE_ENV);
+    console.log('ATLAS_CONNECTION_STRING exists:', !!Config.ATLAS_CONNECTION_STRING);
+    console.log('ATLAS_USERNAME exists:', !!Config.ATLAS_USERNAME);
+    console.log('ATLAS_PASSWORD exists:', !!Config.ATLAS_PASSWORD);
+    
     try {
-      await mongoose.connect(`${connectionString}/foozool`, {
+      // Don't append /foozool if the connection string already includes a database name
+      const finalConnectionString = connectionString.includes('/?') || connectionString.includes('/foozool') 
+        ? connectionString 
+        : `${connectionString}/foozool`;
+        
+      console.log('Final connection string (masked):', finalConnectionString.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
+      
+      await mongoose.connect(finalConnectionString, {
         // Connection timeout settings
         serverSelectionTimeoutMS: 5000, // 5 seconds
         connectTimeoutMS: 10000, // 10 seconds
