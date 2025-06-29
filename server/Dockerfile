@@ -2,6 +2,13 @@ FROM node:23.2.0
 
 WORKDIR /usr/src/app
 
+# Install ca-certificates to fix SSL issues
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
+# Set environment variables to handle SSL certificate issues
+ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+ENV NGROK_SKIP_VERIFY=true
+
 # Copy package files first for caching
 COPY server/package.json server/yarn.lock ./
 COPY common ./common
