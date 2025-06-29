@@ -3,11 +3,21 @@ import { IUser, IResponse, IOrganization } from '@common/types';
 import ElasticsearchService from '../../../elasticsearch/service';
 
 export async function getUserByEmail({ email }) : Promise<IResponse> {
-  const user = await UserModel.findOne({ email }).lean();
-  return {
-    status: user ? 200 : 404,
-    payload: user,
-  };
+  try {
+    console.log('getUserByEmail called for email:', email);
+    const user = await UserModel.findOne({ email }).lean();
+    console.log('User lookup result:', user ? 'found' : 'not found');
+    return {
+      status: user ? 200 : 404,
+      payload: user,
+    };
+  } catch (error) {
+    console.error('Error in getUserByEmail:', error);
+    return {
+      status: 500,
+      payload: null,
+    };
+  }
 }
 
 export async function createOrganization(organization: IOrganization) : Promise<IResponse> {

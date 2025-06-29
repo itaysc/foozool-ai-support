@@ -33,25 +33,93 @@ const router = express.Router();
  *         $ref: '#/definitions/postResponses/500'
  */
 router.post('/token', validateRequest(getToken), async (req: Request, res: Response): Promise<void> => {
-  const { email, password } = req.body;
-  const userRes = await getUserByEmail({ email });
-  if (!userRes.payload) {
-    res.status(400).send('User not found');
-    return;
-  }
-  const isPasswordValid = await bcrypt.compare(password, userRes.payload.password);
-  if (!isPasswordValid) {
-    res.status(401).send('Invalid password');
-    return;
-  }
-  const token = signJwt({ user: userRes.payload});
-  setJwtCookie({ res, data: token });
-  res.json({ token });
+  try {
+    console.log('Token endpoint called with body:', { email: req.body.email, password: req.body.password ? '[REDACTED]' : 'undefined' });
+    
+    // Check if JWT_SECRET is configured
+    if (!config.JWT_SECRET) {
+      console.error('JWT_SECRET is not configured');
+      res.status(500).json({ 
+        status: 'error',
+        message: 'Server configuration error',
+        code: 'JWT_SECRET_MISSING'
+      });
+      return;
+    }
 
-  // const parts = token.split('.');
-  // const headerAndSignature = `${parts[0]}.${parts[2]}`;
-  // setJwtCookie({ res, data: headerAndSignature });
-  // res.json({ token, payload: parts[1] });
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      console.log('Missing email or password in request');
+      res.status(400).json({ 
+        status: 'error',
+        message: 'Email and password are required',
+        code: 'MISSING_CREDENTIALS'
+      });
+      return;
+    }
+
+    console.log('Attempting to get user by email:', email);
+    const userRes = await getUserByEmail({ email });
+    
+    if (userRes.status === 500) {
+      console.error('Database error occurred while fetching user');
+      res.status(500).json({ 
+        status: 'error',
+        message: 'Database connection error',
+        code: 'DATABASE_ERROR'
+      });
+      return;
+    }
+    
+    if (!userRes.payload) {
+      console.log('User not found for email:', email);
+      res.status(400).json({ 
+        status: 'error',
+        message: 'User not found',
+        code: 'USER_NOT_FOUND'
+      });
+      return;
+    }
+
+    console.log('User found, validating password');
+    const isPasswordValid = await bcrypt.compare(password, userRes.payload.password);
+    
+    if (!isPasswordValid) {
+      console.log('Invalid password for user:', email);
+      res.status(401).json({ 
+        status: 'error',
+        message: 'Invalid password',
+        code: 'INVALID_PASSWORD'
+      });
+      return;
+    }
+
+    console.log('Password valid, generating token');
+    const token = signJwt({ user: userRes.payload});
+    setJwtCookie({ res, data: token });
+    
+    console.log('Token generated successfully for user:', email);
+    res.json({ 
+      status: 'success',
+      token,
+      user: {
+        id: userRes.payload._id,
+        email: userRes.payload.email,
+        firstName: userRes.payload.firstName,
+        lastName: userRes.payload.lastName
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in /token endpoint:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Internal server error',
+      code: 'INTERNAL_ERROR',
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+    });
+  }
 });
 
 router.post('/refresh-token', async (req: Request, res: Response): Promise<void> => {

@@ -80,6 +80,39 @@ export default class Server{
         });
       });
       
+      // Add a health check that includes database status
+      this.app.get('/api/v1/health/detailed', async (req, res) => {
+        console.log('Detailed health check requested');
+        try {
+          const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+          const jwtSecretExists = !!process.env.JWT_SECRET;
+          
+          res.status(200).json({ 
+            status: 'healthy', 
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            environment: process.env.NODE_ENV,
+            port: process.env.PORT,
+            database: {
+              status: dbStatus,
+              readyState: mongoose.connection.readyState
+            },
+            config: {
+              jwtSecretExists,
+              nodeEnv: process.env.NODE_ENV,
+              port: process.env.PORT
+            }
+          });
+        } catch (error) {
+          console.error('Error in detailed health check:', error);
+          res.status(500).json({ 
+            status: 'error',
+            message: 'Health check failed',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      });
+      
       // Add a simple health check that doesn't depend on database
       this.app.get('/health', (req, res) => {
         console.log('Simple health check requested');
@@ -110,6 +143,17 @@ export default class Server{
       this.app.get('/health-simple', (req, res) => {
         console.log('Simple health check requested');
         res.status(200).send('OK');
+      });
+      
+      // Add a test POST endpoint
+      this.app.post('/api/v1/test', (req, res) => {
+        console.log('Test POST endpoint called with body:', req.body);
+        res.status(200).json({ 
+          status: 'success',
+          message: 'POST request received successfully',
+          body: req.body,
+          timestamp: new Date().toISOString()
+        });
       });
       
       console.log("✅ All routes initialized successfully");
