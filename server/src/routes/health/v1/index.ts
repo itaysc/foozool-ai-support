@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 const router = express.Router();
 
 // Add a health check that includes database status
-router.get('/detailed', async (req: Request, res: Response) => {
+router.get('/api/v1/health/detailed', async (req: Request, res: Response) => {
   console.log('Detailed health check requested');
   try {
     const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
@@ -39,7 +39,7 @@ router.get('/detailed', async (req: Request, res: Response) => {
 });
 
 // Add a database-specific health check
-router.get('/database', async (req: Request, res: Response) => {
+router.get('/api/v1/health/database', async (req: Request, res: Response) => {
   console.log('Database health check requested');
   try {
     const dbState = mongoose.connection.readyState;
@@ -96,7 +96,7 @@ router.get('/database', async (req: Request, res: Response) => {
 });
 
 // Add a simple health check that doesn't depend on database
-router.get('/simple', (req: Request, res: Response) => {
+router.get('/api/v1/health/simple', (req: Request, res: Response) => {
   console.log('Simple health check requested');
   res.status(200).json({ 
     status: 'ok',
@@ -105,7 +105,7 @@ router.get('/simple', (req: Request, res: Response) => {
 });
 
 // Add a minimal health check for Railway
-router.get('/minimal', (req: Request, res: Response) => {
+router.get('/api/v1/health/minimal', (req: Request, res: Response) => {
   console.log('Minimal health check requested');
   res.status(200).json({ 
     status: 'ok',
@@ -117,7 +117,7 @@ router.get('/minimal', (req: Request, res: Response) => {
 });
 
 // Add a simple ping endpoint
-router.get('/ping', (req: Request, res: Response) => {
+router.get('/api/v1/health/ping', (req: Request, res: Response) => {
   console.log('Ping requested');
   res.status(200).send('pong');
 });
