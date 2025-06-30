@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 health_router = APIRouter()
 
-@health_router.get("/api/v1/health")
+@health_router.get("/health")
 async def health_check():
     try:
         health_status = {
