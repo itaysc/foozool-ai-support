@@ -11,8 +11,10 @@ restartPolicyMaxRetries = 10
 name = "nodejs-api"
 sourceDir = "server"
 healthcheckPath = "/api/v1/health/database"
+watchPatterns = ["server/**/*"]
 
 [[services]]
 name = "python-ml"
 sourceDir = "python-ml-service"
 healthcheckPath = "/health"
+watchPatterns = ["python-ml-service/**/*"]
