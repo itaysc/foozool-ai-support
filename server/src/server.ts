@@ -9,6 +9,7 @@ import { passport, initializeJWTStrategies } from './middleware/passport';
 import Config from './config';
 import authRoutesV1 from './routes/auth/v1';
 import usersRoutesV1 from './routes/users/v1';
+import healthRoutesV1 from './routes/health/v1';
 import { NodeClickHouseClient } from "@clickhouse/client/dist/client";
 import ElasticsearchService from "./elasticsearch/service";
 import zendeskWebhookRoutesV1 from './routes/webhooks/zendesk/v1';
@@ -51,98 +52,38 @@ export default class Server{
       throw new Error('Cannot initialize routes, app does not exist.');
     }
     try {
-      console.log("Initializing Routes ");
+      console.log("Initializing routes...");
       
-      console.log("Adding auth routes...");
+      // Initialize JWT strategies
+      initializeJWTStrategies();
+      
+      // API routes
       this.app.use('/api/v1/auth', authRoutesV1);
-      
-      console.log("Adding user routes...");
       this.app.use('/api/v1/users', usersRoutesV1);
-      
-      console.log("Adding model training routes...");
-      this.app.use('/api/v1/train', modelTrainingRoutesV1);
-      
-      console.log("Adding ticket routes...");
+      this.app.use('/api/v1/health', healthRoutesV1);
       this.app.use('/api/v1/tickets', ticketsRoutesV1);
-      
-      console.log("Adding webhook routes...");
+      this.app.use('/api/v1/train', modelTrainingRoutesV1);
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
       
-      console.log("Adding health check routes...");
+      // Legacy health check endpoints for backward compatibility
       this.app.get('/api/v1/health', (req, res) => {
-        console.log('Health check requested');
-        res.status(200).json({ 
-          status: 'healthy', 
-          timestamp: new Date().toISOString(),
-          uptime: process.uptime(),
-          environment: process.env.NODE_ENV,
-          port: process.env.PORT
-        });
+        res.redirect('/api/v1/health/detailed');
       });
       
-      // Add a health check that includes database status
-      this.app.get('/api/v1/health/detailed', async (req, res) => {
-        console.log('Detailed health check requested');
-        try {
-          const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-          const jwtSecretExists = !!process.env.JWT_SECRET;
-          
-          res.status(200).json({ 
-            status: 'healthy', 
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            environment: process.env.NODE_ENV,
-            port: process.env.PORT,
-            database: {
-              status: dbStatus,
-              readyState: mongoose.connection.readyState
-            },
-            config: {
-              jwtSecretExists,
-              nodeEnv: process.env.NODE_ENV,
-              port: process.env.PORT
-            }
-          });
-        } catch (error) {
-          console.error('Error in detailed health check:', error);
-          res.status(500).json({ 
-            status: 'error',
-            message: 'Health check failed',
-            error: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
-      });
-      
-      // Add a simple health check that doesn't depend on database
       this.app.get('/health', (req, res) => {
-        console.log('Simple health check requested');
-        res.status(200).json({ 
-          status: 'ok',
-          timestamp: new Date().toISOString()
-        });
-      });
-      
-      // Add a minimal health check for Railway
-      this.app.get('/', (req, res) => {
-        console.log('Root health check requested');
-        res.status(200).json({ 
-          status: 'ok',
-          message: 'Server is running',
-          timestamp: new Date().toISOString(),
-          env: process.env.NODE_ENV || 'unknown',
-          port: process.env.PORT || 'unknown'
-        });
-      });
-      
-      // Add a simple ping endpoint
-      this.app.get('/ping', (req, res) => {
-        console.log('Ping requested');
-        res.status(200).send('pong');
+        res.redirect('/api/v1/health/simple');
       });
       
       this.app.get('/health-simple', (req, res) => {
-        console.log('Simple health check requested');
-        res.status(200).send('OK');
+        res.redirect('/api/v1/health/simple');
+      });
+      
+      this.app.get('/', (req, res) => {
+        res.redirect('/api/v1/health/minimal');
+      });
+      
+      this.app.get('/ping', (req, res) => {
+        res.redirect('/api/v1/health/ping');
       });
       
       // Add a test POST endpoint
@@ -238,53 +179,82 @@ export default class Server{
     console.log('ATLAS_USERNAME exists:', !!Config.ATLAS_USERNAME);
     console.log('ATLAS_PASSWORD exists:', !!Config.ATLAS_PASSWORD);
     
-    try {
-      // Don't append /foozool if the connection string already includes a database name
-      const finalConnectionString = connectionString.includes('/?') || connectionString.includes('/foozool') 
-        ? connectionString 
-        : `${connectionString}/foozool`;
+    // Configure mongoose buffer settings BEFORE connecting
+    mongoose.set('bufferCommands', true); // Enable buffering for Railway
+    
+    // Don't append /foozool if the connection string already includes a database name
+    const finalConnectionString = connectionString.includes('/?') || connectionString.includes('/foozool') 
+      ? connectionString 
+      : `${connectionString}/foozool`;
+      
+    console.log('Final connection string (masked):', finalConnectionString.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
+    
+    // Retry connection logic
+    const maxRetries = 3;
+    let retryCount = 0;
+    
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempting database connection (attempt ${retryCount + 1}/${maxRetries})...`);
         
-      console.log('Final connection string (masked):', finalConnectionString.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
-      
-      await mongoose.connect(finalConnectionString, {
-        // Connection timeout settings
-        serverSelectionTimeoutMS: 5000, // 5 seconds
-        connectTimeoutMS: 10000, // 10 seconds
-        socketTimeoutMS: 45000, // 45 seconds
+        await mongoose.connect(finalConnectionString, {
+          // Connection timeout settings - more lenient for Railway
+          serverSelectionTimeoutMS: 30000, // 30 seconds (increased from 5)
+          connectTimeoutMS: 30000, // 30 seconds (increased from 10)
+          socketTimeoutMS: 60000, // 60 seconds (increased from 45)
+          
+          // Connection pool settings - optimized for Railway
+          maxPoolSize: 5, // Reduced from 10 to avoid overwhelming the connection
+          minPoolSize: 1, // Reduced from 2
+          maxIdleTimeMS: 60000, // 60 seconds (increased from 30)
+          
+          // Retry settings
+          retryWrites: true,
+          retryReads: true, // Enable retry for reads
+          
+          // Heartbeat settings
+          heartbeatFrequencyMS: 30000, // 30 seconds (increased from 10)
+          
+          // Additional settings for stability
+          family: 4, // Force IPv4
+        });
         
-        // Connection pool settings
-        maxPoolSize: 10, // Maximum number of connections
-        minPoolSize: 2,  // Minimum number of connections
+        console.log('✅ Connected successfully to database');
         
-        // Retry settings
-        maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
-        retryWrites: true, // Retry failed writes
+        // Handle connection events
+        mongoose.connection.on('error', (err) => {
+          console.error('MongoDB connection error:', err);
+        });
         
-        // Heartbeat settings
-        heartbeatFrequencyMS: 10000, // 10 seconds
-      });
-      
-      // Configure mongoose buffer settings
-      mongoose.set('bufferCommands', false);
-      
-      console.log('connected successfully to db');
-      
-      // Handle connection events
-      mongoose.connection.on('error', (err) => {
-        console.error('MongoDB connection error:', err);
-      });
-      
-      mongoose.connection.on('disconnected', () => {
-        console.log('MongoDB disconnected');
-      });
-      
-      mongoose.connection.on('reconnected', () => {
-        console.log('MongoDB reconnected');
-      });
-      
-    } catch (err) {
-      console.log('MongoDB connection failed:', err);
-      throw err;
+        mongoose.connection.on('disconnected', () => {
+          console.log('MongoDB disconnected');
+        });
+        
+        mongoose.connection.on('reconnected', () => {
+          console.log('MongoDB reconnected');
+        });
+        
+        // Add connection state logging
+        console.log('MongoDB connection state:', mongoose.connection.readyState);
+        console.log('MongoDB connection host:', mongoose.connection.host);
+        console.log('MongoDB connection name:', mongoose.connection.name);
+        
+        return; // Success, exit the retry loop
+        
+      } catch (err) {
+        retryCount++;
+        console.error(`❌ Database connection attempt ${retryCount} failed:`, err);
+        
+        if (retryCount >= maxRetries) {
+          console.error('❌ All database connection attempts failed');
+          throw err;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        const waitTime = Math.min(1000 * Math.pow(2, retryCount - 1), 10000); // Max 10 seconds
+        console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
     }
   }
 

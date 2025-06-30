@@ -1,10 +1,21 @@
 import { UserModel, OrganizationModel } from '../../../schemas';
 import { IUser, IResponse, IOrganization } from '@common/types';
 import ElasticsearchService from '../../../elasticsearch/service';
+import mongoose from 'mongoose';
 
 export async function getUserByEmail({ email }) : Promise<IResponse> {
   try {
     console.log('getUserByEmail called for email:', email);
+    
+    // Check if mongoose is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.error('Database not connected. Ready state:', mongoose.connection.readyState);
+      return {
+        status: 503,
+        payload: { error: 'Database connection not available' },
+      };
+    }
+    
     const user = await UserModel.findOne({ email }).lean();
     console.log('User lookup result:', user ? 'found' : 'not found');
     return {
@@ -13,9 +24,29 @@ export async function getUserByEmail({ email }) : Promise<IResponse> {
     };
   } catch (error) {
     console.error('Error in getUserByEmail:', error);
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.name === 'MongooseError' && error.message.includes('buffering timed out')) {
+        console.error('Database connection timeout - connection may be down');
+        return {
+          status: 503,
+          payload: { error: 'Database connection timeout' },
+        };
+      }
+      
+      if (error.name === 'MongoNetworkError') {
+        console.error('MongoDB network error - connection issues');
+        return {
+          status: 503,
+          payload: { error: 'Database network error' },
+        };
+      }
+    }
+    
     return {
       status: 500,
-      payload: null,
+      payload: { error: 'Database query failed' },
     };
   }
 }

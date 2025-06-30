@@ -2,15 +2,15 @@
 builder = "nixpacks"
 
 [deploy]
-healthcheckPath = "/health-simple"
-healthcheckTimeout = 300
+healthcheckPath = "/api/v1/health/database"
+healthcheckTimeout = 600
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [[services]]
 name = "nodejs-api"
 sourceDir = "server"
-healthcheckPath = "/health-simple"
+healthcheckPath = "/api/v1/health/database"
 
 [[services]]
 name = "python-ml"
