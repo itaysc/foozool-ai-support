@@ -1,12 +1,13 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from router import router
 import logging
 import time
 import os
 from prometheus_client import Counter, Histogram
 from pythonjsonlogger import jsonlogger
+from health_router import health_router
 
 # Configure structured logging
 logger = logging.getLogger()
@@ -79,20 +80,14 @@ async def error_handling_middleware(request: Request, call_next):
             content={"detail": "Internal server error", "error": str(e)}
         )
 
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "environment": os.getenv("ENVIRONMENT", "development"),
-        "version": "1.0"
-    }
-
 # Metrics endpoint for Prometheus
 @app.get("/metrics")
 async def metrics():
     from prometheus_client import generate_latest
     return Response(generate_latest(), media_type="text/plain")
+
+# Include the health router at root
+app.include_router(health_router)
 
 # Include the router that handles ML requests
 app.include_router(router, prefix="/api/v1")
