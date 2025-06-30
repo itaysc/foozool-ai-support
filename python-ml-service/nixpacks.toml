@@ -2,12 +2,12 @@
 nixPkgs = ["python3", "pip"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = ["pip install -r requirements/prod.txt"]
 
 [phases.build]
 cmds = [
     "python -m pip install --upgrade pip",
-    "pip install -r requirements.txt"
+    "pip install -r requirements/prod.txt"
 ]
 
 [start]
