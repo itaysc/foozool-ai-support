@@ -1,14 +1,24 @@
 [phases.setup]
-nixPkgs = ["python3", "pip"]
+nixPkgs = ["python3", "pip", "curl", "ca-certificates"]
 
 [phases.install]
-cmds = ["pip install -r requirements/prod.txt"]
+cmds = [
+    "pip install -r requirements/prod.txt",
+    "mkdir -p /app/models /app/models/sentence-transformers"
+]
 
 [phases.build]
 cmds = [
     "python -m pip install --upgrade pip",
-    "pip install -r requirements/prod.txt"
+    "pip install -r requirements/prod.txt",
+    "export TRANSFORMERS_CACHE=/app/models",
+    "export SENTENCE_TRANSFORMERS_HOME=/app/models/sentence-transformers",
+    "export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
+    "export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt",
+    "export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt",
+    "python scripts/download_models.py",
+    "chmod +x startup.py"
 ]
 
 [start]
-cmd = "python main.py" 
+cmd = "python startup.py" 
