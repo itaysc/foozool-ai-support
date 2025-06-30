@@ -3,6 +3,33 @@ import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Basic health check endpoint for Railway
+router.get('/api/v1/health', (req: Request, res: Response) => {
+  console.log('Basic health check requested');
+  try {
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    res.status(200).json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+      port: process.env.PORT || 'unknown',
+      database: {
+        status: dbStatus,
+        readyState: mongoose.connection.readyState
+      }
+    });
+  } catch (error) {
+    console.error('Error in basic health check:', error);
+    res.status(500).json({ 
+      status: 'error',
+      message: 'Health check failed',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Add a health check that includes database status
 router.get('/api/v1/health/detailed', async (req: Request, res: Response) => {
   console.log('Detailed health check requested');
