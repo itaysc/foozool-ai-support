@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "./dist",
+    "moduleResolution": "node",
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": false,
+    "noImplicitThis": false,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "inlineSourceMap": false,
+    "inlineSources": true,
+    "baseUrl": ".",
+  },
+  "ts-node": {
+    "typeCheck": true,
+    "transpileOnly": false,
+    "files": true,
+    "experimentalSpecifierResolution": "node"
+  },
+  "exclude": ["node_modules"],
+  "include": ["types/**/*.ts", "types/**/*.d.ts"]
+}
