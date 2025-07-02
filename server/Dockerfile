@@ -7,9 +7,9 @@ WORKDIR /usr/src/app
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 
 # Copy package files and install dependencies
-COPY package.json yarn.lock ./
-COPY ../common ./common
-COPY . .
+COPY server/package.json server/yarn.lock ./
+COPY common ./common
+COPY server ./
 
 RUN yarn install --frozen-lockfile
 RUN yarn build
