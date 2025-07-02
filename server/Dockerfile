@@ -24,7 +24,6 @@ RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificat
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/yarn.lock ./
-COPY --from=builder /usr/src/app/common ./common
 
 RUN yarn install --production --frozen-lockfile
 
