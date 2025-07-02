@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificat
 
 # Copy package files and install dependencies
 COPY package.json yarn.lock ./
-COPY common ./common
+COPY ../common ./common
 COPY . .
 
 RUN yarn install --frozen-lockfile
