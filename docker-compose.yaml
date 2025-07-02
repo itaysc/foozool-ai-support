@@ -13,7 +13,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: server/Dockerfile
+      dockerfile: server/Dockerfile.dev
     container_name: foozool-app
     working_dir: /usr/src/app/server
     volumes:
@@ -39,7 +39,7 @@ services:
   ml-service:
     build:
       context: ./python-ml-service
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: foozool-ml-service
     working_dir: /app
     volumes:
