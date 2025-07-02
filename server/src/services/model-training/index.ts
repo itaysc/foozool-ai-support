@@ -6,7 +6,7 @@ import { getSBERTEmbedding } from '../call-python';
 import QdrantService from '../../qdrant/service';
 import { ticketCollectionConfig, QdrantTicketPoint } from '../../qdrant/schemas/ticket';
 import fetchTickets from '../zendesk';
-import { IResponse, ITicket } from '@common/types';
+import { IResponse, ITicket } from 'src/types';
 import { analyzeSentiment } from '../nlp';
 import { getDemoOrganization } from '../../dal/organization.dal';
 import { TicketModel } from "src/schemas/ticket.schema";

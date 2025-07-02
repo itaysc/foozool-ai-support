@@ -1,4 +1,4 @@
-import { IProduct } from '@common/types';
+import { IProduct } from 'src/types';
 import { faker } from '@faker-js/faker';
 import { ProductModel } from 'src/schemas/product.schema';
 import { callLLM } from '../together.ai';

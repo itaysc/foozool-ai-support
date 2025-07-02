@@ -1,5 +1,5 @@
 import { UserModel, OrganizationModel } from '../../../schemas';
-import { IUser, IResponse, IOrganization } from '@common/types';
+import { IUser, IResponse, IOrganization } from 'src/types';
 import ElasticsearchService from '../../../elasticsearch/service';
 import mongoose from 'mongoose';
 

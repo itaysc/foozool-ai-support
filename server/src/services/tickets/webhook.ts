@@ -1,4 +1,4 @@
-import { IResponse, IAgentSuggestion, ZendeskTicketWebhookPayload } from '@common/types';
+import { IResponse, IAgentSuggestion, ZendeskTicketWebhookPayload } from 'src/types';
 import { classifyIntent, summarizeTickets } from '../call-python';
 import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';

@@ -2,7 +2,7 @@ import { seedOrganizations } from "./organizations.seed";
 import { seedLLMUsage } from "./LLMUsage.seed";
 import { seedLLMPricings } from "./LLMPricing.seed";
 import { seedUsers } from "./users.seed";
-import { IUser } from "@common/types";
+import { IUser } from "src/types";
 import { seedTokens } from "./tokens.seed";
 export default async function seed() {
     const organization = await seedOrganizations();

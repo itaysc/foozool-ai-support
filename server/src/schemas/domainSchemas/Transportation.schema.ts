@@ -1,6 +1,6 @@
 // src/schemas/TransportationSchema.ts
 import { Schema } from 'mongoose';
-import { ITransportationDetails } from '@common/types/domains';
+import { ITransportationDetails } from 'src/types/domains';
 
 export const TransportationDetailsSchema: Schema = new Schema<ITransportationDetails>({
   domain: { type: String, default: 'transportation' },

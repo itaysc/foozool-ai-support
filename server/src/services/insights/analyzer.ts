@@ -1,4 +1,4 @@
-import { TicketInsight, InsightAnalysisResult } from '@common/types/insights';
+import { TicketInsight, InsightAnalysisResult } from 'src/types/insights';
 import { callLLM } from '../together.ai';
 import { InsightModel } from '../../schemas/insight.schema';
 import { v4 as uuidv4 } from 'uuid';

@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import crypto from 'crypto';
-import { IOrganization } from '@common/types';
+import { IOrganization } from 'src/types';
 
 const OrganizationSchema: Schema = new Schema<IOrganization>({
   name: {

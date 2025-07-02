@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { InsightCategory, InsightSeverity } from '@common/types/insights';
+import { InsightCategory, InsightSeverity } from 'src/types/insights';
 
 // Define the document interface
 interface InsightDocument extends Document {

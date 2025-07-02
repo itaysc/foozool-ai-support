@@ -4,7 +4,7 @@ import bluebird from 'bluebird';
 import { faker } from '@faker-js/faker';
 import Config from '../../config';
 import sanitizeText from '../../utils/text-sanitize';
-import { IOrganization, IResponse, ITicket } from '@common/types';
+import { IOrganization, IResponse, ITicket } from 'src/types';
 import { getDemoOrganization } from '../../dal/organization.dal';
 
 const authString = Buffer.from(`${Config.ZENDESK_USERNAME}/token:${Config.ZENDESK_TOKEN}`).toString('base64');

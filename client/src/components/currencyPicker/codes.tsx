@@ -1,4 +1,4 @@
-import { CurrencyCode } from '@common/types';
+import { CurrencyCode } from '@/types';
 
 const currencyCodes: CurrencyCode[] = [
     'AED',

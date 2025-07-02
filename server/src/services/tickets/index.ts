@@ -1,4 +1,4 @@
-import { IProduct, IResponse, ZendeskTicket } from '@common/types';
+import { IProduct, IResponse, ZendeskTicket } from 'src/types';
 
 // Re-export main functionality from specialized modules
 export { cosineSimilarity } from './utils';

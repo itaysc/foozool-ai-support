@@ -1,7 +1,7 @@
 import config from '../../config';
 import Together from 'together-ai';
 import { LLMUsageModel } from '../../schemas';
-import { ILLMUsage } from '@common/types';
+import { ILLMUsage } from 'src/types';
 const together = new Together({ apiKey: config.TOGETHER_AI_API_KEY });
 
 interface ITogetherAiResponse {

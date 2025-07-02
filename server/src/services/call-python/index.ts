@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ITicket } from '@common/types';
+import { ITicket } from 'src/types';
 import Config from '../../config';
 
 const api = axios.create({

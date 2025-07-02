@@ -1,7 +1,7 @@
 import ElasticsearchService from '../elasticsearch/service';
 import QdrantService from './service';
 import { ticketCollectionConfig, QdrantTicketPoint } from './schemas/ticket';
-import { IESTicket } from '@common/types';
+import { IESTicket } from 'src/types';
 
 interface MigrationResult {
     success: boolean;

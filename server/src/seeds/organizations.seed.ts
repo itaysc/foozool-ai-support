@@ -1,4 +1,4 @@
-import { IOrganization } from "@common/types";
+import { IOrganization } from "src/types";
 import { OrganizationModel, SeedTrackModel } from "src/schemas";
 
 const organizationsSeed: IOrganization[] = [

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
-import { IToken, IUser } from '@common/types';
+import { IToken, IUser } from 'src/types';
 import { TokenModel, UserModel } from 'src/schemas';
 declare global {
   namespace Express {
