@@ -1,6 +1,3 @@
-[build]
-builder = "nixpacks"
-
 [deploy]
 healthcheckTimeout = 600
 restartPolicyType = "ON_FAILURE"
@@ -8,12 +5,14 @@ restartPolicyMaxRetries = 10
 
 [[services]]
 name = "nodejs-api"
-sourceDir = "server"
+sourceDir = "."
+dockerfilePath = "server/Dockerfile"
 healthcheckPath = "/api/v1/health/database"
-watchPatterns = ["server/**/*"]
+watchPatterns = ["server/**/*", "common/**/*"]
 
 [[services]]
 name = "python-ml"
 sourceDir = "python-ml-service"
+dockerfilePath = "python-ml-service/Dockerfile"
 healthcheckPath = "/health"
 watchPatterns = ["python-ml-service/**/*"]
