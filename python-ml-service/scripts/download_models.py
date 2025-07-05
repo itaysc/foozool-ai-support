@@ -8,20 +8,12 @@ from concurrent.futures import ThreadPoolExecutor
 from transformers import DistilBertTokenizer, DistilBertModel, pipeline
 from sentence_transformers import SentenceTransformer
 import torch
-from huggingface_hub import HfFolder, configure_http_backend
+from huggingface_hub import HfFolder
 from huggingface_hub.utils import HfHubHTTPError
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Configure SSL context
-ssl_context = ssl.create_default_context(cafile=certifi.where())
-ssl_context.verify_mode = ssl.CERT_REQUIRED
-ssl_context.check_hostname = True
-
-# Configure huggingface_hub to use our SSL context
-configure_http_backend(ssl_context=ssl_context)
 
 # Optimized model configurations - using smaller models where possible
 MODELS = {
