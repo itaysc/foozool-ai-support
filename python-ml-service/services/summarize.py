@@ -8,19 +8,28 @@ from transformers import pipeline
 # Set cache directory for transformers
 cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
 
-# Load the summarization model
-try:
-    summarizer = pipeline(
-        "summarization",
-        model="facebook/bart-large-cnn",
-        tokenizer="facebook/bart-large-cnn",
-        device=0 if torch.cuda.is_available() else -1,  # Use GPU if available
-        model_kwargs={"cache_dir": cache_dir}
-    )
-    print("✅ BART summarization model loaded.")
-except Exception as e:
-    print(f"❌ Error loading summarization model: {e}")
-    summarizer = None
+# Lazy loading - don't load models at import time
+summarizer = None
+
+def get_summarizer():
+    """Lazy load the summarization model only when needed."""
+    global summarizer
+    
+    if summarizer is None:
+        try:
+            summarizer = pipeline(
+                "summarization",
+                model="facebook/bart-base-cnn",  # Using smaller model
+                tokenizer="facebook/bart-base-cnn",
+                device=0 if torch.cuda.is_available() else -1,  # Use GPU if available
+                model_kwargs={"cache_dir": cache_dir}
+            )
+            print("✅ BART summarization model loaded.")
+        except Exception as e:
+            print(f"❌ Error loading summarization model: {e}")
+            summarizer = None
+    
+    return summarizer
 
 
 def preprocess_conversation(text: str, max_words: int = 700) -> str:

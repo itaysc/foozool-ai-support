@@ -13,41 +13,48 @@ logger = logging.getLogger(__name__)
 # Set cache directory
 cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
 
-# Load intent classification model with proper error handling
+# Lazy loading - don't load models at import time
 intent_classifier = None
 
-try:
-    intent_classifier = pipeline(
-        "text-classification",
-        model="vineetsharma/customer-support-intent-albert",
-        return_all_scores=True,
-        device=0 if torch.cuda.is_available() else -1
-    )
-    logger.info("Loaded customer support intent classification model")
-except Exception as e:
-    logger.warning(f"Could not load customer support model, trying general intent model: {e}")
-    try:
-        intent_classifier = pipeline(
-            "text-classification",
-            model="Sarthak279/Intent",
-            return_all_scores=True,
-            device=0 if torch.cuda.is_available() else -1
-        )
-        logger.info("Loaded general intent classification model")
-    except Exception as e:
-        logger.warning(f"Could not load intent models, falling back to text classification: {e}")
+def get_intent_classifier():
+    """Lazy load the intent classification model only when needed."""
+    global intent_classifier
+    
+    if intent_classifier is None:
         try:
-            # Last fallback to a general text classification model (not sentiment-specific)
             intent_classifier = pipeline(
                 "text-classification",
-                model="distilbert-base-uncased-finetuned-sst-2-english",
+                model="vineetsharma/customer-support-intent-albert",
                 return_all_scores=True,
                 device=0 if torch.cuda.is_available() else -1
             )
-            logger.info("Using general text classification model as fallback")
-        except Exception as fallback_e:
-            logger.error(f"Failed to load any classification model: {fallback_e}")
-            intent_classifier = None
+            logger.info("Loaded customer support intent classification model")
+        except Exception as e:
+            logger.warning(f"Could not load customer support model, trying general intent model: {e}")
+            try:
+                intent_classifier = pipeline(
+                    "text-classification",
+                    model="Sarthak279/Intent",
+                    return_all_scores=True,
+                    device=0 if torch.cuda.is_available() else -1
+                )
+                logger.info("Loaded general intent classification model")
+            except Exception as e:
+                logger.warning(f"Could not load intent models, falling back to text classification: {e}")
+                try:
+                    # Last fallback to a general text classification model (not sentiment-specific)
+                    intent_classifier = pipeline(
+                        "text-classification",
+                        model="distilbert-base-uncased-finetuned-sst-2-english",
+                        return_all_scores=True,
+                        device=0 if torch.cuda.is_available() else -1
+                    )
+                    logger.info("Using general text classification model as fallback")
+                except Exception as fallback_e:
+                    logger.error(f"Failed to load any classification model: {fallback_e}")
+                    intent_classifier = None
+    
+    return intent_classifier
 
 # Enhanced intent mapping with synonyms and variations
 INTENT_MAPPING = {
@@ -969,7 +976,9 @@ def classify_ticket_intent(subject, description, debug=False):
     :return: List of dictionaries with 'intent' and 'probability' keys, sorted by probability
     """
     try:
-        if intent_classifier is None:
+        # Lazy load the intent classifier
+        classifier = get_intent_classifier()
+        if classifier is None:
             logger.error("No intent classification model available")
             return [{"intent": "model_unavailable", "probability": 1.0}]
         
@@ -1005,7 +1014,7 @@ def classify_ticket_intent(subject, description, debug=False):
         multi_intents = detect_multi_intents(ticket_text)
         
         # Get ML model predictions
-        predictions = intent_classifier(ticket_text)
+        predictions = classifier(ticket_text)
         
         # Process ML results with confidence thresholding
         ml_results = []
