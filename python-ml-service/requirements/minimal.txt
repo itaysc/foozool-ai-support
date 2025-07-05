@@ -1,0 +1,14 @@
+# Minimal production requirements - only essential dependencies
+fastapi==0.115.8
+uvicorn==0.34.0
+pydantic==2.10.6
+gunicorn==21.2.0
+
+# Core ML dependencies only
+torch==2.1.0
+transformers==4.35.0
+sentence-transformers==2.2.2
+
+# Essential utilities
+python-json-logger==2.0.7
+prometheus-client==0.17.1 

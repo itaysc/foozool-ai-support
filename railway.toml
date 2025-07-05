@@ -17,6 +17,7 @@ source = "."
 [services.variables]
 ENVIRONMENT = "production"
 RAILWAY_ENVIRONMENT = "production"
+PYTHONUNBUFFERED = "1"
 
 # Mount persistent storage for models
 [services.volumes]

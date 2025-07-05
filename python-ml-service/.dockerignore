@@ -9,7 +9,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -25,35 +24,93 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Virtual Environment
+# Virtual environments
 venv/
+env/
 ENV/
-.env
+env.bak/
+venv.bak/
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
 
-# Docker
-Dockerfile
-Dockerfile.*
-.dockerignore
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Git
+.git/
+.gitignore
 
 # Logs
 *.log
 logs/
 
 # Local development
-*.db
-*.sqlite3
-.coverage
-htmlcov/
-.pytest_cache/
-.tox/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Documentation
+README.md
+*.md
+
+# Test files
+tests/
+test_*
+*_test.py
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Railway
+railway.toml
+railway.env*
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
 
 # Model cache (will be downloaded at runtime)
 models/
-.cache/ 
+
+# Requirements (we only need minimal.txt)
+requirements/base.txt
+requirements/ml.txt
+requirements/dev.txt
+requirements.txt
+
+# Unnecessary directories
+public/
+static/
+assets/
+docs/
+examples/
+samples/
+
+# Development files
+.editorconfig
+.eslintrc*
+.prettierrc*
+.stylelintrc*
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/ 

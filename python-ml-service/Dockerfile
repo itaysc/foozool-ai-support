@@ -1,28 +1,25 @@
-# Multi-stage build to reduce image size
+# Ultra-optimized multi-stage build for Railway
 FROM python:3.10-slim-bullseye as builder
 
 WORKDIR /app
 
-# Install system dependencies for building
+# Install only essential build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
-    curl \
     libffi-dev \
     libssl-dev \
-    pkg-config \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Create and activate virtual environment
+# Create virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install Python dependencies
-COPY requirements/ requirements/
-COPY requirements.txt .
+# Install minimal dependencies only
+COPY requirements/minimal.txt .
 RUN pip install --upgrade pip
-RUN pip install -r requirements/prod.txt
+RUN pip install -r minimal.txt
 
 # Production stage
 FROM python:3.10-slim-bullseye
@@ -32,34 +29,41 @@ WORKDIR /app
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Set SSL environment variables
+# Set environment variables
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
-
-# Force CPU-only usage to reduce memory and size
 ENV CUDA_VISIBLE_DEVICES=""
 ENV PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"
 
-# Copy virtual environment from builder stage
+# Copy virtual environment
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy application code
-COPY . .
+# Copy only essential application files
+COPY main.py .
+COPY startup.py .
+COPY health_router.py .
+COPY router/ ./router/
+COPY services/ ./services/
+COPY scripts/ ./scripts/
 
 # Make startup script executable
 RUN chmod +x startup.py
 
-# Remove unnecessary files to reduce image size
-RUN rm -rf /app/venv /app/.git /app/__pycache__ /app/*/__pycache__ /app/*/*/__pycache__
+# Remove all unnecessary files and directories
+RUN find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+RUN find . -type f -name "*.pyc" -delete
+RUN find . -type f -name "*.pyo" -delete
+RUN find . -type f -name "*.pyd" -delete
+RUN find . -type f -name ".DS_Store" -delete
+RUN find . -type f -name "*.log" -delete
 
 # Expose port
 EXPOSE 8000
 
-# Use the startup script that handles persistent storage
+# Use startup script
 CMD ["python", "startup.py"] 
