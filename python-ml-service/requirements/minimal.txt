@@ -1,14 +1,12 @@
-# Minimal production requirements - only essential dependencies
+# Ultra-minimal production requirements - fastest build
 fastapi==0.115.8
 uvicorn==0.34.0
 pydantic==2.10.6
 gunicorn==21.2.0
 
-# Core ML dependencies only
-torch==2.1.0
-transformers==4.35.0
-sentence-transformers==2.2.2
-
-# Essential utilities
+# Essential utilities only
 python-json-logger==2.0.7
-prometheus-client==0.17.1 
+prometheus-client==0.17.1
+
+# Note: ML models will be downloaded at runtime via startup.py
+# This avoids the heavy PyTorch/transformers installation during build 

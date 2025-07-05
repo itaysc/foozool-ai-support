@@ -15,6 +15,30 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def install_ml_dependencies():
+    """Install ML dependencies at runtime if not available."""
+    try:
+        import torch
+        import transformers
+        import sentence_transformers
+        logger.info("✅ ML dependencies already available")
+        return True
+    except ImportError:
+        logger.info("📦 Installing ML dependencies at runtime...")
+        try:
+            # Install ML dependencies
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install",
+                "torch==2.1.0",
+                "transformers==4.35.0", 
+                "sentence-transformers==2.2.2"
+            ])
+            logger.info("✅ ML dependencies installed successfully")
+            return True
+        except subprocess.CalledProcessError as e:
+            logger.error(f"❌ Failed to install ML dependencies: {e}")
+            return False
+
 def setup_persistent_storage():
     """Set up model directories in Railway's persistent storage."""
     # Railway mounts persistent storage at /data
@@ -92,6 +116,11 @@ def main():
     
     if is_production:
         logger.info("Production environment detected. Setting up persistent storage...")
+        
+        # Install ML dependencies at runtime
+        if not install_ml_dependencies():
+            logger.error("Failed to install ML dependencies. Exiting...")
+            sys.exit(1)
         
         # Set up persistent storage
         models_dir = setup_persistent_storage()

@@ -1,16 +1,15 @@
-# Ultra-optimized multi-stage build for Railway
-FROM python:3.10-slim-bullseye as builder
+# Ultra-minimal build for Railway - fastest possible build
+FROM python:3.10-alpine as builder
 
 WORKDIR /app
 
 # Install only essential build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    ca-certificates \
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
     libffi-dev \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    openssl-dev \
+    python3-dev
 
 # Create virtual environment
 RUN python -m venv /opt/venv
@@ -22,15 +21,14 @@ RUN pip install --upgrade pip
 RUN pip install -r minimal.txt
 
 # Production stage
-FROM python:3.10-slim-bullseye
+FROM python:3.10-alpine
 
 WORKDIR /app
 
 # Install only runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apk add --no-cache \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    curl
 
 # Set environment variables
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
