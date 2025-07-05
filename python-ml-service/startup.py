@@ -26,7 +26,14 @@ def install_ml_dependencies():
     except ImportError:
         logger.info("📦 Installing ML dependencies at runtime...")
         try:
-            # Install ML dependencies with specific versions that work on Railway
+            # First, ensure we have a compatible NumPy version
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install",
+                "--no-cache-dir",  # Avoid cache issues
+                "numpy<2.0.0"  # Use NumPy 1.x for compatibility
+            ])
+            
+            # Install ML dependencies with compatible versions
             subprocess.check_call([
                 sys.executable, "-m", "pip", "install",
                 "--no-cache-dir",  # Avoid cache issues
@@ -41,6 +48,11 @@ def install_ml_dependencies():
             # Try with CPU-only torch as fallback
             try:
                 logger.info("🔄 Trying CPU-only torch installation...")
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install",
+                    "--no-cache-dir",
+                    "numpy<2.0.0"  # Ensure NumPy 1.x
+                ])
                 subprocess.check_call([
                     sys.executable, "-m", "pip", "install",
                     "--no-cache-dir",

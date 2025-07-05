@@ -8,4 +8,7 @@ gunicorn==21.2.0
 python-json-logger==2.0.7
 prometheus-client==0.17.1
 
+# Compatible NumPy version to avoid conflicts with PyTorch
+numpy<2.0.0
+
 # NO ML dependencies - they will be installed at runtime 
