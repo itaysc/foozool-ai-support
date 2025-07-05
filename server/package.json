@@ -12,7 +12,6 @@
     "stop": "brew services stop elasticsearch",
     "serve": "node -r dotenv/config dist/server/src/index.js",
     "start": "node -r dotenv/config dist/server/src/index.js",
-    "postinstall": "yarn build",
     "lint": "tsc --noEmit && eslint \"src/**/*.{tsx,ts,js}\"",
     "start-mcp": "nodemon -r dotenv/config --ext ts --exec 'node -r ts-node/register -r tsconfig-paths/register' src/mcp/index.ts",
     "test-mcp": "npx @modelcontextprotocol/inspector node dist/server/src/mcp/index.js",
