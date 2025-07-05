@@ -108,6 +108,9 @@ export default class Server{
     try {
       console.log("Initializing middleware...");
       
+      // Trust proxy for Railway deployment (fixes X-Forwarded-For header issue)
+      this.app.set('trust proxy', 1);
+      
       this.app.use(bodyParser.json({ limit: '50mb' }));
       this.app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
       this.app.use(cookieParser());
