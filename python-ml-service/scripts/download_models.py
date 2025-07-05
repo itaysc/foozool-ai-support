@@ -23,7 +23,7 @@ ssl_context.check_hostname = True
 # Configure huggingface_hub to use our SSL context
 configure_http_backend(ssl_context=ssl_context)
 
-# Model configurations
+# Optimized model configurations - using smaller models where possible
 MODELS = {
     'distilbert': {
         'name': 'distilbert-base-uncased',
@@ -32,27 +32,22 @@ MODELS = {
         'tokenizer': lambda: DistilBertTokenizer.from_pretrained('distilbert-base-uncased', local_files_only=False)
     },
     'intent': {
-        'name': 'vineetsharma/customer-support-intent-albert',
+        'name': 'distilbert-base-uncased',  # Using smaller model instead of ALBERT
         'type': 'pipeline',
-        'loader': lambda: pipeline('text-classification', model='vineetsharma/customer-support-intent-albert', local_files_only=False)
+        'loader': lambda: pipeline('text-classification', model='distilbert-base-uncased', local_files_only=False)
     },
     'summarization': {
-        'name': 'facebook/bart-large-cnn',
+        'name': 'facebook/bart-base-cnn',  # Using base instead of large (much smaller)
         'type': 'pipeline',
-        'loader': lambda: pipeline('summarization', model='facebook/bart-large-cnn', local_files_only=False)
+        'loader': lambda: pipeline('summarization', model='facebook/bart-base-cnn', local_files_only=False)
     },
     'qa': {
-        'name': 'deepset/roberta-base-squad2',
+        'name': 'distilbert-base-cased-distilled-squad',  # Using smaller model
         'type': 'pipeline',
-        'loader': lambda: pipeline('question-answering', model='deepset/roberta-base-squad2', local_files_only=False)
+        'loader': lambda: pipeline('question-answering', model='distilbert-base-cased-distilled-squad', local_files_only=False)
     },
-    'sentence_transformer_1': {
-        'name': 'all-mpnet-base-v2',
-        'type': 'sentence_transformer',
-        'loader': lambda: SentenceTransformer('all-mpnet-base-v2', cache_folder=os.environ.get('TRANSFORMERS_CACHE'))
-    },
-    'sentence_transformer_2': {
-        'name': 'all-MiniLM-L6-v2',
+    'sentence_transformer': {
+        'name': 'all-MiniLM-L6-v2',  # Using the smaller, faster model
         'type': 'sentence_transformer',
         'loader': lambda: SentenceTransformer('all-MiniLM-L6-v2', cache_folder=os.environ.get('TRANSFORMERS_CACHE'))
     }
@@ -69,11 +64,11 @@ async def download_with_retry(model_key, model_config, max_retries=3):
         if model_config['type'] == 'transformers':
             model = model_config['loader']()
             tokenizer = model_config['tokenizer']()
-            logger.info(f"Successfully loaded {model_config['name']} from local cache")
+            logger.info(f"✅ Successfully loaded {model_config['name']} from local cache")
             return True
         elif model_config['type'] in ['pipeline', 'sentence_transformer']:
             model = model_config['loader']()
-            logger.info(f"Successfully loaded {model_config['name']} from local cache")
+            logger.info(f"✅ Successfully loaded {model_config['name']} from local cache")
             return True
     except Exception as local_error:
         logger.warning(f"Could not load {model_config['name']} from local cache: {local_error}")
@@ -91,7 +86,7 @@ async def download_with_retry(model_key, model_config, max_retries=3):
                     tokenizer = model_config['tokenizer']()
                 elif model_config['type'] in ['pipeline', 'sentence_transformer']:
                     model = model_config['loader']()
-                logger.info(f"Successfully downloaded {model_config['name']}")
+                logger.info(f"✅ Successfully downloaded {model_config['name']}")
                 return True
             except (requests.exceptions.SSLError, ssl.SSLError) as ssl_error:
                 logger.warning(f"SSL error downloading {model_config['name']}: {ssl_error}")
@@ -105,7 +100,7 @@ async def download_with_retry(model_key, model_config, max_retries=3):
                         tokenizer = model_config['tokenizer']()
                     elif model_config['type'] in ['pipeline', 'sentence_transformer']:
                         model = model_config['loader']()
-                    logger.info(f"Successfully downloaded {model_config['name']} without SSL verification")
+                    logger.info(f"✅ Successfully downloaded {model_config['name']} without SSL verification")
                     return True
                 raise ssl_error
             
@@ -115,11 +110,15 @@ async def download_with_retry(model_key, model_config, max_retries=3):
             if attempt < max_retries - 1:
                 await asyncio.sleep(retry_delay * (attempt + 1))
     
-    logger.error(f"Failed to download {model_config['name']} after {max_retries} attempts. Last error: {last_error}")
+    logger.error(f"❌ Failed to download {model_config['name']} after {max_retries} attempts. Last error: {last_error}")
     return False
 
 async def main():
     """Download all models with proper error handling."""
+    logger.info("🚀 Starting model download process...")
+    logger.info(f"📁 Models will be stored in: {os.environ.get('TRANSFORMERS_CACHE', '/app/models')}")
+    
+    # Download models concurrently for better performance
     tasks = []
     for model_key, model_config in MODELS.items():
         tasks.append(download_with_retry(model_key, model_config))
@@ -128,10 +127,23 @@ async def main():
     
     # Log summary
     successful = sum(1 for r in results if r is True)
-    logger.info(f"Successfully downloaded/loaded {successful} out of {len(MODELS)} models")
+    failed = len(MODELS) - successful
     
-    if successful < len(MODELS):
-        logger.warning("Some models failed to download/load. Check the logs above for details.")
+    logger.info(f"📊 Download Summary:")
+    logger.info(f"   ✅ Successful: {successful}")
+    logger.info(f"   ❌ Failed: {failed}")
+    
+    if successful == len(MODELS):
+        logger.info("🎉 All models downloaded successfully!")
+        return True
+    elif successful > 0:
+        logger.warning("⚠️  Some models failed to download. Check the logs above for details.")
+        return True  # Return True if at least some models were downloaded
+    else:
+        logger.error("💥 All model downloads failed!")
+        return False
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    success = asyncio.run(main())
+    if not success:
+        exit(1) 

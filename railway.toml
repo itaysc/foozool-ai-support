@@ -1,7 +1,26 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "python-ml-service/Dockerfile"
+
 [deploy]
-healthcheckTimeout = 3000
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+startCommand = "python startup.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# Configure persistent storage for models
+[[services]]
+name = "python-ml-service"
+source = "."
+
+[services.variables]
+ENVIRONMENT = "production"
+RAILWAY_ENVIRONMENT = "production"
+
+# Mount persistent storage for models
+[services.volumes]
+"/data" = "models-storage"
 
 [[services]]
 name = "nodejs-api"
@@ -9,10 +28,3 @@ sourceDir = "."
 dockerfilePath = "server/Dockerfile"
 healthcheckPath = "/api/v1/health/database"
 watchPatterns = ["server/**/*", "common/**/*"]
-
-[[services]]
-name = "python-ml"
-sourceDir = "python-ml-service"
-dockerfilePath = "python-ml-service/Dockerfile"
-healthcheckPath = "/health"
-watchPatterns = ["python-ml-service/**/*"]
