@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Startup script for Railway deployment.
-Handles model downloading to persistent storage and application startup.
+Handles ML dependency installation and model downloading to persistent storage.
 """
 
 import os
@@ -26,9 +26,10 @@ def install_ml_dependencies():
     except ImportError:
         logger.info("📦 Installing ML dependencies at runtime...")
         try:
-            # Install ML dependencies
+            # Install ML dependencies with specific versions that work on Railway
             subprocess.check_call([
                 sys.executable, "-m", "pip", "install",
+                "--no-cache-dir",  # Avoid cache issues
                 "torch==2.1.0",
                 "transformers==4.35.0", 
                 "sentence-transformers==2.2.2"
@@ -37,7 +38,25 @@ def install_ml_dependencies():
             return True
         except subprocess.CalledProcessError as e:
             logger.error(f"❌ Failed to install ML dependencies: {e}")
-            return False
+            # Try with CPU-only torch as fallback
+            try:
+                logger.info("🔄 Trying CPU-only torch installation...")
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install",
+                    "--no-cache-dir",
+                    "torch==2.1.0+cpu", "-f", "https://download.pytorch.org/whl/torch_stable.html"
+                ])
+                subprocess.check_call([
+                    sys.executable, "-m", "pip", "install",
+                    "--no-cache-dir",
+                    "transformers==4.35.0", 
+                    "sentence-transformers==2.2.2"
+                ])
+                logger.info("✅ ML dependencies installed with CPU-only torch")
+                return True
+            except subprocess.CalledProcessError as e2:
+                logger.error(f"❌ CPU-only installation also failed: {e2}")
+                return False
 
 def setup_persistent_storage():
     """Set up model directories in Railway's persistent storage."""

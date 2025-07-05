@@ -1,5 +1,5 @@
 # Machine Learning Dependencies - Optimized for size
-torch==2.1.0  # Standard version, will be CPU-only in production
+torch==2.1.0  # Standard version, compatible with Debian
 transformers==4.35.0
 sentence-transformers==2.2.2
 

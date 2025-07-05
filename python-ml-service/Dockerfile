@@ -1,34 +1,40 @@
-# Ultra-minimal build for Railway - fastest possible build
-FROM python:3.10-alpine as builder
+# Ultra-fast build for Railway - minimal dependencies
+FROM python:3.10-slim-bullseye as builder
 
 WORKDIR /app
 
 # Install only essential build dependencies
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
     libffi-dev \
-    openssl-dev \
-    python3-dev
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Create virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install minimal dependencies only
+# Install minimal dependencies only (no ML)
 COPY requirements/minimal.txt .
 RUN pip install --upgrade pip
 RUN pip install -r minimal.txt
 
 # Production stage
-FROM python:3.10-alpine
+FROM python:3.10-slim-bullseye
 
 WORKDIR /app
 
-# Install only runtime dependencies
-RUN apk add --no-cache \
+# Install runtime dependencies including build tools for ML installation
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    curl
+    curl \
+    build-essential \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 # Set environment variables
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
