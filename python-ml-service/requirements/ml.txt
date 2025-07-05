@@ -1,9 +1,14 @@
-# Machine Learning Dependencies
-torch
-transformers>=4.20.0,<4.40.0
-sentence_transformers
+# Machine Learning Dependencies - Optimized for size
+torch==2.1.0  # Standard version, will be CPU-only in production
+transformers==4.35.0
+sentence-transformers==2.2.2
+
+# Use smaller, more efficient alternatives
+# Consider replacing large models with smaller ones:
+# - facebook/bart-large-cnn -> facebook/bart-base-cnn (smaller)
+# - all-mpnet-base-v2 -> all-MiniLM-L6-v2 (already included, smaller)
+# - vineetsharma/customer-support-intent-albert -> distilbert-base-uncased (smaller)
 
 # Optional: Add specific model versions if needed
 # Example:
-# transformers[sentencepiece]>=4.20.0,<4.40.0
-# torch==2.1.0 
+# transformers[sentencepiece]==4.35.0 

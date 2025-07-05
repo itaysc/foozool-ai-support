@@ -60,7 +60,9 @@ def summarize_texts(texts: List[str], max_summary_len: int = 50, min_summary_len
     Summarizes a list of text strings using the BART summarizer.
     Each text is preprocessed before summarization.
     """
-    if summarizer is None:
+    # Lazy load the summarizer
+    summarizer_instance = get_summarizer()
+    if summarizer_instance is None:
         raise RuntimeError("Summarization model not available.")
 
     # Preprocess each conversation before summarization
@@ -70,7 +72,7 @@ def summarize_texts(texts: List[str], max_summary_len: int = 50, min_summary_len
     summaries = []
     for text in preprocessed_texts:
         # Tokenize the text to get actual token count
-        tokens = summarizer.tokenizer(text, return_tensors="pt", truncation=True)
+        tokens = summarizer_instance.tokenizer(text, return_tensors="pt", truncation=True)
         input_length = tokens['input_ids'].shape[1]
         
         # Adjust max_length to be less than input_length, with a minimum of 8
@@ -80,7 +82,7 @@ def summarize_texts(texts: List[str], max_summary_len: int = 50, min_summary_len
         dynamic_min_length = min(min_summary_len, max(5, dynamic_max_length - 5))
         
         # Run summarization for this single text
-        summary = summarizer(
+        summary = summarizer_instance(
             text,
             max_length=dynamic_max_length,
             min_length=dynamic_min_length,

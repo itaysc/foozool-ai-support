@@ -2,11 +2,24 @@ from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-# ✅ Define the model at the top level
-  # Load the model globally once
+# Lazy loading - don't load models at import time
+_keyword_model = None
+
+def get_keyword_model():
+    """Lazy load the keyword extraction model only when needed."""
+    global _keyword_model
+    
+    if _keyword_model is None:
+        try:
+            _keyword_model = SentenceTransformer('all-MiniLM-L6-v2')
+            print("✅ Keyword extraction model loaded successfully")
+        except Exception as e:
+            print(f"❌ Error loading keyword extraction model: {e}")
+            _keyword_model = None
+    
+    return _keyword_model
 
 def extract_keywords_from_embedding(ticket, embedding, top_n=5):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
     """
     Extracts key phrases from a ticket using its SBERT embedding.
     
@@ -16,6 +29,11 @@ def extract_keywords_from_embedding(ticket, embedding, top_n=5):
     :return: List of extracted key phrases.
     """
     try:
+        # Lazy load the model
+        model = get_keyword_model()
+        if model is None:
+            return []
+        
         text = f"{ticket['subject']} {ticket['description']}".strip()
 
         # Tokenize and get unique words
