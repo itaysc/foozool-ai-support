@@ -1,3 +1,8 @@
+// Load module-alias FIRST in production, before any other imports
+if (process.env.NODE_ENV === 'production') {
+  require('module-alias/register');
+}
+
 // Load environment variables FIRST, before any other imports
 import path from 'path';
 import fs from 'fs';
@@ -58,11 +63,6 @@ Object.keys(process.env).forEach(key => {
     console.log(`${key}: ${process.env[key]}`);
   }
 });
-
-// Only load module-alias in production
-if (process.env.NODE_ENV === 'production') {
-  require('module-alias/register');
-}
 
 import Server from "./server";
 

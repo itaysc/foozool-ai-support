@@ -90,10 +90,7 @@
     "typescript-eslint": "^8.26.1",
     "wait-on": "^8.0.3"
   },
-  "build": {
-    "builder": "NIXPACKS"
-  },
   "_moduleAliases": {
-    "src": "dist/server/src"
+    "src": "dist"
   }
 }
