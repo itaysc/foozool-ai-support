@@ -36,7 +36,8 @@ def get_intent_classifier():
                     "text-classification",
                     model="Sarthak279/Intent",
                     return_all_scores=True,
-                    device=0 if torch.cuda.is_available() else -1
+                    device=0 if torch.cuda.is_available() else -1,
+                    from_tf=True
                 )
                 logger.info("Loaded general intent classification model")
             except Exception as e:
