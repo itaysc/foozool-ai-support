@@ -18,13 +18,18 @@ logger = logging.getLogger(__name__)
 def load_tf_intent_model():
     """Custom loader for TensorFlow intent model."""
     try:
-        # Load the model explicitly as TensorFlow
-        model = TFAutoModelForSequenceClassification.from_pretrained('Sarthak279/Intent', from_tf=True)
-        tokenizer = AutoTokenizer.from_pretrained('Sarthak279/Intent')
-        return pipeline('text-classification', model=model, tokenizer=tokenizer, local_files_only=False)
+        # Try loading with pipeline first, specifying framework
+        return pipeline('text-classification', model='Sarthak279/Intent', framework='tf', local_files_only=False)
     except Exception as e:
-        logger.error(f"Error loading TensorFlow intent model: {e}")
-        raise
+        logger.error(f"Error loading TensorFlow intent model with pipeline: {e}")
+        try:
+            # Fallback: Load model and tokenizer separately
+            model = TFAutoModelForSequenceClassification.from_pretrained('Sarthak279/Intent', from_tf=True)
+            tokenizer = AutoTokenizer.from_pretrained('Sarthak279/Intent')
+            return pipeline('text-classification', model=model, tokenizer=tokenizer, local_files_only=False)
+        except Exception as e2:
+            logger.error(f"Error loading TensorFlow intent model with separate loading: {e2}")
+            raise
 
 # Optimized model configurations - using smaller models where possible
 MODELS = {
@@ -174,10 +179,16 @@ async def main():
     successful = 0
     failed = 0
     
+    logger.info(f"📋 Total models to download: {len(MODELS)}")
+    for model_key in MODELS.keys():
+        logger.info(f"   - {model_key}: {MODELS[model_key]['name']}")
+    
     for model_key, model_config in MODELS.items():
         logger.info(f"📥 Downloading {model_key}: {model_config['name']}")
         try:
+            logger.info(f"🔄 Starting download attempt for {model_key}...")
             result = await download_with_retry(model_key, model_config)
+            logger.info(f"📊 Download result for {model_key}: {result}")
             if result:
                 successful += 1
                 logger.info(f"✅ {model_key} downloaded successfully")
@@ -189,6 +200,7 @@ async def main():
         except Exception as e:
             failed += 1
             logger.error(f"❌ {model_key} failed with exception: {e}")
+            logger.error(f"📋 Exception details: {type(e).__name__}: {str(e)}")
             logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
         
         # Clear memory after each model download
@@ -207,6 +219,7 @@ async def main():
     logger.info(f"📊 Download Summary:")
     logger.info(f"   ✅ Successful: {successful}")
     logger.info(f"   ❌ Failed: {failed}")
+    logger.info(f"   📋 Total models: {len(MODELS)}")
     
     if successful == len(MODELS):
         logger.info("🎉 All models downloaded successfully!")
@@ -214,12 +227,23 @@ async def main():
     elif successful > 0:
         logger.warning("⚠️  Some models failed to download. Check the logs above for details.")
         logger.info("🔄 Continuing with available models...")
+        logger.info(f"✅ Returning True because {successful} models were downloaded successfully")
         return True  # Return True if at least some models were downloaded
     else:
         logger.error("💥 All model downloads failed!")
+        logger.error(f"❌ Returning False because no models were downloaded successfully")
         return False
 
 if __name__ == "__main__":
-    success = asyncio.run(main())
-    if not success:
+    try:
+        success = asyncio.run(main())
+        if not success:
+            logger.error("❌ Model download process failed")
+            exit(1)
+        else:
+            logger.info("✅ Model download process completed successfully")
+    except Exception as e:
+        logger.error(f"💥 Unexpected error during model download: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         exit(1) 

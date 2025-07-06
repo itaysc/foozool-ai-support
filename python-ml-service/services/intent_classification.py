@@ -16,13 +16,18 @@ cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
 def load_tf_intent_model():
     """Custom loader for TensorFlow intent model."""
     try:
-        # Load the model explicitly as TensorFlow
-        model = TFAutoModelForSequenceClassification.from_pretrained('Sarthak279/Intent', from_tf=True)
-        tokenizer = AutoTokenizer.from_pretrained('Sarthak279/Intent')
-        return pipeline('text-classification', model=model, tokenizer=tokenizer, return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+        # Try loading with pipeline first, specifying framework
+        return pipeline('text-classification', model='Sarthak279/Intent', framework='tf', return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
     except Exception as e:
-        logger.error(f"Error loading TensorFlow intent model: {e}")
-        raise
+        logger.error(f"Error loading TensorFlow intent model with pipeline: {e}")
+        try:
+            # Fallback: Load model and tokenizer separately
+            model = TFAutoModelForSequenceClassification.from_pretrained('Sarthak279/Intent', from_tf=True)
+            tokenizer = AutoTokenizer.from_pretrained('Sarthak279/Intent')
+            return pipeline('text-classification', model=model, tokenizer=tokenizer, return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+        except Exception as e2:
+            logger.error(f"Error loading TensorFlow intent model with separate loading: {e2}")
+            raise
 
 # Lazy loading - don't load models at import time
 intent_classifier = None
