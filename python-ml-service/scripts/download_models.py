@@ -1,6 +1,8 @@
 import asyncio
+import gc
 import logging
 import os
+import sys
 import ssl
 import certifi
 import requests
@@ -101,7 +103,6 @@ async def download_with_retry(model_key, model_config, max_retries=3, timeout=60
     for attempt in range(max_retries):
         try:
             # Set timeout for the download attempt
-            import asyncio
             download_task = asyncio.create_task(download_single_attempt(model_config))
             await asyncio.wait_for(download_task, timeout=timeout)
             return True
@@ -207,7 +208,6 @@ async def main():
                 logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
             
             # Clear memory after each model download
-            import gc
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
