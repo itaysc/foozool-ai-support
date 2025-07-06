@@ -101,10 +101,11 @@ def download_models_if_needed(models_dir):
     logger.info("Models not found in persistent storage. Starting download...")
     
     try:
-        # Run the model download script
+        # Run the model download script with real-time output
+        logger.info("Starting model download script...")
         result = subprocess.run([
             sys.executable, "scripts/download_models.py"
-        ], capture_output=True, text=True, timeout=1800)  # 30 minute timeout
+        ], timeout=1800)  # 30 minute timeout
         
         if result.returncode == 0:
             # Create flag file to indicate successful download
@@ -113,7 +114,7 @@ def download_models_if_needed(models_dir):
             logger.info("Models downloaded successfully!")
             return True
         else:
-            logger.error(f"Model download failed: {result.stderr}")
+            logger.error(f"Model download failed with return code: {result.returncode}")
             return False
             
     except subprocess.TimeoutExpired:
