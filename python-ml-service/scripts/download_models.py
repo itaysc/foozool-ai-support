@@ -66,10 +66,15 @@ MODELS = {
     }
 }
 
-async def download_with_retry(model_key, model_config, max_retries=3, timeout=300):
+async def download_with_retry(model_key, model_config, max_retries=3, timeout=600):
     """Download a model with retries and fallback to local files."""
     retry_delay = 2
     last_error = None
+    
+    # Increase timeout for large models
+    if 'large' in model_config['name'] or 'bart-large' in model_config['name']:
+        timeout = 1200  # 20 minutes for large models
+        logger.info(f"Using extended timeout ({timeout}s) for large model: {model_config['name']}")
     
     # First try with local files only
     try:
@@ -179,9 +184,12 @@ async def main():
             else:
                 failed += 1
                 logger.error(f"❌ {model_key} failed to download")
+                # Continue with other models even if this one fails
+                logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
         except Exception as e:
             failed += 1
             logger.error(f"❌ {model_key} failed with exception: {e}")
+            logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
         
         # Clear memory after each model download
         import gc
@@ -190,10 +198,12 @@ async def main():
             torch.cuda.empty_cache()
         
         # Add delay between downloads to let memory settle
-        await asyncio.sleep(10)
+        if successful > 0:  # Only add delay if we've had successful downloads
+            await asyncio.sleep(10)
+        else:
+            await asyncio.sleep(5)  # Shorter delay if no successful downloads yet
     
     # Log summary
-    
     logger.info(f"📊 Download Summary:")
     logger.info(f"   ✅ Successful: {successful}")
     logger.info(f"   ❌ Failed: {failed}")
@@ -203,6 +213,7 @@ async def main():
         return True
     elif successful > 0:
         logger.warning("⚠️  Some models failed to download. Check the logs above for details.")
+        logger.info("🔄 Continuing with available models...")
         return True  # Return True if at least some models were downloaded
     else:
         logger.error("💥 All model downloads failed!")
