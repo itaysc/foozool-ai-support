@@ -42,6 +42,8 @@ ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 ENV CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 ENV CUDA_VISIBLE_DEVICES=""
 ENV PYTORCH_CUDA_ALLOC_CONF="max_split_size_mb:128"
+ENV TRANSFORMERS_CACHE="/data/models"
+ENV HF_HOME="/data/models"
 
 # Copy virtual environment
 COPY --from=builder /opt/venv /opt/venv

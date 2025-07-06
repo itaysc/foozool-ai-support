@@ -11,7 +11,7 @@ cache_dir = os.environ.get('SENTENCE_TRANSFORMERS_HOME', '/app/models/sentence-t
 # Global model instance
 _model = None
 
-def get_model(model_name='all-mpnet-base-v2') -> SentenceTransformer:
+def get_model(model_name='sentence-transformers/all-mpnet-base-v2') -> SentenceTransformer:
     """
     Get or create the model instance. Uses a singleton pattern to avoid reloading.
     """
@@ -41,7 +41,7 @@ def get_model(model_name='all-mpnet-base-v2') -> SentenceTransformer:
     return _model
 
 @lru_cache(maxsize=1000)
-def get_cached_embedding(text: str, model_name='all-mpnet-base-v2') -> List[float]:
+def get_cached_embedding(text: str, model_name='sentence-transformers/all-mpnet-base-v2') -> List[float]:
     """
     Get embedding for a single text with caching.
     """
@@ -50,7 +50,7 @@ def get_cached_embedding(text: str, model_name='all-mpnet-base-v2') -> List[floa
         embedding = model.encode(text, convert_to_tensor=True, normalize_embeddings=True)
         return embedding.tolist()
 
-def get_embedded_text(tickets: List[Dict[str, str]], model_name='all-mpnet-base-v2') -> List[List[float]]:
+def get_embedded_text(tickets: List[Dict[str, str]], model_name='sentence-transformers/all-mpnet-base-v2') -> List[List[float]]:
     """
     Extract embeddings using SBERT (Sentence-BERT).
     Uses caching and memory-efficient processing.
