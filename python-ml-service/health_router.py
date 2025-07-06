@@ -68,6 +68,19 @@ async def ml_models_health_check():
         model_status["cache_directory"] = "exists" if os.path.exists(cache_dir) else "missing"
         model_status["sbert_directory"] = "exists" if os.path.exists(sbert_dir) else "missing"
         
+        # Check if specific models are available
+        try:
+            from services.intent_classification import get_intent_classifier
+            intent_classifier = get_intent_classifier()
+            model_status["intent_classifier"] = "loaded" if intent_classifier is not None else "failed"
+        except Exception as e:
+            model_status["intent_classifier"] = f"error: {str(e)}"
+        
+        # Check environment variables
+        model_status["port"] = os.getenv("PORT", "8000")
+        model_status["environment"] = os.getenv("ENVIRONMENT", "development")
+        model_status["railway_environment"] = os.getenv("RAILWAY_ENVIRONMENT", "not_set")
+        
         health_status = {
             "status": "healthy" if all("error" not in str(v) for v in model_status.values()) else "degraded",
             "models": model_status,
@@ -87,5 +100,37 @@ async def ml_models_health_check():
                 "error": str(e),
                 "timestamp": time.time(),
                 "service": "python-ml-api"
+            }
+        )
+
+@health_router.post("/health/test-intent")
+async def test_intent_classification():
+    """
+    Test intent classification endpoint.
+    """
+    try:
+        from services.intent_classification import classify_ticket_intent
+        
+        # Test with a simple refund request
+        test_subject = "I want a refund"
+        test_description = "The product I ordered is not working properly and I would like my money back."
+        
+        result = classify_ticket_intent(test_subject, test_description)
+        
+        return {
+            "status": "success",
+            "test_subject": test_subject,
+            "test_description": test_description,
+            "result": result,
+            "timestamp": time.time()
+        }
+    except Exception as e:
+        logger.error(f"Intent classification test failed: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "error": str(e),
+                "timestamp": time.time()
             }
         ) 

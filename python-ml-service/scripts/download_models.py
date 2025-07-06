@@ -23,10 +23,20 @@ MODELS = {
         'loader': lambda: DistilBertModel.from_pretrained('distilbert-base-uncased', local_files_only=False),
         'tokenizer': lambda: DistilBertTokenizer.from_pretrained('distilbert-base-uncased', local_files_only=False)
     },
-    'intent': {
-        'name': 'distilbert-base-uncased',  # Using smaller model instead of ALBERT
+    'intent_primary': {
+        'name': 'vineetsharma/customer-support-intent-albert',
         'type': 'pipeline',
-        'loader': lambda: pipeline('text-classification', model='distilbert-base-uncased', local_files_only=False)
+        'loader': lambda: pipeline('text-classification', model='vineetsharma/customer-support-intent-albert', local_files_only=False)
+    },
+    'intent_fallback': {
+        'name': 'Sarthak279/Intent',
+        'type': 'pipeline',
+        'loader': lambda: pipeline('text-classification', model='Sarthak279/Intent', local_files_only=False)
+    },
+    'intent_final_fallback': {
+        'name': 'distilbert-base-uncased-finetuned-sst-2-english',
+        'type': 'pipeline',
+        'loader': lambda: pipeline('text-classification', model='distilbert-base-uncased-finetuned-sst-2-english', local_files_only=False)
     },
     'summarization': {
         'name': 'facebook/bart-base-cnn',  # Using base instead of large (much smaller)

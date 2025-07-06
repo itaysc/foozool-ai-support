@@ -124,13 +124,17 @@ def start_application():
     """Start the FastAPI application with Gunicorn."""
     logger.info("Starting application...")
     
+    # Get port from environment variable (Railway sets this)
+    port = os.getenv("PORT", "8000")
+    logger.info(f"Starting application on port {port}")
+    
     # Use Gunicorn with Uvicorn worker
     cmd = [
         "gunicorn",
         "main:app",
         "--workers", "1",
         "--worker-class", "uvicorn.workers.UvicornWorker",
-        "--bind", "0.0.0.0:8000",
+        "--bind", f"0.0.0.0:{port}",
         "--timeout", "120",
         "--keep-alive", "5"
     ]
