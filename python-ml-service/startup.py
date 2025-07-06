@@ -21,6 +21,7 @@ def install_ml_dependencies():
         import torch
         import transformers
         import sentence_transformers
+        import tensorflow
         logger.info("✅ ML dependencies already available")
         return True
     except ImportError:
@@ -39,7 +40,8 @@ def install_ml_dependencies():
                 "--no-cache-dir",  # Avoid cache issues
                 "torch==2.1.0",
                 "transformers==4.35.0", 
-                "sentence-transformers==2.2.2"
+                "sentence-transformers==2.2.2",
+                "tensorflow==2.15.0"  # Required for Sarthak279/Intent model
             ])
             logger.info("✅ ML dependencies installed successfully")
             return True
@@ -62,7 +64,8 @@ def install_ml_dependencies():
                     sys.executable, "-m", "pip", "install",
                     "--no-cache-dir",
                     "transformers==4.35.0", 
-                    "sentence-transformers==2.2.2"
+                    "sentence-transformers==2.2.2",
+                    "tensorflow==2.15.0"  # Required for Sarthak279/Intent model
                 ])
                 logger.info("✅ ML dependencies installed with CPU-only torch")
                 return True
