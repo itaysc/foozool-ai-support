@@ -5,7 +5,7 @@ import ssl
 import certifi
 import requests
 from concurrent.futures import ThreadPoolExecutor
-from transformers import DistilBertTokenizer, DistilBertModel, pipeline
+from transformers import DistilBertTokenizer, DistilBertModel, pipeline, AutoTokenizer, TFAutoModelForSequenceClassification
 from sentence_transformers import SentenceTransformer
 import torch
 from huggingface_hub import HfFolder
@@ -14,6 +14,17 @@ from huggingface_hub.utils import HfHubHTTPError
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def load_tf_intent_model():
+    """Custom loader for TensorFlow intent model."""
+    try:
+        # Load the model explicitly as TensorFlow
+        model = TFAutoModelForSequenceClassification.from_pretrained('Sarthak279/Intent', from_tf=True)
+        tokenizer = AutoTokenizer.from_pretrained('Sarthak279/Intent')
+        return pipeline('text-classification', model=model, tokenizer=tokenizer, local_files_only=False)
+    except Exception as e:
+        logger.error(f"Error loading TensorFlow intent model: {e}")
+        raise
 
 # Optimized model configurations - using smaller models where possible
 MODELS = {
@@ -31,7 +42,7 @@ MODELS = {
     'intent_fallback': {
         'name': 'Sarthak279/Intent',
         'type': 'pipeline',
-        'loader': lambda: pipeline('text-classification', model='Sarthak279/Intent', local_files_only=False, from_tf=True)
+        'loader': load_tf_intent_model
     },
     'intent_final_fallback': {
         'name': 'distilbert-base-uncased-finetuned-sst-2-english',

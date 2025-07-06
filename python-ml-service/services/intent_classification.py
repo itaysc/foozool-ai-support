@@ -1,4 +1,4 @@
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer, TFAutoModelForSequenceClassification
 import torch
 import logging
 import os
@@ -12,6 +12,17 @@ logger = logging.getLogger(__name__)
 
 # Set cache directory
 cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
+
+def load_tf_intent_model():
+    """Custom loader for TensorFlow intent model."""
+    try:
+        # Load the model explicitly as TensorFlow
+        model = TFAutoModelForSequenceClassification.from_pretrained('Sarthak279/Intent', from_tf=True)
+        tokenizer = AutoTokenizer.from_pretrained('Sarthak279/Intent')
+        return pipeline('text-classification', model=model, tokenizer=tokenizer, return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+    except Exception as e:
+        logger.error(f"Error loading TensorFlow intent model: {e}")
+        raise
 
 # Lazy loading - don't load models at import time
 intent_classifier = None
@@ -32,13 +43,7 @@ def get_intent_classifier():
         except Exception as e:
             logger.warning(f"Could not load customer support model, trying general intent model: {e}")
             try:
-                intent_classifier = pipeline(
-                    "text-classification",
-                    model="Sarthak279/Intent",
-                    return_all_scores=True,
-                    device=0 if torch.cuda.is_available() else -1,
-                    from_tf=True
-                )
+                intent_classifier = load_tf_intent_model()
                 logger.info("Loaded general intent classification model")
             except Exception as e:
                 logger.warning(f"Could not load intent models, falling back to text classification: {e}")
