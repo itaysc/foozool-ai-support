@@ -2,6 +2,7 @@
 torch==2.1.0  # Standard version, compatible with Debian
 transformers==4.35.0
 sentence-transformers==2.2.2
+tensorflow==2.15.0  # Required for Sarthak279/Intent model
 
 # Use smaller, more efficient alternatives
 # Consider replacing large models with smaller ones:
