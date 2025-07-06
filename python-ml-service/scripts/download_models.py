@@ -31,7 +31,7 @@ MODELS = {
     'intent_fallback': {
         'name': 'Sarthak279/Intent',
         'type': 'pipeline',
-        'loader': lambda: pipeline('text-classification', model='Sarthak279/Intent', local_files_only=False)
+        'loader': lambda: pipeline('text-classification', model='Sarthak279/Intent', local_files_only=False, from_tf=True)
     },
     'intent_final_fallback': {
         'name': 'distilbert-base-uncased-finetuned-sst-2-english',
@@ -39,9 +39,9 @@ MODELS = {
         'loader': lambda: pipeline('text-classification', model='distilbert-base-uncased-finetuned-sst-2-english', local_files_only=False)
     },
     'summarization': {
-        'name': 'facebook/bart-base-cnn',  # Using base instead of large (much smaller)
+        'name': 'facebook/bart-large-cnn',  # Correct model name
         'type': 'pipeline',
-        'loader': lambda: pipeline('summarization', model='facebook/bart-base-cnn', local_files_only=False)
+        'loader': lambda: pipeline('summarization', model='facebook/bart-large-cnn', local_files_only=False)
     },
     'qa': {
         'name': 'distilbert-base-cased-distilled-squad',  # Using smaller model
@@ -55,7 +55,7 @@ MODELS = {
     }
 }
 
-async def download_with_retry(model_key, model_config, max_retries=3):
+async def download_with_retry(model_key, model_config, max_retries=3, timeout=300):
     """Download a model with retries and fallback to local files."""
     retry_delay = 2
     last_error = None
@@ -79,57 +79,16 @@ async def download_with_retry(model_key, model_config, max_retries=3):
     # If local load fails, try downloading with retries
     for attempt in range(max_retries):
         try:
-            logger.info(f"Downloading {model_config['name']} (attempt {attempt + 1}/{max_retries})")
-            
-            # Clear memory before each attempt
-            import gc
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-            
-            # Try with SSL verification first
-            try:
-                if model_config['type'] == 'transformers':
-                    model = model_config['loader']()
-                    tokenizer = model_config['tokenizer']()
-                elif model_config['type'] in ['pipeline', 'sentence_transformer']:
-                    model = model_config['loader']()
-                logger.info(f"✅ Successfully downloaded {model_config['name']}")
-                
-                # Clear memory after successful download
-                del model
-                if 'tokenizer' in locals():
-                    del tokenizer
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                
-                return True
-            except (requests.exceptions.SSLError, ssl.SSLError) as ssl_error:
-                logger.warning(f"SSL error downloading {model_config['name']}: {ssl_error}")
-                # If SSL fails, try one last time without verification (not recommended but as fallback)
-                if attempt == max_retries - 1:
-                    logger.warning(f"Attempting final download of {model_config['name']} without SSL verification")
-                    os.environ['CURL_CA_BUNDLE'] = ""
-                    os.environ['REQUESTS_CA_BUNDLE'] = ""
-                    if model_config['type'] == 'transformers':
-                        model = model_config['loader']()
-                        tokenizer = model_config['tokenizer']()
-                    elif model_config['type'] in ['pipeline', 'sentence_transformer']:
-                        model = model_config['loader']()
-                    logger.info(f"✅ Successfully downloaded {model_config['name']} without SSL verification")
-                    
-                    # Clear memory after successful download
-                    del model
-                    if 'tokenizer' in locals():
-                        del tokenizer
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-                    
-                    return True
-                raise ssl_error
-            
+            # Set timeout for the download attempt
+            import asyncio
+            download_task = asyncio.create_task(download_single_attempt(model_config))
+            await asyncio.wait_for(download_task, timeout=timeout)
+            return True
+        except asyncio.TimeoutError:
+            logger.error(f"Timeout downloading {model_config['name']} (attempt {attempt + 1}/{max_retries})")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(retry_delay * (attempt + 1))
+            continue
         except Exception as e:
             last_error = e
             logger.error(f"Error downloading {model_config['name']}: {str(e)}")
@@ -138,6 +97,57 @@ async def download_with_retry(model_key, model_config, max_retries=3):
     
     logger.error(f"❌ Failed to download {model_config['name']} after {max_retries} attempts. Last error: {last_error}")
     return False
+
+async def download_single_attempt(model_config):
+    """Single download attempt for a model."""
+    logger.info(f"Downloading {model_config['name']}")
+    
+    # Clear memory before each attempt
+    import gc
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    
+    # Try with SSL verification first
+    try:
+        if model_config['type'] == 'transformers':
+            model = model_config['loader']()
+            tokenizer = model_config['tokenizer']()
+        elif model_config['type'] in ['pipeline', 'sentence_transformer']:
+            model = model_config['loader']()
+        logger.info(f"✅ Successfully downloaded {model_config['name']}")
+        
+        # Clear memory after successful download
+        del model
+        if 'tokenizer' in locals():
+            del tokenizer
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        return True
+    except (requests.exceptions.SSLError, ssl.SSLError) as ssl_error:
+        logger.warning(f"SSL error downloading {model_config['name']}: {ssl_error}")
+        # If SSL fails, try one last time without verification (not recommended but as fallback)
+        logger.warning(f"Attempting download of {model_config['name']} without SSL verification")
+        os.environ['CURL_CA_BUNDLE'] = ""
+        os.environ['REQUESTS_CA_BUNDLE'] = ""
+        if model_config['type'] == 'transformers':
+            model = model_config['loader']()
+            tokenizer = model_config['tokenizer']()
+        elif model_config['type'] in ['pipeline', 'sentence_transformer']:
+            model = model_config['loader']()
+        logger.info(f"✅ Successfully downloaded {model_config['name']} without SSL verification")
+        
+        # Clear memory after successful download
+        del model
+        if 'tokenizer' in locals():
+            del tokenizer
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        return True
 
 async def main():
     """Download all models with proper error handling."""
@@ -169,7 +179,7 @@ async def main():
             torch.cuda.empty_cache()
         
         # Add delay between downloads to let memory settle
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
     
     # Log summary
     
