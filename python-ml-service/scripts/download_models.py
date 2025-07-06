@@ -172,70 +172,85 @@ async def download_single_attempt(model_config):
 
 async def main():
     """Download all models with proper error handling."""
-    logger.info("🚀 Starting model download process...")
-    logger.info(f"📁 Models will be stored in: {os.environ.get('TRANSFORMERS_CACHE', '/app/models')}")
-    
-    # Download models sequentially to avoid memory issues
-    successful = 0
-    failed = 0
-    
-    logger.info(f"📋 Total models to download: {len(MODELS)}")
-    for model_key in MODELS.keys():
-        logger.info(f"   - {model_key}: {MODELS[model_key]['name']}")
-    
-    for model_key, model_config in MODELS.items():
-        logger.info(f"📥 Downloading {model_key}: {model_config['name']}")
-        try:
-            logger.info(f"🔄 Starting download attempt for {model_key}...")
-            result = await download_with_retry(model_key, model_config)
-            logger.info(f"📊 Download result for {model_key}: {result}")
-            if result:
-                successful += 1
-                logger.info(f"✅ {model_key} downloaded successfully")
-            else:
+    try:
+        logger.info("🚀 Starting model download process...")
+        logger.info(f"📁 Models will be stored in: {os.environ.get('TRANSFORMERS_CACHE', '/app/models')}")
+        
+        # Download models sequentially to avoid memory issues
+        successful = 0
+        failed = 0
+        
+        logger.info(f"📋 Total models to download: {len(MODELS)}")
+        for model_key in MODELS.keys():
+            logger.info(f"   - {model_key}: {MODELS[model_key]['name']}")
+        
+        logger.info("🔄 Starting model downloads...")
+        
+        for model_key, model_config in MODELS.items():
+            logger.info(f"📥 Downloading {model_key}: {model_config['name']}")
+            try:
+                logger.info(f"🔄 Starting download attempt for {model_key}...")
+                result = await download_with_retry(model_key, model_config)
+                logger.info(f"📊 Download result for {model_key}: {result}")
+                if result:
+                    successful += 1
+                    logger.info(f"✅ {model_key} downloaded successfully")
+                else:
+                    failed += 1
+                    logger.error(f"❌ {model_key} failed to download")
+                    # Continue with other models even if this one fails
+                    logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
+            except Exception as e:
                 failed += 1
-                logger.error(f"❌ {model_key} failed to download")
-                # Continue with other models even if this one fails
+                logger.error(f"❌ {model_key} failed with exception: {e}")
+                logger.error(f"📋 Exception details: {type(e).__name__}: {str(e)}")
                 logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
-        except Exception as e:
-            failed += 1
-            logger.error(f"❌ {model_key} failed with exception: {e}")
-            logger.error(f"📋 Exception details: {type(e).__name__}: {str(e)}")
-            logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
+            
+            # Clear memory after each model download
+            import gc
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            
+            # Add delay between downloads to let memory settle
+            if successful > 0:  # Only add delay if we've had successful downloads
+                await asyncio.sleep(10)
+            else:
+                await asyncio.sleep(5)  # Shorter delay if no successful downloads yet
         
-        # Clear memory after each model download
-        import gc
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        # Log summary
+        logger.info(f"📊 Download Summary:")
+        logger.info(f"   ✅ Successful: {successful}")
+        logger.info(f"   ❌ Failed: {failed}")
+        logger.info(f"   📋 Total models: {len(MODELS)}")
         
-        # Add delay between downloads to let memory settle
-        if successful > 0:  # Only add delay if we've had successful downloads
-            await asyncio.sleep(10)
+        if successful == len(MODELS):
+            logger.info("🎉 All models downloaded successfully!")
+            return True
+        elif successful > 0:
+            logger.warning("⚠️  Some models failed to download. Check the logs above for details.")
+            logger.info("🔄 Continuing with available models...")
+            logger.info(f"✅ Returning True because {successful} models were downloaded successfully")
+            return True  # Return True if at least some models were downloaded
         else:
-            await asyncio.sleep(5)  # Shorter delay if no successful downloads yet
-    
-    # Log summary
-    logger.info(f"📊 Download Summary:")
-    logger.info(f"   ✅ Successful: {successful}")
-    logger.info(f"   ❌ Failed: {failed}")
-    logger.info(f"   📋 Total models: {len(MODELS)}")
-    
-    if successful == len(MODELS):
-        logger.info("🎉 All models downloaded successfully!")
-        return True
-    elif successful > 0:
-        logger.warning("⚠️  Some models failed to download. Check the logs above for details.")
-        logger.info("🔄 Continuing with available models...")
-        logger.info(f"✅ Returning True because {successful} models were downloaded successfully")
-        return True  # Return True if at least some models were downloaded
-    else:
-        logger.error("💥 All model downloads failed!")
-        logger.error(f"❌ Returning False because no models were downloaded successfully")
+            logger.error("💥 All model downloads failed!")
+            logger.error(f"❌ Returning False because no models were downloaded successfully")
+            return False
+    except Exception as e:
+        logger.error(f"💥 Unexpected error in main function: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return False
 
 if __name__ == "__main__":
     try:
+        logger.info("🔧 Starting download script...")
+        logger.info(f"🔧 Python version: {sys.version}")
+        logger.info(f"🔧 Working directory: {os.getcwd()}")
+        logger.info(f"🔧 Environment variables:")
+        logger.info(f"   - TRANSFORMERS_CACHE: {os.environ.get('TRANSFORMERS_CACHE', 'Not set')}")
+        logger.info(f"   - HF_HOME: {os.environ.get('HF_HOME', 'Not set')}")
+        
         success = asyncio.run(main())
         if not success:
             logger.error("❌ Model download process failed")
