@@ -90,11 +90,11 @@ railway.env*
 # Model cache (will be downloaded at runtime)
 models/
 
-# Requirements (we only need minimal.txt)
-requirements/base.txt
-requirements/ml.txt
-requirements/dev.txt
-requirements.txt
+# Requirements (we need all for development)
+# requirements/base.txt
+# requirements/ml.txt
+# requirements/dev.txt
+# requirements.txt
 
 # Unnecessary directories
 public/

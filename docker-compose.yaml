@@ -55,8 +55,8 @@ services:
       - TORCH_HOME=/app/models
       - PYTHONUNBUFFERED=1
       - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
-      - TRANSFORMERS_OFFLINE=1
       - HF_HOME=/app/models
+      - ENVIRONMENT=development
     deploy:
       resources:
         limits:

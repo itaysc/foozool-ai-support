@@ -6,7 +6,7 @@ ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 ARG PIP_NO_CACHE_DIR=1
 ARG PIP_DISABLE_PIP_VERSION_CHECK=1
-ARG ENVIRONMENT=production
+ARG ENVIRONMENT=development
 ARG DEBUG=false
 
 # Use BuildKit cache mount for apt
@@ -23,13 +23,17 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install Python dependencies with BuildKit cache mount
 WORKDIR /build
-COPY ./requirements/base.txt ./requirements/ml.txt ./requirements/prod.txt ./requirements/dev.txt ./
+COPY ./requirements/ ./
+
+# Debug: Check what files were copied
+RUN echo "=== Contents of /build ===" && ls -la /build && echo "=== End contents ==="
 
 # Install dependencies based on environment
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir --upgrade pip && \
+    echo "Installing for environment: $ENVIRONMENT" && \
     if [ "$ENVIRONMENT" = "development" ]; then \
-        pip install --no-cache-dir -r dev.txt debugpy; \
+        pip install --no-cache-dir -r dev.txt; \
     else \
         pip install --no-cache-dir -r prod.txt; \
     fi
@@ -60,42 +64,9 @@ RUN mkdir -p /app/models /app/models/sentence-transformers
 ENV TRANSFORMERS_CACHE=/app/models
 ENV SENTENCE_TRANSFORMERS_HOME=/app/models/sentence-transformers
 
-# Copy only the model download script
+# Copy the actual model download script
 WORKDIR /app
-COPY <<EOF /app/scripts/download_models.py
-import asyncio
-import os
-from transformers import DistilBertTokenizer, DistilBertModel, pipeline
-from sentence_transformers import SentenceTransformer
-import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-async def download_model(model_func, *args, **kwargs):
-    try:
-        await asyncio.to_thread(model_func, *args, **kwargs)
-        logger.info(f"Successfully downloaded model: {args[0] if args else kwargs.get('model', 'unknown')}")
-    except Exception as e:
-        logger.error(f"Error downloading model: {e}")
-
-async def main():
-    cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
-    models = [
-        (DistilBertModel.from_pretrained, "distilbert-base-uncased", {"cache_dir": cache_dir}),
-        (DistilBertTokenizer.from_pretrained, "distilbert-base-uncased", {"cache_dir": cache_dir}),
-        (pipeline, "summarization", {"model": "facebook/bart-large-cnn", "cache_dir": cache_dir}),
-        (pipeline, "question-answering", {"model": "deepset/roberta-base-squad2", "cache_dir": cache_dir}),
-        (SentenceTransformer, "all-mpnet-base-v2", {"cache_folder": cache_dir}),
-        (SentenceTransformer, "all-MiniLM-L6-v2", {"cache_folder": cache_dir})
-    ]
-    
-    tasks = [download_model(func, *args, **kwargs) for func, *args, kwargs in models]
-    await asyncio.gather(*tasks)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-EOF
+COPY scripts/download_models.py /app/scripts/download_models.py
 
 # Download models in a separate stage
 RUN --mount=type=cache,target=/app/models,id=ml-models-cache,mode=0777 \

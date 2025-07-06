@@ -19,4 +19,7 @@ types-python-dateutil==2.8.19.14
 # Development Tools
 ipython==8.18.0
 jupyter==1.0.0
-debugpy==1.8.0 
+debugpy==1.8.0
+
+# ML Dependencies for local development
+-r ml.txt 
