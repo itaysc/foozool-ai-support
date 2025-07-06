@@ -6,6 +6,7 @@ import sys
 import ssl
 import certifi
 import requests
+import psutil
 from concurrent.futures import ThreadPoolExecutor
 from transformers import DistilBertTokenizer, DistilBertModel, pipeline, AutoTokenizer, TFAutoModelForSequenceClassification
 from sentence_transformers import SentenceTransformer
@@ -16,6 +17,16 @@ from huggingface_hub.utils import HfHubHTTPError
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def log_memory_usage(stage=""):
+    """Log current memory usage."""
+    try:
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        memory_percent = process.memory_percent()
+        logger.info(f"💾 Memory usage {stage}: {memory_info.rss / 1024 / 1024:.1f}MB ({memory_percent:.1f}%)")
+    except Exception as e:
+        logger.warning(f"Could not get memory usage: {e}")
 
 def load_tf_intent_model():
     """Custom loader for TensorFlow intent model."""
@@ -124,28 +135,43 @@ async def download_single_attempt(model_config):
     """Single download attempt for a model."""
     logger.info(f"Downloading {model_config['name']}")
     
+    # Log memory before download
+    log_memory_usage("before download")
+    
     # Clear memory before each attempt
-    import gc
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
+    
+    # Set memory optimization flags
+    os.environ['TRANSFORMERS_OFFLINE'] = '0'
+    os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
     
     # Try with SSL verification first
     try:
         if model_config['type'] == 'transformers':
             model = model_config['loader']()
             tokenizer = model_config['tokenizer']()
+            # Immediately delete to free memory
+            del model
+            del tokenizer
         elif model_config['type'] in ['pipeline', 'sentence_transformer']:
             model = model_config['loader']()
+            # Immediately delete to free memory
+            del model
+        
         logger.info(f"✅ Successfully downloaded {model_config['name']}")
         
-        # Clear memory after successful download
-        del model
-        if 'tokenizer' in locals():
-            del tokenizer
+        # Log memory after download
+        log_memory_usage("after download")
+        
+        # Aggressive memory cleanup
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        
+        # Log memory after cleanup
+        log_memory_usage("after cleanup")
         
         return True
     except (requests.exceptions.SSLError, ssl.SSLError) as ssl_error:
@@ -250,6 +276,9 @@ if __name__ == "__main__":
         logger.info(f"🔧 Environment variables:")
         logger.info(f"   - TRANSFORMERS_CACHE: {os.environ.get('TRANSFORMERS_CACHE', 'Not set')}")
         logger.info(f"   - HF_HOME: {os.environ.get('HF_HOME', 'Not set')}")
+        
+        # Log initial memory usage
+        log_memory_usage("at startup")
         
         success = asyncio.run(main())
         if not success:
