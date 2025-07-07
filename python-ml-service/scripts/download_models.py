@@ -293,6 +293,16 @@ async def main():
         logger.info("🔄 Starting model downloads...")
         
         for model_key, model_config in MODELS.items():
+            # Skip TensorFlow model entirely as it's causing SIGKILL errors
+            if model_key == 'intent_fallback':
+                logger.warning(f"⚠️  Skipping {model_key} ({model_config['name']}) due to known memory issues")
+                continue
+            
+            # Skip large models that might cause memory issues (but we've already optimized them)
+            # if 'large' in model_config['name'] or 'bart-large' in model_config['name']:
+            #     logger.warning(f"⚠️  Skipping {model_key} ({model_config['name']}) due to large size")
+            #     continue
+                
             logger.info(f"📥 Downloading {model_key}: {model_config['name']}")
             
             # Check memory before starting download
