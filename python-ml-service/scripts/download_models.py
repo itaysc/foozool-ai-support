@@ -7,6 +7,7 @@ import ssl
 import certifi
 import requests
 import psutil
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from transformers import DistilBertTokenizer, DistilBertModel, pipeline, AutoTokenizer, TFAutoModelForSequenceClassification
 from sentence_transformers import SentenceTransformer
@@ -51,18 +52,20 @@ def load_tf_intent_model():
             logger.error(f"Error loading TensorFlow intent model with separate loading: {e2}")
             raise
 
-# Optimized model configurations - using smaller models for Railway's memory constraints
+# Optimized model configurations - using much smaller models for Railway's severe memory constraints
 MODELS = {
     'distilbert': {
         'name': 'distilbert-base-uncased',
         'type': 'transformers',
         'loader': lambda: DistilBertModel.from_pretrained('distilbert-base-uncased', local_files_only=False),
-        'tokenizer': lambda: DistilBertTokenizer.from_pretrained('distilbert-base-uncased', local_files_only=False)
+        'tokenizer': lambda: DistilBertTokenizer.from_pretrained('distilbert-base-uncased', local_files_only=False),
+        'optional': True  # Make optional since it's used for DistilBERT embeddings but not critical
     },
     'intent_primary': {
         'name': 'distilbert-base-uncased-finetuned-sst-2-english',  # Smaller alternative
         'type': 'pipeline',
-        'loader': lambda: pipeline('text-classification', model='distilbert-base-uncased-finetuned-sst-2-english', local_files_only=False)
+        'loader': lambda: pipeline('text-classification', model='distilbert-base-uncased-finetuned-sst-2-english', local_files_only=False),
+        'optional': True  # Make optional since intent classification has fallbacks
     },
     'intent_fallback': {
         'name': 'Sarthak279/Intent',
@@ -73,17 +76,20 @@ MODELS = {
     'summarization': {
         'name': 'sshleifer/distilbart-cnn-6-6',  # Much smaller alternative (only 60MB)
         'type': 'pipeline',
-        'loader': lambda: pipeline('summarization', model='sshleifer/distilbart-cnn-6-6', local_files_only=False)
+        'loader': lambda: pipeline('summarization', model='sshleifer/distilbart-cnn-6-6', local_files_only=False),
+        'optional': True  # Make optional since summarization is not critical
     },
     'qa': {
         'name': 'distilbert-base-cased-distilled-squad',  # Using smaller model
         'type': 'pipeline',
-        'loader': lambda: pipeline('question-answering', model='distilbert-base-cased-distilled-squad', local_files_only=False)
+        'loader': lambda: pipeline('question-answering', model='distilbert-base-cased-distilled-squad', local_files_only=False),
+        'optional': True  # Make optional since QA is not critical
     },
     'sentence_transformer': {
         'name': 'sentence-transformers/all-mpnet-base-v2',  # Original model to preserve existing vectors
         'type': 'sentence_transformer',
         'loader': lambda: SentenceTransformer('sentence-transformers/all-mpnet-base-v2', cache_folder=os.environ.get('TRANSFORMERS_CACHE'))
+        # This is the only required model since it's used for vector creation
     }
 }
 
@@ -125,6 +131,70 @@ async def download_with_retry(model_key, model_config, max_retries=3, timeout=30
     logger.error(f"❌ Failed to download {model_config['name']} after {max_retries} attempts. Last error: {last_error}")
     return False
 
+async def download_with_subprocess(model_config):
+    """Download model using subprocess to avoid memory issues."""
+    logger.info(f"Downloading {model_config['name']} using subprocess...")
+    
+    # Log memory before download
+    log_memory_usage("before subprocess download")
+    
+    # Create a simple Python script to download the model
+    download_script = f"""
+import os
+import sys
+from transformers import AutoTokenizer, AutoModel
+
+# Set environment variables
+os.environ['TRANSFORMERS_CACHE'] = '{os.environ.get('TRANSFORMERS_CACHE', '/data/models')}'
+os.environ['HF_HOME'] = '{os.environ.get('HF_HOME', '/data/models')}'
+os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+
+try:
+    # Download model and tokenizer without loading into memory
+    model_name = '{model_config['name']}'
+    print(f"Downloading {{model_name}}...")
+    
+    # Just download the files, don't load the model
+    tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=False)
+    model = AutoModel.from_pretrained(model_name, local_files_only=False)
+    
+    print(f"✅ Successfully downloaded {{model_name}}")
+    sys.exit(0)
+except Exception as e:
+    print(f"❌ Error downloading {{model_name}}: {{e}}")
+    sys.exit(1)
+"""
+    
+    try:
+        # Write the script to a temporary file
+        script_path = f"/tmp/download_{model_config['name'].replace('/', '_')}.py"
+        with open(script_path, 'w') as f:
+            f.write(download_script)
+        
+        # Run the script in a subprocess
+        result = subprocess.run([
+            sys.executable, script_path
+        ], capture_output=True, text=True, timeout=600)
+        
+        # Clean up the script
+        os.remove(script_path)
+        
+        if result.returncode == 0:
+            logger.info(f"✅ Successfully downloaded {model_config['name']} via subprocess")
+            log_memory_usage("after subprocess download")
+            return True
+        else:
+            logger.error(f"❌ Subprocess download failed for {model_config['name']}: {result.stderr}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        logger.error(f"❌ Subprocess download timed out for {model_config['name']}")
+        return False
+    except Exception as e:
+        logger.error(f"❌ Subprocess download error for {model_config['name']}: {e}")
+        return False
+
 async def download_single_attempt(model_config):
     """Single download attempt for a model."""
     logger.info(f"Downloading {model_config['name']}")
@@ -147,7 +217,15 @@ async def download_single_attempt(model_config):
     # Force garbage collection again
     gc.collect()
     
-    # Try with SSL verification first
+    # Try subprocess download first (safer for memory)
+    try:
+        result = await download_with_subprocess(model_config)
+        if result:
+            return True
+    except Exception as e:
+        logger.warning(f"Subprocess download failed, trying direct download: {e}")
+    
+    # Fallback to direct download if subprocess fails
     try:
         if model_config['type'] == 'transformers':
             model = model_config['loader']()
