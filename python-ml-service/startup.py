@@ -108,7 +108,7 @@ def download_models_if_needed(models_dir):
         logger.info("Starting model download script...")
         result = subprocess.run([
             sys.executable, "scripts/download_models.py"
-        ], timeout=1800)  # 30 minute timeout
+        ], timeout=2400)  # 40 minute timeout for memory-optimized downloads
         
         if result.returncode == 0:
             # Create flag file to indicate successful download

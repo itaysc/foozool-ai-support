@@ -25,8 +25,15 @@ def log_memory_usage(stage=""):
         memory_info = process.memory_info()
         memory_percent = process.memory_percent()
         logger.info(f"💾 Memory usage {stage}: {memory_info.rss / 1024 / 1024:.1f}MB ({memory_percent:.1f}%)")
+        
+        # Check if we're approaching memory limits
+        if memory_percent > 80:
+            logger.warning(f"⚠️  High memory usage detected: {memory_percent:.1f}%")
+            return False
+        return True
     except Exception as e:
         logger.warning(f"Could not get memory usage: {e}")
+        return True
 
 def load_tf_intent_model():
     """Custom loader for TensorFlow intent model."""
@@ -44,7 +51,7 @@ def load_tf_intent_model():
             logger.error(f"Error loading TensorFlow intent model with separate loading: {e2}")
             raise
 
-# Optimized model configurations - using smaller models where possible
+# Optimized model configurations - using smaller models for Railway's memory constraints
 MODELS = {
     'distilbert': {
         'name': 'distilbert-base-uncased',
@@ -53,24 +60,19 @@ MODELS = {
         'tokenizer': lambda: DistilBertTokenizer.from_pretrained('distilbert-base-uncased', local_files_only=False)
     },
     'intent_primary': {
-        'name': 'vineetsharma/customer-support-intent-albert',
+        'name': 'distilbert-base-uncased-finetuned-sst-2-english',  # Smaller alternative
         'type': 'pipeline',
-        'loader': lambda: pipeline('text-classification', model='vineetsharma/customer-support-intent-albert', local_files_only=False)
+        'loader': lambda: pipeline('text-classification', model='distilbert-base-uncased-finetuned-sst-2-english', local_files_only=False)
     },
     'intent_fallback': {
         'name': 'Sarthak279/Intent',
         'type': 'pipeline',
         'loader': load_tf_intent_model
     },
-    'intent_final_fallback': {
-        'name': 'distilbert-base-uncased-finetuned-sst-2-english',
-        'type': 'pipeline',
-        'loader': lambda: pipeline('text-classification', model='distilbert-base-uncased-finetuned-sst-2-english', local_files_only=False)
-    },
     'summarization': {
-        'name': 'facebook/bart-large-cnn',  # Correct model name
+        'name': 'facebook/bart-base-cnn',  # Using smaller base model instead of large
         'type': 'pipeline',
-        'loader': lambda: pipeline('summarization', model='facebook/bart-large-cnn', local_files_only=False)
+        'loader': lambda: pipeline('summarization', model='facebook/bart-base-cnn', local_files_only=False)
     },
     'qa': {
         'name': 'distilbert-base-cased-distilled-squad',  # Using smaller model
@@ -84,14 +86,14 @@ MODELS = {
     }
 }
 
-async def download_with_retry(model_key, model_config, max_retries=3, timeout=600):
+async def download_with_retry(model_key, model_config, max_retries=3, timeout=300):
     """Download a model with retries and fallback to local files."""
     retry_delay = 2
     last_error = None
     
-    # Increase timeout for large models
+    # Reduce timeout for Railway's memory constraints
     if 'large' in model_config['name'] or 'bart-large' in model_config['name']:
-        timeout = 1200  # 20 minutes for large models
+        timeout = 600  # 10 minutes for large models
         logger.info(f"Using extended timeout ({timeout}s) for large model: {model_config['name']}")
     
     # First try with local files only
@@ -113,6 +115,12 @@ async def download_with_retry(model_key, model_config, max_retries=3, timeout=60
     # If local load fails, try downloading with retries
     for attempt in range(max_retries):
         try:
+            # Check memory before attempting download
+            if not log_memory_usage(f"before attempt {attempt + 1}"):
+                logger.warning(f"⚠️  High memory usage, skipping download attempt {attempt + 1}")
+                await asyncio.sleep(30)  # Wait for memory to free up
+                continue
+            
             # Set timeout for the download attempt
             download_task = asyncio.create_task(download_single_attempt(model_config))
             await asyncio.wait_for(download_task, timeout=timeout)
@@ -138,7 +146,7 @@ async def download_single_attempt(model_config):
     # Log memory before download
     log_memory_usage("before download")
     
-    # Clear memory before each attempt
+    # Aggressive memory cleanup before download
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
@@ -146,6 +154,7 @@ async def download_single_attempt(model_config):
     # Set memory optimization flags
     os.environ['TRANSFORMERS_OFFLINE'] = '0'
     os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
+    os.environ['TOKENIZERS_PARALLELISM'] = 'false'  # Disable parallel tokenization
     
     # Try with SSL verification first
     try:
@@ -233,16 +242,16 @@ async def main():
                 logger.error(f"📋 Exception details: {type(e).__name__}: {str(e)}")
                 logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
             
-            # Clear memory after each model download
+            # Aggressive memory cleanup after each model download
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
             
-            # Add delay between downloads to let memory settle
+            # Longer delay between downloads to let memory settle
             if successful > 0:  # Only add delay if we've had successful downloads
-                await asyncio.sleep(10)
+                await asyncio.sleep(15)
             else:
-                await asyncio.sleep(5)  # Shorter delay if no successful downloads yet
+                await asyncio.sleep(10)  # Shorter delay if no successful downloads yet
         
         # Log summary
         logger.info(f"📊 Download Summary:")
