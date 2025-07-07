@@ -67,7 +67,8 @@ MODELS = {
     'intent_fallback': {
         'name': 'Sarthak279/Intent',
         'type': 'pipeline',
-        'loader': load_tf_intent_model
+        'loader': load_tf_intent_model,
+        'optional': True  # Mark as optional since it's only a fallback
     },
     'summarization': {
         'name': 'facebook/bart-base-cnn',  # Using smaller base model instead of large
@@ -215,6 +216,7 @@ async def main():
         # Download models sequentially to avoid memory issues
         successful = 0
         failed = 0
+        successful_models = set()  # Track which models were downloaded successfully
         
         logger.info(f"📋 Total models to download: {len(MODELS)}")
         for model_key in MODELS.keys():
@@ -230,16 +232,25 @@ async def main():
                 logger.info(f"📊 Download result for {model_key}: {result}")
                 if result:
                     successful += 1
+                    successful_models.add(model_key)
                     logger.info(f"✅ {model_key} downloaded successfully")
                 else:
-                    failed += 1
-                    logger.error(f"❌ {model_key} failed to download")
+                    if model_config.get('optional', False):
+                        logger.warning(f"⚠️  {model_key} failed to download but is optional - continuing")
+                        # Don't count optional models as failures
+                    else:
+                        failed += 1
+                        logger.error(f"❌ {model_key} failed to download")
                     # Continue with other models even if this one fails
                     logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
             except Exception as e:
-                failed += 1
-                logger.error(f"❌ {model_key} failed with exception: {e}")
-                logger.error(f"📋 Exception details: {type(e).__name__}: {str(e)}")
+                if model_config.get('optional', False):
+                    logger.warning(f"⚠️  {model_key} failed with exception but is optional: {e}")
+                    # Don't count optional models as failures
+                else:
+                    failed += 1
+                    logger.error(f"❌ {model_key} failed with exception: {e}")
+                    logger.error(f"📋 Exception details: {type(e).__name__}: {str(e)}")
                 logger.info(f"🔄 Skipping {model_key} and continuing with remaining models...")
             
             # Aggressive memory cleanup after each model download
@@ -253,14 +264,23 @@ async def main():
             else:
                 await asyncio.sleep(10)  # Shorter delay if no successful downloads yet
         
+        # Count required models (non-optional)
+        required_models = [k for k, v in MODELS.items() if not v.get('optional', False)]
+        required_successful = sum(1 for model_key in required_models if model_key in successful_models)
+        
         # Log summary
         logger.info(f"📊 Download Summary:")
         logger.info(f"   ✅ Successful: {successful}")
         logger.info(f"   ❌ Failed: {failed}")
         logger.info(f"   📋 Total models: {len(MODELS)}")
+        logger.info(f"   📋 Required models: {len(required_models)}")
+        logger.info(f"   ✅ Required successful: {required_successful}")
         
         if successful == len(MODELS):
             logger.info("🎉 All models downloaded successfully!")
+            return True
+        elif required_successful == len(required_models):
+            logger.info("🎉 All required models downloaded successfully!")
             return True
         elif successful > 0:
             logger.warning("⚠️  Some models failed to download. Check the logs above for details.")
