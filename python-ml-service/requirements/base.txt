@@ -12,4 +12,5 @@ click==8.1.8
 h11==0.14.0
 idna==3.10
 sniffio==1.3.1
-typing_extensions==4.12.2 
+typing_extensions==4.12.2
+psutil==5.9.8  # Required for memory monitoring 
