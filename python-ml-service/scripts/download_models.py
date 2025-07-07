@@ -71,9 +71,9 @@ MODELS = {
         'optional': True  # Mark as optional since it's only a fallback
     },
     'summarization': {
-        'name': 'facebook/bart-base-cnn',  # Using smaller base model instead of large
+        'name': 'sshleifer/distilbart-cnn-6-6',  # Much smaller alternative (only 60MB)
         'type': 'pipeline',
-        'loader': lambda: pipeline('summarization', model='facebook/bart-base-cnn', local_files_only=False)
+        'loader': lambda: pipeline('summarization', model='sshleifer/distilbart-cnn-6-6', local_files_only=False)
     },
     'qa': {
         'name': 'distilbert-base-cased-distilled-squad',  # Using smaller model
@@ -97,23 +97,8 @@ async def download_with_retry(model_key, model_config, max_retries=3, timeout=30
         timeout = 600  # 10 minutes for large models
         logger.info(f"Using extended timeout ({timeout}s) for large model: {model_config['name']}")
     
-    # First try with local files only
-    try:
-        logger.info(f"Attempting to load {model_config['name']} from local cache")
-        if model_config['type'] == 'transformers':
-            model = model_config['loader']()
-            tokenizer = model_config['tokenizer']()
-            logger.info(f"✅ Successfully loaded {model_config['name']} from local cache")
-            return True
-        elif model_config['type'] in ['pipeline', 'sentence_transformer']:
-            model = model_config['loader']()
-            logger.info(f"✅ Successfully loaded {model_config['name']} from local cache")
-            return True
-    except Exception as local_error:
-        logger.warning(f"Could not load {model_config['name']} from local cache: {local_error}")
-        last_error = local_error
-
-    # If local load fails, try downloading with retries
+    # Skip local cache loading to avoid memory issues in Railway
+    # Just try downloading directly with retries
     for attempt in range(max_retries):
         try:
             # Check memory before attempting download
@@ -147,7 +132,7 @@ async def download_single_attempt(model_config):
     # Log memory before download
     log_memory_usage("before download")
     
-    # Aggressive memory cleanup before download
+    # Ultra-aggressive memory cleanup before download
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
@@ -156,6 +141,11 @@ async def download_single_attempt(model_config):
     os.environ['TRANSFORMERS_OFFLINE'] = '0'
     os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
     os.environ['TOKENIZERS_PARALLELISM'] = 'false'  # Disable parallel tokenization
+    os.environ['TRANSFORMERS_CACHE'] = os.environ.get('TRANSFORMERS_CACHE', '/data/models')
+    os.environ['HF_HOME'] = os.environ.get('HF_HOME', '/data/models')
+    
+    # Force garbage collection again
+    gc.collect()
     
     # Try with SSL verification first
     try:
@@ -226,6 +216,15 @@ async def main():
         
         for model_key, model_config in MODELS.items():
             logger.info(f"📥 Downloading {model_key}: {model_config['name']}")
+            
+            # Check memory before starting download
+            if not log_memory_usage(f"before {model_key}"):
+                logger.warning(f"⚠️  High memory usage before {model_key}, waiting 30 seconds...")
+                await asyncio.sleep(30)
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            
             try:
                 logger.info(f"🔄 Starting download attempt for {model_key}...")
                 result = await download_with_retry(model_key, model_config)
@@ -260,9 +259,9 @@ async def main():
             
             # Longer delay between downloads to let memory settle
             if successful > 0:  # Only add delay if we've had successful downloads
-                await asyncio.sleep(15)
+                await asyncio.sleep(30)  # Increased delay for memory cleanup
             else:
-                await asyncio.sleep(10)  # Shorter delay if no successful downloads yet
+                await asyncio.sleep(20)  # Increased delay if no successful downloads yet
         
         # Count required models (non-optional)
         required_models = [k for k, v in MODELS.items() if not v.get('optional', False)]
