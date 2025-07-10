@@ -29,9 +29,10 @@ def get_model(model_name='sentence-transformers/all-mpnet-base-v2') -> SentenceT
             # Set model to evaluation mode
             _model.eval()
             
-            # Move to CPU and use float32 for better memory efficiency
+            # Move to CPU and use float32 for better compatibility
             _model = _model.to('cpu')
-            _model.half()  # Use float16 instead of float32
+            # Remove half() precision conversion to avoid compatibility issues
+            # _model.half()  # Use float16 instead of float32
             
             print(f"Model {model_name} loaded successfully")
         except Exception as e:
