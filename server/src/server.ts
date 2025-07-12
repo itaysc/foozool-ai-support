@@ -195,9 +195,9 @@ export default class Server{
     mongoose.set('bufferCommands', true); // Enable buffering for Railway
     
     // Don't append /foozool if the connection string already includes a database name
-    const finalConnectionString = connectionString.includes('/?') || connectionString.includes('/foozool') 
+    const finalConnectionString = connectionString.includes('/?') || connectionString.includes('/test') 
       ? connectionString 
-      : `${connectionString}/foozool`;
+      : `${connectionString}/test`;
       
     console.log('Final connection string (masked):', finalConnectionString.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
     
