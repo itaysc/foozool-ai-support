@@ -21,12 +21,25 @@ export async function getSBERTEmbedding(tickets: Partial<ITicket>[]) : Promise<n
         try {
             console.log(`Attempt ${attempt}/${maxRetries}: Getting SBERT embeddings for ${tickets.length} tickets`);
             
-            const _tickets = tickets.map(t => ({ 
-                subject: t.subject || '', 
-                description: t.description || '' 
-            }));
+            // Validate and clean ticket data before sending
+            const _tickets = tickets.map((t, index) => {
+                const subject = t.subject || '';
+                const description = t.description || '';
+                
+                // Log any unexpected fields for debugging
+                const unexpectedFields = Object.keys(t).filter(key => !['subject', 'description'].includes(key));
+                if (unexpectedFields.length > 0) {
+                    console.warn(`Ticket ${index} has unexpected fields:`, unexpectedFields);
+                }
+                
+                return { 
+                    subject, 
+                    description 
+                };
+            });
             
             console.log(`Making request to: ${Config.PYTHON_ML_SERVICE_URL}/api/v1/sbert-embed`);
+            console.log(`Request payload sample:`, _tickets[0]);
             
             // Add more robust error handling and timeout
             const res = await api.post('/api/v1/sbert-embed', _tickets, {
@@ -49,7 +62,12 @@ export async function getSBERTEmbedding(tickets: Partial<ITicket>[]) : Promise<n
                 message: error.message,
                 code: error.code,
                 status: error.response?.status,
-                data: error.response?.data
+                data: error.response?.data,
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    headers: error.config?.headers
+                }
             });
 
             // If it's the last attempt, throw the error
@@ -131,11 +149,34 @@ export async function extractKeywordsFromTicket(ticket: Partial<ITicket> & { emb
 
 export async function summarizeTickets(tickets: Partial<ITicket>[]) : Promise<string[]> {
     try {
-    const _tickets = tickets.map(t => ({ subject: t.subject, description: t.description }))
-        const res = await api.post('/api/v1/summarize', _tickets);
+        console.log(`Summarizing ${tickets.length} tickets`);
+        
+        // Only pass subject and description fields, explicitly filter out chatHistory and other fields
+        const _tickets = tickets.map(t => ({ 
+            subject: t.subject || '', 
+            description: t.description || '' 
+        }));
+        
+        console.log(`Making request to: ${Config.PYTHON_ML_SERVICE_URL}/api/v1/summarize`);
+        
+        const res = await api.post('/api/v1/summarize', _tickets, {
+            timeout: 300000, // 5 minutes
+            maxContentLength: 50 * 1024 * 1024, // 50MB
+            maxBodyLength: 50 * 1024 * 1024, // 50MB
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+        
+        console.log(`Summarization request successful`);
         return res.data;
-    } catch (err) {
-        console.log(err);
+    } catch (err: any) {
+        console.error('Error in summarizeTickets:', {
+            message: err.message,
+            status: err.response?.status,
+            data: err.response?.data,
+            ticketsCount: tickets.length
+        });
         return [];
     }
 }

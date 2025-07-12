@@ -89,94 +89,91 @@ async function saveTicketEntry(
  */
 export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
   try {
-  // Extract ticket payload
-  const ticketPayload = {
-    subject: ticket.subject,
-    description: extractCustomerMessage(ticket.description),
-  };
-
-  // Process intent classification
-  const intents = await processTicketIntent(ticketPayload);
-  const summary = await summarizeTickets([ticketPayload]);
-  // Find similar tickets
-  const similarTickets = await findZendeskSimilarTickets({
-    ticket: ticketPayload,
-    k: 5,
-  });
-
-  // Summarize similar tickets to reduce llm token usage
-  const similarTicketsSummary = await summarizeTickets(similarTickets.payload);
-  similarTickets.payload.forEach((sTicket, index) => {
-    if (similarTicketsSummary[index]) {
-      sTicket.description = similarTicketsSummary[index];
-    }
-  });
-  // Generate or extract product information
-  const product = generateMockProduct();
-  // Alternative: const product = await extractProductFromTicket(userId, ticket);
-
-  // Get recent tickets for anomaly detection (last 100 tickets)
-  // const recentTickets = await TicketModel.find({
-  //   // Only get tickets from the last 30 days
-  //   createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-  //   // Exclude the current ticket
-  //   externalId: { $ne: ticket.ticket_id.toString() },
-  //   // Only include tickets that have been processed (have a response)
-  //   'chatHistory.1': { $exists: true }
-  // })
-  //   .sort({ createdAt: -1 })
-  //   .limit(100)
-  //   .select({
-  //     subject: 1,
-  //     description: 1,
-  //     externalId: 1,
-  //     createdAt: 1,
-  //     'chatHistory.role': 1,
-  //     'chatHistory.content': 1,
-  //     'chatHistory.createdAt': 1
-  //   })
-  //   .lean();
-
-  // // Analyze ticket and generate insights
-  // const insightAnalysis = await analyzeTicket({
-  //   subject: ticketPayload.subject,
-  //   description: ticketPayload.description,
-  //   ticketId: ticket.ticket_id.toString(),
-  //   product,
-  //   similarTickets: similarTickets.payload,
-  // }, recentTickets);
-
-  const agentSuggestion = await getAgentSuggestion(userId, {
-    subject: ticketPayload.subject,
-    description: summary[0] || ticketPayload.description,
-  }, product, similarTickets.payload);
-  await addCommentToTicket(ticket.ticket_id.toString(), agentSuggestion.reasoning, false);
-  // Generate AI response
-  const aiResponse = await generateTicketResponse(
-    userId,
-    ticketPayload,
-    similarTickets.payload,
-    product
-  );
-
-  // Save ticket entry
-  await saveTicketEntry(ticketPayload, ticket.ticket_id.toString(), aiResponse);
-
-  return {
-    status: 200,
-    payload: {
-      response: aiResponse,
-      agentSuggestion,
-      similarTickets: similarTickets.payload,
-      product,
-      // insights: insightAnalysis,
-    },
+    console.log(`Processing webhook for ticket ${ticket.ticket_id}`);
+    
+    // Extract ticket payload
+    const ticketPayload = {
+      subject: ticket.subject,
+      description: extractCustomerMessage(ticket.description),
     };
-  } catch (error) {
-    console.error('Error handling webhook:', error);
+
+    // Process intent classification
+    const intents = await processTicketIntent(ticketPayload);
+    const summary = await summarizeTickets([ticketPayload]);
+    
+    // Find similar tickets
+    const similarTickets = await findZendeskSimilarTickets({
+      ticket: ticketPayload,
+      k: 5,
+    });
+
+    // Filter similar tickets to only include subject and description for summarization
+    const ticketsForSummarization = similarTickets.payload.map(ticket => ({
+      subject: ticket.subject || '',
+      description: ticket.description || ''
+    }));
+    
+    // Summarize similar tickets to reduce llm token usage
+    const similarTicketsSummary = await summarizeTickets(ticketsForSummarization);
+    similarTickets.payload.forEach((sTicket, index) => {
+      if (similarTicketsSummary[index]) {
+        sTicket.description = similarTicketsSummary[index];
+      }
+    });
+    
+    // Generate or extract product information
+    const product = generateMockProduct();
+
+    const agentSuggestion = await getAgentSuggestion(userId, {
+      subject: ticketPayload.subject,
+      description: summary[0] || ticketPayload.description,
+    }, product, similarTickets.payload);
+    
+    // Add comment to Zendesk ticket with better error handling
+    try {
+      await addCommentToTicket(ticket.ticket_id.toString(), agentSuggestion.reasoning, false);
+      console.log(`Successfully added agent suggestion comment to ticket ${ticket.ticket_id}`);
+    } catch (commentError: any) {
+      console.error(`Failed to add comment to Zendesk ticket ${ticket.ticket_id}:`, commentError.message);
+      // Continue processing even if comment fails
+    }
+    
+    // Generate AI response
+    const aiResponse = await generateTicketResponse(
+      userId,
+      ticketPayload,
+      similarTickets.payload,
+      product
+    );
+
+    // Save ticket entry
+    await saveTicketEntry(ticketPayload, ticket.ticket_id.toString(), aiResponse);
+
+    console.log(`Successfully processed webhook for ticket ${ticket.ticket_id}`);
+
+    return {
+      status: 200,
+      payload: {
+        response: aiResponse,
+        agentSuggestion,
+        similarTickets: similarTickets.payload,
+        product,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error handling webhook:', {
+      ticketId: ticket?.ticket_id,
+      error: error.message,
+      stack: error.stack,
+      userId
+    });
     return {
       status: 500,
-      payload: { error: 'Internal server error' },
+      payload: { 
+        error: 'Internal server error',
+        message: error.message,
+        ticketId: ticket?.ticket_id
+      },
     };
   }
 } 
