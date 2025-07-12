@@ -150,14 +150,28 @@ export async function extractKeywordsFromTicket(ticket: Partial<ITicket> & { emb
 export async function summarizeTickets(tickets: Partial<ITicket>[]) : Promise<string[]> {
     try {
         console.log(`Summarizing ${tickets.length} tickets`);
+        console.log(`ML Service URL: ${Config.PYTHON_ML_SERVICE_URL}`);
         
         // Only pass subject and description fields, explicitly filter out chatHistory and other fields
-        const _tickets = tickets.map(t => ({ 
-            subject: t.subject || '', 
-            description: t.description || '' 
-        }));
+        const _tickets = tickets.map((t, index) => {
+            const subject = t.subject || '';
+            const description = t.description || '';
+            
+            // Log any unexpected fields for debugging
+            const unexpectedFields = Object.keys(t).filter(key => !['subject', 'description'].includes(key));
+            if (unexpectedFields.length > 0) {
+                console.warn(`Ticket ${index} has unexpected fields:`, unexpectedFields);
+            }
+            
+            return { 
+                subject, 
+                description 
+            };
+        });
         
         console.log(`Making request to: ${Config.PYTHON_ML_SERVICE_URL}/api/v1/summarize`);
+        console.log(`Request payload sample:`, _tickets[0]);
+        console.log(`Total tickets to summarize:`, _tickets.length);
         
         const res = await api.post('/api/v1/summarize', _tickets, {
             timeout: 300000, // 5 minutes
@@ -169,14 +183,30 @@ export async function summarizeTickets(tickets: Partial<ITicket>[]) : Promise<st
         });
         
         console.log(`Summarization request successful`);
+        console.log(`Response data type:`, typeof res.data);
+        console.log(`Response data length:`, Array.isArray(res.data) ? res.data.length : 'not an array');
+        
+        if (Array.isArray(res.data)) {
+            console.log(`First summary:`, res.data[0]);
+        }
+        
         return res.data;
     } catch (err: any) {
         console.error('Error in summarizeTickets:', {
             message: err.message,
             status: err.response?.status,
+            statusText: err.response?.statusText,
             data: err.response?.data,
-            ticketsCount: tickets.length
+            ticketsCount: tickets.length,
+            config: {
+                url: err.config?.url,
+                method: err.config?.method,
+                headers: err.config?.headers
+            }
         });
+        
+        // Return empty array as fallback
+        console.log('Returning empty array as fallback');
         return [];
     }
 }
