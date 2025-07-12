@@ -1,45 +1,9 @@
-# Ignore files that shouldn't trigger builds
-node_modules/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.DS_Store
+# Ignore large files for Railway deployment
+python-ml-service/venv/
+python-ml-service/models/
+python-ml-service/path/
+python-ml-service/__pycache__/
+**/node_modules/
+**/dist/
 *.log
-.env
-.env.local
-.env.production
-.git/
-.gitignore
-README.md
-*.md
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Ignore test files
-**/test/
-**/tests/
-**/*.test.js
-**/*.test.ts
-**/*.spec.js
-**/*.spec.ts
-**/__tests__/
-
-# Ignore build artifacts
-dist/
-build/
-*.tgz
-*.tar.gz
-
-# Ignore documentation
-docs/
-*.md
-
-# Ignore temporary files
-tmp/
-temp/
-.tmp/
-.temp/ 
+*.lock 
