@@ -16,6 +16,7 @@ import zendeskWebhookRoutesV1 from './routes/webhooks/zendesk/v1';
 import { mapping as ticketsMapping, settings as ticketsSettings } from "./elasticsearch/schemas/ticket";
 import modelTrainingRoutesV1 from './routes/model-training/v1';
 import ticketsRoutesV1 from './routes/tickets/v1';
+import swaggerRoutesV1 from './routes/swagger/v1';
 import seed from "./seeds";
 import QdrantService from "./qdrant/service";
 
@@ -64,6 +65,9 @@ export default class Server{
       this.app.use('/api/v1/tickets', ticketsRoutesV1);
       this.app.use('/api/v1/train', modelTrainingRoutesV1);
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
+      
+      // Swagger documentation
+      this.app.use('/api/docs', swaggerRoutesV1);
       
       // Legacy health check endpoints for backward compatibility
       this.app.get('/api/v1/health', (req, res) => {

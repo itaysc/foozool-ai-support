@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EMAIL_REGEX } from '../../../../utils/regex';
+import { registry } from '../../../../config/openapi';
 
 export const zendeskWebhookValidation = z.object({
     ticket_id: z.string(),
@@ -19,3 +20,16 @@ export const zendeskWebhookValidation = z.object({
 });
 
 export type ZendeskWebhookInput = z.infer<typeof zendeskWebhookValidation>;
+
+// Register schema with OpenAPI
+registry.register('ZendeskWebhookRequest', zendeskWebhookValidation);
+
+// Response schemas
+export const webhookResponse = z.object({
+  success: z.boolean(),
+  message: z.string(),
+  ticketId: z.string(),
+});
+
+// Register response schemas
+registry.register('WebhookResponse', webhookResponse);
