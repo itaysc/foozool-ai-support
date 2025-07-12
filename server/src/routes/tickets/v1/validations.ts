@@ -32,15 +32,15 @@ export const newTicket = z.object({
    }),
    requester: z.object({
      id: z.number(),
-     name: z.string().min(1, 'Requester name is required'),
-     email: z.string().min(1, 'Email is required').regex(EMAIL_REGEX, 'Invalid requester email format').optional(),
+     name: z.string(),
+     email: z.string().regex(EMAIL_REGEX, 'Invalid requester email format').optional(),
      phone: z.string().optional(),
      created_at: z.string()
    }),
    assignee: z.object({
      id: z.number(),
-     name: z.string().min(1, 'Assignee name is required'),
-     email: z.string().min(1, 'Email is required').regex(EMAIL_REGEX, 'Invalid assignee email format').optional()
+     name: z.string(),
+     email: z.string().regex(EMAIL_REGEX, 'Invalid assignee email format').optional()
    }).optional(),
    organization: z.object({
      id: z.number(),

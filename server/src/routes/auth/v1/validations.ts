@@ -3,8 +3,8 @@ import { EMAIL_REGEX } from '../../../utils/regex';
 import { registry } from '../../../config/openapi';
 
 export const getToken = z.object({
-  email: z.string().min(1, 'Email is required').regex(EMAIL_REGEX, 'Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().regex(EMAIL_REGEX, 'Invalid email format'),
+  password: z.string(),
 });
 
 export type GetTokenInput = z.infer<typeof getToken>;

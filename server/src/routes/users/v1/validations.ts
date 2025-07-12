@@ -3,11 +3,11 @@ import { EMAIL_REGEX } from '../../../utils/regex';
 import { registry } from '../../../config/openapi';
 
 export const createUserSchema = z.object({
-  email: z.string().min(1, 'Email is required').regex(EMAIL_REGEX, 'Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  organization: z.string().min(1, 'Organization is required'),
+  email: z.string().regex(EMAIL_REGEX, 'Invalid email format'),
+  password: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  organization: z.string(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
