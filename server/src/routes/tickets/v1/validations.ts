@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { ZendeskTicket } from 'src/types';
 import { EMAIL_REGEX } from '../../../utils/regex';
-import { registry } from '../../../config/openapi';
    
 export const newTicket = z.object({
    ticket: z.object({
@@ -51,16 +50,10 @@ export const newTicket = z.object({
 
 export type NewTicketInput = z.infer<typeof newTicket>;
 
-// Register schema with OpenAPI
-registry.register('NewTicketRequest', newTicket);
-
 // Response schemas
 export const ticketResponse = z.object({
   success: z.boolean(),
   message: z.string(),
   ticketId: z.string(),
 });
-
-// Register response schemas
-registry.register('TicketResponse', ticketResponse);
     

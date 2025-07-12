@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { EMAIL_REGEX } from '../../../utils/regex';
-import { registry } from '../../../config/openapi';
 
 export const createUserSchema = z.object({
   email: z.string().regex(EMAIL_REGEX, 'Invalid email format'),
@@ -11,9 +10,6 @@ export const createUserSchema = z.object({
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
-
-// Register schema with OpenAPI
-registry.register('CreateUserRequest', createUserSchema);
 
 // Response schemas
 export const userResponse = z.object({
@@ -31,7 +27,3 @@ export const createUserResponse = z.object({
   message: z.string(),
   user: userResponse,
 });
-
-// Register response schemas
-registry.register('UserResponse', userResponse);
-registry.register('CreateUserResponse', createUserResponse);

@@ -1,14 +1,6 @@
-import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
-
-// Create a registry to hold all schemas and routes
-export const registry = new OpenAPIRegistry();
-
-// Create the OpenAPI document
-export const generator = new OpenApiGeneratorV3(registry.definitions);
-
-// Function to generate OpenAPI document after all schemas are registered
+// Basic OpenAPI document without schema registration
 export const generateOpenApiDocument = () => {
-  return generator.generateDocument({
+  return {
     openapi: '3.0.0',
     info: {
       title: 'TKTAI Support AI API',
@@ -35,8 +27,70 @@ export const generateOpenApiDocument = () => {
       { name: 'Model Training', description: 'AI model training endpoints' },
       { name: 'Health', description: 'Health check endpoints' },
     ],
-  });
+    paths: {
+      '/api/v1/auth/token': {
+        post: {
+          tags: ['Authentication'],
+          summary: 'Authenticate user and get access token',
+          description: 'Authenticate a user with email and password to receive an access token',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    email: {
+                      type: 'string',
+                      format: 'email',
+                      description: 'User email address'
+                    },
+                    password: {
+                      type: 'string',
+                      description: 'User password'
+                    }
+                  },
+                  required: ['email', 'password']
+                }
+              }
+            }
+          },
+          responses: {
+            '200': {
+              description: 'Authentication successful',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string' },
+                      token: { type: 'string' },
+                      user: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'string' },
+                          email: { type: 'string' },
+                          firstName: { type: 'string' },
+                          lastName: { type: 'string' }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            '400': {
+              description: 'Bad request - validation error'
+            },
+            '401': {
+              description: 'Unauthorized - invalid credentials'
+            }
+          }
+        }
+      }
+    }
+  };
 };
 
-// Initial document (will be regenerated after schemas are registered)
+// Initial document
 export let openApiDocument = generateOpenApiDocument(); 

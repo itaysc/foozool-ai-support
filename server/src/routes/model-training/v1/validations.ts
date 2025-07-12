@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { registry } from '../../../config/openapi';
 
 export const trainModelSchema = z.object({
     maxPages: z.number().optional().default(100),
@@ -9,9 +8,6 @@ export const trainModelSchema = z.object({
 
 export type TrainModelInput = z.infer<typeof trainModelSchema>;
 
-// Register schema with OpenAPI
-registry.register('TrainModelRequest', trainModelSchema);
-
 // Response schemas
 export const trainModelResponse = z.object({
   success: z.boolean(),
@@ -19,6 +15,3 @@ export const trainModelResponse = z.object({
   trainingId: z.string(),
   status: z.enum(['started', 'completed', 'failed']),
 });
-
-// Register response schemas
-registry.register('TrainModelResponse', trainModelResponse);
