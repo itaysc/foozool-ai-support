@@ -19,6 +19,7 @@ import ticketsRoutesV1 from './routes/tickets/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
 import seed from "./seeds";
 import QdrantService from "./qdrant/service";
+import { startAllJobs } from './jobs';
 
 export interface IServer {
   startServer: (callback: (port: number) => void) => void;
@@ -40,6 +41,10 @@ export default class Server{
       // Initialize JWT strategies after environment variables are loaded
       console.log('Initializing JWT strategies...');
       initializeJWTStrategies();
+      
+      // Start all scheduled jobs
+      console.log('Initializing scheduled jobs...');
+      startAllJobs();
       
       console.log('✅ Server instance created successfully');
     } catch (error) {
