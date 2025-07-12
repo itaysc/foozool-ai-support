@@ -1,6 +1,6 @@
-import Joi from 'joi';
+import { z } from 'zod';
 
-type ValidationSchema = Joi.ObjectSchema;
+type ValidationSchema = z.ZodSchema;
 type AsyncFunction<T, R> = (data: T) => Promise<R>;
 
 function serviceWrapper<T, R>(schema: ValidationSchema | null | AsyncFunction<T, R>, fn?: AsyncFunction<T, R>) {
@@ -11,13 +11,13 @@ function serviceWrapper<T, R>(schema: ValidationSchema | null | AsyncFunction<T,
     if (!schema && fn) {
       return fn(data);
     }
-    const { error, value } = schema!.validate(data, { abortEarly: false });
+    const result = schema!.safeParse(data);
 
-    if (error) {
-      throw new Error (error.details.map((d) => d.message).join(', '));
+    if (!result.success) {
+      throw new Error(result.error.issues.map((issue) => issue.message).join(', '));
     }
 
-    return fn!(value);
+    return fn!(result.data as T);
   };
 }
 
