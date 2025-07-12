@@ -1,5 +1,4 @@
-import { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi';
-import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi/dist/generators/v3';
+import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 
 // Create a registry to hold all schemas and routes
 export const registry = new OpenAPIRegistry();
@@ -10,6 +9,7 @@ export const generator = new OpenApiGeneratorV3(registry.definitions);
 // Function to generate OpenAPI document after all schemas are registered
 export const generateOpenApiDocument = () => {
   return generator.generateDocument({
+    openapi: '3.0.0',
     info: {
       title: 'TKTAI Support AI API',
       version: '1.0.0',
