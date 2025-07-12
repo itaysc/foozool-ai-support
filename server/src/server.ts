@@ -67,7 +67,7 @@ export default class Server{
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
       
       // Swagger documentation
-      this.app.use('/api/docs', swaggerRoutesV1);
+      this.app.use('/api/swagger', swaggerRoutesV1);
       
       // Legacy health check endpoints for backward compatibility
       this.app.get('/api/v1/health', (req, res) => {

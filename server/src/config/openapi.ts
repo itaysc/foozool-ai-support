@@ -5,7 +5,7 @@ export const generateOpenApiDocument = () => {
     info: {
       title: 'TKTAI Support AI API',
       version: '1.0.0',
-      description: 'API documentation for Foozool Support AI backend services',
+      description: 'API documentation for TKTAI Support AI backend services',
       contact: {
         name: 'API Support',
         email: 'support@tktai.com',
