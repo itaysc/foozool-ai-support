@@ -1,0 +1,19 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "python startup.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+memory = "2GB"
+
+[variables]
+ENVIRONMENT = "production"
+RAILWAY_ENVIRONMENT = "production"
+PYTHONUNBUFFERED = "1"
+
+# Mount persistent storage for models
+[[volumes]]
+"/data" = "models-storage" 
