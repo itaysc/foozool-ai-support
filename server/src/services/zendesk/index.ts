@@ -163,6 +163,23 @@ export async function createDemoZendeskTickets(tickets: ITicket[]) {
 }
 
 
+export async function createZendeskTicket(ticket: ITicket) {
+  const res = await api.post(`/tickets.json`, { 
+    ticket: {
+      comment: {
+        body: ticket.description,
+        public: true,
+      },
+      subject: ticket.subject,
+      tags: ticket.tags,
+      status: ticket.status,
+      priority: ticket.priority,
+      external_id: ticket.externalId,
+    },
+   });
+  return res.data;
+}
+
 async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { maxPages?: number, perPage?: number, fromPage?: number } = {}): Promise<IResponse<ITicket[]>> {
   try {
     let pagesFetched = 0;
