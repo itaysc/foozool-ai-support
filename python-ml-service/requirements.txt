@@ -18,7 +18,6 @@ typing_extensions==4.12.2
 # Production-specific optimizations
 gunicorn==21.2.0
 uvicorn[standard]==0.34.0  # Includes additional production features
-python-json-logger==2.0.7  # For structured logging
 prometheus-client==0.17.1  # For metrics
 
 # Machine Learning Dependencies

@@ -1,9 +1,13 @@
 import os
 import gc
+import logging
 import torch
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict
 from functools import lru_cache
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Set cache directory
 cache_dir = os.environ.get('SENTENCE_TRANSFORMERS_HOME', '/app/models/sentence-transformers')
@@ -34,9 +38,9 @@ def get_model(model_name='sentence-transformers/all-mpnet-base-v2') -> SentenceT
             # Remove half() precision conversion to avoid compatibility issues
             # _model.half()  # Use float16 instead of float32
             
-            print(f"Model {model_name} loaded successfully")
+            logger.info(f"Model {model_name} loaded successfully")
         except Exception as e:
-            print(f"Error loading model {model_name}: {e}")
+            logger.error(f"Error loading model {model_name}: {e}")
             raise RuntimeError(f"SentenceTransformer model {model_name} not available. Please check model loading.")
     
     return _model

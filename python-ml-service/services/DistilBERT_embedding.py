@@ -1,6 +1,10 @@
 import torch
+import logging
 from transformers import DistilBertTokenizer, DistilBertModel
 import os
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Set cache directory for models
 cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
@@ -25,9 +29,9 @@ def get_distilbert_models():
                 cache_dir=cache_dir,
                 local_files_only=False
             )
-            print("DistilBERT model loaded successfully")
+            logger.info("DistilBERT model loaded successfully")
         except Exception as e:
-            print(f"Error loading DistilBERT model: {e}")
+            logger.error(f"Error loading DistilBERT model: {e}")
             # Try loading from local cache only
             try:
                 distilbert_model = DistilBertModel.from_pretrained(
@@ -40,9 +44,9 @@ def get_distilbert_models():
                     cache_dir=cache_dir,
                     local_files_only=True
                 )
-                print("DistilBERT model loaded from local cache")
+                logger.info("DistilBERT model loaded from local cache")
             except Exception as local_e:
-                print(f"Failed to load DistilBERT model from cache: {local_e}")
+                logger.error(f"Failed to load DistilBERT model from cache: {local_e}")
                 distilbert_model = None
                 distilbert_tokenizer = None
     

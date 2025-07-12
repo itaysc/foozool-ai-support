@@ -6,19 +6,15 @@ import logging
 import time
 import os
 from prometheus_client import Counter, Histogram
-from pythonjsonlogger import jsonlogger
 from health_router import health_router
 
-# Configure structured logging
-logger = logging.getLogger()
-logHandler = logging.StreamHandler()
-formatter = jsonlogger.JsonFormatter(
-    '%(asctime)s %(name)s %(levelname)s %(message)s',
+# Configure simple logging for Railway compatibility
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-logHandler.setFormatter(formatter)
-logger.addHandler(logHandler)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Prometheus metrics
 REQUEST_COUNT = Counter(

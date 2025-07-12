@@ -1,5 +1,9 @@
 from transformers import pipeline
+import logging
 import os
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Set cache directory
 cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
@@ -14,9 +18,9 @@ def get_qa_pipeline():
     if qa_pipeline is None:
         try:
             qa_pipeline = pipeline("question-answering", model="distilbert-base-cased-distilled-squad")
-            print("DistilBERT QA model loaded successfully")
+            logger.info("DistilBERT QA model loaded successfully")
         except Exception as e:
-            print(f"Error loading DistilBERT QA model: {e}")
+            logger.error(f"Error loading DistilBERT QA model: {e}")
             qa_pipeline = None
     
     return qa_pipeline

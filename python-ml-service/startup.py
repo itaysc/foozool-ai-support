@@ -11,8 +11,12 @@ import subprocess
 import time
 from pathlib import Path
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging for Railway compatibility
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
 def install_ml_dependencies():

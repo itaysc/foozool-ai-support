@@ -1,6 +1,10 @@
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
+import logging
 from sentence_transformers import SentenceTransformer
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Lazy loading - don't load models at import time
 _keyword_model = None
@@ -12,9 +16,9 @@ def get_keyword_model():
     if _keyword_model is None:
         try:
             _keyword_model = SentenceTransformer('all-MiniLM-L6-v2')
-            print("✅ Keyword extraction model loaded successfully")
+            logger.info("Keyword extraction model loaded successfully")
         except Exception as e:
-            print(f"❌ Error loading keyword extraction model: {e}")
+            logger.error(f"Error loading keyword extraction model: {e}")
             _keyword_model = None
     
     return _keyword_model
@@ -61,5 +65,5 @@ def extract_keywords_from_embedding(ticket, embedding, top_n=5):
         return top_keywords
 
     except Exception as e:
-        print(f"Error in extract_keywords_from_embedding: {str(e)}")
+        logger.error(f"Error in extract_keywords_from_embedding: {str(e)}")
         return []  # Return empty list on failure

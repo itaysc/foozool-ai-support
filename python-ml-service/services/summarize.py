@@ -1,9 +1,13 @@
 import os
 import re
+import logging
 from typing import List
 
 import torch
 from transformers import pipeline
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Set cache directory for transformers
 cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
@@ -17,7 +21,7 @@ def get_summarizer():
     
     if summarizer is None:
         try:
-            print("🔄 Loading BART summarization model...")
+            logger.info("Loading BART summarization model...")
             
             # Try to load with reduced memory usage - use the model that's actually downloaded
             summarizer = pipeline(
@@ -31,10 +35,10 @@ def get_summarizer():
                     "torch_dtype": torch.float32  # Use float32 instead of float16
                 }
             )
-            print("✅ BART summarization model loaded successfully.")
+            logger.info("BART summarization model loaded successfully.")
         except Exception as e:
-            print(f"❌ Error loading BART summarization model: {e}")
-            print("🔄 Attempting to load with alternative configuration...")
+            logger.error(f"Error loading BART summarization model: {e}")
+            logger.info("Attempting to load with alternative configuration...")
             
             try:
                 # Try with even more conservative settings
@@ -48,10 +52,10 @@ def get_summarizer():
                         "torch_dtype": torch.float32
                     }
                 )
-                print("✅ BART summarization model loaded with alternative configuration.")
+                logger.info("BART summarization model loaded with alternative configuration.")
             except Exception as e2:
-                print(f"❌ Failed to load BART model with alternative config: {e2}")
-                print("🔄 Trying fallback model...")
+                logger.error(f"Failed to load BART model with alternative config: {e2}")
+                logger.info("Trying fallback model...")
                 
                 try:
                     # Try with the original model as fallback
@@ -65,9 +69,9 @@ def get_summarizer():
                             "torch_dtype": torch.float32
                         }
                     )
-                    print("✅ BART summarization model loaded with fallback model.")
+                    logger.info("BART summarization model loaded with fallback model.")
                 except Exception as e3:
-                    print(f"❌ Failed to load any BART model: {e3}")
+                    logger.error(f"Failed to load any BART model: {e3}")
                     summarizer = None
     
     return summarizer
@@ -133,7 +137,7 @@ def summarize_texts(texts: List[str], max_summary_len: int = 50, min_summary_len
     summarizer_instance = get_summarizer()
     
     if summarizer_instance is None:
-        print("⚠️ BART model not available, using fallback summarization")
+        logger.warning("BART model not available, using fallback summarization")
         return [simple_summarize(text, max_summary_len) for text in texts]
 
     # Preprocess each conversation before summarization
@@ -165,7 +169,7 @@ def summarize_texts(texts: List[str], max_summary_len: int = 50, min_summary_len
             summaries.append(summary[0]["summary_text"])
             
         except Exception as e:
-            print(f"⚠️ Error summarizing text {i}, using fallback: {e}")
+            logger.warning(f"Error summarizing text {i}, using fallback: {e}")
             summaries.append(simple_summarize(text, max_summary_len))
 
     return summaries
