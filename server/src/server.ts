@@ -10,6 +10,7 @@ import Config from './config';
 import authRoutesV1 from './routes/auth/v1';
 import usersRoutesV1 from './routes/users/v1';
 import healthRoutesV1 from './routes/health/v1';
+import fakerRoutesV1 from './routes/faker/v1';
 import { NodeClickHouseClient } from "@clickhouse/client/dist/client";
 import ElasticsearchService from "./elasticsearch/service";
 import zendeskWebhookRoutesV1 from './routes/webhooks/zendesk/v1';
@@ -66,7 +67,7 @@ export default class Server{
       this.app.use('/api/v1/tickets', ticketsRoutesV1);
       this.app.use('/api/v1/train', modelTrainingRoutesV1);
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
-      
+      this.app.use('/api/v1/faker', fakerRoutesV1);
       // Swagger documentation
       this.app.use('/api/swagger', swaggerRoutesV1);
       
