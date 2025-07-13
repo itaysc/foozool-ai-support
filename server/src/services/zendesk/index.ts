@@ -4,7 +4,7 @@ import bluebird from 'bluebird';
 import { faker } from '@faker-js/faker';
 import Config from '../../config';
 import sanitizeText from '../../utils/text-sanitize';
-import { IOrganization, IResponse, ITicket } from 'src/types';
+import { IOrganization, IResponse, ITicket, ICreateTicketPayload } from 'src/types';
 import { getDemoOrganization } from '../../dal/organization.dal';
 
 const authString = Buffer.from(`${Config.ZENDESK_USERNAME}/token:${Config.ZENDESK_TOKEN}`).toString('base64');
@@ -108,6 +108,7 @@ export async function createDemoZendeskTickets(tickets: ITicket[]) {
 
     return {
       subject: ticket.subject,
+      description: ticket.description,
       comment: {
         body: ticket.description,
         public: true,
@@ -163,21 +164,14 @@ export async function createDemoZendeskTickets(tickets: ITicket[]) {
 }
 
 
-export async function createZendeskTicket(ticket: ITicket) {
-  const res = await api.post(`/tickets.json`, { 
-    ticket: {
-      comment: {
-        body: ticket.description,
-        public: true,
-      },
-      subject: ticket.subject,
-      tags: ticket.tags,
-      status: ticket.status,
-      priority: ticket.priority,
-      external_id: ticket.externalId,
-    },
-   });
-  return res.data;
+export async function createZendeskTicket(payload: ICreateTicketPayload) {
+  try {
+    const res = await api.post(`/tickets.json`, payload);
+    return res.data;
+  } catch (error) {
+    console.error('Error creating zendesk ticket:', error);
+    throw error;
+  }
 }
 
 async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { maxPages?: number, perPage?: number, fromPage?: number } = {}): Promise<IResponse<ITicket[]>> {

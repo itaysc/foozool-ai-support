@@ -19,7 +19,7 @@ export const startCreateTicketJob = () => {
         try {
             console.log('📝 Creating ticket via scheduled job...');
             const ticket = await createTicket();
-            console.log(`✅ Ticket created successfully: ${ticket.externalId}`);
+            console.log(`✅ Ticket created successfully: ${ticket.ticket.external_id}`);
         } catch (error) {
             console.error('❌ Error creating ticket via scheduled job:', error);
         }

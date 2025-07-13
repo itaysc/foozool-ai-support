@@ -10,3 +10,4 @@ export { ZendeskTicket } from './zendeskTicket';
 export { IToken } from './token';
 export { ZendeskTicketWebhookPayload } from './zendesk/webhookPayload';
 export { IAgentSuggestion } from './agentSuggestion';
+export { ICreateTicketPayload } from './zendesk/createTicketPayload';

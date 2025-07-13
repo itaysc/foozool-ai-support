@@ -1,15 +1,15 @@
 import { callLLM } from '../together.ai';
 import { faker } from '@faker-js/faker';
-import { ITicket } from '../../types/ticket';
+import { ICreateTicketPayload } from '../../types';
 import { UserModel } from '../../schemas';
 import { createZendeskTicket } from '../zendesk';
+import sanitizeText from '../../utils/text-sanitize';
 
 
 export const createTicket = async () => {
     try {
         const prompt = `
-            Context: You are a submitting a customer support ticket for an electronics store (any issue).
-            Respond only with a valid JSON object (no text). Schema:
+            return a valid json object with the following schema:
             {
                 "subject": string,
                 "tags": string[],
@@ -17,6 +17,7 @@ export const createTicket = async () => {
                 "comment": { "body": string }
             }
                 return only a valid json string that can be used with JSON.parse()
+                Do not add any other text or comments to the response, use a single line response.
             `;
         
         // Find a user for the job - try multiple approaches
@@ -35,6 +36,8 @@ export const createTicket = async () => {
         
         const response = await callLLM({
             userId: user._id.toString(),
+            isChat: true,
+            systemMsg: 'You are a submitting a customer support ticket for an electronics store (any issue). Respond only with a valid JSON object (no text).',
             prompt,
             model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
             maxTokens: 1000,
@@ -46,26 +49,29 @@ export const createTicket = async () => {
             console.log(`Cannot create new ticket, invalid response produced from LLM`);
             throw new Error('No response from LLM');
         }
-        const json = JSON.parse(response.data);
-        const ticket: ITicket = {
-            ...json,
-            comment: {
-                ...json.comment,
-                public: true,
-            },
-            via: {
-                channel: 'email',
-                public: true,
-                source: {
-                    from: {
-                        name: faker.person.fullName(),
-                        address: faker.internet.email(),
+        const sanitizedText = sanitizeText(response.data);
+        const json = JSON.parse(sanitizedText);
+        const ticket: ICreateTicketPayload = {
+            ticket: {
+                ...json,
+                comment: {
+                    ...json.comment,
+                    public: true,
+                },
+                via: {
+                    channel: 'email',
+                    public: true,
+                    source: {
+                        from: {
+                            name: faker.person.fullName(),
+                            address: faker.internet.email(),
+                        },
                     },
                 },
-            },
-            externalId: faker.string.uuid(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+                priority: 'normal',
+                status: 'open',
+                external_id: faker.string.uuid(),
+            }
         };
         await createZendeskTicket(ticket);
         return ticket;
