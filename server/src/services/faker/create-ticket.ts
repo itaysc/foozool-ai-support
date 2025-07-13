@@ -8,6 +8,7 @@ import { createZendeskTicket } from '../zendesk';
 export const createTicket = async () => {
     try {
         const prompt = `
+            Context: You are a submitting a customer support ticket for an electronics store (any issue).
             Respond only with a valid JSON object (no text). Schema:
             {
                 "subject": string,
@@ -15,15 +16,15 @@ export const createTicket = async () => {
                 "type": "question"|"incident"|"problem"|"task",
                 "comment": { "body": string }
             }
-            Context: A customer support ticket for an electronics store (any issue).
+                return only a valid json string that can be used with JSON.parse()
             `;
         
         // Find a user for the job - try multiple approaches
-        let user = await UserModel.findOne({ email: 'itayschmidt@gmail.com' });
+        let user = await UserModel.findOne({ email: 'itayschmidt@gmail.com' }).lean();
         
         // If no specific user found, try to find any user
         if (!user) {
-            user = await UserModel.findOne(); // Get any user
+            user = await UserModel.findOne().lean(); // Get any user
         }
         
         // If still no user found, we can't proceed

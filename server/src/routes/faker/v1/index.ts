@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { createTicket } from '../../../services/faker/create-ticket';
-import { validateRequest } from '../../../middleware/validateRequest';
+import { authenticateJWT } from '../../../middleware/authenticate';
 
 const router = Router();
 
-router.post('/zendesk/ticket', validateRequest, async (req, res) => {
+router.post('/zendesk/ticket', authenticateJWT, async (req, res) => {
     const ticket = await createTicket();
     res.status(201).json(ticket);
 });

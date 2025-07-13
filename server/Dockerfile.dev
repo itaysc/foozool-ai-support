@@ -2,9 +2,6 @@ FROM node:23.2.0
 
 WORKDIR /usr/src/app
 
-# Install ca-certificates to fix SSL issues
-RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
-
 # Set environment variables to handle SSL certificate issues
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 ENV NGROK_SKIP_VERIFY=true
@@ -25,12 +22,28 @@ RUN ls -la && echo "=== Checking for tsconfig.json ===" && ls -la tsconfig.json 
 # Install dependencies (this will now have access to tsconfig.json)
 RUN yarn install
 
-# Install build tools for bcrypt
-RUN apt-get update && apt-get install -y build-essential python3
-# Rebuild bcrypt
-RUN npm rebuild bcrypt --build-from-source
-# Clean up
-RUN apt-get remove -y build-essential python3 && apt-get autoremove -y && apt-get clean
+# Try to install build tools, but continue if it fails
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        build-essential \
+        python3 \
+        curl || \
+    echo "Warning: Could not install build tools, continuing without bcrypt rebuild" && \
+    update-ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Try to rebuild bcrypt, but continue if it fails
+RUN npm rebuild bcrypt --build-from-source || \
+    echo "Warning: Could not rebuild bcrypt, using pre-built version"
+
+# Clean up build tools if they were installed
+RUN apt-get update && \
+    apt-get remove -y build-essential python3 2>/dev/null || true && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install nodemon globally using npm (more reliable than yarn global)
 RUN npm install -g nodemon
@@ -40,6 +53,5 @@ RUN yarn build
 
 # Start the server
 EXPOSE 9220
-# CMD ["node", "--inspect=0.0.0.0:9220", "-r", "ts-node/register", "-r", "tsconfig-paths/register", "src/index.ts"]
 CMD ["nodemon"]
 

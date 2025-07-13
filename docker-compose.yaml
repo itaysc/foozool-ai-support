@@ -1,6 +1,8 @@
 networks:
   foozool-net:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: foozool-bridge
 
 volumes:
   mongo-data:
@@ -27,6 +29,9 @@ services:
       - ./server/.env
     environment:
       - IS_DOCKER_DEV=true
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - foozool-net
     depends_on:
