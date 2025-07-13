@@ -1,6 +1,7 @@
 from transformers import pipeline
 import logging
 import os
+import gc
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -24,6 +25,14 @@ def get_qa_pipeline():
             qa_pipeline = None
     
     return qa_pipeline
+
+def answer_question(question, context):
+    from transformers import pipeline
+    qa = pipeline('question-answering', model='distilbert-base-cased-distilled-squad')
+    result = qa({'question': question, 'context': context})
+    del qa
+    gc.collect()
+    return result
 
 def get_answer_from_tickets(question, tickets):
     """

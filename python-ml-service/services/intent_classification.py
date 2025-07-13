@@ -5,6 +5,7 @@ import os
 import re
 from typing import List, Dict, Tuple, Set
 from collections import defaultdict, Counter
+import gc
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -15,57 +16,62 @@ cache_dir = os.environ.get('TRANSFORMERS_CACHE', '/app/models')
 
 def load_tf_intent_model():
     """Custom loader for TensorFlow intent model."""
+    from transformers import pipeline, AutoTokenizer, TFAutoModelForSequenceClassification
+    import torch
     try:
         # Try loading with pipeline first, specifying framework
-        return pipeline('text-classification', model='Sarthak279/Intent', framework='tf', return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+        classifier = pipeline('text-classification', model='Sarthak279/Intent', framework='tf', return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+        result = classifier
+        del classifier
+        gc.collect()
+        return result
     except Exception as e:
         logger.error(f"Error loading TensorFlow intent model with pipeline: {e}")
         try:
             # Fallback: Load model and tokenizer separately
             model = TFAutoModelForSequenceClassification.from_pretrained('Sarthak279/Intent', from_tf=True)
             tokenizer = AutoTokenizer.from_pretrained('Sarthak279/Intent')
-            return pipeline('text-classification', model=model, tokenizer=tokenizer, return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+            classifier = pipeline('text-classification', model=model, tokenizer=tokenizer, return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+            result = classifier
+            del classifier
+            gc.collect()
+            return result
         except Exception as e2:
             logger.error(f"Error loading TensorFlow intent model with separate loading: {e2}")
             raise
 
-# Lazy loading - don't load models at import time
-intent_classifier = None
-
 def get_intent_classifier():
     """Lazy load the intent classification model only when needed."""
-    global intent_classifier
-    
-    if intent_classifier is None:
+    from transformers import pipeline
+    import torch
+    try:
+        classifier = pipeline('text-classification', model='vineetsharma/customer-support-intent-albert', return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+        result = classifier
+        del classifier
+        gc.collect()
+        return result
+    except Exception as e:
+        logger.warning(f"Could not load customer support model, trying general intent model: {e}")
         try:
-            intent_classifier = pipeline(
-                "text-classification",
-                model="vineetsharma/customer-support-intent-albert",
-                return_all_scores=True,
-                device=0 if torch.cuda.is_available() else -1
-            )
-            logger.info("Loaded customer support intent classification model")
+            classifier = load_tf_intent_model()
+            result = classifier
+            del classifier
+            gc.collect()
+            return result
         except Exception as e:
-            logger.warning(f"Could not load customer support model, trying general intent model: {e}")
+            logger.warning(f"Could not load intent models, falling back to text classification: {e}")
             try:
-                intent_classifier = load_tf_intent_model()
-                logger.info("Loaded general intent classification model")
-            except Exception as e:
-                logger.warning(f"Could not load intent models, falling back to text classification: {e}")
-                try:
-                    # Last fallback to a general text classification model (not sentiment-specific)
-                    intent_classifier = pipeline(
-                        "text-classification",
-                        model="distilbert-base-uncased-finetuned-sst-2-english",
-                        return_all_scores=True,
-                        device=0 if torch.cuda.is_available() else -1
-                    )
-                    logger.info("Using general text classification model as fallback")
-                except Exception as fallback_e:
-                    logger.error(f"Failed to load any classification model: {fallback_e}")
-                    intent_classifier = None
+                # Last fallback to a general text classification model (not sentiment-specific)
+                classifier = pipeline('text-classification', model='distilbert-base-uncased-finetuned-sst-2-english', return_all_scores=True, device=0 if torch.cuda.is_available() else -1)
+                result = classifier
+                del classifier
+                gc.collect()
+                return result
+            except Exception as fallback_e:
+                logger.error(f"Failed to load any classification model: {fallback_e}")
+                return None
     
-    return intent_classifier
+    return classifier
 
 # Enhanced intent mapping with synonyms and variations
 INTENT_MAPPING = {
@@ -262,7 +268,10 @@ ENHANCED_INTENT_PATTERNS = {
         "weight": 1.1  # Increased weight for information requests
     },
     "refund_request": {
-        "primary": ["refund", "money back", "return money", "get my money back", "return", "return item"],
+        "primary": ["refund", "money back", "get my money back", "want my money", 
+            "need my money", "give me my money", "return my money", "my money",
+            "pay me back", "owe me money", "money returned"
+        ],
         "secondary": ["cancel payment", "reverse charge", "chargeback", "reimbursement", "give back"],
         "financial": ["credit back", "return funds", "undo payment", "compensation"],
         "actions": ["return purchase", "return order", "send back", "return product"],

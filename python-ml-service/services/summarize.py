@@ -5,6 +5,7 @@ from typing import List
 
 import torch
 from transformers import pipeline
+import gc
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -126,6 +127,15 @@ def preprocess_conversation(text: str, max_words: int = 700) -> str:
     cleaned_text = " ".join(cleaned)
     words = cleaned_text.split()
     return " ".join(words[:max_words])
+
+
+def summarize_text(text, max_summary_len=50, min_summary_len=10):
+    from transformers import pipeline
+    summarizer = pipeline('summarization', model='sshleifer/distilbart-cnn-6-6')
+    result = summarizer(text, max_length=max_summary_len, min_length=min_summary_len, do_sample=False, truncation=True)
+    del summarizer
+    gc.collect()
+    return result[0]['summary_text'] if result else ''
 
 
 def summarize_texts(texts: List[str], max_summary_len: int = 50, min_summary_len: int = 10) -> List[str]:
