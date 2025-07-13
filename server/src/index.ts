@@ -97,6 +97,11 @@ async function start() {
       console.log('Attempting to seed database...');
       await server.seedDB();
       console.log('✅ Database seeded successfully');
+      
+      // Start jobs after database is connected and seeded
+      console.log('Starting scheduled jobs...');
+      await server.startJobs();
+      console.log('✅ Scheduled jobs started successfully');
     } catch (dbError) {
       console.log('⚠️ Database connection failed, but server is running:', dbError);
     }

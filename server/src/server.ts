@@ -42,10 +42,6 @@ export default class Server{
       console.log('Initializing JWT strategies...');
       initializeJWTStrategies();
       
-      // Start all scheduled jobs
-      console.log('Initializing scheduled jobs...');
-      startAllJobs();
-      
       console.log('✅ Server instance created successfully');
     } catch (error) {
       console.error('❌ Error creating server instance:', error);
@@ -194,7 +190,7 @@ export default class Server{
     // Configure mongoose buffer settings BEFORE connecting
     mongoose.set('bufferCommands', true); // Enable buffering for Railway
     
-    // Don't append /foozool if the connection string already includes a database name
+    // Don't append /test if the connection string already includes a database name
     const finalConnectionString = connectionString.includes('/?') || connectionString.includes('/test') 
       ? connectionString 
       : `${connectionString}/test`;
@@ -272,6 +268,12 @@ export default class Server{
 
   public async seedDB() {
      await seed();
+  }
+
+  public async startJobs() {
+    console.log('Initializing scheduled jobs...');
+    startAllJobs();
+    console.log('✅ Scheduled jobs started successfully');
   }
 
   private configureApp() {

@@ -17,9 +17,23 @@ export const createTicket = async () => {
             }
             Context: A customer support ticket for an electronics store (any issue).
             `;
-        const user = await UserModel.findOne({ email: 'itayschmid@gmail.com' });
+        
+        // Find a user for the job - try multiple approaches
+        let user = await UserModel.findOne({ email: 'itayschmidt@gmail.com' });
+        
+        // If no specific user found, try to find any user
+        if (!user) {
+            user = await UserModel.findOne(); // Get any user
+        }
+        
+        // If still no user found, we can't proceed
+        if (!user || !user._id) {
+            console.log('No users found in database. Please ensure the database is seeded with at least one user.');
+            throw new Error('No valid user found for job execution. Please seed the database first.');
+        }
+        
         const response = await callLLM({
-            userId: user?._id.toString() || '',
+            userId: user._id.toString(),
             prompt,
             model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
             maxTokens: 1000,
