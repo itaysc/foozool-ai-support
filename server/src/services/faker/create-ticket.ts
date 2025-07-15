@@ -8,17 +8,43 @@ import sanitizeText from '../../utils/text-sanitize';
 
 export const createTicket = async () => {
     try {
+        // Create varied scenarios for different ticket types
+        const scenarios = [
+            'customer having trouble with a smartphone that won\'t turn on',
+            'customer complaining about slow laptop performance',
+            'customer asking about warranty for a recently purchased TV',
+            'customer reporting a defective gaming console',
+            'customer needing help with setting up a smart home device',
+            'customer having issues with a printer not connecting to WiFi',
+            'customer asking about return policy for headphones',
+            'customer reporting a tablet with cracked screen',
+            'customer having trouble with a smartwatch syncing',
+            'customer asking about compatibility of a new keyboard'
+        ];
+        
+        const ticketTypes = ['question', 'incident', 'problem', 'task'];
+        const priorities = ['low', 'normal', 'high', 'urgent'];
+        
+        // Randomly select scenario and parameters
+        const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+        const randomType = ticketTypes[Math.floor(Math.random() * ticketTypes.length)];
+        const randomPriority = priorities[Math.floor(Math.random() * priorities.length)];
+        
         const prompt = `
+            Create a customer support ticket for an electronics store with the following scenario: ${randomScenario}
+            
             return a valid json object with the following schema:
             {
-                "subject": string,
-                "tags": string[],
-                "type": "question"|"incident"|"problem"|"task",
-                "comment": { "body": string }
+                "subject": string (be specific and varied),
+                "tags": string[] (include relevant tags like "electronics", "customer-service", "technical-support", etc.),
+                "type": "${randomType}",
+                "comment": { "body": string (detailed description of the issue) }
             }
-                return only a valid json string that can be used with JSON.parse()
-                Do not add any other text or comments to the response, use a single line response.
-            `;
+            
+            Make the subject and comment body unique and realistic for this scenario.
+            return only a valid json string that can be used with JSON.parse()
+            Do not add any other text or comments to the response, use a single line response.
+        `;
         
         // Find a user for the job - try multiple approaches
         let user = await UserModel.findOne({ email: 'itayschmidt@gmail.com' }).lean();
@@ -37,12 +63,12 @@ export const createTicket = async () => {
         const response = await callLLM({
             userId: user._id.toString(),
             isChat: true,
-            systemMsg: 'You are a submitting a customer support ticket for an electronics store (any issue). Respond only with a valid JSON object (no text).',
+            systemMsg: `You are a customer submitting a support ticket for an electronics store. The customer is experiencing: ${randomScenario}. Respond only with a valid JSON object (no text).`,
             prompt,
-            model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+            model: 'meta-llama/Meta-Llama.3.1-8B-Instruct-Turbo',
             maxTokens: 1000,
-            temperature: 0.2,
-            topP: 0.8,
+            temperature: 0.8,
+            topP: 0.9,
             stop: ['\n\n'],
         });
         if (!response.data) {
@@ -68,7 +94,7 @@ export const createTicket = async () => {
                         },
                     },
                 },
-                priority: 'normal',
+                priority: randomPriority,
                 status: 'open',
                 external_id: faker.string.uuid(),
             }
