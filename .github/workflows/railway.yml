@@ -1,0 +1,22 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - main # or your default branch
+
+jobs:
+  deploy:
+    if: contains(github.event.head_commit.message, '#DEPLOY')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Railway CLI
+        run: npm install -g railway
+
+      - name: Deploy to Railway
+        run: railway up --service YOUR_SERVICE_NAME --project YOUR_PROJECT_NAME
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
