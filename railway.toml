@@ -10,6 +10,11 @@ restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 memory = "2GB"
 
+# Configure deployment triggers
+[deploy.triggers]
+# Only deploy when commit message contains #DEPLOY
+commitMessage = "#DEPLOY"
+
 # Configure persistent storage for models
 [[services]]
 name = "python-ml-service"
