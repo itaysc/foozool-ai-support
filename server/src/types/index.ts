@@ -11,3 +11,6 @@ export { IToken } from './token';
 export { ZendeskTicketWebhookPayload } from './zendesk/webhookPayload';
 export { IAgentSuggestion } from './agentSuggestion';
 export { ICreateTicketPayload } from './zendesk/createTicketPayload';
+
+// Autonomous AI Types
+export * from './autonomousAI';

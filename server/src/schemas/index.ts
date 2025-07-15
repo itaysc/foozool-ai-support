@@ -6,6 +6,10 @@ import { TicketModel } from './ticket.schema';
 import { SeedTrackModel } from './seedTrack.schema';
 import { ProductModel } from './product.schema';
 import { TokenModel } from './token.schema';
+import { ActionThresholdModel } from './actionThreshold.schema';
+import { ActionLogModel } from './actionLog.schema';
+import { CustomerTierModel } from './customerTier.schema';
+
 export {
   UserModel,
   OrganizationModel,
@@ -15,4 +19,7 @@ export {
   SeedTrackModel,
   ProductModel,
   TokenModel,
+  ActionThresholdModel,
+  ActionLogModel,
+  CustomerTierModel,
 };
