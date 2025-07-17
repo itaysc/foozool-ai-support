@@ -8,7 +8,6 @@ ENV NGROK_SKIP_VERIFY=true
 
 # Copy package files first for caching
 COPY server/package.json server/yarn.lock ./
-COPY common ./common
 
 # Copy server source code (including tsconfig.json) before installing dependencies
 COPY server ./server

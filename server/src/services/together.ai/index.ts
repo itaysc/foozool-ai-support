@@ -63,7 +63,7 @@ async function recordUsage(record: ILLMUsage, userId: string, usage: ITogetherAi
 }
 
 async function getLLMCompletion({
-    model = 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+    model = 'mistralai/Mistral-7B-Instruct-v0.1',
     prompt,
     maxTokens,
     temperature,
@@ -91,7 +91,7 @@ async function getLLMCompletion({
 }
 
 async function getLLMChatCompletion({
-    model = 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+    model = 'mistralai/Mistral-7B-Instruct-v0.1',
     userMsg = '',
     systemMsg = '',
     maxTokens = 300,
@@ -99,6 +99,7 @@ async function getLLMChatCompletion({
     topP = 0.8,
     stop = ['\n\n'],
 }: ITogetherAiRequest & { userMsg: string, systemMsg: string }): Promise<ITogetherAiResponse> {
+    try {
     const response = await together.chat.completions.create({
         model,
         messages: [{ role: 'user', content: userMsg }, { role: 'system', content: systemMsg }],
@@ -115,7 +116,11 @@ async function getLLMChatCompletion({
             totalTokens: response.usage?.total_tokens ?? 0,
         },
         isOutOfTokens: false,
-        model: response.model,
+            model: response.model,
+        }
+    } catch (error) {
+        console.error('Error fetching response from Together AI:', error);
+        return getEmptyResponse(false);
     }
 }
 
@@ -135,7 +140,7 @@ const getEmptyResponse = (isOutOfTokens: boolean): ITogetherAiResponse => {
 export async function callLLM({
     userId,
     prompt,
-    model = 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+    model = 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens = 300,
     temperature = 0.2,
     topP = 0.8,

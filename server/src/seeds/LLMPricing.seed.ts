@@ -1,13 +1,21 @@
 import { LLMPricesModel, SeedTrackModel } from '../schemas';
 
 const data =   [
+  {
+    model: 'mistralai/Mistral-7B-Instruct-v0.1',
+    name: 'Mistral (7B) Instruct',
+    displayName: 'Mistral (7B) Instruct',
+    description: 'instruct fine-tuned version of Mistral-7B-v0.1 HuggingFace model',
+    pricePerToken: 0.00000020, // $0.20 per 1M tokens
+    isRecommended: true,
+  },
     {
       model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
       name: 'Meta-Llama 3.1 8B Instruct Turbo',
       displayName: 'Meta-Llama 3.1 8B Instruct Turbo',
       description: '8B parameter Llama model fine-tuned for instruction-following tasks.',
       pricePerToken: 0.00000018, // $0.18 per 1M tokens
-      isRecommended: true,
+      isRecommended: false,
     },
     {
       model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',

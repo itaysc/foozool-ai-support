@@ -8,36 +8,17 @@ import sanitizeText from '../../utils/text-sanitize';
 
 export const createTicket = async () => {
     try {
-        // Create varied scenarios for different ticket types
-        const scenarios = [
-            'customer having trouble with a smartphone that won\'t turn on',
-            'customer complaining about slow laptop performance',
-            'customer asking about warranty for a recently purchased TV',
-            'customer reporting a defective gaming console',
-            'customer needing help with setting up a smart home device',
-            'customer having issues with a printer not connecting to WiFi',
-            'customer asking about return policy for headphones',
-            'customer reporting a tablet with cracked screen',
-            'customer having trouble with a smartwatch syncing',
-            'customer asking about compatibility of a new keyboard'
-        ];
-        
         const ticketTypes = ['question', 'incident', 'problem', 'task'];
         const priorities = ['low', 'normal', 'high', 'urgent'];
         
-        // Randomly select scenario and parameters
-        const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-        const randomType = ticketTypes[Math.floor(Math.random() * ticketTypes.length)];
-        const randomPriority = priorities[Math.floor(Math.random() * priorities.length)];
-        
         const prompt = `
-            Create a customer support ticket for an electronics store with the following scenario: ${randomScenario}
+            Create a customer support ticket for an electronics store with a scenario that sounds real.
             
             return a valid json object with the following schema:
             {
                 "subject": string (be specific and varied),
                 "tags": string[] (include relevant tags like "electronics", "customer-service", "technical-support", etc.),
-                "type": "${randomType}",
+                "type": "${faker.helpers.arrayElement(ticketTypes)}",
                 "comment": { "body": string (detailed description of the issue) }
             }
             
@@ -63,9 +44,9 @@ export const createTicket = async () => {
         const response = await callLLM({
             userId: user._id.toString(),
             isChat: true,
-            systemMsg: `You are a customer submitting a support ticket for an electronics store. The customer is experiencing: ${randomScenario}. Respond only with a valid JSON object (no text).`,
+            systemMsg: `You are a customer submitting a support ticket for an electronics store. Respond only with a valid JSON object (no text).`,
             prompt,
-            model: 'meta-llama/Meta-Llama.3.1-8B-Instruct-Turbo',
+            model: 'mistralai/Mistral-7B-Instruct-v0.1',
             maxTokens: 1000,
             temperature: 0.8,
             topP: 0.9,
@@ -94,7 +75,7 @@ export const createTicket = async () => {
                         },
                     },
                 },
-                priority: randomPriority,
+                priority: faker.helpers.arrayElement(priorities),
                 status: 'open',
                 external_id: faker.string.uuid(),
             }
