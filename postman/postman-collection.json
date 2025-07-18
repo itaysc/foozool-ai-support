@@ -7,12 +7,12 @@
   },
   "variable": [
     {
-      "key": "nodejs_base_url_prod",
+      "key": "nodejs_base_url",
       "value": "https://tktai.up.railway.app",
       "type": "string"
     },
     {
-      "key": "python_base_url_prod",
+      "key": "python_base_url",
       "value": "https://ml-service.up.railway.app",
       "type": "string"
     },
@@ -61,8 +61,8 @@
               "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/auth/token",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/auth/token",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "auth", "token"]
             },
             "description": "Authenticate user and get JWT token"
@@ -80,8 +80,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/health/detailed",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/health/detailed",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "health", "detailed"]
             },
             "description": "Detailed health check including database status"
@@ -94,8 +94,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/health/simple",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/health/simple",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "health", "simple"]
             },
             "description": "Simple health check"
@@ -108,8 +108,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/health/minimal",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/health/minimal",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "health", "minimal"]
             },
             "description": "Minimal health check for Railway"
@@ -122,8 +122,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/health/ping",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/health/ping",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "health", "ping"]
             },
             "description": "Simple ping endpoint"
@@ -136,8 +136,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{python_base_url_prod}}/health",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/health",
+              "host": ["{{python_base_url}}"],
               "path": ["health"]
             },
             "description": "Basic health check for ML service"
@@ -150,8 +150,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{python_base_url_prod}}/health/ml-models",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/health/ml-models",
+              "host": ["{{python_base_url}}"],
               "path": ["health", "ml-models"]
             },
             "description": "ML models health check"
@@ -173,8 +173,8 @@
               "raw": "{}"
             },
             "url": {
-              "raw": "{{python_base_url_prod}}/health/test-intent",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/health/test-intent",
+              "host": ["{{python_base_url}}"],
               "path": ["health", "test-intent"]
             },
             "description": "Test intent classification functionality"
@@ -201,8 +201,8 @@
               "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"organization\": \"example-org\"\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/users",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/users",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "users"]
             },
             "description": "Create a new user"
@@ -233,8 +233,8 @@
               "raw": "{\n  \"ticket\": {\n    \"id\": 12345,\n    \"subject\": \"Product not working\",\n    \"description\": \"I purchased the product but it's not functioning properly\",\n    \"status\": \"new\",\n    \"priority\": \"high\",\n    \"type\": \"incident\",\n    \"created_at\": \"2024-01-01T10:00:00Z\",\n    \"updated_at\": \"2024-01-01T10:00:00Z\",\n    \"requester_id\": 67890,\n    \"assignee_id\": null,\n    \"organization_id\": 11111,\n    \"tags\": [\"urgent\", \"bug\"],\n    \"custom_fields\": [],\n    \"via\": {\n      \"channel\": \"web\",\n      \"source\": {\n        \"from\": {},\n        \"to\": {},\n        \"rel\": null\n      }\n    }\n  },\n  \"requester\": {\n    \"id\": 67890,\n    \"name\": \"John Customer\",\n    \"email\": \"customer@example.com\",\n    \"phone\": \"+1234567890\",\n    \"created_at\": \"2024-01-01T10:00:00Z\"\n  },\n  \"assignee\": {\n    \"id\": 12345,\n    \"name\": \"Support Agent\",\n    \"email\": \"agent@company.com\"\n  },\n  \"organization\": {\n    \"id\": 11111,\n    \"name\": \"Example Corp\"\n  },\n  \"event_type\": \"ticket.created\"\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/tickets/webhook",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/tickets/webhook",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "tickets", "webhook"]
             },
             "description": "Handle incoming ticket webhook"
@@ -257,8 +257,8 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/analyze/12345",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/analyze/12345",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "analyze", "12345"]
             },
             "description": "Analyze a ticket and get AI recommendations"
@@ -284,8 +284,8 @@
               "raw": "{\n  \"ticketId\": \"12345\",\n  \"actionType\": \"auto_reply\",\n  \"thresholdId\": \"threshold123\",\n  \"confidenceScore\": 0.85,\n  \"parameters\": {\n    \"message\": \"Thank you for your inquiry. We're working on it.\"\n  }\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/execute-action",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/execute-action",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "execute-action"]
             },
             "description": "Execute a recommended action"
@@ -303,8 +303,8 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/thresholds",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/thresholds",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "thresholds"]
             },
             "description": "Get all action thresholds for organization"
@@ -330,8 +330,8 @@
               "raw": "{\n  \"actionType\": \"auto_reply\",\n  \"confidenceThreshold\": 0.8,\n  \"isActive\": true,\n  \"parameters\": {\n    \"template\": \"default_reply\"\n  }\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/thresholds",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/thresholds",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "thresholds"]
             },
             "description": "Create a new action threshold"
@@ -349,8 +349,8 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/customer-tiers",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/customer-tiers",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "customer-tiers"]
             },
             "description": "Get all customer tiers for organization"
@@ -376,8 +376,8 @@
               "raw": "{\n  \"name\": \"Premium\",\n  \"description\": \"Premium customers\",\n  \"priority\": 1,\n  \"isActive\": true\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/customer-tiers",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/customer-tiers",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "customer-tiers"]
             },
             "description": "Create a new customer tier"
@@ -395,8 +395,8 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/action-logs?limit=50&offset=0",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/action-logs?limit=50&offset=0",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "action-logs"],
               "query": [
                 {
@@ -428,8 +428,8 @@
               "raw": "{\n  \"ticket_id\": \"12345\",\n  \"subject\": \"Product not working\",\n  \"status\": \"new\",\n  \"description\": \"I purchased the product but it's not functioning properly\",\n  \"priority\": \"high\",\n  \"tags\": \"urgent,bug\",\n  \"created_at\": \"2024-01-01T10:00:00Z\",\n  \"external_id\": \"ext123\",\n  \"requester\": {\n    \"name\": \"John Customer\",\n    \"email\": \"customer@example.com\"\n  },\n  \"custom_field_example\": \"value\",\n  \"via\": \"web\"\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/zendesk-analyze",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/zendesk-analyze",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "zendesk-analyze"]
             },
             "description": "Analyze Zendesk ticket and execute actions"
@@ -451,8 +451,8 @@
               "raw": "{\n  \"ticket_id\": \"12345\",\n  \"subject\": \"Product not working\",\n  \"status\": \"new\",\n  \"description\": \"I purchased the product but it's not functioning properly\",\n  \"priority\": \"high\",\n  \"tags\": \"urgent,bug\",\n  \"created_at\": \"2024-01-01T10:00:00Z\",\n  \"external_id\": \"ext123\",\n  \"requester\": {\n    \"name\": \"John Customer\",\n    \"email\": \"customer@example.com\"\n  },\n  \"custom_field_example\": \"value\",\n  \"via\": \"web\"\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/autonomous-ai/zendesk-analyze-only",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/autonomous-ai/zendesk-analyze-only",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "autonomous-ai", "zendesk-analyze-only"]
             },
             "description": "Analyze Zendesk ticket without executing actions"
@@ -479,8 +479,8 @@
               "raw": "[\n  {\n    \"subject\": \"Product not working\",\n    \"description\": \"I purchased the product but it's not functioning properly\"\n  },\n  {\n    \"subject\": \"Refund request\",\n    \"description\": \"I would like to request a refund for my recent purchase\"\n  }\n]"
             },
             "url": {
-              "raw": "{{python_base_url_prod}}/api/v1/distilbert-embed",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/api/v1/distilbert-embed",
+              "host": ["{{python_base_url}}"],
               "path": ["api", "v1", "distilbert-embed"]
             },
             "description": "Generate DistilBERT embeddings for tickets"
@@ -502,8 +502,8 @@
               "raw": "[\n  {\n    \"subject\": \"Product not working\",\n    \"description\": \"I purchased the product but it's not functioning properly\"\n  },\n  {\n    \"subject\": \"Refund request\",\n    \"description\": \"I would like to request a refund for my recent purchase\"\n  }\n]"
             },
             "url": {
-              "raw": "{{python_base_url_prod}}/api/v1/sbert-embed",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/api/v1/sbert-embed",
+              "host": ["{{python_base_url}}"],
               "path": ["api", "v1", "sbert-embed"]
             },
             "description": "Generate SBERT embeddings for tickets"
@@ -525,8 +525,8 @@
               "raw": "{\n  \"subject\": \"Product not working\",\n  \"description\": \"I purchased the product but it's not functioning properly\",\n  \"embedding\": [0.1, 0.2, 0.3, 0.4, 0.5]\n}"
             },
             "url": {
-              "raw": "{{python_base_url_prod}}/api/v1/extract-keywords",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/api/v1/extract-keywords",
+              "host": ["{{python_base_url}}"],
               "path": ["api", "v1", "extract-keywords"]
             },
             "description": "Extract keywords from ticket embedding"
@@ -548,8 +548,8 @@
               "raw": "[\n  {\n    \"subject\": \"Product not working\",\n    \"description\": \"I purchased the product but it's not functioning properly\"\n  },\n  {\n    \"subject\": \"Refund request\",\n    \"description\": \"I would like to request a refund for my recent purchase\"\n  }\n]"
             },
             "url": {
-              "raw": "{{python_base_url_prod}}/api/v1/summarize",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/api/v1/summarize",
+              "host": ["{{python_base_url}}"],
               "path": ["api", "v1", "summarize"]
             },
             "description": "Summarize multiple ticket descriptions"
@@ -571,8 +571,8 @@
               "raw": "{\n  \"question\": \"What are the common issues with the product?\",\n  \"tickets\": [\n    {\n      \"subject\": \"Product not working\",\n      \"description\": \"I purchased the product but it's not functioning properly\"\n    },\n    {\n      \"subject\": \"Refund request\",\n      \"description\": \"I would like to request a refund for my recent purchase\"\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{python_base_url_prod}}/api/v1/answer",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/api/v1/answer",
+              "host": ["{{python_base_url}}"],
               "path": ["api", "v1", "answer"]
             },
             "description": "Answer a question based on ticket data"
@@ -594,8 +594,8 @@
               "raw": "{\n  \"subject\": \"Product not working\",\n  \"description\": \"I purchased the product but it's not functioning properly\"\n}"
             },
             "url": {
-              "raw": "{{python_base_url_prod}}/api/v1/classify-intent",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/api/v1/classify-intent",
+              "host": ["{{python_base_url}}"],
               "path": ["api", "v1", "classify-intent"]
             },
             "description": "Classify the intent of a support ticket"
@@ -626,8 +626,8 @@
               "raw": "{\n  \"maxPages\": 100,\n  \"perPage\": 100,\n  \"fromPage\": 1\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/train/zendesk",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/train/zendesk",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "train", "zendesk"]
             },
             "description": "Train model with Zendesk data"
@@ -654,8 +654,8 @@
               "raw": "{\n  \"ticket_id\": \"12345\",\n  \"subject\": \"Product not working\",\n  \"status\": \"new\",\n  \"description\": \"I purchased the product but it's not functioning properly\",\n  \"priority\": \"high\",\n  \"tags\": \"urgent,bug\",\n  \"created_at\": \"2024-01-01T10:00:00Z\",\n  \"external_id\": \"ext123\",\n  \"requester\": {\n    \"name\": \"John Customer\",\n    \"email\": \"customer@example.com\"\n  },\n  \"custom_field_example\": \"value\",\n  \"via\": \"web\"\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/webhooks/zendesk",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/webhooks/zendesk",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "webhooks", "zendesk"]
             },
             "description": "Handle Zendesk webhook"
@@ -682,8 +682,8 @@
               "raw": "{}"
             },
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/v1/faker/zendesk/ticket",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/v1/faker/zendesk/ticket",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "faker", "zendesk", "ticket"]
             },
             "description": "Create a fake Zendesk ticket for testing"
@@ -701,8 +701,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/swagger",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/swagger",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "swagger"]
             },
             "description": "Access Swagger UI documentation"
@@ -715,8 +715,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{nodejs_base_url_prod}}/api/swagger/json",
-              "host": ["{{nodejs_base_url_prod}}"],
+              "raw": "{{nodejs_base_url}}/api/swagger/json",
+              "host": ["{{nodejs_base_url}}"],
               "path": ["api", "swagger", "json"]
             },
             "description": "Get OpenAPI specification in JSON format"
@@ -729,8 +729,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{python_base_url_prod}}/docs",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/docs",
+              "host": ["{{python_base_url}}"],
               "path": ["docs"]
             },
             "description": "Access FastAPI documentation"
@@ -748,11 +748,44 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{python_base_url_prod}}/metrics",
-              "host": ["{{python_base_url_prod}}"],
+              "raw": "{{python_base_url}}/metrics",
+              "host": ["{{python_base_url}}"],
               "path": ["metrics"]
             },
             "description": "Get Prometheus metrics from ML service"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Google Integration",
+      "item": [
+        {
+          "name": "List Google Drive Files",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/google-drive/files",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "google-drive", "files"]
+            },
+            "description": "List files from Google Drive using the service account."
+          },
+          "response": []
+        },
+        {
+          "name": "Connect to Google Drive",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/google-drive/connect",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "google-drive", "connect"]
+            },
+            "description": "Initiate OAuth connection to Google Drive."
           },
           "response": []
         }
