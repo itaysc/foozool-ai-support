@@ -22,7 +22,9 @@ import autonomousAIRoutesV1 from './routes/autonomousAI/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
 import seed from "./seeds";
 import QdrantService from "./qdrant/service";
+import { googleFileCollectionConfig } from './qdrant/schemas/googleFile';
 import { startAllJobs } from './jobs';
+import searchRoutesV1 from './routes/search/v1';
 
 export interface IServer {
   startServer: (callback: (port: number) => void) => void;
@@ -72,6 +74,7 @@ export default class Server{
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
       this.app.use('/api/v1/faker', fakerRoutesV1);
       this.app.use('/api/v1/google', googleRoutesV1);
+      this.app.use('/api/v1/search', searchRoutesV1);
       // Swagger documentation
       this.app.use('/api/swagger', swaggerRoutesV1);
       
@@ -164,6 +167,21 @@ export default class Server{
   public async initQdrant() {
     const qdrantService = new QdrantService();
     await qdrantService.createCollection({ collectionName: 'tickets', vectorSize: 768 });
+    await qdrantService.createCollection({
+      collectionName: googleFileCollectionConfig.name,
+      vectorSize: googleFileCollectionConfig.vectorConfig.size,
+      distance: googleFileCollectionConfig.vectorConfig.distance,
+    });
+    // Create index for organization_id for filtering
+    await qdrantService.client.createPayloadIndex(googleFileCollectionConfig.name, {
+      field_name: 'organization_id',
+      field_schema: 'keyword'
+    });
+    // Create index for embedding_quality_score for filtering/searching
+    await qdrantService.client.createPayloadIndex(googleFileCollectionConfig.name, {
+      field_name: 'embedding_quality_score',
+      field_schema: 'float'
+    });
   }
 
   public async connectDB() {

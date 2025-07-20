@@ -762,30 +762,142 @@
       "name": "Google Integration",
       "item": [
         {
+          "name": "Connect to Google Drive",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/google/connect",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "google", "connect"]
+            },
+            "description": "Initiate OAuth connection to Google Drive."
+          },
+          "response": []
+        },
+        {
           "name": "List Google Drive Files",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/google-drive/files",
+              "raw": "{{nodejs_base_url}}/api/v1/google/drive/files",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "google-drive", "files"]
+              "path": ["api", "v1", "google", "drive", "files"]
             },
             "description": "List files from Google Drive using the service account."
           },
           "response": []
         },
         {
-          "name": "Connect to Google Drive",
+          "name": "Process Google Drive Files (Specific)",
           "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/google-drive/connect",
-              "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "google-drive", "connect"]
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fileIds\": [\n    \"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms\",\n    \"1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms\"\n  ]\n}"
             },
-            "description": "Initiate OAuth connection to Google Drive."
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/google/drive/process",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "google", "drive", "process"]
+            },
+            "description": "Process specific Google Drive files, create embeddings, and store in Qdrant. Requires authentication. Only new/unprocessed files will be processed."
+          },
+          "response": []
+        },
+        {
+          "name": "Process All Google Drive Files (with Path/Recursive)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/google/drive/process?path=features&recursive=true",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "google", "drive", "process"],
+              "query": [
+                { "key": "path", "value": "features" },
+                { "key": "recursive", "value": "true" }
+              ]
+            },
+            "description": "Process all Google Drive files in the specified path (and subfolders if recursive=true), create embeddings, and store in Qdrant. Requires authentication. Only new/unprocessed files will be processed."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Google Drive Files (Basic)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"customer support policies\",\n  \"limit\": 10,\n  \"chunkType\": \"paragraph\",\n  \"fileId\": \"optional_file_id\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/google/drive/search",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "google", "drive", "search"]
+            },
+            "description": "Basic search through processed Google Drive files using semantic similarity."
+          },
+          "response": []
+        },
+        {
+          "name": "Search Google Drive Files (Advanced)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"quarterly revenue analysis\",\n  \"limit\": 15,\n  \"chunkType\": \"paragraph\",\n  \"fileType\": \"spreadsheet\",\n  \"minQualityScore\": 0.7\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/google/drive/search",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "google", "drive", "search"]
+            },
+            "description": "Advanced search with file type filtering and quality score threshold."
           },
           "response": []
         }

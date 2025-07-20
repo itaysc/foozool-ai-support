@@ -4,7 +4,7 @@ import config from "../config";
 export const oauth2Client = new google.auth.OAuth2(
   config.GOOGLE_CLIENT_ID,
   config.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI // e.g. https://yourapp.com/api/google/callback
+  process.env.GOOGLE_REDIRECT_URI,
 );
 
 export const SCOPES = [

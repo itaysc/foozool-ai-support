@@ -48,6 +48,7 @@ const {
     CREATE_TICKET_JOB_INTERVAL,
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI,
 } = process.env;
 
 export default {
@@ -100,4 +101,5 @@ export default {
     CREATE_TICKET_JOB_INTERVAL,
     GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI,
 }

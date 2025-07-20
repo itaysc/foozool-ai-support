@@ -222,3 +222,61 @@ export async function classifyIntent(ticket: Partial<ITicket>) : Promise<string[
     const res = await api.post('/api/v1/classify-intent', _ticket);
     return res.data;
 }
+
+export async function getSBERTEmbeddingForText(texts: string[]) : Promise<number[][]> {
+    const maxRetries = 3;
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`Attempt ${attempt}/${maxRetries}: Getting SBERT embeddings for ${texts.length} text chunks`);
+            
+            // Prepare the data in the format expected by the Python service
+            const textData = texts.map((text, index) => ({
+                subject: '', // Empty for text chunks
+                description: text // Use the text as description
+            }));
+            
+            console.log(`Making request to: ${Config.PYTHON_ML_SERVICE_URL}/api/v1/sbert-embed`);
+            console.log(`Request payload sample:`, textData[0]);
+            
+            const res = await api.post('/api/v1/sbert-embed', textData, {
+                timeout: 300000, // 5 minutes
+                maxContentLength: 50 * 1024 * 1024, // 50MB
+                maxBodyLength: 50 * 1024 * 1024, // 50MB
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                validateStatus: (status) => status < 500,
+            });
+
+            console.log(`SBERT embedding request successful on attempt ${attempt}`);
+            return res.data as number[][];
+
+        } catch (error: any) {
+            lastError = error;
+            console.error(`Attempt ${attempt}/${maxRetries} failed:`, {
+                message: error.message,
+                code: error.code,
+                status: error.response?.status,
+                data: error.response?.data,
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    headers: error.config?.headers
+                }
+            });
+
+            if (attempt === maxRetries) {
+                console.error('All retry attempts failed for SBERT embedding');
+                throw error;
+            }
+
+            const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+            console.log(`Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+    }
+
+    throw lastError;
+}
