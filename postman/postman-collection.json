@@ -848,58 +848,51 @@
           "response": []
         },
         {
-          "name": "Search Google Drive Files (Basic)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+          "name": "Search",
+          "item": [
+            {
+              "name": "Search (Basic)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"customer support policies\",\n  \"limit\": 10,\n  \"chunkType\": \"paragraph\",\n  \"fileId\": \"optional_file_id\"\n}"
+                },
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/search",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "search"]
+                },
+                "description": "Basic semantic search through processed Google Drive files."
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": \"customer support policies\",\n  \"limit\": 10,\n  \"chunkType\": \"paragraph\",\n  \"fileId\": \"optional_file_id\"\n}"
+              "response": []
             },
-            "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/google/drive/search",
-              "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "google", "drive", "search"]
-            },
-            "description": "Basic search through processed Google Drive files using semantic similarity."
-          },
-          "response": []
-        },
-        {
-          "name": "Search Google Drive Files (Advanced)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+            {
+              "name": "Search (Advanced)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" },
+                  { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"query\": \"quarterly revenue analysis\",\n  \"limit\": 15,\n  \"chunkType\": \"paragraph\",\n  \"fileType\": \"spreadsheet\",\n  \"minQualityScore\": 0.7\n}"
+                },
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/search",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "search"]
+                },
+                "description": "Advanced semantic search with file type and quality score filtering."
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{auth_token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": \"quarterly revenue analysis\",\n  \"limit\": 15,\n  \"chunkType\": \"paragraph\",\n  \"fileType\": \"spreadsheet\",\n  \"minQualityScore\": 0.7\n}"
-            },
-            "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/google/drive/search",
-              "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "google", "drive", "search"]
-            },
-            "description": "Advanced search with file type filtering and quality score threshold."
-          },
-          "response": []
+              "response": []
+            }
+          ]
         }
       ]
     }
