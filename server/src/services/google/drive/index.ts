@@ -68,6 +68,10 @@ export async function getDriveFileContent(organizationId: string, fileId: string
 
   const drive = google.drive({ version: "v3", auth: oauth2Client });
 
+  function isBlob(obj: any): obj is Blob {
+    return obj && typeof obj === 'object' && typeof obj.arrayBuffer === 'function' && obj.constructor && obj.constructor.name === 'Blob';
+  }
+
   try {
     // If mimeType is not provided, fetch it
     let actualMimeType = mimeType;
@@ -77,33 +81,52 @@ export async function getDriveFileContent(organizationId: string, fileId: string
     }
 
     if (actualMimeType?.startsWith('application/vnd.google-apps.document')) {
-      // Google Doc
+      // Google Doc as plain text
       const response = await drive.files.export({
         fileId,
-        mimeType: 'application/pdf' // or DOCX: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        mimeType: 'text/plain'
       });
-      return response.data;
+      if (typeof response.data === 'string') return response.data;
+      if (isBlob(response.data)) {
+        const ab = await response.data.arrayBuffer();
+        return Buffer.from(ab).toString();
+      }
+      return Buffer.from(response.data as any).toString();
     } else if (actualMimeType?.startsWith('application/vnd.google-apps.spreadsheet')) {
-      // Google Sheet
+      // Google Sheet as CSV
       const response = await drive.files.export({
         fileId,
-        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        mimeType: 'text/csv'
       });
-      return response.data;
+      if (typeof response.data === 'string') return response.data;
+      if (isBlob(response.data)) {
+        const ab = await response.data.arrayBuffer();
+        return Buffer.from(ab).toString();
+      }
+      return Buffer.from(response.data as any).toString();
     } else if (actualMimeType?.startsWith('application/vnd.google-apps.presentation')) {
-      // Google Slides
+      // Google Slides as PDF (no plain text export)
       const response = await drive.files.export({
         fileId,
         mimeType: 'application/pdf'
       });
-      return response.data;
+      if (isBlob(response.data)) {
+        const ab = await response.data.arrayBuffer();
+        return Buffer.from(ab).toString('base64');
+      }
+      return Buffer.from(response.data as any).toString('base64'); // return as base64 string for PDF
     } else {
       // Binary file (PDF, image, etc)
       const response = await drive.files.get({
         fileId: fileId,
         alt: 'media'
       });
-      return response.data;
+      if (typeof response.data === 'string') return response.data;
+      if (isBlob(response.data)) {
+        const ab = await response.data.arrayBuffer();
+        return Buffer.from(ab).toString();
+      }
+      return Buffer.from(response.data as any).toString();
     }
   } catch (error: any) {
     console.error(`Error getting file content for file ${fileId}:`, error);

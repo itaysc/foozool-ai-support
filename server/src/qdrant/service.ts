@@ -3,7 +3,9 @@ import Config from '../config';
 import { getDriveFileContent, getDriveFileMetadata } from '../services/google/drive';
 import { getSBERTEmbeddingForText } from '../services/call-python';
 import { googleFileCollectionConfig, QdrantGoogleFilePoint, chunkTypeScoreThresholds } from './schemas/googleFile';
+import { ticketCollectionConfig, QdrantTicketPoint } from './schemas/ticket';
 import { v5 as uuidv5 } from 'uuid';
+import { parseTextIntoChunks } from '../services/google/parse';
 
 const QDRANT_POINT_NAMESPACE = 'b3b3b3b3-b3b3-4b3b-b3b3-b3b3b3b3b3b3';
 
@@ -99,6 +101,23 @@ class QdrantService {
             return true;
         } catch (error: any) {
             console.error(`Error inserting points into collection "${collectionName}":`, error);
+            return false;
+        }
+    }
+
+    /**
+     * Insert a single ticket into the tickets collection
+     */
+    async addSingleTicket(point: QdrantTicketPoint): Promise<boolean> {
+        try {
+            await this.client.upsert(ticketCollectionConfig.name, {
+                wait: true,
+                points: [point],
+            });
+            console.log(`Successfully inserted ticket ${point.id} into collection "${ticketCollectionConfig.name}".`);
+            return true;
+        } catch (error: any) {
+            console.error(`Error inserting ticket ${point.id} into collection "${ticketCollectionConfig.name}":`, error);
             return false;
         }
     }
@@ -217,16 +236,8 @@ export async function processGoogleDriveFiles({
                 const fileType = fileMetadata.mimeType || 'text/plain'; // getFileType is removed, so we'll use mimeType directly
                 fileTypeDistribution[fileType] = (fileTypeDistribution[fileType] || 0) + 1;
 
-                // Parse content into chunks with enhanced metadata
-                // parseTextIntoChunks is removed, so we'll just create a dummy chunk
-                const chunks = [{
-                    content: contentString,
-                    type: 'text', // Default type
-                    qualityScore: 1.0, // Default quality
-                    index: 0,
-                    length: contentString.length,
-                    wordCount: contentString.split(/\s+/).length,
-                }];
+                // Parse content into chunks
+                const chunks = parseTextIntoChunks(contentString, fileMetadata.name || 'Unknown', fileType);
                 console.log(`Parsed file ${fileId} into ${chunks.length} chunks`);
 
                 if (chunks.length === 0) {
@@ -268,7 +279,6 @@ export async function processGoogleDriveFiles({
                             file_name: fileMetadata.name || 'Unknown',
                             organization_id: organizationId,
                             chunk_type: chunk.type,
-                            chunk_content: chunk.content,
                             chunk_index: chunk.index,
                             chunk_length: chunk.length,
                             chunk_word_count: chunk.wordCount,
@@ -278,6 +288,8 @@ export async function processGoogleDriveFiles({
                             modified_time: fileMetadata.modifiedTime || new Date().toISOString(),
                             processing_timestamp: new Date().toISOString(),
                             embedding_quality_score: chunk.qualityScore,
+                            source: 'google',
+                            file_url: `https://drive.google.com/file/d/${fileId}/view`,
                         }
                     };
                 });

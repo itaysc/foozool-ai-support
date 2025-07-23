@@ -72,7 +72,7 @@ async function getLLMCompletion({
 }: ITogetherAiRequest): Promise<ITogetherAiResponse> {
     const response = await together.completions.create({
         model,
-        prompt: prompt,
+        prompt,
         max_tokens: maxTokens,
         temperature: temperature,
         top_p: topP,

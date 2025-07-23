@@ -90,12 +90,12 @@ export function parseTextIntoChunks(content: string, fileName: string, fileType?
     let chunkType = 'paragraph';
     
     // Check if it's a title (usually shorter, ends with no period, or has special formatting)
-    if (line.length < 100 && !line.endsWith('.') && !line.endsWith('!') && !line.endsWith('?')) {
+    if (line.length < 50 && !line.endsWith('.') && !line.endsWith('!') && !line.endsWith('?')) {
       // Check if next few lines are longer (indicating this might be a title)
       const nextLines = lines.slice(i + 1, i + 4);
       const hasLongerContent = nextLines.some(nextLine => nextLine.trim().length > line.length);
       
-      if (hasLongerContent || line.length < 50) {
+      if (hasLongerContent && line.length < 50) {
         chunkType = 'title';
       }
     }
@@ -135,8 +135,34 @@ export function parseTextIntoChunks(content: string, fileName: string, fileType?
       qualityScore
     });
   }
-  
-  return chunks;
+
+  // Merge title with first paragraph if present
+  const mergedChunks: Array<{
+    type: string;
+    content: string;
+    index: number;
+    length: number;
+    wordCount: number;
+    qualityScore: number;
+  }> = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const curr = chunks[i];
+    const next = chunks[i + 1];
+    if (curr.type === 'title' && next && next.type === 'paragraph') {
+      mergedChunks.push({
+        type: 'title_paragraph',
+        content: curr.content + '\n' + next.content,
+        index: curr.index,
+        length: curr.length + next.length + 1,
+        wordCount: curr.wordCount + next.wordCount,
+        qualityScore: (curr.qualityScore + next.qualityScore) / 2
+      });
+      i++; // Skip next
+    } else {
+      mergedChunks.push(curr);
+    }
+  }
+  return mergedChunks;
 }
 
 // Function to parse spreadsheet content

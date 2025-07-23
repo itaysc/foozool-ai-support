@@ -1,5 +1,5 @@
 import { IResponse, IAgentSuggestion, ZendeskTicketWebhookPayload } from 'src/types';
-import { classifyIntent, summarizeTickets } from '../call-python';
+import { classifyIntent, getSBERTEmbedding, summarizeTickets } from '../call-python';
 import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
 import { buildAgentSuggestionPrompt, buildPrompt } from './prompts';
@@ -9,6 +9,9 @@ import { analyzeTicket } from '../insights/analyzer';
 import { InsightModel } from 'src/schemas/insight.schema';
 import { addCommentToTicket } from '../zendesk';
 import { extractCustomerMessage } from 'src/utils/text-sanitize';
+import QdrantService from '../../qdrant/service';
+import { QdrantTicketPoint } from '../../qdrant/schemas/ticket';
+import { analyzeSentiment } from '../nlp';
 /**
  * Process intent classification for a ticket
  */
@@ -58,36 +61,9 @@ async function generateTicketResponse(
 }
 
 /**
- * Create and save ticket entry to database
- */
-async function saveTicketEntry(
-  ticketPayload: { subject: string; description: string },
-  externalId: string,
-  aiResponse: string
-) {
-  const ticketEntry = new TicketModel({
-    subject: ticketPayload.subject,
-    description: ticketPayload.description,
-    externalId: externalId,
-    comments: [],
-    chatHistory: [{
-      role: 'user',
-      content: ticketPayload.description,
-      createdAt: new Date(),
-    }, {
-      role: 'agent',
-      content: aiResponse,
-      createdAt: new Date(),
-    }],
-  });
-  
-  return ticketEntry.save();
-}
-
-/**
  * Main webhook handler for processing Zendesk tickets
  */
-export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
+export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId: string, organizationId: string): Promise<IResponse> {
   try {
     console.log(`Processing webhook for ticket ${ticket.ticket_id}`);
     
@@ -97,14 +73,40 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhook
       description: extractCustomerMessage(ticket.description),
     };
 
+    // Analyze sentiment
+    const sentimentResult = analyzeSentiment(ticketPayload.subject + ' ' + ticketPayload.description);
+
     // Process intent classification
     const intents = await processTicketIntent(ticketPayload);
     const summary = await summarizeTickets([ticketPayload]);
-    
+
+    const [sbertEmbedding] = await getSBERTEmbedding([ticketPayload]);
+    // Save ticket point in qdrant
+    const qdrantService = new QdrantService();
+    const qdrantPoint: QdrantTicketPoint = {
+      id: ticket.ticket_id,
+      vector: sbertEmbedding,
+      payload: {
+        ticket_id: ticket.ticket_id,
+        organization: organizationId,
+        sentiment_score: sentimentResult.score,
+        sentiment: sentimentResult.sentiment,
+        created_at: ticket.created_at || new Date().toISOString(),
+        tags: typeof ticket.tags === 'string' ? ticket.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        intent: Array.isArray(intents) && intents.length > 0 ? intents[0] : '',
+      },
+    };
+    const qdrantResult = await qdrantService.addSingleTicket(qdrantPoint);
+    if (qdrantResult) {
+      console.log(`Ticket ${ticket.ticket_id} added to Qdrant.`);
+    } else {
+      console.error(`Failed to add ticket ${ticket.ticket_id} to Qdrant.`);
+    }
     // Find similar tickets
     const similarTickets = await findZendeskSimilarTickets({
       ticket: ticketPayload,
       k: 5,
+      embedding: sbertEmbedding,
     });
 
     // Filter similar tickets to only include subject and description for summarization
@@ -146,8 +148,6 @@ export async function handleWebhook(userId: string, ticket: ZendeskTicketWebhook
       product
     );
 
-    // Save ticket entry
-    await saveTicketEntry(ticketPayload, ticket.ticket_id.toString(), aiResponse);
 
     console.log(`Successfully processed webhook for ticket ${ticket.ticket_id}`);
 

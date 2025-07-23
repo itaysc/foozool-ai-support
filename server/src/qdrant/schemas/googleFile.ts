@@ -11,7 +11,7 @@ export const googleFileCollectionConfig = {
         file_name: 'string',
         organization_id: 'string',
         chunk_type: 'string', // 'title', 'paragraph', 'section', etc.
-        chunk_content: 'string',
+        // chunk_content: 'string', // now optional
         chunk_index: 'number', // Position of chunk within the file
         chunk_length: 'number', // Character count of chunk
         chunk_word_count: 'number', // Word count of chunk
@@ -21,6 +21,8 @@ export const googleFileCollectionConfig = {
         modified_time: 'string', // ISO date string
         processing_timestamp: 'string', // When the chunk was processed
         embedding_quality_score: 'number', // Quality metric for the embedding
+        source: 'string', // new field
+        file_url: 'string', // new field
     } as const,
 };
 
@@ -33,7 +35,7 @@ export interface QdrantGoogleFilePoint {
         file_name: string;
         organization_id: string;
         chunk_type: string;
-        chunk_content: string;
+        chunk_content?: string; // now optional
         chunk_index: number;
         chunk_length: number;
         chunk_word_count: number;
@@ -43,6 +45,8 @@ export interface QdrantGoogleFilePoint {
         modified_time: string;
         processing_timestamp: string;
         embedding_quality_score: number;
+        source: string; // new field
+        file_url: string; // new field
     };
 }
 

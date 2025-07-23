@@ -95,14 +95,20 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
       return;
     }
 
-    console.log('Password valid, generating token');
-    const token = signJwt({ user: userRes.payload});
-    setJwtCookie({ res, data: token });
-    
-    console.log('Token generated successfully for user:', email);
+    console.log('Password valid, generating tokens');
+    // Generate access token (short-lived)
+    const accessToken = signJwt({ user: userRes.payload }, { expiresIn: '15m' });
+    // Generate refresh token (long-lived, minimal info)
+    const refreshToken = signJwt({ user: { id: userRes.payload._id } }, { expiresIn: '7d' });
+
+    // Set cookies
+    setJwtCookie({ res, data: accessToken }); // default name for access token
+    setJwtCookie({ res, data: refreshToken, name: 'refreshToken', options: { maxAge: 7 * 24 * 60 * 60 * 1000 } });
+
+    console.log('Tokens generated successfully for user:', email);
     res.json({ 
       status: 'success',
-      token,
+      token: accessToken,
       user: {
         id: userRes.payload._id,
         email: userRes.payload.email,
@@ -123,25 +129,22 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
 });
 
 router.post('/refresh-token', async (req: Request, res: Response): Promise<void> => {
-  const oldToken = req.cookies[config.JWT_COOKIE_NAME || 'foozool-jwt'];
-  if (!oldToken) {
-    res.status(400).json({ message: 'Old token from cookie is required' });
+  const refreshToken = req.cookies['refreshToken'];
+  if (!refreshToken) {
+    res.status(400).json({ message: 'Refresh token is required' });
     return;
   }
   try {
-    // Verify old token
-    jwt.verify(oldToken, config.JWT_SECRET, (err, data) => {
+    jwt.verify(refreshToken, config.JWT_SECRET, (err, data) => {
       if (err) {
-        return res.status(403).json({ message: 'Invalid token' });
+        return res.status(403).json({ message: 'Invalid refresh token' });
       }
-
-      if (!isTokenAboutToExpire(oldToken)) {
-        return res.json({ refreshToken: oldToken });
-      }
-      const { user } = data;
-      const refreshToken = signJwt({ user });
-      setJwtCookie({ res, data: refreshToken });
-      return res.json({ refreshToken });
+      // Only minimal info in refresh token
+      const { user } = data as any;
+      // Optionally: fetch user from DB to check if still valid
+      const newAccessToken = signJwt({ user }, { expiresIn: '15m' });
+      setJwtCookie({ res, data: newAccessToken });
+      res.json({ token: newAccessToken });
     });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });

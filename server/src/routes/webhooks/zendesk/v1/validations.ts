@@ -7,7 +7,7 @@ export const zendeskWebhookValidation = z.object({
     status: z.string(),
     description: z.string(),
     priority: z.string(),
-    tags: z.string(),
+    tags: z.union([z.string(), z.array(z.string())]),
     created_at: z.string(),
     external_id: z.string(),
     requester: z.object({

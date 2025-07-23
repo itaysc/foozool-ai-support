@@ -54,12 +54,14 @@ export async function knnSearch({
 export async function findZendeskSimilarTickets({
   ticket,
   k = 5,
+  embedding,
 }: {
   ticket: Partial<ITicket>;
   k: number;
+  embedding?: number[];
 }): Promise<IResponse<SimilarTicket[]>> {
   // Step 1: Get SBERT embedding for the new ticket
-  const [sbertEmbedding] = await getSBERTEmbedding([ticket]);
+  const [sbertEmbedding] = embedding ? [embedding] : await getSBERTEmbedding([ticket]);
 
   // Step 2: Fetch top-k similar tickets from Elasticsearch using SBERT + BM25
   const similarTickets = await knnSearch({

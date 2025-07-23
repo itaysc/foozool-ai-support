@@ -4,7 +4,7 @@ import { IProduct, IResponse, ZendeskTicket } from 'src/types';
 export { cosineSimilarity } from './utils';
 export { knnSearch, findZendeskSimilarTickets, type SimilarTicket } from './search';
 export { generateMockProduct, extractProductFromTicket } from './product';
-export { handleWebhook } from './webhook';
+export { handleWebhook } from './webhook'; // Now expects (userId, ticket, organizationId)
 
 // Legacy exports for backward compatibility (if needed)
 // These can be removed once all consumers are updated to use the new modular imports
