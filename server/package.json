@@ -10,6 +10,7 @@
     "dev:clickhouse": "brew services stop clickhouse && brew services start clickhouse",
     "dev:kibana": "wait-on http://localhost:9200 && brew services stop kibana-full && brew services start kibana-full",
     "stop": "brew services stop elasticsearch",
+    "ngrok": "ngrok http 3000",
     "serve": "node -r dotenv/config dist/server/src/index.js",
     "start": "node -r dotenv/config dist/server/src/index.js",
     "lint": "tsc --noEmit && eslint \"src/**/*.{tsx,ts,js}\"",

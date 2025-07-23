@@ -1,4 +1,5 @@
 import { SeedTrackModel, TokenModel } from "src/schemas";
+import config from 'src/config';
 
 export async function seedTokens(organizationId: string): Promise<void> {
     try {
@@ -8,7 +9,7 @@ export async function seedTokens(organizationId: string): Promise<void> {
       }
       const result = await TokenModel.insertMany({
         organizationId,
-        token: '40dkOBAIPue7FbDLQ53gtLmTuA0Dmdht0kX0Ywiik9EUKdD9a3uzv3SSgPgaGBxY',
+        token: config.ZENDESK_WEBHOOK_TOKEN,
         type: 'zendesk-webhook',
         description: 'Zendesk Webhook Token for demo organization',
       });

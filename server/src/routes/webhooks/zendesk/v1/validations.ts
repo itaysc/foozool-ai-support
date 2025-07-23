@@ -13,7 +13,7 @@ export const zendeskWebhookValidation = z.object({
     requester: z.object({
         name: z.string().optional(),
         email: z.string().regex(EMAIL_REGEX, 'Invalid requester email format').optional(),
-    }),
+    }).optional(),
     custom_field_example: z.string().optional(),
     via: z.string().optional(),
 });

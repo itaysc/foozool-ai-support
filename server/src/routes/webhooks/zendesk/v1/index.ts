@@ -34,7 +34,7 @@ router.post('/', authenticateWebhook, validateRequest(zendeskWebhookValidation),
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }
-    const webhookRes = await handleWebhook(userId, req.body, organizationId);
+    const webhookRes = await handleWebhook(req.body,userId, organizationId);
     res.status(webhookRes.status).json(webhookRes.payload);
   } catch (err) {
     res.status(500).json({ message: 'Internal server error' });
