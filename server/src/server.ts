@@ -15,6 +15,7 @@ import googleRoutesV1 from './routes/google/v1';
 import { NodeClickHouseClient } from "@clickhouse/client/dist/client";
 import ElasticsearchService from "./elasticsearch/service";
 import zendeskWebhookRoutesV1 from './routes/webhooks/zendesk/v1';
+import webhookRoutesV1 from './routes/webhooks/v1';
 import { mapping as ticketsMapping, settings as ticketsSettings } from "./elasticsearch/schemas/ticket";
 import modelTrainingRoutesV1 from './routes/model-training/v1';
 import ticketsRoutesV1 from './routes/tickets/v1';
@@ -72,6 +73,7 @@ export default class Server{
       this.app.use('/api/v1/autonomous-ai', autonomousAIRoutesV1);
       this.app.use('/api/v1/train', modelTrainingRoutesV1);
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
+      this.app.use('/api/v1/webhooks', webhookRoutesV1);
       this.app.use('/api/v1/faker', fakerRoutesV1);
       this.app.use('/api/v1/google', googleRoutesV1);
       this.app.use('/api/v1/search', searchRoutesV1);

@@ -15,3 +15,6 @@ export { ITicketSearchResult } from './zendesk/ticketSearchResult';
 
 // Autonomous AI Types
 export * from './autonomousAI';
+
+// Webhook Types
+export * from './webhook';

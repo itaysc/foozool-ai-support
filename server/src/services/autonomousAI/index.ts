@@ -19,6 +19,9 @@ export { ZendeskAnalysisService } from './zendeskAnalysis.service';
 // Export the controller service for route handlers
 export { AutonomousAIControllerService } from './autonomousAIController.service';
 
+// Export the webhook action service
+export { executeAutonomousActions } from './webhookAction.service';
+
 export class AutonomousAIService {
   /**
    * Analyze a ticket and recommend actions

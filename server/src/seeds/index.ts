@@ -5,6 +5,7 @@ import { seedUsers } from "./users.seed";
 import { IUser } from "src/types";
 import { seedTokens } from "./tokens.seed";
 import { seedAutonomousAI } from "./autonomousAI.seed";
+import { seedWebhooks } from "./webhooks.seed";
 
 export default async function seed() {
     const organization = await seedOrganizations();
@@ -22,4 +23,7 @@ export default async function seed() {
     
     // Seed autonomous AI data
     await seedAutonomousAI();
+    
+    // Seed webhooks data
+    await seedWebhooks();
   }

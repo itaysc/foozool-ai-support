@@ -31,7 +31,8 @@ const ActionThresholdSchema: Schema = new Schema<IActionThreshold>({
   organization: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Organization', 
-    required: true 
+    required: true,
+    index: true,
   },
   name: { 
     type: String, 

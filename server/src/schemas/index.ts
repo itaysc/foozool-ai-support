@@ -9,6 +9,7 @@ import { TokenModel } from './token.schema';
 import { ActionThresholdModel } from './actionThreshold.schema';
 import { ActionLogModel } from './actionLog.schema';
 import { CustomerTierModel } from './customerTier.schema';
+import { WebhookModel } from './webhook.schema';
 
 export {
   UserModel,
@@ -22,4 +23,5 @@ export {
   ActionThresholdModel,
   ActionLogModel,
   CustomerTierModel,
+  WebhookModel,
 };

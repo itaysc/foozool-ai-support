@@ -1,6 +1,6 @@
 import { ITicket, IProduct } from "src/types";
 
-type ActionType = "refund" | "commentOnly" | "escalate" | "reship" | "noAction";
+type ActionType = "refund" | "commentOnly" | "escalate" | "reship" | "noAction" | "coupon" | "auto_resolve" | "priority_change" | "auto_reply";
 
 /**
  * Builds a cost-optimized prompt for a Retrieval-Augmented Generation (RAG) support agent.
@@ -13,7 +13,7 @@ export function buildPrompt(
   similarTickets: ITicket[],
   product?: IProduct
 ): string {
-  const validActions: ActionType[] = ["refund", "commentOnly", "escalate", "reship", "noAction"];
+  const validActions: ActionType[] = ["refund", "commentOnly", "escalate", "reship", "noAction", "coupon", "auto_resolve", "priority_change", "auto_reply"];
 
   const header = `
 You are a helpful and friendly customer support agent.
@@ -21,6 +21,7 @@ You are a helpful and friendly customer support agent.
 Your task is to write a JSON object with:
 • "response": your message to the customer.
 • "action": one of [${validActions.map(a => `"${a}"`).join(", ")}].
+• "confidence": a number between 0 and 1 indicating your confidence in this action (be honest about your uncertainty).
 
 ${product ? `Here is the product details the customer purchased: ${JSON.stringify(product)}` : ""}
 
@@ -29,11 +30,16 @@ Rules:
 - Never guess or make up facts.
 - If unclear, use action "escalate" and reply naturally.
 - Be warm and understanding. Don't sound like a bot.
+- **Confidence Scoring**: Be honest about your uncertainty:
+  * High confidence (0.8-1.0): Clear patterns from similar tickets, straightforward issues
+  * Medium confidence (0.5-0.8): Some similar patterns, but some uncertainty
+  * Low confidence (0.2-0.5): Unclear patterns, complex or unique situations
+  * Very low confidence (0.0-0.2): No similar patterns, highly complex or unusual cases
 
 Only output a valid JSON. No extra text.
 
 Example:
-{ "response": "Thanks for reaching out. We've shipped you a replacement.", "action": "reship" }
+{ "response": "Thanks for reaching out. We've shipped you a replacement.", "action": "reship", "confidence": 0.85 }
 
 ---
 `;
@@ -114,7 +120,7 @@ export function buildAgentSuggestionPrompt(
   product: IProduct,
   similarTickets: ITicket[]
 ): string {
-  const validActions: ActionType[] = ["refund", "commentOnly", "escalate", "reship", "noAction"];
+  const validActions: ActionType[] = ["refund", "commentOnly", "escalate", "reship", "noAction", "coupon", "auto_resolve", "priority_change", "auto_reply"];
 
   const header = `
 You are an AI assistant helping human customer support agents make informed decisions.
@@ -123,7 +129,7 @@ Analyze the new ticket below along with similar past tickets and product informa
 
 Your task is to write a JSON object with:
 • "action": one of [${validActions.map(a => `"${a}"`).join(", ")}]
-• "confidence": percentage (0-100) of how confident you are in this recommendation
+• "confidence": a number between 0 and 1 indicating your confidence in this recommendation (be honest about your uncertainty)
 • "reasoning": brief explanation of why this action is recommended
 • "pastTicketsContext": summary of how similar past tickets were resolved
 • "escalationNote": (only if action is "escalate") specific reason why escalation is needed
@@ -135,6 +141,11 @@ Guidelines:
 - Base recommendations on patterns from similar past tickets
 - Consider product warranty, refund policy, and purchase date
 - Higher confidence for actions that match successful past resolutions
+- **Confidence Scoring**: Be honest about your uncertainty:
+  * High confidence (0.8-1.0): Clear patterns from similar tickets, straightforward issues
+  * Medium confidence (0.5-0.8): Some similar patterns, but some uncertainty
+  * Low confidence (0.2-0.5): Unclear patterns, complex or unique situations
+  * Very low confidence (0.0-0.2): No similar patterns, highly complex or unusual cases
 - **Order Retention Priority**: If customer is requesting refund or cancellation:
   * First analyze tone and context to determine if agent can assist to resolve underlying issues
   * Look for opportunities to offer solutions (replacement, troubleshooting, discount, etc.)
@@ -148,7 +159,7 @@ Only output valid JSON. No extra text.
 Example:
 {
   "action": "refund",
-  "confidence": 85,
+  "confidence": 0.85,
   "reasoning": "Item is within 30-day return window and customer reports defect",
   "pastTicketsContext": "2 similar defect tickets were resolved with refunds",
   "escalationNote": null

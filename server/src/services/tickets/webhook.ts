@@ -8,10 +8,14 @@ import { TicketModel } from 'src/schemas/ticket.schema';
 import { analyzeTicket } from '../insights/analyzer';
 import { InsightModel } from 'src/schemas/insight.schema';
 import { addCommentToTicket } from '../zendesk';
-import { extractCustomerMessage } from 'src/utils/text-sanitize';
+import sanitizeText, { extractCustomerMessage } from 'src/utils/text-sanitize';
 import QdrantService from '../../qdrant/service';
 import { QdrantTicketPoint } from '../../qdrant/schemas/ticket';
 import { analyzeSentiment } from '../nlp';
+import { executeAutonomousActions } from '../autonomousAI';
+
+const DEFAULT_CONFIDENCE_SCORE = 0.3;
+
 /**
  * Process intent classification for a ticket
  */
@@ -57,7 +61,23 @@ async function generateTicketResponse(
     systemMsg: 'You are a helpful AI assistant that can answer questions and help with tasks.',
   });
   
-  return response.data || '';
+  // Return the LLM response as-is, expecting it to include confidence
+  const baseResponse = response.data || '';
+  try {
+    const parsed = JSON.parse(sanitizeText(baseResponse));
+    // Ensure confidence is present, use default if not
+    if (typeof parsed.confidence !== 'number') {
+      parsed.confidence = DEFAULT_CONFIDENCE_SCORE;
+    }
+    return JSON.stringify(parsed);
+  } catch (error) {
+    // If parsing fails, return the original response with default confidence
+    return JSON.stringify({
+      response: baseResponse,
+      action: 'commentOnly',
+      confidence: DEFAULT_CONFIDENCE_SCORE
+    });
+  }
 }
 
 /**
@@ -188,6 +208,28 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId:
       product
     );
 
+    // Parse the AI response to extract action
+    let parsedResponse;
+    let actionType = 'commentOnly';
+    let confidenceScore = DEFAULT_CONFIDENCE_SCORE;
+    
+    try {
+      parsedResponse = JSON.parse(aiResponse);
+      actionType = parsedResponse.action || 'commentOnly';
+      confidenceScore = parsedResponse.confidence || DEFAULT_CONFIDENCE_SCORE;
+    } catch (error) {
+      console.error('Failed to parse AI response:', error);
+      // Default to commentOnly if parsing fails
+    }
+
+    // Execute autonomous actions based on thresholds
+    const executedActions = await executeAutonomousActions(
+      ticket.ticket_id.toString(),
+      organizationId,
+      actionType,
+      confidenceScore,
+      userId
+    );
 
     console.log(`Successfully processed webhook for ticket ${ticket.ticket_id}`);
 
@@ -198,6 +240,7 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId:
         agentSuggestion,
         similarTickets: similarTickets.payload,
         product,
+        executedActions,
       },
     };
   } catch (error: any) {
