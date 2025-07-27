@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { ZendeskTicket } from 'src/types';
 import { EMAIL_REGEX } from '../../../utils/regex';
    
 export const newTicket = z.object({

@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
+import get from 'lodash/get';
 import bluebird from 'bluebird';
 import { faker } from '@faker-js/faker';
 import Config from '../../config';
 import sanitizeText from '../../utils/text-sanitize';
-import { IOrganization, IResponse, ITicket, ICreateTicketPayload } from 'src/types';
+import { IResponse, ITicket, ICreateTicketPayload, IZendeskTicketComment, ITicketSearchResult } from 'src/types';
 import { getDemoOrganization } from '../../dal/organization.dal';
 
 const authString = Buffer.from(`${Config.ZENDESK_USERNAME}/token:${Config.ZENDESK_TOKEN}`).toString('base64');
@@ -20,17 +21,16 @@ type channel = 'email' | 'facebook' | 'web' | 'native_messaging' | 'api' | 'what
 type stringOrUndefined = 'string' | undefined;
 type status = 'new' | 'open' | 'pending' | 'hold' | 'solved' | 'closed';
 
-export async function handleZendeskWebhook(organization: IOrganization, data: any) {
-  console.log('Handling zendesk webhook', data);
-}
-
 
 export async function fetchAvailableTags() : Promise<string[]> {
   const possibleTags = await api.get(`/tags`);
   return possibleTags.data.tags.map((d) => d.name);
 }
 
-export async function fetchTicketsByExternalIds(ids: string[]) {
+export async function fetchTicketsByExternalIds(
+  ids: string[], 
+  options: { fetchComments?: boolean } = {}
+) : Promise<(ITicketSearchResult & { comments?: IZendeskTicketComment[] })[]> {
   const results = await Promise.all(
     ids.map(async (id) => {
       try {
@@ -39,7 +39,14 @@ export async function fetchTicketsByExternalIds(ids: string[]) {
             params: { query: `type:ticket external_id:${id}` },
           }
         );
-        return response.data.results[0] || null; // assuming one match per ID
+        const t: ITicketSearchResult & { comments?: IZendeskTicketComment[] } = get(response, 'data.results[0]', null);
+        if(t) {
+          if (options.fetchComments) {
+            const comments = await getTicketComments(t.id.toString());
+            t.comments = comments;
+          }
+        }
+        return t; // assuming one match per ID
       } catch (error) {
         console.error(`Error for external_id ${id}:`, error);
         return null;
@@ -48,7 +55,7 @@ export async function fetchTicketsByExternalIds(ids: string[]) {
   );
 
   // Filter out any nulls (failed searches)
-  return results.filter(ticket => ticket !== null);
+  return results.filter(ticket => ticket) as (ITicketSearchResult & { comments?: IZendeskTicketComment[] })[];
 }
 
 
@@ -174,7 +181,18 @@ export async function createZendeskTicket(payload: ICreateTicketPayload) {
   }
 }
 
-async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { maxPages?: number, perPage?: number, fromPage?: number } = {}): Promise<IResponse<ITicket[]>> {
+export async function getTicketComments(ticketId: string) : Promise<IZendeskTicketComment[]> {
+  try {
+    const res = await api.get(`/tickets/${ticketId}/comments.json`);
+    const comments: IZendeskTicketComment[] =  get(res, 'data.comments', []);
+    return comments;
+  } catch (error) {
+    console.error('Error fetching zendesk ticket comments:', error);
+    return [];
+  }
+}
+
+async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { maxPages?: number, perPage?: number, fromPage?: number, fetchComments?: boolean } = {}): Promise<IResponse<ITicket[]>> {
   try {
     let pagesFetched = 0;
     let nextPageUrl = `${Config.ZENDESK_URL}/tickets.json?page[size]=${perPage}&sort_by=created_at&sort_order=desc`; // per_page max 100

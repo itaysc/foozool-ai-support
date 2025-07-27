@@ -55,10 +55,12 @@ export async function findZendeskSimilarTickets({
   ticket,
   k = 5,
   embedding,
+  fetchComments = false,
 }: {
   ticket: Partial<ITicket>;
   k: number;
   embedding?: number[];
+  fetchComments?: boolean;
 }): Promise<IResponse<SimilarTicket[]>> {
   // Step 1: Get SBERT embedding for the new ticket
   const [sbertEmbedding] = embedding ? [embedding] : await getSBERTEmbedding([ticket]);
@@ -68,9 +70,8 @@ export async function findZendeskSimilarTickets({
     ticket: { ...ticket, embedding: sbertEmbedding },
     k,
   });
-
-  // TODO: in real app fetch from CRM here
-  const tickets = await fetchTicketsByExternalIds(similarTickets.map((ticket) => ticket.ticket_id));
+  // fetch tickets from zendesk
+  const tickets = await fetchTicketsByExternalIds(similarTickets.map((ticket) => ticket.ticket_id), { fetchComments });
   const ticketsById = keyBy(tickets, 'external_id');
 
   if (similarTickets.length === 0) {

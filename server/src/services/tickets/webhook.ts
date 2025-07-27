@@ -107,6 +107,7 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId:
       ticket: ticketPayload,
       k: 5,
       embedding: sbertEmbedding,
+      fetchComments: true,
     });
 
     // Filter similar tickets to only include subject and description for summarization
@@ -122,7 +123,40 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId:
         sTicket.description = similarTicketsSummary[index];
       }
     });
+
+    // Extract and summarize comments from similar tickets
+    const commentsForSummarization = similarTickets.payload
+      .filter(ticket => ticket.comments && Array.isArray(ticket.comments) && ticket.comments.length > 0)
+      .map(ticket => {
+        // Extract all comment bodies and join them
+        const commentTexts = (ticket.comments as any[])
+          .filter(comment => comment.body && comment.body.trim())
+          .map(comment => comment.body)
+          .join('\n\n');
+        
+        return {
+          subject: `Comments from ticket ${ticket.externalId}`,
+          description: commentTexts
+        };
+      });
+
+    // Summarize comments if there are any
+    let commentsSummary: string[] = [];
+    if (commentsForSummarization.length > 0) {
+      console.log(`Summarizing comments from ${commentsForSummarization.length} similar tickets`);
+      commentsSummary = await summarizeTickets(commentsForSummarization);
+    }
+
+    // Add summarized comments to each ticket's context
+    similarTickets.payload.forEach((sTicket, index) => {
+      if (commentsSummary[index]) {
+        // Append the summarized comments to the ticket description
+        sTicket.description = sTicket.description + '\n\nConversation Summary: ' + commentsSummary[index];
+        console.log(`Added conversation summary to ticket ${sTicket.externalId}`);
+      }
+    });
     
+    // TODO: extract product information from similar tickets
     // Generate or extract product information
     const product = generateMockProduct();
 
@@ -133,7 +167,13 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId:
     
     // Add comment to Zendesk ticket with better error handling
     try {
-      await addCommentToTicket(ticket.ticket_id.toString(), agentSuggestion.reasoning, false);
+      // Collect similar ticket numbers
+      const similarTicketNumbers = similarTickets.payload.map(t => t.externalId).filter(Boolean);
+      let comment = agentSuggestion.reasoning;
+      if (similarTicketNumbers.length > 0) {
+        comment += `\n\nSimilar tickets used for this response: ${similarTicketNumbers.join(", ")}`;
+      }
+      await addCommentToTicket(ticket.ticket_id.toString(), comment, false);
       console.log(`Successfully added agent suggestion comment to ticket ${ticket.ticket_id}`);
     } catch (commentError: any) {
       console.error(`Failed to add comment to Zendesk ticket ${ticket.ticket_id}:`, commentError.message);
