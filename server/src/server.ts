@@ -20,12 +20,14 @@ import { mapping as ticketsMapping, settings as ticketsSettings } from "./elasti
 import modelTrainingRoutesV1 from './routes/model-training/v1';
 import ticketsRoutesV1 from './routes/tickets/v1';
 import autonomousAIRoutesV1 from './routes/autonomousAI/v1';
+import insightsRoutesV1 from './routes/insights/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
 import seed from "./seeds";
 import QdrantService from "./qdrant/service";
 import { googleFileCollectionConfig } from './qdrant/schemas/googleFile';
 import { startAllJobs } from './jobs';
 import searchRoutesV1 from './routes/search/v1';
+import { ensureIndexes } from './utils/ensureIndexes';
 
 export interface IServer {
   startServer: (callback: (port: number) => void) => void;
@@ -71,6 +73,7 @@ export default class Server{
       this.app.use('/api/v1/health', healthRoutesV1);
       this.app.use('/api/v1/tickets', ticketsRoutesV1);
       this.app.use('/api/v1/autonomous-ai', autonomousAIRoutesV1);
+      this.app.use('/api/v1/insights', insightsRoutesV1);
       this.app.use('/api/v1/train', modelTrainingRoutesV1);
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
       this.app.use('/api/v1/webhooks', webhookRoutesV1);
@@ -272,6 +275,9 @@ export default class Server{
         console.log('MongoDB connection host:', mongoose.connection.host);
         console.log('MongoDB connection name:', mongoose.connection.name);
         
+        // Ensure database indexes are created
+        await this.ensureDatabaseIndexes();
+        
         return; // Success, exit the retry loop
         
       } catch (err) {
@@ -299,6 +305,18 @@ export default class Server{
     console.log('Initializing scheduled jobs...');
     startAllJobs();
     console.log('✅ Scheduled jobs started successfully');
+  }
+
+  /**
+   * Ensure database indexes are created for optimal query performance
+   */
+  private async ensureDatabaseIndexes(): Promise<void> {
+    try {
+      await ensureIndexes();
+    } catch (error) {
+      console.error('❌ Error ensuring database indexes:', error);
+      // Don't throw error to prevent application startup failure
+    }
   }
 
   private configureApp() {

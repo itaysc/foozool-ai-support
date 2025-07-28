@@ -25,6 +25,12 @@ const OrganizationSchema: Schema = new Schema<IOrganization>({
   timestamps: true,
 });
 
+// Additional indexes for better query performance
+OrganizationSchema.index({ createdAt: -1 }); // For chronological ordering
+OrganizationSchema.index({ updatedAt: -1 }); // For recent updates
+OrganizationSchema.index({ externalId: 1 }); // For external system lookups
+OrganizationSchema.index({ tags: 1 }); // For tag-based filtering
+
 OrganizationSchema.pre('save', async function(next) {
   if (!this.signature) {
       this.signature = crypto.randomBytes(32).toString('hex');

@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import { getIndexStats } from '../../../utils/ensureIndexes';
 
 const router = express.Router();
 
@@ -50,14 +51,33 @@ router.get('/database', async (req: Request, res: Response) => {
       try {
         if (mongoose.connection.db) {
           await mongoose.connection.db.admin().ping();
-          res.status(200).json({
+          
+          // Get index statistics if requested
+          const includeIndexStats = req.query.indexes === 'true';
+          let indexStats: any = null;
+          
+          if (includeIndexStats) {
+            try {
+              indexStats = await getIndexStats();
+            } catch (indexError) {
+              console.warn('Could not get index stats:', indexError);
+            }
+          }
+          
+          const response: any = {
             status: 'healthy',
             database: 'connected',
             readyState: dbState,
             host: mongoose.connection.host,
             name: mongoose.connection.name,
             timestamp: new Date().toISOString()
-          });
+          };
+          
+          if (indexStats) {
+            response.indexStats = indexStats;
+          }
+          
+          res.status(200).json(response);
         } else {
           res.status(503).json({
             status: 'unhealthy',

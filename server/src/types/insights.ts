@@ -98,3 +98,43 @@ export interface InsightAnalysisResult {
     categories: Record<InsightCategory, number>;
   };
 } 
+
+// --- Analytics Types (moved from qdrantAnalytics.service.ts) ---
+
+export interface TicketAnalytics {
+  totalTickets: number;
+  timeRange: {
+    start: string;
+    end: string;
+  };
+  sentimentDistribution: {
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
+  intentDistribution: Record<string, number>;
+  tagFrequency: Record<string, number>;
+  topSubjects: Array<{ subject: string; count: number }>;
+  trends: {
+    volumeTrend: 'increasing' | 'decreasing' | 'stable';
+    satisfactionTrend: 'increasing' | 'decreasing' | 'stable';
+    percentageChange: number;
+  };
+  anomalies: Array<{
+    type: 'volume_spike' | 'satisfaction_drop' | 'new_intent' | 'sentiment_shift';
+    description: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    confidence: number;
+  }>;
+}
+
+export interface InsightGenerationRequest {
+  organizationId: string;
+  timeRange?: {
+    start: string;
+    end: string;
+  };
+  includeTrends?: boolean;
+  includeAnomalies?: boolean;
+  includeTopIssues?: boolean;
+} 

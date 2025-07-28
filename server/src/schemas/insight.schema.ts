@@ -44,16 +44,6 @@ interface InsightDocument extends Document {
 const insightSchema = new Schema({
   category: {
     type: String,
-    enum: [
-      'product_feedback',
-      'missing_documentation',
-      'potential_bug',
-      'user_experience',
-      'feature_request',
-      'anomaly',
-      'trend',
-      'customer_satisfaction'
-    ],
     required: true,
   },
   severity: {
@@ -144,5 +134,20 @@ insightSchema.index({ ticketIds: 1 });
 insightSchema.index({ productId: 1 });
 insightSchema.index({ createdAt: -1 });
 insightSchema.index({ status: 1 });
+
+// Additional indexes for specific query patterns
+insightSchema.index({ createdAt: -1, status: 1 }); // For recent insights with status filter
+insightSchema.index({ severity: 1, createdAt: -1 }); // For high priority insights
+insightSchema.index({ status: 1, severity: 1 }); // For active high priority insights
+insightSchema.index({ category: 1, createdAt: -1 }); // For category-based queries with time
+insightSchema.index({ severity: 1, status: 1, createdAt: -1 }); // For dashboard alerts
+insightSchema.index({ createdAt: 1 }); // For date range queries (ascending)
+insightSchema.index({ updatedAt: -1 }); // For status updates
+insightSchema.index({ confidence: -1 }); // For confidence-based sorting
+insightSchema.index({ sentiment: 1, createdAt: -1 }); // For sentiment analysis
+insightSchema.index({ trend: 1, createdAt: -1 }); // For trend analysis
+insightSchema.index({ trendType: 1, createdAt: -1 }); // For trend type analysis
+insightSchema.index({ keyTopics: 1 }); // For topic-based searches
+insightSchema.index({ satisfactionScore: -1 }); // For satisfaction-based queries
 
 export const InsightModel = model<InsightDocument>('Insight', insightSchema); 

@@ -462,6 +462,429 @@
       ]
     },
     {
+      "name": "📊 Insights",
+      "item": [
+        {
+          "name": "Get All Insights",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights?limit=10&offset=0&category=trend&severity=high&status=active",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "category",
+                  "value": "trend"
+                },
+                {
+                  "key": "severity",
+                  "value": "high"
+                },
+                {
+                  "key": "status",
+                  "value": "active"
+                }
+              ]
+            },
+            "description": "Get all insights with optional filtering and pagination"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Insight by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}"]
+            },
+            "description": "Get a specific insight by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Insight Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"resolved\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}/status",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}", "status"]
+            },
+            "description": "Update insight status (active/resolved/archived)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Insights Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/summary?days=30",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "summary"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Get insights summary with breakdowns by category, severity, and status"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Insights Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/trends?days=30",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "trends"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Get trend analysis for insights over time"
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Insights",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organizationId\": \"{{organization_id}}\",\n  \"timeRange\": {\n    \"start\": \"2024-01-01T00:00:00Z\",\n    \"end\": \"2024-12-31T23:59:59Z\"\n  },\n  \"includeTrends\": true,\n  \"includeAnomalies\": true,\n  \"includeTopIssues\": true\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/generate",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "generate"]
+            },
+            "description": "Generate insights for an organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Dashboard",
+          "item": [
+            {
+              "name": "Get Dashboard Metrics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/metrics",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "dashboard", "metrics"]
+                },
+                "description": "Get dashboard metrics including ticket counts, sentiment breakdown, and trends"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Dashboard Insights",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/insights",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "dashboard", "insights"]
+                },
+                "description": "Get AI-powered dashboard insights and recommendations"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Dashboard Alerts",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/alerts",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "dashboard", "alerts"]
+                },
+                "description": "Get active alerts and notifications for the dashboard"
+              },
+              "response": []
+            },
+            {
+              "name": "Get Performance Comparison",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/performance",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "dashboard", "performance"]
+                },
+                "description": "Get performance comparison between current and previous periods"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Scheduler",
+          "item": [
+            {
+              "name": "Get Scheduler Status",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/scheduler/status",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "scheduler", "status"]
+                },
+                "description": "Get status of all scheduled jobs (daily analytics, weekly insights, monthly cleanup)"
+              },
+              "response": []
+            },
+            {
+              "name": "Trigger Daily Analytics",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/scheduler/trigger/daily-analytics",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "scheduler", "trigger", "daily-analytics"]
+                },
+                "description": "Manually trigger daily analytics generation"
+              },
+              "response": []
+            },
+            {
+              "name": "Trigger Weekly Insights",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/scheduler/trigger/weekly-insights",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "scheduler", "trigger", "weekly-insights"]
+                },
+                "description": "Manually trigger weekly insights generation"
+              },
+              "response": []
+            },
+            {
+              "name": "Trigger Monthly Cleanup",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/scheduler/trigger/monthly-cleanup",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "scheduler", "trigger", "monthly-cleanup"]
+                },
+                "description": "Manually trigger monthly cleanup of old insights"
+              },
+              "response": []
+            },
+            {
+              "name": "Start Scheduler",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/scheduler/start",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "scheduler", "start"]
+                },
+                "description": "Start the insights scheduler"
+              },
+              "response": []
+            },
+            {
+              "name": "Stop Scheduler",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/scheduler/stop",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "scheduler", "stop"]
+                },
+                "description": "Stop the insights scheduler"
+              },
+              "response": []
+            },
+            {
+              "name": "Update Job Configuration",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"enabled\": true,\n  \"cronPattern\": \"0 6 * * *\",\n  \"description\": \"Updated daily analytics schedule\"\n}"
+                },
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/scheduler/job/daily-analytics",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "scheduler", "job", "daily-analytics"]
+                },
+                "description": "Update job configuration (enabled, cron pattern, description)"
+              },
+              "response": []
+            },
+            {
+              "name": "Generate Insights for Organization",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"timeRange\": {\n    \"start\": \"2024-01-01T00:00:00Z\",\n    \"end\": \"2024-12-31T23:59:59Z\"\n  },\n  \"includeTrends\": true,\n  \"includeAnomalies\": true,\n  \"includeTopIssues\": true\n}"
+                },
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/scheduler/generate",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "scheduler", "generate"]
+                },
+                "description": "Manually generate insights for the current organization"
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "🧠 ML Service",
       "item": [
         {
