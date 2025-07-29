@@ -48,7 +48,6 @@ const insightSchema = new Schema({
   },
   severity: {
     type: String,
-    enum: ['low', 'medium', 'high', 'critical'],
     required: true,
   },
   title: {
@@ -73,7 +72,6 @@ const insightSchema = new Schema({
   }],
   status: {
     type: String,
-    enum: ['active', 'resolved', 'archived'],
     default: 'active',
   },
   confidence: {
@@ -86,7 +84,6 @@ const insightSchema = new Schema({
   productId: String,
   feedbackType: {
     type: String,
-    enum: ['positive', 'negative', 'neutral'],
   },
   specificFeature: String,
   topic: String,
@@ -105,22 +102,18 @@ const insightSchema = new Schema({
   timeFrame: String,
   trend: {
     type: String,
-    enum: ['increasing', 'decreasing', 'spike', 'drop'],
   },
   trendType: {
     type: String,
-    enum: ['support_volume', 'feature_usage', 'user_satisfaction'],
   },
   direction: {
     type: String,
-    enum: ['increasing', 'decreasing', 'stable'],
   },
   percentageChange: Number,
   affectedProducts: [String],
   satisfactionScore: Number,
   sentiment: {
     type: String,
-    enum: ['positive', 'negative', 'neutral'],
   },
   keyTopics: [String],
   customerSegment: String,

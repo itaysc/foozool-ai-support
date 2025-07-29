@@ -29,7 +29,7 @@ async function getAgentSuggestion(userId: string, ticketPayload: { subject: stri
   const response = await callLLM({
     userId,
     prompt,
-    model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+    model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 1000,
     temperature: 0,
     isChat: true,
@@ -54,7 +54,7 @@ async function generateTicketResponse(
   const response = await callLLM({
     userId,
     prompt,
-    model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+    model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 1000,
     temperature: 0.2,
     isChat: true,

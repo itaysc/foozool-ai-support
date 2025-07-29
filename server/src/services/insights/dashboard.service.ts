@@ -1,6 +1,7 @@
 import { QdrantAnalyticsService } from './qdrantAnalytics.service';
 import { InsightModel } from '../../schemas/insight.schema';
 import { callLLM } from '../together.ai';
+import type { VolumeTrend, SatisfactionTrend } from '../../types/insights';
 
 interface DashboardMetrics {
   totalTickets: number;
@@ -12,8 +13,8 @@ interface DashboardMetrics {
   };
   topIntents: Array<{ intent: string; count: number; percentage: number }>;
   topTags: Array<{ tag: string; count: number; percentage: number }>;
-  volumeTrend: 'increasing' | 'decreasing' | 'stable';
-  satisfactionTrend: 'increasing' | 'decreasing' | 'stable';
+  volumeTrend: VolumeTrend;
+  satisfactionTrend: SatisfactionTrend;
   activeInsights: number;
   highPriorityInsights: number;
   averageResponseTime?: number; // If you track this
@@ -166,7 +167,7 @@ Focus on actionable insights that would help improve customer support and produc
     const response = await callLLM({
       userId: 'system',
       prompt,
-      model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+      model: 'mistralai/Mistral-7B-Instruct-v0.1',
       maxTokens: 3000,
       temperature: 0.2,
       isChat: true,

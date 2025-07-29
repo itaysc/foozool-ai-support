@@ -3,6 +3,7 @@ import { OrganizationModel } from '../../schemas/organization.schema';
 import { InsightModel } from '../../schemas/insight.schema';
 import { callLLM } from '../together.ai';
 import { v4 as uuidv4 } from 'uuid';
+import type { QdrantInsightsResult, TicketInsight, TicketAnalytics } from 'src/types/insights';
 
 interface InsightsGenerationResult {
   success: boolean;
@@ -44,7 +45,7 @@ export class InsightsOrchestratorService {
       console.log(`Starting insights generation for organization ${organizationId}`);
 
       // Generate insights based on configuration
-      const result = await this.analyticsService.generateInsights({
+      const result: QdrantInsightsResult = await this.analyticsService.generateInsights({
         organizationId,
         timeRange: config?.timeRange,
         includeTrends: config?.includeTrends ?? true,
@@ -55,7 +56,7 @@ export class InsightsOrchestratorService {
       insightsGenerated = result.insights.length;
 
       // Generate additional AI-powered insights
-      const aiInsights = await this.generateAIInsights(organizationId, result.analytics);
+      const aiInsights: TicketInsight[] = await this.generateAIInsights(organizationId, result.analytics);
       if (aiInsights.length > 0) {
         await InsightModel.insertMany(aiInsights);
         insightsGenerated += aiInsights.length;
@@ -70,7 +71,19 @@ export class InsightsOrchestratorService {
       };
 
     } catch (error) {
-      const errorMessage = `Error generating insights for organization ${organizationId}: ${error}`;
+      let errorMsg = '';
+      if (error instanceof Error) {
+        errorMsg = `${error.message}\n${error.stack}`;
+      } else if (typeof error === 'object') {
+        try {
+          errorMsg = JSON.stringify(error);
+        } catch {
+          errorMsg = String(error);
+        }
+      } else {
+        errorMsg = String(error);
+      }
+      const errorMessage = `Error generating insights for organization ${organizationId}: ${errorMsg}`;
       console.error(errorMessage);
       errors.push(errorMessage);
 
@@ -111,7 +124,19 @@ export class InsightsOrchestratorService {
           errors.push(...result.errors);
 
         } catch (error) {
-          const errorMessage = `Error processing organization ${organization._id}: ${error}`;
+          let errorMsg = '';
+          if (error instanceof Error) {
+            errorMsg = `${error.message}\n${error.stack}`;
+          } else if (typeof error === 'object') {
+            try {
+              errorMsg = JSON.stringify(error);
+            } catch {
+              errorMsg = String(error);
+            }
+          } else {
+            errorMsg = String(error);
+          }
+          const errorMessage = `Error processing organization ${organization._id}: ${errorMsg}`;
           console.error(errorMessage);
           errors.push(errorMessage);
         }
@@ -128,7 +153,19 @@ export class InsightsOrchestratorService {
       };
 
     } catch (error) {
-      const errorMessage = `Error in insights generation: ${error}`;
+      let errorMsg = '';
+      if (error instanceof Error) {
+        errorMsg = `${error.message}\n${error.stack}`;
+      } else if (typeof error === 'object') {
+        try {
+          errorMsg = JSON.stringify(error);
+        } catch {
+          errorMsg = String(error);
+        }
+      } else {
+        errorMsg = String(error);
+      }
+      const errorMessage = `Error in insights generation: ${errorMsg}`;
       console.error(errorMessage);
       errors.push(errorMessage);
 
@@ -213,7 +250,7 @@ export class InsightsOrchestratorService {
   /**
    * Generate AI-powered insights using LLM
    */
-  private async generateAIInsights(organizationId: string, analytics: any): Promise<any[]> {
+  private async generateAIInsights(organizationId: string, analytics: TicketAnalytics): Promise<TicketInsight[]> {
     const prompt = `
 Analyze the following support analytics data and generate additional AI-powered insights:
 
@@ -251,7 +288,7 @@ Focus on insights that would be valuable for:
       const response = await callLLM({
         userId: 'system',
         prompt,
-        model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+        model: 'mistralai/Mistral-7B-Instruct-v0.1',
         maxTokens: 2000,
         temperature: 0.3,
         isChat: true,

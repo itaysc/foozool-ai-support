@@ -47,7 +47,7 @@ Focus on actionable insights that would be valuable for product improvement and 
   const response = await callLLM({
     userId: 'system',
     prompt,
-    model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+    model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 2000,
     temperature: 0.2,
     isChat: true,
@@ -92,7 +92,7 @@ Generate insights in the same JSON format as before, focusing on anomalies and t
   const response = await callLLM({
     userId: 'system',
     prompt,
-    model: 'meta-llama/Llama-3.2-90B-Vision-Instruct-Turbo',
+    model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 2000,
     temperature: 0.2,
     isChat: true,

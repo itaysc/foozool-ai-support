@@ -2,7 +2,7 @@ import QdrantService from '../../qdrant/service';
 import { ticketCollectionConfig } from '../../qdrant/schemas/ticket';
 import { InsightModel } from '../../schemas/insight.schema';
 import { v4 as uuidv4 } from 'uuid';
-import type { TicketAnalytics, InsightGenerationRequest } from 'src/types/insights';
+import type { TicketAnalytics, InsightGenerationRequest, QdrantInsightsResult, TicketInsight } from 'src/types/insights';
 import { getRedisClient } from '../redis/client';
 
 export class QdrantAnalyticsService {
@@ -55,14 +55,23 @@ export class QdrantAnalyticsService {
       const redis = await getRedisClient();
       const cached = await redis.get(redisKey);
       if (cached) {
-        console.log(`✅ Returning analytics for org ${organizationId} from Redis cache`);
-        return JSON.parse(cached);
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed.totalTickets === 'number') {
+            console.log(`✅ Returning analytics for org ${organizationId} from Redis cache`);
+            return parsed;
+          } else {
+            console.warn('⚠️ Cached analytics is invalid, regenerating...');
+          }
+        } catch (err) {
+          console.error('❌ Error parsing cached analytics:', err);
+        }
       }
     } catch (err) {
       console.error('❌ Redis error (fetching analytics):', err);
     }
 
-    // If not cached, generate analytics as before
+    // If not cached or cache is invalid, generate analytics as before
     const tickets = await this.getAllTicketsForOrganization(organizationId, timeRange);
     if (tickets.length === 0) {
       const emptyAnalytics: TicketAnalytics = {
@@ -163,16 +172,17 @@ export class QdrantAnalyticsService {
   /**
    * Generate AI-powered insights from analytics data
    */
-  async generateInsights(request: InsightGenerationRequest): Promise<any> {
+  async generateInsights(request: InsightGenerationRequest): Promise<QdrantInsightsResult> {
     const analytics = await this.generateAnalytics(request.organizationId, request.timeRange);
     
     if (analytics.totalTickets === 0) {
       return {
         insights: [],
+        analytics,
         summary: {
           totalInsights: 0,
           message: 'No tickets found for the specified time range'
-        }
+        } as any // (or define a type for summary with/without message)
       };
     }
 
@@ -213,14 +223,13 @@ export class QdrantAnalyticsService {
   /**
    * Generate insights about top issues and trends
    */
-  private async generateTopIssuesInsights(analytics: TicketAnalytics): Promise<any[]> {
-    const insights: any[] = [];
+  private async generateTopIssuesInsights(analytics: TicketAnalytics): Promise<TicketInsight[]> {
+    const insights: TicketInsight[] = [];
 
-    // Top intents insight
+    // Top intents insight (TrendInsight)
     const topIntents = Object.entries(analytics.intentDistribution)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5);
-
     if (topIntents.length > 0) {
       insights.push({
         id: uuidv4(),
@@ -233,15 +242,37 @@ export class QdrantAnalyticsService {
         status: 'active',
         createdAt: new Date(),
         updatedAt: new Date(),
-        keyTopics: topIntents.map(([intent]) => intent),
-        frequency: topIntents[0][1]
+        trendType: 'support_volume',
+        direction: 'stable',
+        timeFrame: '',
+        percentageChange: 0
       });
     }
 
-    // Sentiment insight
+    // Top subjects insight (TrendInsight)
+    const topSubjects = analytics.topSubjects?.slice(0, 5) || [];
+    if (topSubjects.length > 0) {
+      insights.push({
+        id: uuidv4(),
+        category: 'trend',
+        severity: 'low',
+        title: 'Most Common Ticket Subjects',
+        description: `The most common ticket subjects are: ${topSubjects.map(s => `${s.subject} (${s.count} times)`).join(', ')}.`,
+        confidence: 0.7,
+        ticketIds: [],
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        trendType: 'support_volume',
+        direction: 'stable',
+        timeFrame: '',
+        percentageChange: 0
+      });
+    }
+
+    // Sentiment insight (CustomerSatisfactionInsight)
     const totalTickets = analytics.totalTickets;
     const negativePercentage = (analytics.sentimentDistribution.negative / totalTickets) * 100;
-    
     if (negativePercentage > 30) {
       insights.push({
         id: uuidv4(),
@@ -255,15 +286,16 @@ export class QdrantAnalyticsService {
         createdAt: new Date(),
         updatedAt: new Date(),
         satisfactionScore: negativePercentage,
-        sentiment: 'negative'
+        sentiment: 'negative',
+        keyTopics: [],
+        customerSegment: undefined
       });
     }
 
-    // Top tags insight
+    // Top tags insight (TrendInsight)
     const topTags = Object.entries(analytics.tagFrequency)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5);
-
     if (topTags.length > 0) {
       insights.push({
         id: uuidv4(),
@@ -276,8 +308,35 @@ export class QdrantAnalyticsService {
         status: 'active',
         createdAt: new Date(),
         updatedAt: new Date(),
-        keyTopics: topTags.map(([tag]) => tag)
+        trendType: 'support_volume',
+        direction: 'stable',
+        timeFrame: '',
+        percentageChange: 0
       });
+    }
+
+    // Top customer segments (TrendInsight)
+    if ((analytics as any).customerSegments) {
+      const segments = (analytics as any).customerSegments as Record<string, number>;
+      const topSegments = Object.entries(segments).sort(([,a], [,b]) => b - a).slice(0, 3);
+      if (topSegments.length > 0) {
+        insights.push({
+          id: uuidv4(),
+          category: 'trend',
+          severity: 'low',
+          title: 'Top Customer Segments',
+          description: `Top customer segments by ticket volume: ${topSegments.map(([seg, count]) => `${seg} (${count})`).join(', ')}.`,
+          confidence: 0.6,
+          ticketIds: [],
+          status: 'active',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          trendType: 'support_volume',
+          direction: 'stable',
+          timeFrame: '',
+          percentageChange: 0
+        });
+      }
     }
 
     return insights;
@@ -326,25 +385,85 @@ export class QdrantAnalyticsService {
       });
     }
 
+    // Unresolved tickets trend
+    if ((analytics as any).unresolvedTickets) {
+      const unresolvedTickets = (analytics as any).unresolvedTickets;
+      const currentUnresolved = unresolvedTickets.current;
+      const previousUnresolved = unresolvedTickets.previous;
+
+      if (previousUnresolved !== undefined && currentUnresolved !== undefined) {
+        const percentageChange = ((currentUnresolved - previousUnresolved) / previousUnresolved) * 100;
+        if (percentageChange > 10 || percentageChange < -10) { // Significant change
+          insights.push({
+            id: uuidv4(),
+            category: 'customer_satisfaction',
+            severity: percentageChange > 0 ? 'medium' : 'high',
+            title: `Unresolved Tickets ${percentageChange > 0 ? 'Increasing' : 'Decreasing'}`,
+            description: `Unresolved tickets are ${percentageChange > 0 ? 'increasing' : 'decreasing'}. ${percentageChange > 0 ? 'This indicates a backlog or unresolved issues.' : 'This indicates improved issue resolution.'}`,
+            confidence: 0.8,
+            ticketIds: [],
+            status: 'active',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            trend: percentageChange > 0 ? 'increasing' : 'decreasing',
+            trendType: 'unresolved_tickets'
+          });
+        }
+      }
+    }
+
     return insights;
   }
 
   /**
    * Generate anomaly-based insights
    */
-  private async generateAnomalyInsights(analytics: TicketAnalytics): Promise<any[]> {
-    return analytics.anomalies.map(anomaly => ({
-      id: uuidv4(),
-      category: 'anomaly',
-      severity: anomaly.severity,
-      title: `Anomaly Detected: ${anomaly.type.replace('_', ' ').toUpperCase()}`,
-      description: anomaly.description,
-      confidence: anomaly.confidence,
-      ticketIds: [],
-      status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }));
+  private async generateAnomalyInsights(analytics: TicketAnalytics): Promise<TicketInsight[]> {
+    const insights: TicketInsight[] = [];
+
+    // Existing anomalies from analytics (AnomalyInsight)
+    for (const anomaly of analytics.anomalies) {
+      insights.push({
+        id: uuidv4(),
+        category: 'anomaly',
+        severity: anomaly.severity,
+        title: `Anomaly Detected: ${anomaly.type.replace('_', ' ').toUpperCase()}`,
+        description: anomaly.description,
+        confidence: anomaly.confidence,
+        ticketIds: [],
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        metric: '',
+        expectedValue: 0,
+        actualValue: 0,
+        timeFrame: '',
+        trend: 'spike',
+      });
+    }
+
+    // Volume spike detection (AnomalyInsight)
+    if (analytics.trends && Math.abs(analytics.trends.percentageChange) > 30) {
+      insights.push({
+        id: uuidv4(),
+        category: 'anomaly',
+        severity: 'medium',
+        title: 'Volume Spike Detected',
+        description: `Significant change in ticket volume detected: ${analytics.trends.percentageChange.toFixed(1)}%`,
+        confidence: 0.7,
+        ticketIds: [],
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        metric: 'ticket_volume',
+        expectedValue: 0,
+        actualValue: 0,
+        timeFrame: '',
+        trend: 'spike'
+      });
+    }
+
+    return insights;
   }
 
   /**
