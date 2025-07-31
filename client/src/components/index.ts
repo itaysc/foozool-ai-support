@@ -1,12 +1,7 @@
-export { default as YesNoModal } from './yesNoModal';
-export { default as OverlayLoader } from './overlayLoader';
-export { default as TagsInput } from './tagsInput';
-export { default as CurrencyPicker } from './currencyPicker';
-export { default as Chat } from './aiChat';
-export { default as BouncingDotsLoader } from './bouncingDotsLoader';
-export { default as AutoCompleteInput } from './autocompleteInput';
-export { default as AddCustomerModal } from './addCustomer';
-export { default as SelectField } from './select';
-export { default as FixedFooter } from './fixedFooter';
+export { default as AvatarMenu } from './avatarMenu';
 export { default as Navbar } from './navbar';
 export { default as Page } from './page';
+export { default as FixedFooter } from './fixedFooter';
+export { default as BouncingDotsLoader } from './bouncingDotsLoader';
+export { default as OverlayLoader } from './overlayLoader';
+export { default as YesNoModal } from './yesNoModal';

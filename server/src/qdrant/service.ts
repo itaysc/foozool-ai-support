@@ -6,8 +6,7 @@ import { googleFileCollectionConfig, QdrantGoogleFilePoint, chunkTypeScoreThresh
 import { ticketCollectionConfig, QdrantTicketPoint } from './schemas/ticket';
 import { v5 as uuidv5 } from 'uuid';
 import { parseTextIntoChunks } from '../services/google/parse';
-
-const QDRANT_POINT_NAMESPACE = 'b3b3b3b3-b3b3-4b3b-b3b3-b3b3b3b3b3b3';
+import { QDRANT_POINT_NAMESPACE } from './utils';
 
 type CreateCollectionStatus = 'created' | 'alreadyExists' | 'error';
 

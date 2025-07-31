@@ -1,8 +1,8 @@
 # Machine Learning Dependencies - Optimized for size
-torch==2.1.0  # Standard version, compatible with Debian
+# torch==2.1.0  # will be installed at runtime as CPU-only
 transformers==4.35.0
 sentence-transformers==2.2.2
-tensorflow==2.15.0  # Required for Sarthak279/Intent model
+# tensorflow==2.15.0  # will be installed at runtime
 psutil==5.9.8  # Required for memory monitoring in download script
 
 # Use smaller, more efficient alternatives

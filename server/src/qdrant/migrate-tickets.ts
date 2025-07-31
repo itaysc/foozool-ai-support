@@ -2,6 +2,8 @@ import ElasticsearchService from '../elasticsearch/service';
 import QdrantService from './service';
 import { ticketCollectionConfig, QdrantTicketPoint } from './schemas/ticket';
 import { IESTicket } from 'src/types';
+import { v5 as uuidv5 } from 'uuid';
+import { QDRANT_POINT_NAMESPACE } from './utils';
 
 interface MigrationResult {
     success: boolean;
@@ -143,23 +145,29 @@ class TicketMigration {
      * Transform ES tickets to Qdrant points format
      */
     private transformToQdrantPoints(tickets: IESTicket[]): QdrantTicketPoint[] {
-        return tickets.map((ticket, index) => ({
-            id: ticket.ticket_id || `ticket_${index}`,
-            vector: ticket.embedding || [],
-            payload: {
-                ticket_id: ticket.ticket_id || '',
-                subject: (ticket as any).subject || '',
-                description: (ticket as any).description || '',
-                organization: ticket.organization || '',
-                sentiment_score: ticket.sentiment_score || 0,
-                sentiment: ticket.sentiment || 'neutral',
-                customer_id: ticket.customer_id || '',
-                created_at: ticket.created_at || new Date().toISOString(),
-                channel: (ticket as any).channel,
-                status: (ticket as any).status,
-                tags: (ticket as any).tags || []
-            }
-        }));
+        return tickets.map((ticket, index) => {
+            // Generate a UUID for the Qdrant point ID based on the ticket ID
+            const ticketId = ticket.ticket_id || `ticket_${index}`;
+            const qdrantPointId = uuidv5(ticketId.toString(), QDRANT_POINT_NAMESPACE);
+            
+            return {
+                id: qdrantPointId,
+                vector: ticket.embedding || [],
+                payload: {
+                    ticket_id: ticket.ticket_id || '',
+                    subject: (ticket as any).subject || '',
+                    description: (ticket as any).description || '',
+                    organization: ticket.organization || '',
+                    sentiment_score: ticket.sentiment_score || 0,
+                    sentiment: ticket.sentiment || 'neutral',
+                    customer_id: ticket.customer_id || '',
+                    created_at: ticket.created_at || new Date().toISOString(),
+                    channel: (ticket as any).channel,
+                    status: (ticket as any).status,
+                    tags: (ticket as any).tags || []
+                }
+            };
+        });
     }
 
     /**

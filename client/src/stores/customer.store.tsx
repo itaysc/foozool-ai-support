@@ -1,5 +1,5 @@
 import { observable, runInAction, action, makeObservable, toJS } from 'mobx';
-import { ICustomer } from '@common/types';
+import { ICustomer } from '@/types';
 import customerService from '@/services/customer-service';
 
 class CustomerStore {

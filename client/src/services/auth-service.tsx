@@ -3,7 +3,7 @@ import axios, { refreshToken as _refreshToken } from '@/services/axios';
 import config from '@/config';
 import { getStoredToken } from '@/services/local-storage';
 import { decodeToken } from '@/utils';
-import { IUser } from '@common/types';
+import { IUser } from '@/types';
 
 const getRoute = (method: string) => {
   return `${config.apiUrl}/auth/${method}`;

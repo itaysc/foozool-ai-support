@@ -48,7 +48,8 @@ RUN apt-get update && \
 RUN npm install -g nodemon
 
 # Build the TypeScript code with explicit config path
-RUN yarn build
+RUN NODE_OPTIONS="--max-old-space-size=4096" yarn build
+ENV NODE_OPTIONS=--max-old-space-size=4096
 
 # Start the server
 EXPOSE 9220

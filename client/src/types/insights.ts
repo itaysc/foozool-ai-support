@@ -1,3 +1,9 @@
+export type VolumeTrend = 'increasing' | 'decreasing' | 'stable';
+export type SatisfactionTrend = 'increasing' | 'decreasing' | 'stable';
+export type TrendType = 'support_volume' | 'feature_usage' | 'user_satisfaction';
+export type Sentiment = 'positive' | 'negative' | 'neutral';
+export type AnomalyTrend = 'increasing' | 'decreasing' | 'spike' | 'drop';
+
 export type InsightSeverity = 'low' | 'medium' | 'high' | 'critical';
 
 export type InsightCategory = 
@@ -61,13 +67,13 @@ export interface AnomalyInsight extends BaseInsight {
   expectedValue: number;
   actualValue: number;
   timeFrame: string;
-  trend: 'increasing' | 'decreasing' | 'spike' | 'drop';
+  trend: AnomalyTrend;
 }
 
 export interface TrendInsight extends BaseInsight {
   category: 'trend';
-  trendType: 'support_volume' | 'feature_usage' | 'user_satisfaction';
-  direction: 'increasing' | 'decreasing' | 'stable';
+  trendType: TrendType;
+  direction: VolumeTrend;
   timeFrame: string;
   percentageChange: number;
   affectedProducts?: string[];
@@ -76,7 +82,7 @@ export interface TrendInsight extends BaseInsight {
 export interface CustomerSatisfactionInsight extends BaseInsight {
   category: 'customer_satisfaction';
   satisfactionScore: number;
-  sentiment: 'positive' | 'negative' | 'neutral';
+  sentiment: Sentiment;
   keyTopics: string[];
   customerSegment?: string;
 }
@@ -96,5 +102,56 @@ export interface InsightAnalysisResult {
     totalInsights: number;
     highSeverityCount: number;
     categories: Record<InsightCategory, number>;
+  };
+} 
+
+// --- Analytics Types (moved from qdrantAnalytics.service.ts) ---
+
+export interface TicketAnalytics {
+  totalTickets: number;
+  timeRange: {
+    start: string;
+    end: string;
+  };
+  sentimentDistribution: {
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
+  intentDistribution: Record<string, number>;
+  tagFrequency: Record<string, number>;
+  topSubjects: Array<{ subject: string; count: number }>;
+  trends: {
+    volumeTrend: VolumeTrend;
+    satisfactionTrend: SatisfactionTrend;
+    percentageChange: number;
+  };
+  anomalies: Array<{
+    type: 'volume_spike' | 'satisfaction_drop' | 'new_intent' | 'sentiment_shift';
+    description: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    confidence: number;
+  }>;
+}
+
+export interface InsightGenerationRequest {
+  organizationId: string;
+  timeRange?: {
+    start: string;
+    end: string;
+  };
+  includeTrends?: boolean;
+  includeAnomalies?: boolean;
+  includeTopIssues?: boolean;
+} 
+
+export interface QdrantInsightsResult {
+  insights: TicketInsight[];
+  analytics: TicketAnalytics;
+  summary: {
+    totalInsights: number;
+    highSeverityCount?: number;
+    categories?: Record<InsightCategory, number>;
+    message?: string;
   };
 } 

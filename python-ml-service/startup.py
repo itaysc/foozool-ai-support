@@ -43,7 +43,7 @@ def install_ml_dependencies():
             subprocess.check_call([
                 sys.executable, "-m", "pip", "install",
                 "--no-cache-dir",  # Avoid cache issues
-                "torch==2.1.0",
+                "torch==2.1.0+cpu", "-f", "https://download.pytorch.org/whl/torch_stable.html",
                 "transformers==4.35.0", 
                 "sentence-transformers==2.2.2",
                 "tensorflow==2.15.0",  # Required for Sarthak279/Intent model

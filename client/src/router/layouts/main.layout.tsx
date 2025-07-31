@@ -4,7 +4,6 @@ import { Navbar } from '@/components';
 import { useMainLayoutContext } from '@/context/mainLayout.context';
 import configStore from '@/stores/config.store';
 import { useEffect } from 'react';
-import { Chat } from '@/components';
 import customerStore from '@/stores/customer.store';
 import { ChatProvider } from '@/context/chat/chat.context';
 
@@ -22,7 +21,6 @@ export default function Layout() {
       </header>
       <main >
         <ChatProvider>
-          <Chat />
           <Outlet /> {/* Render nested routes here */}
         </ChatProvider>
       </main>

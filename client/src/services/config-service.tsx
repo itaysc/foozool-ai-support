@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios';
 import axios from '@/services/axios';
 import config from '@/config';
-import { IOrganizationConfig } from '@common/types';
+import { IOrganizationConfig } from '@/types';
 
 const getRoute = (method: string) => {
   return `${config.apiUrl}/config/${method}`;

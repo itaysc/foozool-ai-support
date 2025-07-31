@@ -9,4 +9,12 @@ export { IProduct } from './product';
 export { IToken } from './token';
 export { ZendeskTicketWebhookPayload } from './zendesk/webhookPayload';
 export { IAgentSuggestion } from './agentSuggestion';
-export { CurrencyCode } from './currencyCode';
+export { ICreateTicketPayload } from './zendesk/createTicketPayload';
+export { IZendeskTicketComment } from './zendesk/zendeskTicketComment';
+export { ITicketSearchResult } from './zendesk/ticketSearchResult';
+
+// Autonomous AI Types
+export * from './autonomousAI';
+
+// Webhook Types
+export * from './webhook';

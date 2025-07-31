@@ -1,6 +1,6 @@
 import { observable, runInAction, action, makeObservable, toJS } from 'mobx';
 import configService from '@/services/config-service';
-import { IOrganizationConfig } from '@common/types';
+import { IOrganizationConfig } from 'types';
 import { getDataFromLocalStorage, setDataToLocalStorage } from '@/services/local-storage';
 
 // import { roles } from '../utils/permissions';

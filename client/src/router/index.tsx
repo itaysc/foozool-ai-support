@@ -1,21 +1,34 @@
 import AvatarScene from "@/3d";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Test from "@/pages/test";
+import Login from "@/pages/login";
+import Dashboard from "@/pages/dashboard";
+import NotFound from "@/pages/notFound";
+import Layout from "./layouts/main.layout";
+import ProtectedRoute from "./ProtectRoute";
 
 export const supportedRoutes = [
     '/invoice',
     '/invoice/:id'
 ]
 
-const Roter = () => {
+const Router = () => {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/avatar" element={<AvatarScene />} />
-                <Route path="/test" element={<Test />} />
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />                
+                {/* Protected routes with layout */}
+                <Route path="/" element={<Layout />}>
+                    <Route index element={<ProtectedRoute element={<Dashboard />} />} />
+                    <Route path="dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+                </Route>
+                
+                {/* Catch all route */}
+                <Route path="*" element={<NotFound />} />
             </Routes>
         </BrowserRouter>
     );
 };
 
-export default Roter;
+export default Router;

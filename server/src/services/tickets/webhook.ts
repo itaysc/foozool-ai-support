@@ -4,15 +4,14 @@ import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
 import { buildAgentSuggestionPrompt, buildPrompt } from './prompts';
 import { callLLM } from '../together.ai';
-import { TicketModel } from 'src/schemas/ticket.schema';
-import { analyzeTicket } from '../insights/analyzer';
-import { InsightModel } from 'src/schemas/insight.schema';
 import { addCommentToTicket } from '../zendesk';
 import sanitizeText, { extractCustomerMessage } from 'src/utils/text-sanitize';
 import QdrantService from '../../qdrant/service';
 import { QdrantTicketPoint } from '../../qdrant/schemas/ticket';
 import { analyzeSentiment } from '../nlp';
 import { executeAutonomousActions } from '../autonomousAI';
+import { v5 as uuidv5 } from 'uuid';
+import { QDRANT_POINT_NAMESPACE } from '../../qdrant/utils';
 
 const DEFAULT_CONFIDENCE_SCORE = 0.3;
 
@@ -81,6 +80,43 @@ async function generateTicketResponse(
 }
 
 /**
+ * Extract and summarize comments from similar tickets
+ */
+async function extractAndSummarizeTicketComments(similarTickets: any[]): Promise<void> {
+  // Extract and summarize comments from similar tickets
+  const commentsForSummarization = similarTickets
+    .filter(ticket => ticket.comments && Array.isArray(ticket.comments) && ticket.comments.length > 0)
+    .map(ticket => {
+      // Extract all comment bodies and join them
+      const commentTexts = (ticket.comments as any[])
+        .filter(comment => comment.body && comment.body.trim())
+        .map(comment => comment.body)
+        .join('\n\n');
+      
+      return {
+        subject: `Comments from ticket ${ticket.externalId}`,
+        description: commentTexts
+      };
+    });
+
+  // Summarize comments if there are any
+  let commentsSummary: string[] = [];
+  if (commentsForSummarization.length > 0) {
+    console.log(`Summarizing comments from ${commentsForSummarization.length} similar tickets`);
+    commentsSummary = await summarizeTickets(commentsForSummarization);
+  }
+
+  // Add summarized comments to each ticket's context
+  similarTickets.forEach((sTicket, index) => {
+    if (commentsSummary[index]) {
+      // Append the summarized comments to the ticket description
+      sTicket.description = sTicket.description + '\n\nConversation Summary: ' + commentsSummary[index];
+      console.log(`Added conversation summary to ticket ${sTicket.externalId}`);
+    }
+  });
+}
+
+/**
  * Main webhook handler for processing Zendesk tickets
  */
 export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId: string, organizationId: string): Promise<IResponse> {
@@ -103,8 +139,12 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId:
     const [sbertEmbedding] = await getSBERTEmbedding([ticketPayload]);
     // Save ticket point in qdrant
     const qdrantService = new QdrantService();
+    
+    // Generate a UUID for the Qdrant point ID based on the ticket ID
+    const qdrantPointId = uuidv5(ticket.ticket_id.toString(), QDRANT_POINT_NAMESPACE);
+    
     const qdrantPoint: QdrantTicketPoint = {
-      id: ticket.ticket_id,
+      id: qdrantPointId,
       vector: sbertEmbedding,
       payload: {
         ticket_id: ticket.ticket_id,
@@ -145,36 +185,7 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId:
     });
 
     // Extract and summarize comments from similar tickets
-    const commentsForSummarization = similarTickets.payload
-      .filter(ticket => ticket.comments && Array.isArray(ticket.comments) && ticket.comments.length > 0)
-      .map(ticket => {
-        // Extract all comment bodies and join them
-        const commentTexts = (ticket.comments as any[])
-          .filter(comment => comment.body && comment.body.trim())
-          .map(comment => comment.body)
-          .join('\n\n');
-        
-        return {
-          subject: `Comments from ticket ${ticket.externalId}`,
-          description: commentTexts
-        };
-      });
-
-    // Summarize comments if there are any
-    let commentsSummary: string[] = [];
-    if (commentsForSummarization.length > 0) {
-      console.log(`Summarizing comments from ${commentsForSummarization.length} similar tickets`);
-      commentsSummary = await summarizeTickets(commentsForSummarization);
-    }
-
-    // Add summarized comments to each ticket's context
-    similarTickets.payload.forEach((sTicket, index) => {
-      if (commentsSummary[index]) {
-        // Append the summarized comments to the ticket description
-        sTicket.description = sTicket.description + '\n\nConversation Summary: ' + commentsSummary[index];
-        console.log(`Added conversation summary to ticket ${sTicket.externalId}`);
-      }
-    });
+    await extractAndSummarizeTicketComments(similarTickets.payload);
     
     // TODO: extract product information from similar tickets
     // Generate or extract product information

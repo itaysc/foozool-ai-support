@@ -1,7 +1,7 @@
 import { AxiosResponse } from 'axios';
 import axios from '@/services/axios';
 import config from '@/config';
-import { IChatResponse, ILLMPrices } from '@common/types';
+import { IChatResponse, ILLMPrices } from '@/types';
 import { getDataFromLocalStorage } from '@/services/local-storage';
 const getRoute = (method: string) => {
   return `${config.apiUrl}/chat/${method}`;

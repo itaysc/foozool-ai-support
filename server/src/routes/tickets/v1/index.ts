@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { findZendeskSimilarTickets, handleWebhook } from '../../../services/tickets';
+import { handleWebhook } from '../../../services/tickets';
 import { validateRequest } from 'src/middleware/validateRequest';
 import { newTicket } from './validations';
 import { authenticateJWT } from 'src/middleware/authenticate';
