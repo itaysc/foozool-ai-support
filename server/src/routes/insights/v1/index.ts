@@ -265,14 +265,14 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
         acc[insight.category] = (acc[insight.category] || 0) + 1;
         return acc;
       }, {}),
-      bySeverity: insights.reduce((acc, insight) => {
+      bySeverity: insights.reduce((acc: Record<string, number>, insight) => {
         acc[insight.severity] = (acc[insight.severity] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>),
-      byStatus: insights.reduce((acc, insight) => {
+      }, {}),
+      byStatus: insights.reduce((acc: Record<string, number>, insight) => {
         acc[insight.status] = (acc[insight.status] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>),
+      }, {}),
       highPriorityCount: insights.filter(i => i.severity === 'high' || i.severity === 'critical').length,
       averageConfidence: insights.length > 0 
         ? insights.reduce((sum, i) => sum + i.confidence, 0) / insights.length 
@@ -333,11 +333,11 @@ router.get('/trends', async (req: Request, res: Response): Promise<void> => {
     const trendData = insights.map(day => ({
       date: day._id,
       totalInsights: day.count,
-      categoryBreakdown: day.categories.reduce((acc: any, cat: string) => {
+      categoryBreakdown: day.categories.reduce((acc: Record<string, number>, cat: string) => {
         acc[cat] = (acc[cat] || 0) + 1;
         return acc;
       }, {}),
-      severityBreakdown: day.severities.reduce((acc: any, sev: string) => {
+      severityBreakdown: day.severities.reduce((acc: Record<string, number>, sev: string) => {
         acc[sev] = (acc[sev] || 0) + 1;
         return acc;
       }, {})
