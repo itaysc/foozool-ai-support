@@ -9,6 +9,7 @@ import { passport, initializeJWTStrategies } from './middleware/passport';
 import Config from './config';
 import authRoutesV1 from './routes/auth/v1';
 import usersRoutesV1 from './routes/users/v1';
+import organizationsRoutesV1 from './routes/organizations/v1';
 import healthRoutesV1 from './routes/health/v1';
 import fakerRoutesV1 from './routes/faker/v1';
 import googleRoutesV1 from './routes/google/v1';
@@ -70,6 +71,7 @@ export default class Server{
       // API routes
       this.app.use('/api/v1/auth', authRoutesV1);
       this.app.use('/api/v1/users', usersRoutesV1);
+      this.app.use('/api/v1/organizations', organizationsRoutesV1);
       this.app.use('/api/v1/health', healthRoutesV1);
       this.app.use('/api/v1/tickets', ticketsRoutesV1);
       this.app.use('/api/v1/autonomous-ai', autonomousAIRoutesV1);

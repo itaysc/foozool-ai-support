@@ -50,6 +50,27 @@ export const validateAndDecodeToken = (token: string) => {
   }
 };
 
+export const isTokenExpired = (token: string): boolean => {
+  try {
+    const decoded = jwtDecode(token);
+    const currentTime = Date.now() / 1000;
+    return decoded.exp ? decoded.exp < currentTime : true;
+  } catch (error) {
+    console.error('Error checking token expiration:', error);
+    return true; // Consider invalid tokens as expired
+  }
+};
+
+export const getTokenExpirationTime = (token: string): number | null => {
+  try {
+    const decoded = jwtDecode(token);
+    return decoded.exp || null;
+  } catch (error) {
+    console.error('Error getting token expiration:', error);
+    return null;
+  }
+};
+
 export const paymentMethodToLabel = (paymentMethod: ePaymentMethod) => {
     // snake case to label
     return paymentMethod.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());

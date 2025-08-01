@@ -154,4 +154,73 @@ export interface QdrantInsightsResult {
     categories?: Record<InsightCategory, number>;
     message?: string;
   };
+}
+
+// --- Dashboard Types ---
+
+export interface DashboardMetrics {
+  totalTickets: number;
+  recentTickets: number; // Last 7 days
+  sentimentBreakdown: {
+    positive: number;
+    negative: number;
+    neutral: number;
+  };
+  topIntents: Array<{ intent: string; count: number; percentage: number }>;
+  topTags: Array<{ tag: string; count: number; percentage: number }>;
+  volumeTrend: VolumeTrend;
+  satisfactionTrend: SatisfactionTrend;
+  activeInsights: number;
+  highPriorityInsights: number;
+  averageResponseTime?: number;
+  customerSatisfactionScore?: number;
+}
+
+export interface DashboardInsights {
+  topIssues: Array<{
+    title: string;
+    description: string;
+    severity: string;
+    confidence: number;
+    affectedTickets: number;
+  }>;
+  trends: Array<{
+    title: string;
+    description: string;
+    trend: string;
+    impact: string;
+  }>;
+  recommendations: Array<{
+    title: string;
+    description: string;
+    priority: string;
+    actionItems: string[];
+  }>;
+}
+
+export interface DashboardAlert {
+  id: string;
+  type: 'anomaly' | 'trend' | 'threshold' | 'insight';
+  title: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: Date;
+  actionable: boolean;
+}
+
+export interface PerformanceComparison {
+  currentPeriod: DashboardMetrics;
+  previousPeriod: DashboardMetrics;
+  improvements: Array<{ 
+    metric: string; 
+    change: number; 
+    direction: 'improved' | 'declined' 
+  }>;
+}
+
+export interface DashboardData {
+  metrics: DashboardMetrics;
+  insights: DashboardInsights;
+  alerts: DashboardAlert[];
+  performance: PerformanceComparison;
 } 

@@ -2,6 +2,10 @@ import { QdrantAnalyticsService } from './qdrantAnalytics.service';
 import { InsightModel } from '../../schemas/insight.schema';
 import { callLLM } from '../together.ai';
 import type { VolumeTrend, SatisfactionTrend } from '../../types/insights';
+import { UserContextManager } from '../../context/userContext';
+import sanitizeText, { extractJSONFromText } from 'src/utils/text-sanitize';
+import { getRedisClient } from '../redis/client';
+import dashboardSettingsService from '../organizations/dashboard-settings.service';
 
 interface DashboardMetrics {
   totalTickets: number;
@@ -53,17 +57,61 @@ export class DashboardService {
   /**
    * Get comprehensive dashboard metrics
    */
-  async getDashboardMetrics(organizationId: string): Promise<DashboardMetrics> {
-    // Get analytics for different time periods
-    const allTimeAnalytics = await this.analyticsService.generateAnalytics(organizationId);
+  async getDashboardMetrics(organizationId: string, useCache: boolean = true): Promise<DashboardMetrics> {
+    const redisKey = `dashboard:metrics:${organizationId}`;
     
-    // Get recent analytics (last 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentAnalytics = await this.analyticsService.generateAnalytics(organizationId, {
-      start: sevenDaysAgo.toISOString(),
-      end: new Date().toISOString()
-    });
+    // Try to get from cache first if caching is enabled
+    if (useCache) {
+      try {
+        const redis = await getRedisClient();
+        const cached = await redis.get(redisKey);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && typeof parsed.totalTickets === 'number') {
+              console.log(`✅ Returning dashboard metrics for org ${organizationId} from Redis cache`);
+              return parsed;
+            } else {
+              console.warn('⚠️ Cached dashboard metrics is invalid, regenerating...');
+            }
+          } catch (err) {
+            console.error('❌ Error parsing cached dashboard metrics:', err);
+          }
+        }
+      } catch (err) {
+        console.error('❌ Redis error (fetching dashboard metrics):', err);
+      }
+    }
+
+    // Get current user ID from context
+    const userId = UserContextManager.getCurrentUserId();
+    if (!userId) {
+      throw new Error('User context not available for analytics');
+    }
+
+    // Get organization dashboard settings
+    const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId);
+    const defaultSettings = dashboardSettingsService.getDefaultSettings();
+    const settings = dashboardSettings || defaultSettings;
+
+    // Calculate time range based on settings
+    const timeRange = dashboardSettingsService.calculateTimeRange(settings);
+    
+    console.log(`🔍 Using analytics time range for org ${organizationId}:`, timeRange ? `${timeRange.start} to ${timeRange.end}` : 'all time');
+
+    // Get analytics based on organization settings
+    const analytics = await this.analyticsService.generateAnalytics(organizationId, userId, timeRange || undefined);
+    
+    // Get recent analytics (last 7 days) for comparison if not using all-time
+    let recentAnalytics = null;
+    if (timeRange) {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      recentAnalytics = await this.analyticsService.generateAnalytics(organizationId, userId, {
+        start: sevenDaysAgo.toISOString(),
+        end: new Date().toISOString()
+      });
+    }
 
     // Get active insights count
     const activeInsights = await InsightModel.countDocuments({ status: 'active' });
@@ -73,50 +121,97 @@ export class DashboardService {
     });
 
     // Calculate top intents with percentages
-    const totalTickets = allTimeAnalytics.totalTickets;
-    const topIntents = Object.entries(allTimeAnalytics.intentDistribution)
-      .sort(([,a], [,b]) => b - a)
+    const totalTickets = analytics.totalTickets;
+    const topIntents = Object.entries(analytics.intentDistribution)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 5)
       .map(([intent, count]) => ({
         intent,
-        count,
-        percentage: totalTickets > 0 ? (count / totalTickets) * 100 : 0
+        count: count as number,
+        percentage: totalTickets > 0 ? ((count as number) / totalTickets) * 100 : 0
       }));
 
     // Calculate top tags with percentages
-    const totalTagUsage = Object.values(allTimeAnalytics.tagFrequency).reduce((sum, count) => sum + count, 0);
-    const topTags = Object.entries(allTimeAnalytics.tagFrequency)
-      .sort(([,a], [,b]) => b - a)
+    const totalTagUsage = Object.values(analytics.tagFrequency).reduce((sum, count) => sum + (count as number), 0);
+    const topTags = Object.entries(analytics.tagFrequency)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 5)
       .map(([tag, count]) => ({
         tag,
-        count,
-        percentage: totalTagUsage > 0 ? (count / totalTagUsage) * 100 : 0
+        count: count as number,
+        percentage: totalTagUsage > 0 ? ((count as number) / totalTagUsage) * 100 : 0
       }));
 
-    return {
-      totalTickets: allTimeAnalytics.totalTickets,
-      recentTickets: recentAnalytics.totalTickets,
-      sentimentBreakdown: allTimeAnalytics.sentimentDistribution,
+    const metrics: DashboardMetrics = {
+      totalTickets: analytics.totalTickets,
+      recentTickets: recentAnalytics?.totalTickets || 0,
+      sentimentBreakdown: analytics.sentimentDistribution,
       topIntents,
       topTags,
-      volumeTrend: allTimeAnalytics.trends.volumeTrend,
-      satisfactionTrend: allTimeAnalytics.trends.satisfactionTrend,
+      volumeTrend: analytics.trends.volumeTrend,
+      satisfactionTrend: analytics.trends.satisfactionTrend,
       activeInsights,
       highPriorityInsights
     };
+
+    // Cache the result if caching is enabled
+    if (useCache) {
+      try {
+        const redis = await getRedisClient();
+        await redis.set(redisKey, JSON.stringify(metrics), { EX: 3600 }); // Cache for 1 hour
+        console.log(`✅ Cached dashboard metrics for org ${organizationId}`);
+      } catch (err) {
+        console.error('❌ Failed to cache dashboard metrics in Redis:', err);
+      }
+    }
+
+    return metrics;
   }
 
   /**
    * Generate AI-powered dashboard insights
    */
-  async getDashboardInsights(organizationId: string): Promise<DashboardInsights> {
+  async getDashboardInsights(organizationId: string, useCache: boolean = true): Promise<DashboardInsights> {
+    const redisKey = `dashboard:insights:${organizationId}`;
+    
+    // Try to get from cache first if caching is enabled
+    if (useCache) {
+      try {
+        const redis = await getRedisClient();
+        const cached = await redis.get(redisKey);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && Array.isArray(parsed.topIssues)) {
+              console.log(`✅ Returning dashboard insights for org ${organizationId} from Redis cache`);
+              return parsed;
+            } else {
+              console.warn('⚠️ Cached dashboard insights is invalid, regenerating...');
+            }
+          } catch (err) {
+            console.error('❌ Error parsing cached dashboard insights:', err);
+          }
+        }
+      } catch (err) {
+        console.error('❌ Redis error (fetching dashboard insights):', err);
+      }
+    }
+
     const metrics = await this.getDashboardMetrics(organizationId);
-    const analytics = await this.analyticsService.generateAnalytics(organizationId);
+    
+    // Get current user ID from context
+    const userId = UserContextManager.getCurrentUserId();
+    if (!userId) {
+      throw new Error('User context not available for LLM call');
+    }
+
+    const analytics = await this.analyticsService.generateAnalytics(organizationId, userId);
 
     // Generate AI insights using LLM
     const prompt = `
-Analyze the following support metrics and generate actionable insights:
+You are a data analyst specializing in customer support analytics. Analyze the following support metrics and generate actionable insights.
+
+**IMPORTANT: You must respond with ONLY valid JSON. Do not include any explanatory text before or after the JSON.**
 
 **Metrics Summary:**
 - Total Tickets: ${metrics.totalTickets}
@@ -132,7 +227,7 @@ Analyze the following support metrics and generate actionable insights:
 **Analytics Data:**
 ${JSON.stringify(analytics, null, 2)}
 
-Generate insights in the following JSON format:
+**REQUIRED OUTPUT FORMAT (JSON ONLY):**
 {
   "topIssues": [
     {
@@ -161,24 +256,47 @@ Generate insights in the following JSON format:
   ]
 }
 
-Focus on actionable insights that would help improve customer support and product quality.
+**CRITICAL: Respond with ONLY the JSON object above. No additional text, no explanations, no markdown formatting.**
 `;
 
     const response = await callLLM({
-      userId: 'system',
+      userId: userId, // Use actual user ID from context
       prompt,
       model: 'mistralai/Mistral-7B-Instruct-v0.1',
       maxTokens: 3000,
       temperature: 0.2,
       isChat: true,
-      systemMsg: 'You are an expert at analyzing support metrics and generating actionable business insights.',
+      systemMsg: 'You are an expert data analyst. You must ALWAYS respond with valid JSON only. Never include explanatory text, markdown, or any other formatting. Your response must be parseable by JSON.parse().',
     });
 
     try {
-      const result = JSON.parse(response.data || '{"topIssues": [], "trends": [], "recommendations": []}');
+      const responseText = response.data ? sanitizeText(response.data) : '';
+      console.log('LLM Response:', responseText);
+      
+      // Try to extract JSON from the response
+      const jsonText = extractJSONFromText(responseText);
+      console.log('Extracted JSON text:', jsonText);
+      
+      const result = JSON.parse(jsonText);
+      
+          // Cache the result if caching is enabled
+    if (useCache) {
+      try {
+        const redis = await getRedisClient();
+        await redis.set(redisKey, JSON.stringify(result), { EX: 7200 }); // Cache for 2 hours (insights change less frequently)
+        console.log(`✅ Cached dashboard insights for org ${organizationId}`);
+      } catch (err) {
+        console.error('❌ Failed to cache dashboard insights in Redis:', err);
+      }
+    }
+      
       return result;
     } catch (error) {
       console.error('Error parsing dashboard insights:', error);
+      console.error('Raw LLM response:', response.data);
+      console.error('Sanitized response:', response.data ? sanitizeText(response.data) : 'No data');
+      
+      // Return default structure if parsing fails
       return {
         topIssues: [],
         trends: [],
@@ -190,7 +308,7 @@ Focus on actionable insights that would help improve customer support and produc
   /**
    * Get real-time alerts and notifications
    */
-  async getAlerts(organizationId: string): Promise<Array<{
+  async getAlerts(organizationId: string, useCache: boolean = true): Promise<Array<{
     id: string;
     type: 'anomaly' | 'trend' | 'threshold' | 'insight';
     title: string;
@@ -199,6 +317,40 @@ Focus on actionable insights that would help improve customer support and produc
     timestamp: Date;
     actionable: boolean;
   }>> {
+    const redisKey = `dashboard:alerts:${organizationId}`;
+    
+    // Try to get from cache first if caching is enabled (alerts are cached for shorter time as they're more dynamic)
+    if (useCache) {
+      try {
+        const redis = await getRedisClient();
+        const cached = await redis.get(redisKey);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && Array.isArray(parsed)) {
+              console.log(`✅ Returning dashboard alerts for org ${organizationId} from Redis cache`);
+              return parsed.map(alert => ({
+                ...alert,
+                timestamp: new Date(alert.timestamp) // Convert back to Date object
+              }));
+            } else {
+              console.warn('⚠️ Cached dashboard alerts is invalid, regenerating...');
+            }
+          } catch (err) {
+            console.error('❌ Error parsing cached dashboard alerts:', err);
+          }
+        }
+      } catch (err) {
+        console.error('❌ Redis error (fetching dashboard alerts):', err);
+      }
+    }
+
+    // Get current user ID from context
+    const userId = UserContextManager.getCurrentUserId();
+    if (!userId) {
+      throw new Error('User context not available for analytics');
+    }
+
     const alerts: Array<{
       id: string;
       type: 'anomaly' | 'trend' | 'threshold' | 'insight';
@@ -212,7 +364,7 @@ Focus on actionable insights that would help improve customer support and produc
     // Get recent analytics
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentAnalytics = await this.analyticsService.generateAnalytics(organizationId, {
+    const recentAnalytics = await this.analyticsService.generateAnalytics(organizationId, userId, {
       start: sevenDaysAgo.toISOString(),
       end: new Date().toISOString()
     });
@@ -262,7 +414,7 @@ Focus on actionable insights that would help improve customer support and produc
       });
     });
 
-    return alerts.sort((a, b) => {
+    const sortedAlerts = alerts.sort((a, b) => {
       // Sort by severity (critical > high > medium > low)
       const severityOrder: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
       const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
@@ -271,6 +423,17 @@ Focus on actionable insights that would help improve customer support and produc
       // Then by timestamp (newest first)
       return b.timestamp.getTime() - a.timestamp.getTime();
     });
+
+    // Cache the result
+    try {
+      const redis = await getRedisClient();
+      await redis.set(redisKey, JSON.stringify(sortedAlerts), { EX: 1800 }); // Cache for 30 minutes (alerts are more dynamic)
+      console.log(`✅ Cached dashboard alerts for org ${organizationId}`);
+    } catch (err) {
+      console.error('❌ Failed to cache dashboard alerts in Redis:', err);
+    }
+
+    return sortedAlerts;
   }
 
   /**
@@ -281,10 +444,49 @@ Focus on actionable insights that would help improve customer support and produc
     previousPeriod: DashboardMetrics;
     improvements: Array<{ metric: string; change: number; direction: 'improved' | 'declined' }>;
   }> {
+    const redisKey = `dashboard:performance:${organizationId}`;
+    
+    // Try to get from cache first
+    try {
+      const redis = await getRedisClient();
+      const cached = await redis.get(redisKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.currentPeriod && parsed.previousPeriod) {
+            console.log(`✅ Returning dashboard performance for org ${organizationId} from Redis cache`);
+            return {
+              ...parsed,
+              currentPeriod: {
+                ...parsed.currentPeriod,
+                // Convert any date strings back to Date objects if needed
+              },
+              previousPeriod: {
+                ...parsed.previousPeriod,
+                // Convert any date strings back to Date objects if needed
+              }
+            };
+          } else {
+            console.warn('⚠️ Cached dashboard performance is invalid, regenerating...');
+          }
+        } catch (err) {
+          console.error('❌ Error parsing cached dashboard performance:', err);
+        }
+      }
+    } catch (err) {
+      console.error('❌ Redis error (fetching dashboard performance):', err);
+    }
+
+    // Get current user ID from context
+    const userId = UserContextManager.getCurrentUserId();
+    if (!userId) {
+      throw new Error('User context not available for analytics');
+    }
+
     // Current period (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const currentPeriod = await this.analyticsService.generateAnalytics(organizationId, {
+    const currentPeriod = await this.analyticsService.generateAnalytics(organizationId, userId, {
       start: thirtyDaysAgo.toISOString(),
       end: new Date().toISOString()
     });
@@ -292,7 +494,7 @@ Focus on actionable insights that would help improve customer support and produc
     // Previous period (30-60 days ago)
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const previousPeriod = await this.analyticsService.generateAnalytics(organizationId, {
+    const previousPeriod = await this.analyticsService.generateAnalytics(organizationId, userId, {
       start: sixtyDaysAgo.toISOString(),
       end: thirtyDaysAgo.toISOString()
     });
@@ -324,10 +526,55 @@ Focus on actionable insights that would help improve customer support and produc
       });
     }
 
-    return {
+    const performanceData = {
       currentPeriod: await this.getDashboardMetrics(organizationId),
       previousPeriod: await this.getDashboardMetrics(organizationId), // Simplified for now
       improvements
     };
+
+    // Cache the result
+    try {
+      const redis = await getRedisClient();
+      await redis.set(redisKey, JSON.stringify(performanceData), { EX: 7200 }); // Cache for 2 hours
+      console.log(`✅ Cached dashboard performance for org ${organizationId}`);
+    } catch (err) {
+      console.error('❌ Failed to cache dashboard performance in Redis:', err);
+    }
+
+    return performanceData;
+  }
+
+  /**
+   * Clear all dashboard cache for an organization
+   */
+  async clearDashboardCache(organizationId: string): Promise<void> {
+    try {
+      const redis = await getRedisClient();
+      const keys = [
+        `dashboard:metrics:${organizationId}`,
+        `dashboard:insights:${organizationId}`,
+        `dashboard:alerts:${organizationId}`,
+        `dashboard:performance:${organizationId}`
+      ];
+      
+      await Promise.all(keys.map(key => redis.del(key)));
+      console.log(`✅ Cleared dashboard cache for org ${organizationId}`);
+    } catch (err) {
+      console.error('❌ Failed to clear dashboard cache:', err);
+    }
+  }
+
+  /**
+   * Clear specific dashboard cache type for an organization
+   */
+  async clearDashboardCacheByType(organizationId: string, type: 'metrics' | 'insights' | 'alerts' | 'performance'): Promise<void> {
+    try {
+      const redis = await getRedisClient();
+      const key = `dashboard:${type}:${organizationId}`;
+      await redis.del(key);
+      console.log(`✅ Cleared dashboard ${type} cache for org ${organizationId}`);
+    } catch (err) {
+      console.error(`❌ Failed to clear dashboard ${type} cache:`, err);
+    }
   }
 } 

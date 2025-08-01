@@ -1,14 +1,14 @@
 import { observable, runInAction, action, makeObservable, toJS } from 'mobx';
 import authService, { AuthRequestPayload } from '@/services/auth-service';
-import { setStoredToken } from '@/services/local-storage';
+import { setStoredToken, getStoredToken } from '@/services/local-storage';
 import { decodeToken } from '@/utils';
-import User from '@/types/user';
+import { IUser } from '@/types/user';
 import config from '@/config';
 
 const { useIntuitLogin } = config;
 // import { roles } from '../utils/permissions';
 class AuthStore {
-  user: User | undefined;
+  user: IUser | undefined;
   token: string | undefined;
   constructor() {
     this.user = undefined;
@@ -32,6 +32,7 @@ class AuthStore {
     try {
       const resp = await authService.login(payload);
       if (resp.status === 200 && resp.token) {
+        console.log('✅ Login successful, storing token');
         setStoredToken(resp.token);
         const decodeRes = decodeToken(resp.token);
         const intuitAuthUri = resp.intuitAuthUri;
@@ -39,6 +40,8 @@ class AuthStore {
           this.token = resp.token;
           this.user = decodeRes?.user;
         });
+        console.log('✅ Token stored in auth store:', !!this.token);
+        console.log('✅ Token stored in localStorage:', !!getStoredToken());
         if (useIntuitLogin) {
           window.location.href = intuitAuthUri;
           return { redirecting: true };
@@ -77,6 +80,25 @@ class AuthStore {
       })
     }
     return { isAuthorized };
+  }
+
+
+
+  // Initialize auth state from stored token
+  initializeAuth = async () => {
+    const storedToken = getStoredToken();
+    if (storedToken) {
+      const decodedToken = decodeToken(storedToken);
+      if (decodedToken?.user) {
+        runInAction(() => {
+          this.token = storedToken;
+          this.user = decodedToken.user;
+        });
+        console.log('✅ Auth state initialized from stored token');
+        return true;
+      }
+    }
+    return false;
   }
 
   // haveRole = (validRoles) => {

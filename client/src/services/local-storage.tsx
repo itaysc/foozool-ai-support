@@ -10,9 +10,12 @@ export const keys = {
 };
 
 export function getStoredToken() {
-    return getDataFromLocalStorage(keys.token);
+    const token = getDataFromLocalStorage(keys.token);
+    console.log('🔍 Getting token from localStorage:', !!token);
+    return token;
 }
 export function setStoredToken(token: string) {
+    console.log('🔍 Setting token in localStorage:', !!token);
     return setDataToLocalStorage(keys.token, token);
 }
 

@@ -1,0 +1,22 @@
+{
+    "instructions": [
+      "You are working on an app for autonomous ai support agent.",
+      "The server is written in node js with typescript and it make calls to a pyhton server for NLP processing.",
+      "The python service code is in the python-ml-service folder and the node js code is in the server folder.",
+      "The client side is written in react with typescript and it is in the client folder, and it make calls to the node js server.",
+      "The app is running locally using docker-compose and a make file to start the app.",
+      "The app is using a local mongodb database for storing the data.",
+      "suppot tickets are stored in qdrant as vectors",
+      "The app is using a local redis for caching the data.",
+      "When writing code make sure that it is robust, divided to helper functions, react components should be small and single purpose.",
+      "make sure to work with typescript types and interfaces, try not to use the 'any' type.",
+      "put db schemas in the schemas folder, routes in the routes folder, services in the services folder, components in the components folder, utils in the utils folder, and hooks in the hooks folder.",
+      "all route validation object should be in a different file called validations.ts next to the rout file, I use zod library",
+      "put all the files in the correct folder, and make sure to follow the file structure.",
+      "don't write logic in the route file, add it in the service file.",
+      "Don't change NLP models/algorithms without asking permission first. I already have stored vectors in qdrant.",
+      "The app is deployed on railway using a Dockerfile",
+      "If you channe/add new routes make sure to update the postman collection here in the repo"
+    ]
+  }
+  

@@ -30,6 +30,11 @@
       "key": "auth_token",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "organization_id",
+      "value": "",
+      "type": "string"
     }
   ],
   "auth": {
@@ -462,6 +467,76 @@
       ]
     },
     {
+      "name": "🏢 Organizations",
+      "item": [
+        {
+          "name": "Get Dashboard Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/organizations/{{organization_id}}/dashboard-settings",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "organizations", "{{organization_id}}", "dashboard-settings"]
+            },
+            "description": "Get dashboard settings for an organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Dashboard Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"analyticsTimeRange\": {\n    \"type\": \"all_time\"\n  },\n  \"refreshInterval\": {\n    \"enabled\": true,\n    \"minutes\": 30\n  },\n  \"aggregationSettings\": {\n    \"groupBy\": \"week\",\n    \"includeHistoricalData\": true,\n    \"maxDataPoints\": 100\n  },\n  \"features\": {\n    \"showPerformanceComparison\": true,\n    \"showTrendAnalysis\": true,\n    \"showAnomalyDetection\": true,\n    \"showSentimentAnalysis\": true,\n    \"showIntentAnalysis\": true\n  },\n  \"thresholds\": {\n    \"criticalTicketVolume\": 100,\n    \"highPriorityThreshold\": 50,\n    \"satisfactionAlertThreshold\": 70\n  }\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/organizations/{{organization_id}}/dashboard-settings",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "organizations", "{{organization_id}}", "dashboard-settings"]
+            },
+            "description": "Update dashboard settings for an organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Dashboard Settings",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/organizations/{{organization_id}}/dashboard-settings",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "organizations", "{{organization_id}}", "dashboard-settings"]
+            },
+            "description": "Reset dashboard settings to defaults"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Default Dashboard Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/organizations/{{organization_id}}/dashboard-settings/defaults",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "organizations", "{{organization_id}}", "dashboard-settings", "defaults"]
+            },
+            "description": "Get default dashboard settings"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "📊 Insights",
       "item": [
         {
@@ -602,6 +677,42 @@
           "response": []
         },
         {
+          "name": "Get Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/analytics?useOrganizationSettings=true",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "analytics"],
+              "query": [
+                {
+                  "key": "useOrganizationSettings",
+                  "value": "true",
+                  "description": "Use organization dashboard settings for time range (default: true)"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01T00:00:00Z",
+                  "description": "Start date (only used if useOrganizationSettings=false)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31T23:59:59Z",
+                  "description": "End date (only used if useOrganizationSettings=false)"
+                }
+              ]
+            },
+            "description": "Get comprehensive analytics for an organization using dashboard settings"
+          },
+          "response": []
+        },
+        {
           "name": "Generate Insights",
           "request": {
             "method": "POST",
@@ -642,9 +753,16 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/metrics",
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/metrics?useCache=false",
                   "host": ["{{nodejs_base_url}}"],
-                  "path": ["api", "v1", "insights", "dashboard", "metrics"]
+                  "path": ["api", "v1", "insights", "dashboard", "metrics"],
+                  "query": [
+                    {
+                      "key": "useCache",
+                      "value": "false",
+                      "description": "Whether to use Redis cache (default: true)"
+                    }
+                  ]
                 },
                 "description": "Get dashboard metrics including ticket counts, sentiment breakdown, and trends"
               },
@@ -661,9 +779,16 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/insights",
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/insights?useCache=false",
                   "host": ["{{nodejs_base_url}}"],
-                  "path": ["api", "v1", "insights", "dashboard", "insights"]
+                  "path": ["api", "v1", "insights", "dashboard", "insights"],
+                  "query": [
+                    {
+                      "key": "useCache",
+                      "value": "false",
+                      "description": "Whether to use Redis cache (default: true)"
+                    }
+                  ]
                 },
                 "description": "Get AI-powered dashboard insights and recommendations"
               },
@@ -680,9 +805,16 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/alerts",
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/alerts?useCache=false",
                   "host": ["{{nodejs_base_url}}"],
-                  "path": ["api", "v1", "insights", "dashboard", "alerts"]
+                  "path": ["api", "v1", "insights", "dashboard", "alerts"],
+                  "query": [
+                    {
+                      "key": "useCache",
+                      "value": "false",
+                      "description": "Whether to use Redis cache (default: true)"
+                    }
+                  ]
                 },
                 "description": "Get active alerts and notifications for the dashboard"
               },
@@ -699,11 +831,37 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/performance",
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/performance?useCache=false",
                   "host": ["{{nodejs_base_url}}"],
-                  "path": ["api", "v1", "insights", "dashboard", "performance"]
+                  "path": ["api", "v1", "insights", "dashboard", "performance"],
+                  "query": [
+                    {
+                      "key": "useCache",
+                      "value": "false",
+                      "description": "Whether to use Redis cache (default: true)"
+                    }
+                  ]
                 },
                 "description": "Get performance comparison between current and previous periods"
+              },
+              "response": []
+            },
+            {
+              "name": "Test Dashboard Settings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/test-settings",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "dashboard", "test-settings"]
+                },
+                "description": "Test endpoint to verify dashboard settings are working and using correct time ranges"
               },
               "response": []
             }

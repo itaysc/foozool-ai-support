@@ -12,17 +12,20 @@ interface TabButtonProps {
 export const Container = styled.div<ContainerProps>`
   width: 100vw;
   height: ${theme.navbar.height};
-  position: absolute;
+  position: fixed;
   display: flex;
   align-items: center;
   justify-content: space-between;
   top: 0;
-  z-index: 8888;
-  background-color: ${theme.navbar.color.bg};
-  transition: left 0.5s ease, width 0.5s ease;
-  border: ${theme.navbar.border};
-  padding: 0 20px;
+  left: 0;
+  z-index: 1000;
+  background: linear-gradient(135deg, ${theme.colors.primary.main} 0%, ${theme.colors.primary.dark} 100%);
+  box-shadow: ${theme.shadows.lg};
+  padding: 0 24px;
   box-sizing: border-box;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ${theme.transitions.easing.easeInOut};
 `;
 
 export const LeftSide = styled.div`
@@ -30,6 +33,15 @@ export const LeftSide = styled.div`
   align-items: center;
   flex-grow: 1;
   transition: flex-grow 0.5s ease;
+  
+  img {
+    filter: brightness(0) invert(1);
+    transition: transform 0.3s ease;
+    
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
 `;
 
 export const RightSide = styled.div`
@@ -38,25 +50,72 @@ export const RightSide = styled.div`
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
-  gap: 15px;
+  gap: 8px;
+  position: relative;
 `;
 
 export const TabButton = styled.button<TabButtonProps>`
-  background: ${({ active }) => (active ? theme.colors.primary.contrastText : 'none')};
-  color: ${({ active }) => (active ? theme.colors.primary.dark : theme.colors.primary.contrastText)};
+  background: ${({ active }) => 
+    active 
+      ? 'rgba(255, 255, 255, 0.2)' 
+      : 'transparent'
+  };
+  color: ${({ active }) => 
+    active 
+      ? theme.colors.primary.contrastText 
+      : 'rgba(255, 255, 255, 0.9)'
+  };
   border: none;
-  height: 100%;
-  font-size: 1.1rem;
+  height: 40px;
+  padding: 0 16px;
+  font-size: 0.9rem;
+  font-weight: ${({ active }) => active ? '600' : '500'};
   cursor: pointer;
-  border-radius: unset;
-  transition: color 0.3s ease, background-color 0.3s ease;
+  border-radius: ${theme.borderRadius.base};
+  transition: all 0.2s ${theme.transitions.easing.easeInOut};
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 0.025em;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+  }
 
   &:hover {
-    color: ${theme.colors.secondary.main};
+    background: ${({ active }) => 
+      active 
+        ? 'rgba(255, 255, 255, 0.25)' 
+        : 'rgba(255, 255, 255, 0.1)'
+    };
+    color: ${theme.colors.primary.contrastText};
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   &:focus {
     outline: none;
-    border: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+  }
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    padding: 0 12px;
+    font-size: 0.85rem;
   }
 `;

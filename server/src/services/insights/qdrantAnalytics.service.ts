@@ -25,8 +25,8 @@ export class QdrantAnalyticsService {
       ]
     };
 
-    // Add time filter if provided
-    if (timeRange) {
+    // Add time filter if provided (if timeRange is null/undefined, use all time)
+    if (timeRange && timeRange.start && timeRange.end) {
       filter.must.push({
         key: 'created_at',
         range: {
@@ -49,7 +49,7 @@ export class QdrantAnalyticsService {
   /**
    * Generate comprehensive analytics from Qdrant data
    */
-  async generateAnalytics(organizationId: string, timeRange?: { start: string; end: string }): Promise<TicketAnalytics> {
+  async generateAnalytics(organizationId: string, userId: string, timeRange?: { start: string; end: string }): Promise<TicketAnalytics> {
     const redisKey = `analytics:${organizationId}`;
     try {
       const redis = await getRedisClient();
@@ -173,7 +173,8 @@ export class QdrantAnalyticsService {
    * Generate AI-powered insights from analytics data
    */
   async generateInsights(request: InsightGenerationRequest): Promise<QdrantInsightsResult> {
-    const analytics = await this.generateAnalytics(request.organizationId, request.timeRange);
+    // For insights generation, we'll use a system user ID since this is typically a background process
+    const analytics = await this.generateAnalytics(request.organizationId, 'system', request.timeRange);
     
     if (analytics.totalTickets === 0) {
       return {

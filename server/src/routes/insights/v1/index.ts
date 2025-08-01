@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { QdrantAnalyticsService } from '../../../services/insights/qdrantAnalytics.service';
 import { InsightModel } from '../../../schemas/insight.schema';
+import dashboardSettingsService from '../../../services/organizations/dashboard-settings.service';
 import dashboardRouter from './dashboard';
 import schedulerRouter from './scheduler';
 
@@ -24,19 +25,35 @@ router.use('/scheduler', schedulerRouter);
 router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = req.user!.organization.toString();
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, useOrganizationSettings = 'true' } = req.query;
 
-    const timeRange = startDate && endDate ? {
-      start: startDate as string,
-      end: endDate as string
-    } : undefined;
+    let timeRange: { start: string; end: string } | undefined;
+
+    // Use organization dashboard settings if requested
+    if (useOrganizationSettings === 'true') {
+      const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId);
+      const defaultSettings = dashboardSettingsService.getDefaultSettings();
+      const settings = dashboardSettings || defaultSettings;
+      
+      timeRange = dashboardSettingsService.calculateTimeRange(settings);
+      console.log(`🔍 Using organization settings for analytics:`, timeRange ? `${timeRange.start} to ${timeRange.end}` : 'all time');
+    } else {
+      // Use query parameters if provided
+      timeRange = startDate && endDate ? {
+        start: startDate as string,
+        end: endDate as string
+      } : undefined;
+    }
 
     const analyticsService = new QdrantAnalyticsService();
-    const analytics = await analyticsService.generateAnalytics(organizationId, timeRange);
+    // Get current user ID from context
+    const userId = req.user!._id.toString();
+    const analytics = await analyticsService.generateAnalytics(organizationId, userId, timeRange);
 
     res.status(200).json({
       success: true,
-      data: analytics
+      data: analytics,
+      timeRange: timeRange || 'all_time'
     });
 
   } catch (error) {

@@ -3,6 +3,7 @@ import { callLLM } from '../together.ai';
 import { InsightModel } from '../../schemas/insight.schema';
 import { v4 as uuidv4 } from 'uuid';
 import config from '../../config';
+import { UserContextManager } from '../../context/userContext';
 
 interface TicketData {
   subject: string;
@@ -13,6 +14,12 @@ interface TicketData {
 }
 
 async function analyzeTicketContent(ticketData: TicketData): Promise<TicketInsight[]> {
+  // Get current user ID from context
+  const userId = UserContextManager.getCurrentUserId();
+  if (!userId) {
+    console.warn('User context not available for ticket analysis, using system fallback');
+  }
+
   const prompt = `
 Analyze the following support ticket and generate valuable insights. Consider:
 1. Product feedback and potential improvements
@@ -45,7 +52,7 @@ Focus on actionable insights that would be valuable for product improvement and 
 `;
 
   const response = await callLLM({
-    userId: 'system',
+    userId: userId || 'system', // Use actual user ID or fallback to system
     prompt,
     model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 2000,
@@ -71,6 +78,12 @@ Focus on actionable insights that would be valuable for product improvement and 
 }
 
 async function detectAnomalies(ticketData: TicketData, recentTickets: any[]): Promise<TicketInsight[]> {
+  // Get current user ID from context
+  const userId = UserContextManager.getCurrentUserId();
+  if (!userId) {
+    console.warn('User context not available for anomaly detection, using system fallback');
+  }
+
   const prompt = `
 Analyze the following ticket in context of recent tickets to detect any anomalies or patterns:
 
@@ -90,7 +103,7 @@ Generate insights in the same JSON format as before, focusing on anomalies and t
 `;
 
   const response = await callLLM({
-    userId: 'system',
+    userId: userId || 'system', // Use actual user ID or fallback to system
     prompt,
     model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 2000,

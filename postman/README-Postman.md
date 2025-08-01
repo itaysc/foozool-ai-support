@@ -52,6 +52,12 @@ This repository contains a comprehensive Postman collection for testing the Fooz
 ### 🔐 Authentication
 - **Get Auth Token**: Authenticate and get JWT token
 
+### 🏢 Organizations
+- **Get Dashboard Settings**: Retrieve organization dashboard settings
+- **Update Dashboard Settings**: Update dashboard configuration
+- **Reset Dashboard Settings**: Reset to default settings
+- **Get Default Dashboard Settings**: Get default configuration
+
 ### 🏥 Health Checks
 - **Node.js Health**: Multiple health check endpoints
 - **Python ML Health**: ML service health and model status
@@ -92,6 +98,18 @@ This repository contains a comprehensive Postman collection for testing the Fooz
 - **OpenAPI JSON**: Get API specification
 - **FastAPI Docs**: Python ML service documentation
 
+### 📊 Insights & Analytics
+- **Get Analytics**: Get comprehensive analytics using organization settings
+- **Get Dashboard Metrics**: Get dashboard metrics and KPIs
+- **Get Dashboard Insights**: Get AI-powered insights and recommendations
+- **Get Dashboard Alerts**: Get real-time alerts and notifications
+- **Get Dashboard Performance**: Get performance comparison data
+- **Test Dashboard Settings**: Test dashboard configuration
+- **Get All Insights**: Get all insights with filtering
+- **Generate Insights**: Generate new insights
+- **Get Insights Summary**: Get insights summary and breakdowns
+- **Get Insights Trends**: Get trend analysis
+
 ### 📊 Metrics
 - **Prometheus Metrics**: Get service metrics
 
@@ -106,6 +124,7 @@ The collection uses the following environment variables:
 | `nodejs_base_url` | Node.js server base URL | `https://tktai.up.railway.app` |
 | `python_base_url` | Python ML service base URL | `https://ml-service.up.railway.app` |
 | `auth_token` | JWT authentication token | `eyJhbGciOiJIUzI1NiIs...` |
+| `organization_id` | Organization ID for dashboard settings | `507f1f77bcf86cd799439011` |
 | `environment` | Current environment name | `production` |
 
 ### Authentication
@@ -138,6 +157,42 @@ POST /api/v1/users
   "lastName": "Doe",
   "organization": "example-org"
 }
+```
+
+### Organization Dashboard Settings
+```json
+PUT /api/v1/organizations/{{organization_id}}/dashboard-settings
+{
+  "analyticsTimeRange": {
+    "type": "all_time"
+  },
+  "refreshInterval": {
+    "enabled": true,
+    "minutes": 30
+  },
+  "aggregationSettings": {
+    "groupBy": "week",
+    "includeHistoricalData": true,
+    "maxDataPoints": 100
+  },
+  "features": {
+    "showPerformanceComparison": true,
+    "showTrendAnalysis": true,
+    "showAnomalyDetection": true,
+    "showSentimentAnalysis": true,
+    "showIntentAnalysis": true
+  },
+  "thresholds": {
+    "criticalTicketVolume": 100,
+    "highPriorityThreshold": 50,
+    "satisfactionAlertThreshold": 70
+  }
+}
+```
+
+### Get Analytics with Organization Settings
+```json
+GET /api/v1/insights/analytics?useOrganizationSettings=true
 ```
 
 ### ML Service - Classify Intent
@@ -176,6 +231,8 @@ Get an authentication token to access protected endpoints.
 - Process a ticket webhook
 - Test ML service endpoints
 - Test autonomous AI features
+- Configure dashboard settings
+- Test analytics with organization settings
 
 ### 4. Test Advanced Features
 - Model training

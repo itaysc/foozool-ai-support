@@ -11,18 +11,12 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
   const location = useLocation();
-  const { isAuthorized: refreshTokenSucceeded, setRequestedUrl } = useMainLayoutContext();
+  const { setRequestedUrl } = useMainLayoutContext();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!refreshTokenSucceeded) {
-      navigate('/login');
-    }
-  }, [refreshTokenSucceeded, navigate, setRequestedUrl]);
 
   useEffect(() => {
     if (location.pathname !== '/login') {
@@ -35,8 +29,23 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
     async function run() {
       try {
         setIsLoading(true);
+        
+        // First check if we have a token in the store
+        console.log('🔍 ProtectedRoute: store.token exists:', !!store.token);
+        if (store.token) {
+          if (isMounted) {
+            setIsAuthenticated(true);
+            setHasPermissions(true);
+          }
+          return;
+        }
+        
+        // If no token in store, check authorization from server
+        console.log('🔍 ProtectedRoute: checking authorization from server...');
         const { isAuthorized } = await store.checkAuthorization();
+        console.log('🔍 ProtectedRoute: authorization result:', isAuthorized);
         if (!isAuthorized) {
+          console.log('🔍 ProtectedRoute: redirecting to login');
           navigate('/login');
         }
         if (isMounted) {

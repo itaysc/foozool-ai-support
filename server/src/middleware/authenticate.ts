@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { IToken, IUser } from 'src/types';
 import { TokenModel, UserModel } from 'src/schemas';
+import { UserContextManager } from '../context/userContext';
+
 declare global {
   namespace Express {
     interface Request {
@@ -36,6 +38,10 @@ export const authenticateWebhook = async (req: Request, res: Response, next: Nex
 
   req.token = validToken;
   req.user = user;
+  
+  // Set user context
+  UserContextManager.setContext(req);
+  
   next();
 };
 
@@ -48,6 +54,10 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
       return res.status(401).json({ message: 'Unauthorized.' });
     }
     req.user = user;
+    
+    // Set user context
+    UserContextManager.setContext(req);
+    
     next();
   })(req, res, next);
 };
@@ -61,6 +71,10 @@ export const authenticateSplitJWT = (req: Request, res: Response, next: NextFunc
       return res.status(401).json({ message: 'Unauthorized' });
     }
     req.user = user;
+    
+    // Set user context
+    UserContextManager.setContext(req);
+    
     next();
   })(req, res, next);
 };

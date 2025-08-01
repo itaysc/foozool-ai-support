@@ -24,5 +24,16 @@ export function extractCustomerMessage(text: string): string {
   }
 
   
+export function extractJSONFromText(text: string): string {
+  // Try to find JSON object in the text
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    return jsonMatch[0];
+  }
+  
+  // If no JSON object found, return the original text
+  return text;
+}
+
 export default sanitizeText;
   
