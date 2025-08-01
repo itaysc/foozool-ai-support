@@ -261,10 +261,10 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
 
     const summary = {
       totalInsights: insights.length,
-      byCategory: insights.reduce((acc, insight) => {
+      byCategory: insights.reduce((acc: Record<string, number>, insight) => {
         acc[insight.category] = (acc[insight.category] || 0) + 1;
         return acc;
-      }, {} as Record<string, number>),
+      }, {}),
       bySeverity: insights.reduce((acc, insight) => {
         acc[insight.severity] = (acc[insight.severity] || 0) + 1;
         return acc;
