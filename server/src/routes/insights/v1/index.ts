@@ -35,7 +35,8 @@ router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
       const defaultSettings = dashboardSettingsService.getDefaultSettings();
       const settings = dashboardSettings || defaultSettings;
       
-      timeRange = dashboardSettingsService.calculateTimeRange(settings);
+      const calculatedTimeRange = dashboardSettingsService.calculateTimeRange(settings);
+      timeRange = calculatedTimeRange || undefined;
       console.log(`🔍 Using organization settings for analytics:`, timeRange ? `${timeRange.start} to ${timeRange.end}` : 'all time');
     } else {
       // Use query parameters if provided
@@ -121,11 +122,15 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       offset = 0 
     } = req.query;
 
-    const filter: any = {};
+    const filter: {
+      category?: string;
+      severity?: string;
+      status?: string;
+    } = {};
 
-    if (category) filter.category = category;
-    if (severity) filter.severity = severity;
-    if (status) filter.status = status;
+    if (category) filter.category = category as string;
+    if (severity) filter.severity = severity as string;
+    if (status) filter.status = status as string;
 
     const insights = await InsightModel.find(filter)
       .sort({ createdAt: -1 })
