@@ -1,7 +1,7 @@
 import { QdrantAnalyticsService } from './qdrantAnalytics.service';
 import { InsightModel } from '../../schemas/insight.schema';
 import { callLLM } from '../together.ai';
-import type { VolumeTrend, SatisfactionTrend } from '../../types/insights';
+import type { VolumeTrend, SatisfactionTrend, TicketAnalytics } from '../../types/insights';
 import { UserContextManager } from '../../context/userContext';
 import sanitizeText, { extractJSONFromText } from 'src/utils/text-sanitize';
 import { getRedisClient } from '../redis/client';
@@ -103,7 +103,7 @@ export class DashboardService {
     const analytics = await this.analyticsService.generateAnalytics(organizationId, userId, timeRange || undefined);
     
     // Get recent analytics (last 7 days) for comparison if not using all-time
-    let recentAnalytics = null;
+    let recentAnalytics: TicketAnalytics | null = null;
     if (timeRange) {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
