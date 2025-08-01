@@ -753,14 +753,14 @@
                   }
                 ],
                 "url": {
-                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/metrics?useCache=false",
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/metrics",
                   "host": ["{{nodejs_base_url}}"],
                   "path": ["api", "v1", "insights", "dashboard", "metrics"],
                   "query": [
                     {
                       "key": "useCache",
-                      "value": "false",
-                      "description": "Whether to use Redis cache (default: true)"
+                      "value": "true",
+                      "description": "Whether to use Redis cache (default: true, set to false to bypass cache)"
                     }
                   ]
                 },

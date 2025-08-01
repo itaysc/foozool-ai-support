@@ -6,12 +6,19 @@ export const useAuthInitialization = () => {
     const initializeAuth = async () => {
       try {
         console.log('🔄 Initializing authentication...');
+        
+        // Check if auth is already initialized
+        if (authStore.token && authStore.user) {
+          console.log('✅ Authentication already initialized');
+          return;
+        }
+        
         const isInitialized = await authStore.initializeAuth();
         
         if (isInitialized) {
           console.log('✅ Authentication initialized successfully');
         } else {
-          console.log('ℹ️ No stored token found, user needs to login');
+          console.log('ℹ️ No valid stored token found, user needs to login');
         }
       } catch (error) {
         console.error('❌ Error initializing authentication:', error);
@@ -22,7 +29,7 @@ export const useAuthInitialization = () => {
   }, []);
 
   return {
-    isAuthenticated: !!authStore.token,
+    isAuthenticated: !!(authStore.token && authStore.user),
     user: authStore.user
   };
 }; 

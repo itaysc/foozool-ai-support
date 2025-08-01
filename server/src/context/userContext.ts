@@ -8,6 +8,7 @@ interface UserContext {
   user: IUser;
   userId: string;
   organizationId: string;
+  useCache?: boolean;
 }
 
 const userContextStorage = new AsyncLocalStorage<UserContext>();
@@ -16,7 +17,7 @@ export class UserContextManager {
   /**
    * Set user context for the current request
    */
-  static setContext(req: Request): void {
+  static setContext(req: Request, useCache: boolean = true): void {
     if (!req.user) {
       throw new Error('User not found in request');
     }
@@ -24,7 +25,8 @@ export class UserContextManager {
     const context: UserContext = {
       user: req.user,
       userId: req.user._id.toString(),
-      organizationId: req.user.organization.toString()
+      organizationId: req.user.organization.toString(),
+      useCache
     };
 
     userContextStorage.enterWith(context);
@@ -62,6 +64,24 @@ export class UserContextManager {
   }
 
   /**
+   * Get current cache preference
+   */
+  static getUseCache(): boolean {
+    const context = this.getContext();
+    return context?.useCache ?? true; // Default to true if not set
+  }
+
+  /**
+   * Set cache preference for current context
+   */
+  static setUseCache(useCache: boolean): void {
+    const context = this.getContext();
+    if (context) {
+      context.useCache = useCache;
+    }
+  }
+
+  /**
    * Check if user context exists
    */
   static hasContext(): boolean {
@@ -81,7 +101,9 @@ export class UserContextManager {
  */
 export const setUserContext = (req: Request, res: any, next: any): void => {
   try {
-    UserContextManager.setContext(req);
+    // Get useCache from query parameters, default to true
+    const useCache = req.query.useCache !== 'false';
+    UserContextManager.setContext(req, useCache);
     next();
   } catch (error) {
     next(error);

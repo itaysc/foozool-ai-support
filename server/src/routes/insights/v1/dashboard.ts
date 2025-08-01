@@ -13,15 +13,14 @@ router.use('/', dashboardSettingsTestRouter);
 
 /**
  * @route GET /api/v1/insights/dashboard/metrics
- * @desc Get comprehensive dashboard metrics
+ * @desc Get comprehensive dashboard metricsd
  * @access Private
  */
 router.get('/metrics', async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = req.user!.organization.toString();
-    const useCache = req.query.useCache !== 'false'; // Default to true unless explicitly set to false
     const dashboardService = new DashboardService();
-    const metrics = await dashboardService.getDashboardMetrics(organizationId, useCache);
+    const metrics = await dashboardService.getDashboardMetrics(organizationId);
 
     res.status(200).json({
       success: true,
@@ -46,9 +45,8 @@ router.get('/metrics', async (req: Request, res: Response): Promise<void> => {
 router.get('/insights', async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = req.user!.organization.toString();
-    const useCache = req.query.useCache !== 'false'; // Default to true unless explicitly set to false
     const dashboardService = new DashboardService();
-    const insights = await dashboardService.getDashboardInsights(organizationId, useCache);
+    const insights = await dashboardService.getDashboardInsights(organizationId);
 
     res.status(200).json({
       success: true,
@@ -73,9 +71,8 @@ router.get('/insights', async (req: Request, res: Response): Promise<void> => {
 router.get('/alerts', async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = req.user!.organization.toString();
-    const useCache = req.query.useCache !== 'false'; // Default to true unless explicitly set to false
     const dashboardService = new DashboardService();
-    const alerts = await dashboardService.getAlerts(organizationId, useCache);
+    const alerts = await dashboardService.getAlerts(organizationId);
 
     res.status(200).json({
       success: true,

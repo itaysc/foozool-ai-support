@@ -3,6 +3,7 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { QdrantAnalyticsService } from '../../../services/insights/qdrantAnalytics.service';
 import { InsightModel } from '../../../schemas/insight.schema';
 import dashboardSettingsService from '../../../services/organizations/dashboard-settings.service';
+import { setUserContext } from '../../../context/userContext';
 import dashboardRouter from './dashboard';
 import schedulerRouter from './scheduler';
 
@@ -10,6 +11,9 @@ const router = express.Router();
 
 // Apply authentication middleware to all routes
 router.use(authenticateJWT);
+
+// Apply user context middleware to all routes
+router.use(setUserContext);
 
 // Include dashboard routes
 router.use('/dashboard', dashboardRouter);

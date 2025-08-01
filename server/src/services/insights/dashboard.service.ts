@@ -57,8 +57,9 @@ export class DashboardService {
   /**
    * Get comprehensive dashboard metrics
    */
-  async getDashboardMetrics(organizationId: string, useCache: boolean = true): Promise<DashboardMetrics> {
+  async getDashboardMetrics(organizationId: string): Promise<DashboardMetrics> {
     const redisKey = `dashboard:metrics:${organizationId}`;
+    const useCache = UserContextManager.getUseCache();
     
     // Try to get from cache first if caching is enabled
     if (useCache) {
@@ -171,8 +172,9 @@ export class DashboardService {
   /**
    * Generate AI-powered dashboard insights
    */
-  async getDashboardInsights(organizationId: string, useCache: boolean = true): Promise<DashboardInsights> {
+  async getDashboardInsights(organizationId: string): Promise<DashboardInsights> {
     const redisKey = `dashboard:insights:${organizationId}`;
+    const useCache = UserContextManager.getUseCache();
     
     // Try to get from cache first if caching is enabled
     if (useCache) {
@@ -308,7 +310,7 @@ ${JSON.stringify(analytics, null, 2)}
   /**
    * Get real-time alerts and notifications
    */
-  async getAlerts(organizationId: string, useCache: boolean = true): Promise<Array<{
+  async getAlerts(organizationId: string): Promise<Array<{
     id: string;
     type: 'anomaly' | 'trend' | 'threshold' | 'insight';
     title: string;
@@ -318,6 +320,7 @@ ${JSON.stringify(analytics, null, 2)}
     actionable: boolean;
   }>> {
     const redisKey = `dashboard:alerts:${organizationId}`;
+    const useCache = UserContextManager.getUseCache();
     
     // Try to get from cache first if caching is enabled (alerts are cached for shorter time as they're more dynamic)
     if (useCache) {

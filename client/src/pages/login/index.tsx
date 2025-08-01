@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TextField,
@@ -11,7 +11,6 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import authStore from "@/stores/auth.store";
 import {
   Container,
   ColumnWrapper,
@@ -22,6 +21,7 @@ import {
 } from "./styled";
 import theme from "@/styles/theme";
 import { useMainLayoutContext } from "@/context/mainLayout.context";
+import { useAuth } from "@/context/auth.context";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -29,6 +29,15 @@ const Login = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { requestedUrl, setRequestedUrl } = useMainLayoutContext();
+  const { login, isAuthenticated, isLoading } = useAuth();
+
+  // Redirect to home page if user is already authenticated
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      console.log('🔍 Login page: User already authenticated, redirecting to home');
+      navigate('/');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   const formik = useFormik({
     initialValues: {
@@ -43,7 +52,7 @@ const Login = () => {
       setIsWrongCredentials(false);
       setIsSubmitting(true);
       try {
-        const res = await authStore.login(values);
+        const res = await login(values);
         if (res?.redirecting) {
           return;
         }
@@ -65,6 +74,25 @@ const Login = () => {
       }
     },
   });
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <Container>
+        <ColumnWrapper>
+          <Logo src="/logo/logo-transparent-blue.svg" alt="foozool logo" />
+          <FormWrapper>
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <CircularProgress size={40} />
+              <Typography variant="h6" style={{ marginTop: '1rem' }}>
+                Checking authentication...
+              </Typography>
+            </div>
+          </FormWrapper>
+        </ColumnWrapper>
+      </Container>
+    );
+  }
 
   return (
     <Container>

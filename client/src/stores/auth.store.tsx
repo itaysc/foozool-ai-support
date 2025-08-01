@@ -1,7 +1,7 @@
 import { observable, runInAction, action, makeObservable, toJS } from 'mobx';
 import authService, { AuthRequestPayload } from '@/services/auth-service';
 import { setStoredToken, getStoredToken } from '@/services/local-storage';
-import { decodeToken } from '@/utils';
+import { decodeToken, validateAndDecodeToken } from '@/utils';
 import { IUser } from '@/types/user';
 import config from '@/config';
 
@@ -21,8 +21,13 @@ class AuthStore {
     });
   }
   signOut = async() => {
-    await authService.signout();
-    setStoredToken('');
+    try {
+      await authService.signout();
+    } catch (error) {
+      console.warn('⚠️ Error during signout API call:', error);
+    } finally {
+      this.clearAuthState();
+    }
   }
 
   getUser = () => {
@@ -86,19 +91,60 @@ class AuthStore {
 
   // Initialize auth state from stored token
   initializeAuth = async () => {
-    const storedToken = getStoredToken();
-    if (storedToken) {
+    try {
+      const storedToken = getStoredToken();
+      console.log('🔍 Initializing auth with stored token:', !!storedToken);
+      
+      if (!storedToken) {
+        console.log('ℹ️ No stored token found');
+        return false;
+      }
+
+      // Validate token structure and expiration
+      const validation = validateAndDecodeToken(storedToken);
+      if (!validation || !validation.isValid) {
+        console.log('❌ Stored token is invalid or expired, clearing...');
+        this.clearAuthState();
+        return false;
+      }
+
+      // Token is valid, set auth state
       const decodedToken = decodeToken(storedToken);
       if (decodedToken?.user) {
         runInAction(() => {
           this.token = storedToken;
           this.user = decodedToken.user;
         });
-        console.log('✅ Auth state initialized from stored token');
+        console.log('✅ Auth state initialized from valid stored token');
+        
+        // Optionally verify with server (silent check)
+        try {
+          await this.checkAuthorization();
+        } catch (error) {
+          console.warn('⚠️ Server verification failed, but using local token:', error);
+        }
+        
         return true;
+      } else {
+        console.log('❌ Stored token missing user data, clearing...');
+        this.clearAuthState();
+        return false;
       }
+    } catch (error) {
+      console.error('❌ Error initializing auth:', error);
+      this.clearAuthState();
+      return false;
     }
-    return false;
+  }
+
+  // Clear auth state
+  clearAuthState = () => {
+    runInAction(() => {
+      this.token = undefined;
+      this.user = undefined;
+    });
+    setStoredToken('');
+    console.log('🧹 Auth state cleared');
   }
 
   // haveRole = (validRoles) => {
