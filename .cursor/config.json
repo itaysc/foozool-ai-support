@@ -16,6 +16,7 @@
       "don't write logic in the route file, add it in the service file.",
       "Don't change NLP models/algorithms without asking permission first. I already have stored vectors in qdrant.",
       "The app is deployed on railway using a Dockerfile",
+      "don't add console logs in the client side",
       "keep in mind that in the server i have a user context manager that is used to store the user context, if needed you can extend it with care",
       "If you channe/add new routes make sure to update the postman collection here in the repo",
       "before adding new code, check coding standards in other files, and make sure to follow them."

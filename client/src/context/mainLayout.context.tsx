@@ -1,15 +1,20 @@
 import { createContext, useState, useContext } from "react";
-import { useRefreshToken } from '../hooks/useRefreshToken';
+import { useAuth } from './auth.context';
+import { useTokenRefresh } from '../hooks/useTokenRefresh';
 
 const mainLayoutContext = createContext(undefined);
 const { Provider } = mainLayoutContext;
 
 const MainLayoutProvider = ({ children }: { children: React.ReactNode }) => {
     const [isLoading, setIsLoading] = useState(false);
-    const { isAuthorized } = useRefreshToken();
+    const { isAuthenticated } = useAuth();
     const [requestedUrl, setRequestedUrl] = useState<string | null>(null);
+    
+    // Set up periodic token refresh
+    useTokenRefresh();
+    
     return (
-        <Provider value={{ isLoading, setIsLoading, isAuthorized, requestedUrl, setRequestedUrl }}>
+        <Provider value={{ isLoading, setIsLoading, isAuthorized: isAuthenticated, requestedUrl, setRequestedUrl }}>
             {children}
         </Provider>
     );

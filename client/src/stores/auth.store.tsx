@@ -1,7 +1,7 @@
 import { observable, runInAction, action, makeObservable, toJS } from 'mobx';
 import authService, { AuthRequestPayload } from '@/services/auth-service';
-import { setStoredToken, getStoredToken } from '@/services/local-storage';
-import { decodeToken, validateAndDecodeToken } from '@/utils';
+import { decodeToken } from '@/utils';
+import { clearAuthCookies } from '@/utils/cookies';
 import { IUser } from '@/types/user';
 import config from '@/config';
 
@@ -9,13 +9,10 @@ const { useIntuitLogin } = config;
 // import { roles } from '../utils/permissions';
 class AuthStore {
   user: IUser | undefined;
-  token: string | undefined;
   constructor() {
     this.user = undefined;
-    this.token = undefined;
     makeObservable(this, {
       user: observable,
-      token: observable,
       login: action,
       checkAuthorization: action,
     });
@@ -36,18 +33,15 @@ class AuthStore {
   login = async (payload: AuthRequestPayload) => {
     try {
       const resp = await authService.login(payload);
-      if (resp.status === 200 && resp.token) {
-        console.log('✅ Login successful, storing token');
-        setStoredToken(resp.token);
-        const decodeRes = decodeToken(resp.token);
+      if (resp.status === 200) {
         const intuitAuthUri = resp.intuitAuthUri;
+        
+        // Get user info from the response
         runInAction(() => {
-          this.token = resp.token;
-          this.user = decodeRes?.user;
+          this.user = resp.user;
         });
-        console.log('✅ Token stored in auth store:', !!this.token);
-        console.log('✅ Token stored in localStorage:', !!getStoredToken());
-        if (useIntuitLogin) {
+        
+        if (useIntuitLogin && intuitAuthUri) {
           window.location.href = intuitAuthUri;
           return { redirecting: true };
         }
@@ -56,7 +50,6 @@ class AuthStore {
           status: resp.status,
           message: 'Authorized',
           isAuthorized: true,
-          token: this.token,
         };
       }
       if (resp.status === 401) {
@@ -77,11 +70,10 @@ class AuthStore {
   }
 
   checkAuthorization = async () => {
-    const { isAuthorized, user, token } = await authService.checkAuthorization();
+    const { isAuthorized, user } = await authService.checkAuthorization();
     if (isAuthorized) {
       runInAction(() => {
         this.user = user;
-        this.token = token;
       })
     }
     return { isAuthorized };
@@ -89,49 +81,22 @@ class AuthStore {
 
 
 
-  // Initialize auth state from stored token
+  // Initialize auth state from cookies
   initializeAuth = async () => {
     try {
-      const storedToken = getStoredToken();
-      console.log('🔍 Initializing auth with stored token:', !!storedToken);
+      // Check authorization with server (cookies sent automatically)
+      const { isAuthorized, user } = await authService.checkAuthorization();
       
-      if (!storedToken) {
-        console.log('ℹ️ No stored token found');
-        return false;
-      }
-
-      // Validate token structure and expiration
-      const validation = validateAndDecodeToken(storedToken);
-      if (!validation || !validation.isValid) {
-        console.log('❌ Stored token is invalid or expired, clearing...');
-        this.clearAuthState();
-        return false;
-      }
-
-      // Token is valid, set auth state
-      const decodedToken = decodeToken(storedToken);
-      if (decodedToken?.user) {
+      if (isAuthorized && user) {
         runInAction(() => {
-          this.token = storedToken;
-          this.user = decodedToken.user;
+          this.user = user;
         });
-        console.log('✅ Auth state initialized from valid stored token');
-        
-        // Optionally verify with server (silent check)
-        try {
-          await this.checkAuthorization();
-        } catch (error) {
-          console.warn('⚠️ Server verification failed, but using local token:', error);
-        }
-        
         return true;
       } else {
-        console.log('❌ Stored token missing user data, clearing...');
         this.clearAuthState();
         return false;
       }
     } catch (error) {
-      console.error('❌ Error initializing auth:', error);
       this.clearAuthState();
       return false;
     }
@@ -140,11 +105,9 @@ class AuthStore {
   // Clear auth state
   clearAuthState = () => {
     runInAction(() => {
-      this.token = undefined;
       this.user = undefined;
     });
-    setStoredToken('');
-    console.log('🧹 Auth state cleared');
+    clearAuthCookies();
   }
 
   // haveRole = (validRoles) => {

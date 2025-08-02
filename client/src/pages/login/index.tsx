@@ -34,7 +34,6 @@ const Login = () => {
   // Redirect to home page if user is already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      console.log('🔍 Login page: User already authenticated, redirecting to home');
       navigate('/');
     }
   }, [isAuthenticated, isLoading, navigate]);
@@ -99,7 +98,7 @@ const Login = () => {
       <ColumnWrapper>
         <Logo src="/logo/logo-transparent-blue.svg" alt="foozool logo" />
         <FormWrapper>
-          <Typography variant="h5" align="center" gutterBottom color={theme.main}>
+          <Typography variant="h5" align="center" gutterBottom color={theme.colors.primary.main}>
             Login
           </Typography>
           <StyledForm onSubmit={formik.handleSubmit}>

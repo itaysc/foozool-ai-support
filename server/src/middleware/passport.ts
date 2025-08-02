@@ -1,4 +1,4 @@
-import { Strategy as JwtStrategy, ExtractJwt, StrategyOptions } from 'passport-jwt';
+import { Strategy as JwtStrategy, StrategyOptions } from 'passport-jwt';
 import passport from 'passport';
 import { Request } from 'express';
 import config from '../config';
@@ -23,9 +23,14 @@ function initializeJWTStrategies() {
     return;
   }
 
-  // simple strategy that checks for jwt in the Authorization header
+  // Strategy that checks for jwt in the accessToken cookie
+  const cookieExtractor = (req: Request) => {
+    return req.cookies['accessToken'] || null;
+  };
+
   const opts: StrategyOptions = {
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    //jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    jwtFromRequest: cookieExtractor,
     secretOrKey: config.JWT_SECRET,
   };
 

@@ -189,6 +189,16 @@ export default class Server{
       field_name: 'embedding_quality_score',
       field_schema: 'float'
     });
+    // Create index for created_at for date range filtering in tickets collection
+    await qdrantService.client.createPayloadIndex('tickets', {
+      field_name: 'created_at',
+      field_schema: 'datetime'
+    });
+    // Create index for organization for filtering in tickets collection
+    await qdrantService.client.createPayloadIndex('tickets', {
+      field_name: 'organization',
+      field_schema: 'keyword'
+    });
   }
 
   public async connectDB() {

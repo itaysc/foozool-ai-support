@@ -101,14 +101,36 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
     // Generate refresh token (long-lived, minimal info)
     const refreshToken = signJwt({ user: { id: userRes.payload._id } }, { expiresIn: '7d' });
 
-    // Set cookies
-    setJwtCookie({ res, data: accessToken }); // default name for access token
-    setJwtCookie({ res, data: refreshToken, name: 'refreshToken', options: { maxAge: 7 * 24 * 60 * 60 * 1000 } });
+    // Set secure httpOnly cookies
+    setJwtCookie({ 
+      res, 
+      data: accessToken, 
+      name: 'accessToken',
+      options: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        path: '/'
+      }
+    });
+    
+    setJwtCookie({ 
+      res, 
+      data: refreshToken, 
+      name: 'refreshToken', 
+      options: { 
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/'
+      } 
+    });
 
     console.log('Tokens generated successfully for user:', email);
     res.json({ 
       status: 'success',
-      token: accessToken,
       user: {
         id: userRes.payload._id,
         email: userRes.payload.email,
@@ -143,8 +165,22 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
       const { user } = data as any;
       // Optionally: fetch user from DB to check if still valid
       const newAccessToken = signJwt({ user }, { expiresIn: '15m' });
-      setJwtCookie({ res, data: newAccessToken });
-      res.json({ token: newAccessToken });
+      
+      // Set new access token as secure httpOnly cookie
+      setJwtCookie({ 
+        res, 
+        data: newAccessToken, 
+        name: 'accessToken',
+        options: {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+          maxAge: 15 * 60 * 1000, // 15 minutes
+          path: '/'
+        }
+      });
+      
+      res.json({ message: 'Token refreshed successfully' });
     });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error' });
@@ -152,15 +188,24 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
   }
 });
 
-router.get('/isAuthorized', async (req: Request, res: Response): Promise<void> => {
+router.get('/isAuthorized', async (req: Request, res: Response) => {
   try {
-    // assemble the full jwt from the payload + other parts that are stored in a cookie
-    const token = req.cookies[config.JWT_COOKIE_NAME || 'foozool-jwt'];
-    jwt.verify(token, config.JWT_SECRET, (err, data) => {
+    const accessToken = req.cookies['accessToken'];
+    
+    if (!accessToken) {
+      return res.json({ isAuthorized: false });
+    }
+    
+    jwt.verify(accessToken, config.JWT_SECRET, (err, data) => {
       if (err) {
-        return res.json({ isAuthorized: false });
+        res.json({ isAuthorized: false });
+        return;
       }
-      return res.json({ isAuthorized: true });
+      res.json({ 
+        isAuthorized: true, 
+        user: (data as any).user 
+      });
+      return;
     });
   } catch (err) {
     res.json({ isAuthorized: false });
@@ -169,7 +214,9 @@ router.get('/isAuthorized', async (req: Request, res: Response): Promise<void> =
 });
 
 router.get('/signout', (req: Request, res: Response) => {
-  res.clearCookie(config.JWT_COOKIE_NAME || 'foozool-jwt');
+  // Clear both JWT cookies
+  res.clearCookie('accessToken');
+  res.clearCookie('refreshToken');
   res.status(200).send({ message: 'ok' });
 });
 

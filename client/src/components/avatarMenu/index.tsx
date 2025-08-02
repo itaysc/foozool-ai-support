@@ -3,13 +3,13 @@ import React, { useState } from 'react';
 import { Menu, MenuItem, Avatar, IconButton, Divider, CircularProgress } from '@mui/material';
 import { IoLogOutOutline, IoInformationCircleOutline, IoHelpBuoyOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
-import authStore from '@/stores/auth.store';
+import { useAuth } from '@/context/auth.context';
 import theme from '@/styles/theme';
 
 export const AvatarMenu: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const user = authStore.user;
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -25,13 +25,14 @@ export const AvatarMenu: React.FC = () => {
     navigate('/about');
   }
 
-  const signOut = async () => {
+  const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
-      await authStore.signOut();
+      await signOut();
       setIsSigningOut(false);
       navigate('/login');
     } catch (err) {
+      console.error('❌ Error during sign out:', err);
       setIsSigningOut(false);
     }
   };
@@ -76,7 +77,7 @@ export const AvatarMenu: React.FC = () => {
           <IoInformationCircleOutline size='1.3rem' style={{ marginRight: 8 }} /> About
         </MenuItem>
         <Divider />
-        <MenuItem onClick={signOut} disabled={isSigningOut}>
+        <MenuItem onClick={handleSignOut} disabled={isSigningOut}>
           {isSigningOut ? (
             <CircularProgress size={16} sx={{ marginRight: 1 }} />
           ) : (

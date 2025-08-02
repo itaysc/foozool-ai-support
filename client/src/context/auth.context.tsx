@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import authStore from '@/stores/auth.store';
+import { clearAuthCookies } from '@/utils/cookies';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -17,24 +18,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+
+
   const checkAuth = async (): Promise<boolean> => {
     try {
-      console.log('🔍 AuthContext: Checking authentication...');
-      
-      // Check if we have a valid token in the store
-      if (authStore.token && authStore.user) {
-        console.log('🔍 AuthContext: Valid token found in store');
+      // Check if we have a valid user in the store
+      if (authStore.user) {
         setIsAuthenticated(true);
         setUser(authStore.user);
         setIsLoading(false);
         return true;
       }
       
-      // Try to initialize auth from stored token
+      // Try to initialize auth from cookies
       const isInitialized = await authStore.initializeAuth();
       
-      if (isInitialized && authStore.token && authStore.user) {
-        console.log('🔍 AuthContext: Auth initialized successfully');
+      if (isInitialized && authStore.user) {
         setIsAuthenticated(true);
         setUser(authStore.user);
         setIsLoading(false);
@@ -45,20 +44,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { isAuthorized } = await authStore.checkAuthorization();
       
       if (isAuthorized) {
-        console.log('🔍 AuthContext: Server authorization successful');
         setIsAuthenticated(true);
         setUser(authStore.user);
         setIsLoading(false);
         return true;
       }
       
-      console.log('🔍 AuthContext: No valid authentication found');
       setIsAuthenticated(false);
       setUser(null);
       setIsLoading(false);
       return false;
     } catch (error) {
-      console.error('❌ AuthContext: Auth check failed:', error);
       setIsAuthenticated(false);
       setUser(null);
       setIsLoading(false);
@@ -69,25 +65,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (payload: any) => {
     try {
       const result = await authStore.login(payload);
+      
       if (result.isAuthorized) {
         setIsAuthenticated(true);
         setUser(authStore.user);
       }
       return result;
     } catch (error) {
-      console.error('❌ AuthContext: Login failed:', error);
       throw error;
     }
   };
 
   const signOut = async () => {
     try {
+      // Call server signout endpoint to clear server-side cookies
       await authStore.signOut();
+      
+      // Clear client-side cookies as backup
+      clearAuthCookies();
+      
+      // Clear local state
       setIsAuthenticated(false);
       setUser(null);
+      
+
     } catch (error) {
-      console.error('❌ AuthContext: Signout failed:', error);
-      // Still clear local state even if server call fails
+      // Still clear local state and cookies even if server call fails
+      clearAuthCookies();
       setIsAuthenticated(false);
       setUser(null);
     }

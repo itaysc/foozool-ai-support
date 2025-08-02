@@ -1,5 +1,4 @@
 import { createContext, useState, useContext, useCallback, useEffect, useRef } from "react";
-import { useRefreshToken } from '../../hooks/useRefreshToken';
 import { IChatResponse } from "@common/types/chatResponse";
 import { entityType } from "@common/types/entityType";
 import { actionKeywords } from "@/components/aiChat/keywords";

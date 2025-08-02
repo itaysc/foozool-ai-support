@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LoadingPage } from '@/components/loadingPage';
 import { useMainLayoutContext } from '@/context/mainLayout.context';
@@ -15,16 +16,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
   const navigate = useNavigate();
 
   // Store the requested URL for redirect after login
-  if (location.pathname !== '/login') {
-    setRequestedUrl(location.pathname);
-  }
+  useEffect(() => {
+    if (location.pathname !== '/login') {
+      setRequestedUrl(location.pathname);
+    }
+  }, [location.pathname, setRequestedUrl]);
 
   // Redirect to login if not authenticated and not loading
-  if (!isLoading && !isAuthenticated) {
-    console.log('🔍 ProtectedRoute: Not authenticated, redirecting to login');
-    navigate('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
 
   // Show loading while checking authentication
   if (isLoading) {
@@ -36,6 +39,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
     return element;
   }
 
+  // Return null while redirecting
   return null;
 };
 

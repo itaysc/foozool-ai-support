@@ -11,17 +11,14 @@ export const keys = {
 
 export function getStoredToken() {
     const token = getDataFromLocalStorage(keys.token);
-    console.log('🔍 Getting token from localStorage:', !!token);
     return token;
 }
 export function setStoredToken(token: string) {
-    console.log('🔍 Setting token in localStorage:', !!token);
-    return setDataToLocalStorage(keys.token, token);
+    return setDataFromLocalStorage(keys.token, token);
 }
 
 export function setDataToLocalStorage(key: string, value: unknown) {
   if (!key || typeof key !== 'string') {
-      console.error('Key must be a non-empty string.');
       return;
   }
 
@@ -29,7 +26,7 @@ export function setDataToLocalStorage(key: string, value: unknown) {
       const stringValue = JSON.stringify(value);
       localStorage.setItem(key, stringValue);
   } catch (error) {
-      console.error('Failed to set data to localStorage:', error);
+      // Silent error handling
   }
 }
 
@@ -40,19 +37,16 @@ export function setDataToLocalStorage(key: string, value: unknown) {
 */
 export function getDataFromLocalStorage(key: string) {
   if (!key || typeof key !== 'string') {
-      console.error('Key must be a non-empty string.');
       return null;
   }
 
   try {
       const stringValue = localStorage.getItem(key);
       if (stringValue === null) {
-          console.warn(`No data found for key "${key}".`);
           return null;
       }
       return JSON.parse(stringValue);
   } catch (error) {
-      console.error('Failed to fetch data from localStorage:', error);
       return null;
   }
 }
