@@ -14,7 +14,7 @@ export function getStoredToken() {
     return token;
 }
 export function setStoredToken(token: string) {
-    return setDataFromLocalStorage(keys.token, token);
+    return setDataToLocalStorage(keys.token, token);
 }
 
 export function setDataToLocalStorage(key: string, value: unknown) {

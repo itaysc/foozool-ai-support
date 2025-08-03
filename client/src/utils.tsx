@@ -1,15 +1,19 @@
 /* eslint-disable no-useless-escape */
 import { jwtDecode } from 'jwt-decode';
-import User from '@/types/user';
-import { ePaymentMethod } from "@common/types/paymentMethod";
-import { ePaymentTerms } from "@common/types/paymentTerms";
+import { IUser } from '@/types/user';
+
+// Payment method types
+export type ePaymentMethod = 'credit_card' | 'bank_transfer' | 'paypal' | 'cash' | 'check';
+
+// Payment terms types
+export type ePaymentTerms = 'net_30' | 'net_60' | 'net_90' | 'due_on_receipt' | 'net_15';
 
 interface DecodeTokenRes {
   aud: string;
   exp: number;
   iat: number;
   iss: string;
-  user: User;
+  user: IUser;
 }
 
 export const decodeToken = (token: string) : DecodeTokenRes | null => {

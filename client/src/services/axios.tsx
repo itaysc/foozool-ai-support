@@ -46,24 +46,6 @@ export async function refreshToken() {
   }
 }
 
-// Request interceptor to handle proactive token refresh
-instance.interceptors.request.use(
-  async (config) => {
-    // Skip token refresh for auth-related requests to prevent infinite loops
-    if (config.url?.includes('/auth/')) {
-      return config;
-    }
-
-    // Cookies are sent automatically with withCredentials: true
-    // No need to manually set Authorization header
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-
 
 // Response interceptor to refresh token on 401 response
 instance.interceptors.response.use(
@@ -96,7 +78,7 @@ instance.interceptors.response.use(
       try {
         const result = await refreshToken();
         
-        if (result.message === 'Token refreshed successfully') {
+        if (result.success) {
           // Process queued requests
           processQueue(null, null);
           

@@ -153,13 +153,19 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
 router.post('/refresh-token', async (req: Request, res: Response): Promise<void> => {
   const refreshToken = req.cookies['refreshToken'];
   if (!refreshToken) {
-    res.status(400).json({ message: 'Refresh token is required' });
+    res.status(400).json({ 
+      success: false, 
+      message: 'Refresh token is required' 
+    });
     return;
   }
   try {
     jwt.verify(refreshToken, config.JWT_SECRET, (err, data) => {
       if (err) {
-        return res.status(403).json({ message: 'Invalid refresh token' });
+        return res.status(403).json({ 
+          success: false, 
+          message: 'Invalid refresh token' 
+        });
       }
       // Only minimal info in refresh token
       const { user } = data as any;
@@ -180,10 +186,16 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
         }
       });
       
-      res.json({ message: 'Token refreshed successfully' });
+      res.json({ 
+        success: true, 
+        message: 'Token refreshed successfully' 
+      });
     });
   } catch (error) {
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error' 
+    });
     return;
   }
 });

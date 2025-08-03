@@ -1,12 +1,12 @@
-import mongoose, { Document } from 'mongoose';
+import { ObjectId } from './index';
 
 export interface IUser {
-  _id: mongoose.Types.ObjectId;
+  _id: ObjectId;
   firstName: string;
   lastName: string;
   fullName: string;
   avatarImage: string;
-  llmModel: string | mongoose.Types.ObjectId;
+  llmModel: string | ObjectId;
   email: {
     type: string;
   };
@@ -16,7 +16,7 @@ export interface IUser {
   registered: {
     type: boolean;
   };
-  organization: string | mongoose.Types.ObjectId;
+  organization: string | ObjectId;
   department: {
     type: string;
   };

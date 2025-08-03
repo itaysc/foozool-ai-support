@@ -1,4 +1,4 @@
-import { entityType } from 'types';
+import { entityType } from '@/types';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 

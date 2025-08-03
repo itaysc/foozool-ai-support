@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
+import { ObjectId } from './index';
 
 export interface ILLMUsage {
-    user: mongoose.Types.ObjectId;
+    user: ObjectId;
     tokensPerCycle: number;
     totalPromptTokens: number;
     totalCompletionTokens: number;

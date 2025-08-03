@@ -3,6 +3,7 @@ import { InsightCategory, InsightSeverity } from 'src/types/insights';
 
 // Define the document interface
 interface InsightDocument extends Document {
+  organization: Schema.Types.ObjectId;
   category: InsightCategory;
   severity: InsightSeverity;
   title: string;
@@ -42,6 +43,12 @@ interface InsightDocument extends Document {
 }
 
 const insightSchema = new Schema({
+  organization: {
+    type: Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+    index: true,
+  },
   category: {
     type: String,
     required: true,
@@ -121,26 +128,10 @@ const insightSchema = new Schema({
   timestamps: true,
 });
 
-// Indexes for better query performance
-insightSchema.index({ category: 1, severity: 1 });
-insightSchema.index({ ticketIds: 1 });
-insightSchema.index({ productId: 1 });
-insightSchema.index({ createdAt: -1 });
-insightSchema.index({ status: 1 });
-
-// Additional indexes for specific query patterns
-insightSchema.index({ createdAt: -1, status: 1 }); // For recent insights with status filter
-insightSchema.index({ severity: 1, createdAt: -1 }); // For high priority insights
-insightSchema.index({ status: 1, severity: 1 }); // For active high priority insights
-insightSchema.index({ category: 1, createdAt: -1 }); // For category-based queries with time
-insightSchema.index({ severity: 1, status: 1, createdAt: -1 }); // For dashboard alerts
-insightSchema.index({ createdAt: 1 }); // For date range queries (ascending)
-insightSchema.index({ updatedAt: -1 }); // For status updates
-insightSchema.index({ confidence: -1 }); // For confidence-based sorting
-insightSchema.index({ sentiment: 1, createdAt: -1 }); // For sentiment analysis
-insightSchema.index({ trend: 1, createdAt: -1 }); // For trend analysis
-insightSchema.index({ trendType: 1, createdAt: -1 }); // For trend type analysis
-insightSchema.index({ keyTopics: 1 }); // For topic-based searches
-insightSchema.index({ satisfactionScore: -1 }); // For satisfaction-based queries
+// Simplified indices - only essential compound indices
+insightSchema.index({ organization: 1, createdAt: -1 }); // For most queries
+insightSchema.index({ organization: 1, status: 1 }); // For status filtering
+insightSchema.index({ organization: 1, category: 1 }); // For category filtering
+insightSchema.index({ organization: 1, severity: 1 }); // For severity filtering
 
 export const InsightModel = model<InsightDocument>('Insight', insightSchema); 

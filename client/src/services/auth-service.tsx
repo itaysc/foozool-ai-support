@@ -38,7 +38,7 @@ class AuthService{
   refreshToken = async() => {
     try {
       const result = await _refreshToken();
-      if (result.message === 'Token refreshed successfully') {
+      if (result.success === true) {
         // Get user info from the server since we don't have token in response
         const authCheck = await this.checkAuthorization();
         if (authCheck.isAuthorized && authCheck.user) {

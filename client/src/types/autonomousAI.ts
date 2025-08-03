@@ -1,4 +1,4 @@
-import { ObjectId } from "mongoose";
+import { ObjectId } from './index';
 
 // Action Types
 export type ActionType = 'refund' | 'coupon' | 'auto_resolve' | 'escalate' | 'priority_change' | 'auto_reply';

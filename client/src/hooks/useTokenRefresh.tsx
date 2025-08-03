@@ -4,7 +4,7 @@ import { useAuth } from '@/context/auth.context';
 
 export const useTokenRefresh = () => {
   const { isAuthenticated } = useAuth();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     // Only set up refresh if user is authenticated

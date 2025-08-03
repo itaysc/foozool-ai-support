@@ -22,20 +22,134 @@ router.use('/dashboard', dashboardRouter);
 router.use('/scheduler', schedulerRouter);
 
 /**
+ * @route POST /api/v1/insights
+ * @desc Create a new insight
+ * @access Private
+ */
+router.post('/', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization;
+    const insightData = {
+      ...req.body,
+      organization: organizationId,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const insight = new InsightModel(insightData);
+    const savedInsight = await insight.save();
+
+    res.status(201).json({
+      success: true,
+      data: savedInsight
+    });
+
+  } catch (error) {
+    console.error('Error creating insight:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to create insight',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route DELETE /api/v1/insights/:id
+ * @desc Delete an insight by ID
+ * @access Private
+ */
+router.delete('/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const organizationId = req.user!.organization;
+
+    const insight = await InsightModel.findOneAndDelete({ 
+      _id: id,
+      organization: organizationId 
+    });
+
+    if (!insight) {
+      res.status(404).json({
+        success: false,
+        error: 'Insight not found'
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Insight deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting insight:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to delete insight',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route PATCH /api/v1/insights/:id
+ * @desc Update an insight by ID
+ * @access Private
+ */
+router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const organizationId = req.user!.organization;
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date()
+    };
+
+    const insight = await InsightModel.findOneAndUpdate(
+      { _id: id, organization: organizationId },
+      updateData,
+      { new: true }
+    );
+
+    if (!insight) {
+      res.status(404).json({
+        success: false,
+        error: 'Insight not found'
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: insight
+    });
+
+  } catch (error) {
+    console.error('Error updating insight:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update insight',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
  * @route GET /api/v1/insights/analytics
  * @desc Get comprehensive analytics for an organization
  * @access Private
  */
 router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organization.toString();
+    const organizationId = req.user!.organization;
     const { startDate, endDate, useOrganizationSettings = 'true' } = req.query;
 
     let timeRange: { start: string; end: string } | undefined;
 
     // Use organization dashboard settings if requested
     if (useOrganizationSettings === 'true') {
-      const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId);
+      const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId.toString());
       const defaultSettings = dashboardSettingsService.getDefaultSettings();
       const settings = dashboardSettings || defaultSettings;
       
@@ -53,7 +167,7 @@ router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
     const analyticsService = new QdrantAnalyticsService();
     // Get current user ID from context
     const userId = req.user!._id.toString();
-    const analytics = await analyticsService.generateAnalytics(organizationId, userId, timeRange);
+    const analytics = await analyticsService.generateAnalytics(organizationId.toString(), userId, timeRange);
 
     res.status(200).json({
       success: true,
@@ -78,7 +192,7 @@ router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
  */
 router.post('/generate', async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organization.toString();
+    const organizationId = req.user!.organization;
     const { 
       timeRange, 
       includeTrends = true, 
@@ -88,7 +202,7 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
 
     const analyticsService = new QdrantAnalyticsService();
     const result = await analyticsService.generateInsights({
-      organizationId,
+      organizationId: organizationId.toString(),
       timeRange,
       includeTrends,
       includeAnomalies,
@@ -117,7 +231,7 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
  */
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organization.toString();
+    const organizationId = req.user!.organization;
     const { 
       category, 
       severity, 
@@ -126,22 +240,40 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
       offset = 0 
     } = req.query;
 
-    const filter: {
-      category?: string;
-      severity?: string;
-      status?: string;
-    } = {};
+    // Use organization + status index for base query
+    const baseFilter: { organization: any; status?: string } = {
+      organization: organizationId
+    };
+    
+    if (status) baseFilter.status = status as string;
 
-    if (category) filter.category = category as string;
-    if (severity) filter.severity = severity as string;
-    if (status) filter.status = status as string;
-
-    const insights = await InsightModel.find(filter)
+    // Get insights using the organization + status index
+    let insights = await InsightModel.find(baseFilter)
       .sort({ createdAt: -1 })
-      .limit(Number(limit))
+      .limit(Number(limit) * 2) // Get more to account for filtering
       .skip(Number(offset));
 
-    const total = await InsightModel.countDocuments(filter);
+    // Apply additional filters in JavaScript
+    if (category) {
+      insights = insights.filter(insight => insight.category === category);
+    }
+    if (severity) {
+      insights = insights.filter(insight => insight.severity === severity);
+    }
+
+    // Apply limit after filtering
+    insights = insights.slice(0, Number(limit));
+
+    // Get total count with same filtering logic
+    const allInsights = await InsightModel.find(baseFilter);
+    let filteredInsights = allInsights;
+    if (category) {
+      filteredInsights = filteredInsights.filter(insight => insight.category === category);
+    }
+    if (severity) {
+      filteredInsights = filteredInsights.filter(insight => insight.severity === severity);
+    }
+    const total = filteredInsights.length;
 
     res.status(200).json({
       success: true,
@@ -174,7 +306,8 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
 router.get('/:id', async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    const insight = await InsightModel.findById(id);
+    const organizationId = req.user!.organization;
+    const insight = await InsightModel.findOne({ _id: id, organization: organizationId });
 
     if (!insight) {
       res.status(404).json({
@@ -253,16 +386,19 @@ router.patch('/:id/status', async (req: Request, res: Response): Promise<void> =
  */
 router.get('/summary', async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organization.toString();
+    const organizationId = req.user!.organization;
     const { days = 30 } = req.query;
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - Number(days));
 
+    // Use organization + createdAt index for base query
     const insights = await InsightModel.find({
+      organization: organizationId,
       createdAt: { $gte: startDate }
-    });
+    }).sort({ createdAt: -1 });
 
+    // Calculate summary in JavaScript
     const summary = {
       totalInsights: insights.length,
       byCategory: insights.reduce((acc: Record<string, number>, insight) => {
@@ -305,47 +441,48 @@ router.get('/summary', async (req: Request, res: Response): Promise<void> => {
  */
 router.get('/trends', async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organization.toString();
+    const organizationId = req.user!.organization;
     const { days = 30 } = req.query;
 
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - Number(days));
 
-    // Get insights grouped by day
-    const insights = await InsightModel.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startDate }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
-          },
-          count: { $sum: 1 },
-          categories: { $push: "$category" },
-          severities: { $push: "$severity" }
-        }
-      },
-      {
-        $sort: { "_id": 1 }
+    // Use organization + createdAt index for base query
+    const insights = await InsightModel.find({
+      organization: organizationId,
+      createdAt: { $gte: startDate }
+    }).sort({ createdAt: 1 });
+
+    // Group insights by day in JavaScript
+    const insightsByDay: Record<string, any[]> = {};
+    
+    insights.forEach(insight => {
+      const date = insight.createdAt.toISOString().split('T')[0]; // YYYY-MM-DD format
+      if (!insightsByDay[date]) {
+        insightsByDay[date] = [];
       }
-    ]);
+      insightsByDay[date].push(insight);
+    });
 
     // Calculate trends
-    const trendData = insights.map(day => ({
-      date: day._id,
-      totalInsights: day.count,
-      categoryBreakdown: day.categories.reduce((acc: Record<string, number>, cat: string) => {
-        acc[cat] = (acc[cat] || 0) + 1;
-        return acc;
-      }, {}),
-      severityBreakdown: day.severities.reduce((acc: Record<string, number>, sev: string) => {
-        acc[sev] = (acc[sev] || 0) + 1;
-        return acc;
-      }, {})
-    }));
+    const trendData = Object.keys(insightsByDay).sort().map(date => {
+      const dayInsights = insightsByDay[date];
+      const categories = dayInsights.map(i => i.category);
+      const severities = dayInsights.map(i => i.severity);
+      
+      return {
+        date,
+        totalInsights: dayInsights.length,
+        categoryBreakdown: categories.reduce((acc: Record<string, number>, cat: string) => {
+          acc[cat] = (acc[cat] || 0) + 1;
+          return acc;
+        }, {}),
+        severityBreakdown: severities.reduce((acc: Record<string, number>, sev: string) => {
+          acc[sev] = (acc[sev] || 0) + 1;
+          return acc;
+        }, {})
+      };
+    });
 
     res.status(200).json({
       success: true,

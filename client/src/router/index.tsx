@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Test from "@/pages/test";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/notFound";
 import Layout from "./layouts/main.layout";
 import ProtectedRoute from "./ProtectRoute";
@@ -22,6 +23,7 @@ const Router = () => {
                 <Route path="/" element={<Layout />}>
                     <Route index element={<ProtectedRoute element={<Dashboard />} />} />
                     <Route path="dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+                    <Route path="settings" element={<ProtectedRoute element={<Settings />} />} />
                 </Route>
                 
                 {/* Catch all route */}

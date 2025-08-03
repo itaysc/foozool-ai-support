@@ -1,4 +1,5 @@
-import { CurrencyCode } from '@/types';
+// CurrencyCode type definition - using string to allow all currency codes
+export type CurrencyCode = string;
 
 const currencyCodes: CurrencyCode[] = [
     'AED',

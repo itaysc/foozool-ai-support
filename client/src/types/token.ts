@@ -1,4 +1,4 @@
-import { ObjectId } from "mongoose";
+import { ObjectId } from './index';
 
 export interface IToken {
     organizationId: string | ObjectId;

@@ -1,4 +1,4 @@
-import { ObjectId } from "mongoose";
+import { ObjectId } from './index';
 
 export interface ITicket {
     _id?: ObjectId | string;

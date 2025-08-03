@@ -3,7 +3,6 @@ import LinearProgress from '@mui/material/LinearProgress';
 import { Navbar } from '@/components';
 import { useMainLayoutContext } from '@/context/mainLayout.context';
 import { useEffect } from 'react';
-import { ChatProvider } from '@/context/chat/chat.context';
 import { Box } from '@mui/material';
 
 export default function Layout() {
@@ -26,9 +25,7 @@ export default function Layout() {
           pb: 4
         }}
       >
-        <ChatProvider>
-          <Outlet />
-        </ChatProvider>
+        <Outlet />
       </Box>
     </Box>
   );

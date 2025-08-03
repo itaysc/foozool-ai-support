@@ -5,10 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, MenuItem, ListItemIcon, ListItemText, Typography, Box, Chip } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
-import RuleIcon from '@mui/icons-material/Rule';
 import SettingsIcon from '@mui/icons-material/Settings';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
 import { useState } from 'react';
 
 export const Navbar = observer(() => {
@@ -28,16 +25,10 @@ export const Navbar = observer(() => {
 
   const navigationItems = [
     { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-    { path: '/integrations', label: 'Integrations', icon: IntegrationInstructionsIcon },
-    { path: '/rules', label: 'Rules & Logic', icon: RuleIcon },
     { path: '/settings', label: 'Settings', icon: SettingsIcon },
-    { path: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
   ];
 
   const isActive = (path: string) => {
-    if (path === '/rules') {
-      return location.pathname === '/rules' || location.pathname.includes('/bot/');
-    }
     return location.pathname === path;
   };
 
@@ -49,23 +40,6 @@ export const Navbar = observer(() => {
       </styled.LeftSide>
       <styled.RightSide>
         
-        {/* Model Dropdown */}
-        <styled.TabButton onClick={handleClick} active={false}>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography variant="body2" fontWeight={500}>
-              Model
-            </Typography>
-            <Chip 
-              size="small"
-              sx={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.2)', 
-                color: 'white',
-                fontSize: '0.7rem',
-                height: '20px'
-              }} 
-            />
-          </Box>
-        </styled.TabButton>
         <Menu
           anchorEl={anchorEl}
           open={open}
