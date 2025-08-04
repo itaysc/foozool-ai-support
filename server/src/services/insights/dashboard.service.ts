@@ -61,12 +61,6 @@ export class DashboardService {
     // Completely disable caching for dashboard
     console.log(`🔄 Caching disabled for dashboard metrics`);
 
-    // Get current user ID from context
-    const userId = UserContextManager.getCurrentUserId();
-    if (!userId) {
-      throw new Error('User context not available for analytics');
-    }
-
     // Use provided time range or fall back to organization settings
     let analyticsTimeRange: { start: string; end: string } | undefined = timeRange;
     
@@ -84,14 +78,14 @@ export class DashboardService {
     console.log(`🔍 Using analytics time range for org ${organizationId}:`, analyticsTimeRange ? `${analyticsTimeRange.start} to ${analyticsTimeRange.end}` : 'all time');
 
     // Get analytics based on time range
-    const analytics = await this.analyticsService.generateAnalytics(organizationId, userId, analyticsTimeRange || undefined);
+    const analytics = await this.analyticsService.generateAnalytics(analyticsTimeRange || undefined);
     
     // Get recent analytics (last 7 days) for comparison if not using all-time
     let recentAnalytics: TicketAnalytics | null = null;
     if (analyticsTimeRange) {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      recentAnalytics = await this.analyticsService.generateAnalytics(organizationId, userId, {
+      recentAnalytics = await this.analyticsService.generateAnalytics({
         start: sevenDaysAgo.toISOString(),
         end: new Date().toISOString()
       });
@@ -158,7 +152,7 @@ export class DashboardService {
       throw new Error('User context not available for LLM call');
     }
 
-    const analytics = await this.analyticsService.generateAnalytics(organizationId, userId, timeRange);
+    const analytics = await this.analyticsService.generateAnalytics(timeRange);
 
     // Generate AI insights using LLM
     const prompt = `
@@ -265,12 +259,6 @@ ${JSON.stringify(analytics, null, 2)}
     // Completely disable caching for dashboard
     console.log(`🔄 Caching disabled for dashboard alerts`);
 
-    // Get current user ID from context
-    const userId = UserContextManager.getCurrentUserId();
-    if (!userId) {
-      throw new Error('User context not available for analytics');
-    }
-
     const alerts: Array<{
       id: string;
       type: 'anomaly' | 'trend' | 'threshold' | 'insight';
@@ -284,7 +272,7 @@ ${JSON.stringify(analytics, null, 2)}
     // Get recent analytics
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentAnalytics = await this.analyticsService.generateAnalytics(organizationId, userId, {
+    const recentAnalytics = await this.analyticsService.generateAnalytics({
       start: sevenDaysAgo.toISOString(),
       end: new Date().toISOString()
     });
@@ -360,16 +348,10 @@ ${JSON.stringify(analytics, null, 2)}
     // Completely disable caching for dashboard
     console.log(`🔄 Caching disabled for dashboard performance`);
 
-    // Get current user ID from context
-    const userId = UserContextManager.getCurrentUserId();
-    if (!userId) {
-      throw new Error('User context not available for analytics');
-    }
-
     // Current period (last 30 days)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const currentPeriod = await this.analyticsService.generateAnalytics(organizationId, userId, {
+    const currentPeriod = await this.analyticsService.generateAnalytics({
       start: thirtyDaysAgo.toISOString(),
       end: new Date().toISOString()
     });
@@ -377,7 +359,7 @@ ${JSON.stringify(analytics, null, 2)}
     // Previous period (30-60 days ago)
     const sixtyDaysAgo = new Date();
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-    const previousPeriod = await this.analyticsService.generateAnalytics(organizationId, userId, {
+    const previousPeriod = await this.analyticsService.generateAnalytics({
       start: sixtyDaysAgo.toISOString(),
       end: thirtyDaysAgo.toISOString()
     });
@@ -453,12 +435,6 @@ ${JSON.stringify(analytics, null, 2)}
     
     // Skip cache entirely - always fetch fresh data
     console.log(`🔄 Skipping cache, fetching fresh time-series data`);
-
-    // Get current user ID from context
-    const userId = UserContextManager.getCurrentUserId();
-    if (!userId) {
-      throw new Error('User context not available for analytics');
-    }
 
     // Use provided time range or fall back to organization settings
     let analyticsTimeRange: { start: string; end: string } | undefined = timeRange;

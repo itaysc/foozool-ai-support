@@ -3,10 +3,10 @@ import { ActionThresholdService } from './actionThreshold.service';
 import { CustomerTierService } from './customerTier.service';
 import { ActionLogService } from './actionLog.service';
 import { IActionExecutionRequest, IActionThresholdInput, ICustomerTierInput } from '../../types/autonomousAI';
+import { UserContextManager } from '../../context/userContext';
 
 export interface AnalysisRequest {
   ticketId: string;
-  organizationId: string;
 }
 
 export interface ExecuteActionRequest {
@@ -15,12 +15,9 @@ export interface ExecuteActionRequest {
   thresholdId: string;
   confidenceScore: number;
   parameters?: any;
-  userId?: string;
-  organizationId: string;
 }
 
 export interface CreateThresholdRequest {
-  organizationId: string;
   thresholdData: Omit<IActionThresholdInput, 'organization'>;
 }
 
@@ -30,7 +27,6 @@ export interface UpdateThresholdRequest {
 }
 
 export interface CreateCustomerTierRequest {
-  organizationId: string;
   tierData: Omit<ICustomerTierInput, 'organization'>;
 }
 
@@ -44,10 +40,11 @@ export class AutonomousAIControllerService {
    * Analyze a ticket and get AI recommendations
    */
   static async analyzeTicket(request: AnalysisRequest) {
-    const { ticketId, organizationId } = request;
+    const { ticketId } = request;
     
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await SimpleAutonomousAIService.analyzeTicket(ticketId, organizationId);
@@ -57,10 +54,13 @@ export class AutonomousAIControllerService {
    * Execute a recommended action
    */
   static async executeAction(request: ExecuteActionRequest) {
-    const { ticketId, actionType, thresholdId, confidenceScore, parameters, userId, organizationId } = request;
+    const { ticketId, actionType, thresholdId, confidenceScore, parameters } = request;
     
-    if (!organizationId) {
-      throw new Error('Organization not found');
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    const userId = UserContextManager.getCurrentUserId();
+    
+    if (!organizationId || !userId) {
+      throw new Error('User context not available');
     }
 
     const actionRequest: IActionExecutionRequest = {
@@ -79,9 +79,10 @@ export class AutonomousAIControllerService {
   /**
    * Get all action thresholds for organization
    */
-  static async getThresholds(organizationId: string) {
+  static async getThresholds() {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionThresholdService.getThresholdsByOrganization(organizationId);
@@ -91,10 +92,11 @@ export class AutonomousAIControllerService {
    * Create a new action threshold
    */
   static async createThreshold(request: CreateThresholdRequest) {
-    const { organizationId, thresholdData } = request;
+    const { thresholdData } = request;
     
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     const fullThresholdData: IActionThresholdInput = {
@@ -160,9 +162,10 @@ export class AutonomousAIControllerService {
   /**
    * Get all customer tiers for organization
    */
-  static async getCustomerTiers(organizationId: string) {
+  static async getCustomerTiers() {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await CustomerTierService.getTiersByOrganization(organizationId);
@@ -172,10 +175,11 @@ export class AutonomousAIControllerService {
    * Create a new customer tier
    */
   static async createCustomerTier(request: CreateCustomerTierRequest) {
-    const { organizationId, tierData } = request;
+    const { tierData } = request;
     
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     const fullTierData: ICustomerTierInput = {
@@ -241,9 +245,10 @@ export class AutonomousAIControllerService {
   /**
    * Get action logs for organization
    */
-  static async getActionLogs(organizationId: string, limit: number = 50, offset: number = 0) {
+  static async getActionLogs(limit: number = 50, offset: number = 0) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.getLogsByOrganization(organizationId, limit, offset);
@@ -259,9 +264,10 @@ export class AutonomousAIControllerService {
   /**
    * Get action logs by action type
    */
-  static async getActionLogsByType(organizationId: string, actionType: string, limit: number = 50) {
+  static async getActionLogsByType(actionType: string, limit: number = 50) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.getLogsByActionType(organizationId, actionType as any, limit);
@@ -270,9 +276,10 @@ export class AutonomousAIControllerService {
   /**
    * Get action logs by status
    */
-  static async getActionLogsByStatus(organizationId: string, status: string, limit: number = 50) {
+  static async getActionLogsByStatus(status: string, limit: number = 50) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.getLogsByStatus(organizationId, status as any, limit);
@@ -281,9 +288,10 @@ export class AutonomousAIControllerService {
   /**
    * Get failed actions for review
    */
-  static async getFailedActions(organizationId: string, limit: number = 20) {
+  static async getFailedActions(limit: number = 20) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.getFailedActions(organizationId, limit);
@@ -292,9 +300,10 @@ export class AutonomousAIControllerService {
   /**
    * Get high-confidence actions
    */
-  static async getHighConfidenceActions(organizationId: string, confidenceThreshold: number = 0.8, limit: number = 20) {
+  static async getHighConfidenceActions(confidenceThreshold: number = 0.8, limit: number = 20) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.getHighConfidenceActions(organizationId, confidenceThreshold, limit);
@@ -303,9 +312,10 @@ export class AutonomousAIControllerService {
   /**
    * Get daily action statistics
    */
-  static async getDailyStats(organizationId: string, date: Date) {
+  static async getDailyStats(date: Date) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.getDailyStats(organizationId, date);
@@ -314,9 +324,10 @@ export class AutonomousAIControllerService {
   /**
    * Get action success rate
    */
-  static async getSuccessRate(organizationId: string, startDate: Date, endDate: Date) {
+  static async getSuccessRate(startDate: Date, endDate: Date) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.getSuccessRate(organizationId, startDate, endDate);
@@ -325,9 +336,10 @@ export class AutonomousAIControllerService {
   /**
    * Get action performance metrics
    */
-  static async getPerformanceMetrics(organizationId: string, days: number = 30) {
+  static async getPerformanceMetrics(days: number = 30) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.getPerformanceMetrics(organizationId, days);
@@ -336,9 +348,10 @@ export class AutonomousAIControllerService {
   /**
    * Clean old action logs
    */
-  static async cleanOldLogs(organizationId: string, daysToKeep: number = 90) {
+  static async cleanOldLogs(daysToKeep: number = 90) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.cleanOldLogs(organizationId, daysToKeep);
@@ -347,9 +360,10 @@ export class AutonomousAIControllerService {
   /**
    * Export action logs for analysis
    */
-  static async exportLogs(organizationId: string, startDate: Date, endDate: Date) {
+  static async exportLogs(startDate: Date, endDate: Date) {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
-      throw new Error('Organization not found');
+      throw new Error('User context not available');
     }
 
     return await ActionLogService.exportLogs(organizationId, startDate, endDate);

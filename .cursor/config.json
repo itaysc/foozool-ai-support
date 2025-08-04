@@ -19,7 +19,9 @@
       "don't add console logs in the client side",
       "keep in mind that in the server i have a user context manager that is used to store the user context, if needed you can extend it with care",
       "If you channe/add new routes make sure to update the postman collection here in the repo",
-      "before adding new code, check coding standards in other files, and make sure to follow them."
+      "before adding new code, check coding standards in other files, and make sure to follow them.",
+      "when you implement calls to llm in the server, use the model which is used in other places in the code",
+      "After each change check there are'nt typescript/lint errors"
     ]
   }
   

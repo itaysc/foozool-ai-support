@@ -27,7 +27,7 @@ router.get('/test-settings',
       // Test analytics generation
       const analyticsService = new QdrantAnalyticsService();
       const userId = req.user!._id.toString();
-      const analytics = await analyticsService.generateAnalytics(organizationId, userId, timeRange || undefined);
+      const analytics = await analyticsService.generateAnalytics(timeRange || undefined);
       
       res.json({
         success: true,

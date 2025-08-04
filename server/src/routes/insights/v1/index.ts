@@ -165,9 +165,7 @@ router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
     }
 
     const analyticsService = new QdrantAnalyticsService();
-    // Get current user ID from context
-    const userId = req.user!._id.toString();
-    const analytics = await analyticsService.generateAnalytics(organizationId.toString(), userId, timeRange);
+    const analytics = await analyticsService.generateAnalytics(timeRange);
 
     res.status(200).json({
       success: true,
@@ -192,7 +190,6 @@ router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
  */
 router.post('/generate', async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organization;
     const { 
       timeRange, 
       includeTrends = true, 
@@ -202,7 +199,6 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
 
     const analyticsService = new QdrantAnalyticsService();
     const result = await analyticsService.generateInsights({
-      organizationId: organizationId.toString(),
       timeRange,
       includeTrends,
       includeAnomalies,

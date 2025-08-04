@@ -2,6 +2,7 @@ import * as cron from 'node-cron';
 import { dailyAnalyticsJob } from './daily-analytics.job';
 import { weeklyInsightsJob } from './weekly-insights.job';
 import { monthlyCleanupJob } from './monthly-cleanup.job';
+import { newsMonitoringJob } from '../news-monitoring.job';
 import config from '../../config';
 
 interface JobSchedule {
@@ -40,6 +41,12 @@ export class InsightsScheduler {
           name: 'monthly-cleanup',
           cronPattern: config.INSIGHTS_MONTHLY_CLEANUP_CRON || '0 3 1 * *', // First day of month at 3 AM
           description: 'Clean up old insights (archive 90+ days old)',
+          enabled: true
+        },
+        {
+          name: 'news-monitoring',
+          cronPattern: config.NEWS_MONITORING_CRON || '0 8 * * *', // Every day at 8 AM
+          description: 'Monitor and analyze news for all organizations',
           enabled: true
         }
       ],
@@ -96,6 +103,9 @@ export class InsightsScheduler {
           case 'monthly-cleanup':
             await this.runMonthlyCleanup();
             break;
+          case 'news-monitoring':
+            await this.runNewsMonitoring();
+            break;
           default:
             console.warn(`⚠️ Unknown job type: ${job.name}`);
         }
@@ -130,6 +140,13 @@ export class InsightsScheduler {
    */
   private async runMonthlyCleanup(): Promise<void> {
     await monthlyCleanupJob.execute();
+  }
+
+  /**
+   * Run news monitoring job
+   */
+  private async runNewsMonitoring(): Promise<void> {
+    await newsMonitoringJob.execute();
   }
 
   /**
@@ -181,6 +198,9 @@ export class InsightsScheduler {
           break;
         case 'monthly-cleanup':
           await this.runMonthlyCleanup();
+          break;
+        case 'news-monitoring':
+          await this.runNewsMonitoring();
           break;
         default:
           console.error(`❌ Unknown job type: ${jobName}`);

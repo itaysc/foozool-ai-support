@@ -51,11 +51,7 @@ export class InsightsOrchestratorService {
       }
 
       // Generate analytics
-      const analytics = await this.analyticsService.generateAnalytics(
-        organizationId, 
-        userId || 'system',
-        config?.timeRange
-      );
+      const analytics = await this.analyticsService.generateAnalytics(config?.timeRange);
 
       if (analytics.totalTickets === 0) {
         console.log(`⚠️ No tickets found for organization: ${organizationId}`);

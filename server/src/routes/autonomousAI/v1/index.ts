@@ -19,11 +19,9 @@ router.use('/', zendeskAnalysisRouter);
 router.get('/analyze/:ticketId', async (req, res) => {
   try {
     const { ticketId } = req.params;
-    const organizationId = req.user?.organization?.toString();
 
     const analysis = await AutonomousAIControllerService.analyzeTicket({
-      ticketId,
-      organizationId: organizationId!
+      ticketId
     });
     
     res.json({ success: true, data: analysis });
@@ -41,17 +39,13 @@ router.get('/analyze/:ticketId', async (req, res) => {
 router.post('/execute-action', async (req, res) => {
   try {
     const { ticketId, actionType, thresholdId, confidenceScore, parameters } = req.body;
-    const organizationId = req.user?.organization?.toString();
-    const userId = req.user?._id?.toString();
 
     const result = await AutonomousAIControllerService.executeAction({
       ticketId,
       actionType,
       thresholdId,
       confidenceScore,
-      parameters,
-      userId,
-      organizationId: organizationId!
+      parameters
     });
     
     res.json({ success: true, data: result });
@@ -69,8 +63,7 @@ router.post('/execute-action', async (req, res) => {
  */
 router.get('/thresholds', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
-    const thresholds = await AutonomousAIControllerService.getThresholds(organizationId!);
+    const thresholds = await AutonomousAIControllerService.getThresholds();
     res.json({ success: true, data: thresholds });
   } catch (error) {
     console.error('Error fetching thresholds:', error);
@@ -85,9 +78,7 @@ router.get('/thresholds', async (req, res) => {
  */
 router.post('/thresholds', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const threshold = await AutonomousAIControllerService.createThreshold({
-      organizationId: organizationId!,
       thresholdData: req.body
     });
     res.status(201).json({ success: true, data: threshold });
@@ -156,8 +147,7 @@ router.patch('/thresholds/:id/toggle', async (req, res) => {
  */
 router.get('/customer-tiers', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
-    const tiers = await AutonomousAIControllerService.getCustomerTiers(organizationId!);
+    const tiers = await AutonomousAIControllerService.getCustomerTiers();
     res.json({ success: true, data: tiers });
   } catch (error) {
     console.error('Error fetching customer tiers:', error);
@@ -172,9 +162,7 @@ router.get('/customer-tiers', async (req, res) => {
  */
 router.post('/customer-tiers', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const tier = await AutonomousAIControllerService.createCustomerTier({
-      organizationId: organizationId!,
       tierData: req.body
     });
     res.status(201).json({ success: true, data: tier });
@@ -243,10 +231,8 @@ router.get('/customer-tiers/:id', async (req, res) => {
  */
 router.get('/action-logs', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const { limit = 50, offset = 0 } = req.query;
     const logs = await AutonomousAIControllerService.getActionLogs(
-      organizationId!,
       Number(limit),
       Number(offset)
     );
@@ -282,10 +268,8 @@ router.get('/action-logs/ticket/:ticketId', async (req, res) => {
 router.get('/action-logs/type/:actionType', async (req, res) => {
   try {
     const { actionType } = req.params;
-    const organizationId = req.user?.organization?.toString();
     const { limit = 50 } = req.query;
     const logs = await AutonomousAIControllerService.getActionLogsByType(
-      organizationId!,
       actionType,
       Number(limit)
     );
@@ -304,10 +288,8 @@ router.get('/action-logs/type/:actionType', async (req, res) => {
 router.get('/action-logs/status/:status', async (req, res) => {
   try {
     const { status } = req.params;
-    const organizationId = req.user?.organization?.toString();
     const { limit = 50 } = req.query;
     const logs = await AutonomousAIControllerService.getActionLogsByStatus(
-      organizationId!,
       status,
       Number(limit)
     );
@@ -325,9 +307,8 @@ router.get('/action-logs/status/:status', async (req, res) => {
  */
 router.get('/action-logs/failed', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const { limit = 20 } = req.query;
-    const logs = await AutonomousAIControllerService.getFailedActions(organizationId!, Number(limit));
+    const logs = await AutonomousAIControllerService.getFailedActions(Number(limit));
     res.json({ success: true, data: logs });
   } catch (error) {
     console.error('Error fetching failed actions:', error);
@@ -342,10 +323,8 @@ router.get('/action-logs/failed', async (req, res) => {
  */
 router.get('/action-logs/high-confidence', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const { confidenceThreshold = 0.8, limit = 20 } = req.query;
     const logs = await AutonomousAIControllerService.getHighConfidenceActions(
-      organizationId!,
       Number(confidenceThreshold),
       Number(limit)
     );
@@ -363,10 +342,8 @@ router.get('/action-logs/high-confidence', async (req, res) => {
  */
 router.get('/action-logs/stats/daily', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const { date } = req.query;
     const stats = await AutonomousAIControllerService.getDailyStats(
-      organizationId!,
       date ? new Date(date as string) : new Date()
     );
     res.json({ success: true, data: stats });
@@ -383,10 +360,8 @@ router.get('/action-logs/stats/daily', async (req, res) => {
  */
 router.get('/action-logs/stats/success-rate', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const { startDate, endDate } = req.query;
     const stats = await AutonomousAIControllerService.getSuccessRate(
-      organizationId!,
       new Date(startDate as string),
       new Date(endDate as string)
     );
@@ -404,10 +379,8 @@ router.get('/action-logs/stats/success-rate', async (req, res) => {
  */
 router.get('/action-logs/stats/performance', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const { days = 30 } = req.query;
     const metrics = await AutonomousAIControllerService.getPerformanceMetrics(
-      organizationId!,
       Number(days)
     );
     res.json({ success: true, data: metrics });
@@ -424,9 +397,8 @@ router.get('/action-logs/stats/performance', async (req, res) => {
  */
 router.post('/action-logs/clean', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const { daysToKeep = 90 } = req.body;
-    const deletedCount = await AutonomousAIControllerService.cleanOldLogs(organizationId!, daysToKeep);
+    const deletedCount = await AutonomousAIControllerService.cleanOldLogs(daysToKeep);
     res.json({ success: true, data: { deletedCount } });
   } catch (error) {
     console.error('Error cleaning old logs:', error);
@@ -441,10 +413,8 @@ router.post('/action-logs/clean', async (req, res) => {
  */
 router.post('/action-logs/export', async (req, res) => {
   try {
-    const organizationId = req.user?.organization?.toString();
     const { startDate, endDate } = req.body;
     const logs = await AutonomousAIControllerService.exportLogs(
-      organizationId!,
       new Date(startDate),
       new Date(endDate)
     );

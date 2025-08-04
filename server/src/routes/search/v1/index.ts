@@ -8,19 +8,11 @@ const router = express.Router();
 
 // /api/v1/search
 router.post("/", authenticateJWT, validateRequest(searchGoogleDriveFilesSchema), async (req, res) => {
-    const organizationId = req.user!.organization;
-    const userId = req.user!._id.toString();
     const { query, limit = 10, minQualityScore = 0.5 } = req.body;
-
-    if (!organizationId) {
-      return res.status(400).json({ error: "Missing organizationId" });
-    }
 
     try {
       const ragResult = await ragSearch({
         userQuery: query,
-        organizationId: String(organizationId),
-        userId,
         limit,
         minQualityScore
       });

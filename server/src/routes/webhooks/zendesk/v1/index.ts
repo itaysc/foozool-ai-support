@@ -29,12 +29,12 @@ async function validateWebhookHeaders(headers: any) {
 
 router.post('/', authenticateWebhook, validateRequest(zendeskWebhookValidation), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { isValid, organizationId, userId } = await validateWebhookHeaders(req.headers);
+    const { isValid } = await validateWebhookHeaders(req.headers);
     if (!isValid) {
       res.status(401).json({ message: 'Unauthorized' });
       return;
     }
-    const webhookRes = await handleWebhook(req.body,userId, organizationId);
+    const webhookRes = await handleWebhook(req.body);
     res.status(webhookRes.status).json(webhookRes.payload);
   } catch (err) {
     res.status(500).json({ message: 'Internal server error' });

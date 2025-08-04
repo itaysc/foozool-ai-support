@@ -10,25 +10,30 @@ import {
   generateLLMAnswer,
   llmContextSufficiencyCheck
 } from './helpers/googleRagChunks';
+import { UserContextManager } from '../../context/userContext';
 
 /**
  * Main RAG search service: given a user query, use LLM to extract search queries, search Google files, fetch docs, and generate a final answer.
  */
 export async function ragSearch({
   userQuery,
-  organizationId,
-  userId,
   limit = 50,
   minQualityScore = 0.1,
   truncate = true
 }: {
   userQuery: string;
-  organizationId: string;
-  userId: string;
   limit?: number;
   minQualityScore?: number;
   truncate?: boolean;
 }): Promise<{ answer: string; sources: any[]; llmQueries: string[] }> {
+  // Get user ID and organization ID from context
+  const userId = UserContextManager.getCurrentUserId();
+  const organizationId = UserContextManager.getCurrentOrganizationId();
+  
+  if (!userId || !organizationId) {
+    throw new Error('User context not available');
+  }
+  
   const QDRANT_FETCH_LIMIT = 30;
   const WINDOW_SIZE = 2;
   const MAX_CHUNKS = 6;

@@ -12,6 +12,7 @@ import { analyzeSentiment } from '../nlp';
 import { executeAutonomousActions } from '../autonomousAI';
 import { v5 as uuidv5 } from 'uuid';
 import { QDRANT_POINT_NAMESPACE } from '../../qdrant/utils';
+import { UserContextManager } from '../../context/userContext';
 
 const DEFAULT_CONFIDENCE_SCORE = 0.3;
 
@@ -119,8 +120,16 @@ async function extractAndSummarizeTicketComments(similarTickets: any[]): Promise
 /**
  * Main webhook handler for processing Zendesk tickets
  */
-export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId: string, organizationId: string): Promise<IResponse> {
+export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
   try {
+    // Get user ID and organization ID from context
+    const userId = UserContextManager.getCurrentUserId();
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!userId || !organizationId) {
+      throw new Error('User context not available');
+    }
+    
     console.log(`Processing webhook for ticket ${ticket.ticket_id}`);
     
     // Extract ticket payload
@@ -259,7 +268,7 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload, userId:
       ticketId: ticket?.ticket_id,
       error: error.message,
       stack: error.stack,
-      userId
+      userId: UserContextManager.getCurrentUserId() || 'unknown'
     });
     return {
       status: 500,

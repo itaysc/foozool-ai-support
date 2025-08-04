@@ -537,6 +537,87 @@
       ]
     },
     {
+      "name": "📰 News & Market Intelligence",
+      "item": [
+        {
+          "name": "Get Raw News",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/news/{{organization_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "news", "{{organization_id}}"]
+            },
+            "description": "Get raw news articles for an organization (without summarization)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Action Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/news/{{organization_id}}/action-items",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "news", "{{organization_id}}", "action-items"]
+            },
+            "description": "Get actionable insights derived from news analysis"
+          },
+          "response": []
+        },
+        {
+          "name": "Get News Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/news/{{organization_id}}/summary",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "news", "{{organization_id}}", "summary"]
+            },
+            "description": "Get summarized news analysis for an organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Complete News Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/news/{{organization_id}}/full",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "news", "{{organization_id}}", "full"]
+            },
+            "description": "Get complete news data including news, summary, and action items"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "📊 Insights",
       "item": [
         {

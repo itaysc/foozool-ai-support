@@ -4,6 +4,7 @@ import { InsightModel } from '../../schemas/insight.schema';
 import { v4 as uuidv4 } from 'uuid';
 import type { TicketAnalytics, InsightGenerationRequest, QdrantInsightsResult, TicketInsight } from 'src/types/insights';
 import { getRedisClient } from '../redis/client';
+import { UserContextManager } from '../../context/userContext';
 
 export class QdrantAnalyticsService {
   private qdrantService: QdrantService;
@@ -49,7 +50,13 @@ export class QdrantAnalyticsService {
   /**
    * Generate comprehensive analytics from Qdrant data
    */
-  async generateAnalytics(organizationId: string, userId: string, timeRange?: { start: string; end: string }): Promise<TicketAnalytics> {
+  async generateAnalytics(timeRange?: { start: string; end: string }): Promise<TicketAnalytics> {
+    // Get organization ID from context
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      throw new Error('User context not available');
+    }
+    
     const redisKey = `analytics:${organizationId}`;
     try {
       const redis = await getRedisClient();
@@ -172,9 +179,14 @@ export class QdrantAnalyticsService {
   /**
    * Generate AI-powered insights from analytics data
    */
-  async generateInsights(request: InsightGenerationRequest): Promise<QdrantInsightsResult> {
-    // For insights generation, we'll use a system user ID since this is typically a background process
-    const analytics = await this.generateAnalytics(request.organizationId, 'system', request.timeRange);
+  async generateInsights(request: Omit<InsightGenerationRequest, 'organizationId'>): Promise<QdrantInsightsResult> {
+    // Get organization ID from context
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      throw new Error('User context not available');
+    }
+    
+    const analytics = await this.generateAnalytics(request.timeRange);
     
     if (analytics.totalTickets === 0) {
       return {

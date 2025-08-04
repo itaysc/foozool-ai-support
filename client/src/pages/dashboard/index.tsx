@@ -55,12 +55,15 @@ import {
 } from 'recharts';
 import dashboardStore from '@/stores/dashboard.store';
 import { useMainLayoutContext } from '@/context/mainLayout.context';
+import { useAuth } from '@/context/auth.context';
 import TimeRangeSelector from '@/components/TimeRangeSelector';
+import NewsSection from '@/components/news/NewsSection';
 import { format } from 'date-fns';
 
 
 const Dashboard = observer(() => {
   const { setIsLoading } = useMainLayoutContext();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -728,6 +731,13 @@ const Dashboard = observer(() => {
               </Card>
             </Box>
           )}
+        </Box>
+      )}
+
+      {/* News & Market Intelligence Section */}
+      {user?.organization && (
+        <Box mt={4}>
+          <NewsSection organizationId={user.organization} />
         </Box>
       )}
 

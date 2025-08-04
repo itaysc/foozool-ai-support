@@ -17,10 +17,14 @@ export class UserContextManager {
   /**
    * Set user context for the current request
    */
-  static setContext(req: Request, useCache: boolean = true): void {
+  static setContext(req: Request): void {
     if (!req.user) {
       throw new Error('User not found in request');
     }
+
+    // Get useCache from query parameters, default to true
+    // Set to false only if user explicitly sends useCache=false
+    const useCache = req.query.useCache !== 'false';
 
     const context: UserContext = {
       user: req.user,
@@ -101,9 +105,7 @@ export class UserContextManager {
  */
 export const setUserContext = (req: Request, res: any, next: any): void => {
   try {
-    // Get useCache from query parameters, default to true
-    const useCache = req.query.useCache !== 'false';
-    UserContextManager.setContext(req, useCache);
+    UserContextManager.setContext(req);
     next();
   } catch (error) {
     next(error);
