@@ -19,8 +19,19 @@ router.use('/', dashboardSettingsTestRouter);
 router.get('/metrics', async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    // Parse time range from query parameters
+    let timeRange: { start: string; end: string } | undefined;
+    if (start && end) {
+      timeRange = {
+        start: start as string,
+        end: end as string
+      };
+    }
+    
     const dashboardService = new DashboardService();
-    const metrics = await dashboardService.getDashboardMetrics(organizationId);
+    const metrics = await dashboardService.getDashboardMetrics(organizationId, timeRange);
 
     res.status(200).json({
       success: true,
@@ -45,8 +56,19 @@ router.get('/metrics', async (req: Request, res: Response): Promise<void> => {
 router.get('/insights', async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    // Parse time range from query parameters
+    let timeRange: { start: string; end: string } | undefined;
+    if (start && end) {
+      timeRange = {
+        start: start as string,
+        end: end as string
+      };
+    }
+    
     const dashboardService = new DashboardService();
-    const insights = await dashboardService.getDashboardInsights(organizationId);
+    const insights = await dashboardService.getDashboardInsights(organizationId, timeRange);
 
     res.status(200).json({
       success: true,
@@ -71,8 +93,19 @@ router.get('/insights', async (req: Request, res: Response): Promise<void> => {
 router.get('/alerts', async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    // Parse time range from query parameters
+    let timeRange: { start: string; end: string } | undefined;
+    if (start && end) {
+      timeRange = {
+        start: start as string,
+        end: end as string
+      };
+    }
+    
     const dashboardService = new DashboardService();
-    const alerts = await dashboardService.getAlerts(organizationId);
+    const alerts = await dashboardService.getAlerts(organizationId, timeRange);
 
     res.status(200).json({
       success: true,
@@ -110,6 +143,43 @@ router.get('/performance', async (req: Request, res: Response): Promise<void> =>
     res.status(500).json({ 
       success: false,
       error: 'Failed to fetch performance comparison',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route GET /api/v1/insights/dashboard/timeseries
+ * @desc Get time-series data for charts
+ * @access Private
+ */
+router.get('/timeseries', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    // Parse time range from query parameters
+    let timeRange: { start: string; end: string } | undefined;
+    if (start && end) {
+      timeRange = {
+        start: start as string,
+        end: end as string
+      };
+    }
+    
+    const dashboardService = new DashboardService();
+    const timeSeriesData = await dashboardService.getTimeSeriesData(organizationId, timeRange);
+
+    res.status(200).json({
+      success: true,
+      data: timeSeriesData
+    });
+
+  } catch (error) {
+    console.error('Error fetching time-series data:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch time-series data',
       message: (error as Error).message
     });
   }

@@ -57,32 +57,9 @@ export class DashboardService {
   /**
    * Get comprehensive dashboard metrics
    */
-  async getDashboardMetrics(organizationId: string): Promise<DashboardMetrics> {
-    const redisKey = `dashboard:metrics:${organizationId}`;
-    const useCache = UserContextManager.getUseCache();
-    
-    // Try to get from cache first if caching is enabled
-    if (useCache) {
-      try {
-        const redis = await getRedisClient();
-        const cached = await redis.get(redisKey);
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (parsed && typeof parsed.totalTickets === 'number') {
-              console.log(`✅ Returning dashboard metrics for org ${organizationId} from Redis cache`);
-              return parsed;
-            } else {
-              console.warn('⚠️ Cached dashboard metrics is invalid, regenerating...');
-            }
-          } catch (err) {
-            console.error('❌ Error parsing cached dashboard metrics:', err);
-          }
-        }
-      } catch (err) {
-        console.error('❌ Redis error (fetching dashboard metrics):', err);
-      }
-    }
+  async getDashboardMetrics(organizationId: string, timeRange?: { start: string; end: string }): Promise<DashboardMetrics> {
+    // Completely disable caching for dashboard
+    console.log(`🔄 Caching disabled for dashboard metrics`);
 
     // Get current user ID from context
     const userId = UserContextManager.getCurrentUserId();
@@ -90,22 +67,28 @@ export class DashboardService {
       throw new Error('User context not available for analytics');
     }
 
-    // Get organization dashboard settings
-    const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId);
-    const defaultSettings = dashboardSettingsService.getDefaultSettings();
-    const settings = dashboardSettings || defaultSettings;
-
-    // Calculate time range based on settings
-    const timeRange = dashboardSettingsService.calculateTimeRange(settings);
+    // Use provided time range or fall back to organization settings
+    let analyticsTimeRange: { start: string; end: string } | undefined = timeRange;
     
-    console.log(`🔍 Using analytics time range for org ${organizationId}:`, timeRange ? `${timeRange.start} to ${timeRange.end}` : 'all time');
+    if (!analyticsTimeRange) {
+      // Get organization dashboard settings
+      const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId);
+      const defaultSettings = dashboardSettingsService.getDefaultSettings();
+      const settings = dashboardSettings || defaultSettings;
 
-    // Get analytics based on organization settings
-    const analytics = await this.analyticsService.generateAnalytics(organizationId, userId, timeRange || undefined);
+      // Calculate time range based on settings
+      const calculatedTimeRange = dashboardSettingsService.calculateTimeRange(settings);
+      analyticsTimeRange = calculatedTimeRange || undefined;
+    }
+    
+    console.log(`🔍 Using analytics time range for org ${organizationId}:`, analyticsTimeRange ? `${analyticsTimeRange.start} to ${analyticsTimeRange.end}` : 'all time');
+
+    // Get analytics based on time range
+    const analytics = await this.analyticsService.generateAnalytics(organizationId, userId, analyticsTimeRange || undefined);
     
     // Get recent analytics (last 7 days) for comparison if not using all-time
     let recentAnalytics: TicketAnalytics | null = null;
-    if (timeRange) {
+    if (analyticsTimeRange) {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       recentAnalytics = await this.analyticsService.generateAnalytics(organizationId, userId, {
@@ -155,51 +138,19 @@ export class DashboardService {
       highPriorityInsights
     };
 
-    // Cache the result if caching is enabled
-    if (useCache) {
-      try {
-        const redis = await getRedisClient();
-        await redis.set(redisKey, JSON.stringify(metrics), { EX: 3600 }); // Cache for 1 hour
-        console.log(`✅ Cached dashboard metrics for org ${organizationId}`);
-      } catch (err) {
-        console.error('❌ Failed to cache dashboard metrics in Redis:', err);
-      }
-    }
-
+    // No caching - always return fresh data
+    console.log(`✅ Returning fresh dashboard metrics (no caching)`);
     return metrics;
   }
 
   /**
    * Generate AI-powered dashboard insights
    */
-  async getDashboardInsights(organizationId: string): Promise<DashboardInsights> {
-    const redisKey = `dashboard:insights:${organizationId}`;
-    const useCache = UserContextManager.getUseCache();
-    
-    // Try to get from cache first if caching is enabled
-    if (useCache) {
-      try {
-        const redis = await getRedisClient();
-        const cached = await redis.get(redisKey);
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (parsed && Array.isArray(parsed.topIssues)) {
-              console.log(`✅ Returning dashboard insights for org ${organizationId} from Redis cache`);
-              return parsed;
-            } else {
-              console.warn('⚠️ Cached dashboard insights is invalid, regenerating...');
-            }
-          } catch (err) {
-            console.error('❌ Error parsing cached dashboard insights:', err);
-          }
-        }
-      } catch (err) {
-        console.error('❌ Redis error (fetching dashboard insights):', err);
-      }
-    }
+  async getDashboardInsights(organizationId: string, timeRange?: { start: string; end: string }): Promise<DashboardInsights> {
+    // Disable caching for dashboard insights
+    console.log(`🔄 Caching disabled for dashboard insights`);
 
-    const metrics = await this.getDashboardMetrics(organizationId);
+    const metrics = await this.getDashboardMetrics(organizationId, timeRange);
     
     // Get current user ID from context
     const userId = UserContextManager.getCurrentUserId();
@@ -207,7 +158,7 @@ export class DashboardService {
       throw new Error('User context not available for LLM call');
     }
 
-    const analytics = await this.analyticsService.generateAnalytics(organizationId, userId);
+    const analytics = await this.analyticsService.generateAnalytics(organizationId, userId, timeRange);
 
     // Generate AI insights using LLM
     const prompt = `
@@ -281,16 +232,8 @@ ${JSON.stringify(analytics, null, 2)}
       
       const result = JSON.parse(jsonText);
       
-          // Cache the result if caching is enabled
-    if (useCache) {
-      try {
-        const redis = await getRedisClient();
-        await redis.set(redisKey, JSON.stringify(result), { EX: 7200 }); // Cache for 2 hours (insights change less frequently)
-        console.log(`✅ Cached dashboard insights for org ${organizationId}`);
-      } catch (err) {
-        console.error('❌ Failed to cache dashboard insights in Redis:', err);
-      }
-    }
+      // No caching - always return fresh data
+      console.log(`✅ Returning fresh dashboard insights (no caching)`);
       
       return result;
     } catch (error) {
@@ -310,7 +253,7 @@ ${JSON.stringify(analytics, null, 2)}
   /**
    * Get real-time alerts and notifications
    */
-  async getAlerts(organizationId: string): Promise<Array<{
+  async getAlerts(organizationId: string, timeRange?: { start: string; end: string }): Promise<Array<{
     id: string;
     type: 'anomaly' | 'trend' | 'threshold' | 'insight';
     title: string;
@@ -319,34 +262,8 @@ ${JSON.stringify(analytics, null, 2)}
     timestamp: Date;
     actionable: boolean;
   }>> {
-    const redisKey = `dashboard:alerts:${organizationId}`;
-    const useCache = UserContextManager.getUseCache();
-    
-    // Try to get from cache first if caching is enabled (alerts are cached for shorter time as they're more dynamic)
-    if (useCache) {
-      try {
-        const redis = await getRedisClient();
-        const cached = await redis.get(redisKey);
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (parsed && Array.isArray(parsed)) {
-              console.log(`✅ Returning dashboard alerts for org ${organizationId} from Redis cache`);
-              return parsed.map(alert => ({
-                ...alert,
-                timestamp: new Date(alert.timestamp) // Convert back to Date object
-              }));
-            } else {
-              console.warn('⚠️ Cached dashboard alerts is invalid, regenerating...');
-            }
-          } catch (err) {
-            console.error('❌ Error parsing cached dashboard alerts:', err);
-          }
-        }
-      } catch (err) {
-        console.error('❌ Redis error (fetching dashboard alerts):', err);
-      }
-    }
+    // Completely disable caching for dashboard
+    console.log(`🔄 Caching disabled for dashboard alerts`);
 
     // Get current user ID from context
     const userId = UserContextManager.getCurrentUserId();
@@ -427,15 +344,8 @@ ${JSON.stringify(analytics, null, 2)}
       return b.timestamp.getTime() - a.timestamp.getTime();
     });
 
-    // Cache the result
-    try {
-      const redis = await getRedisClient();
-      await redis.set(redisKey, JSON.stringify(sortedAlerts), { EX: 1800 }); // Cache for 30 minutes (alerts are more dynamic)
-      console.log(`✅ Cached dashboard alerts for org ${organizationId}`);
-    } catch (err) {
-      console.error('❌ Failed to cache dashboard alerts in Redis:', err);
-    }
-
+    // No caching - always return fresh data
+    console.log(`✅ Returning fresh dashboard alerts (no caching)`);
     return sortedAlerts;
   }
 
@@ -447,38 +357,8 @@ ${JSON.stringify(analytics, null, 2)}
     previousPeriod: DashboardMetrics;
     improvements: Array<{ metric: string; change: number; direction: 'improved' | 'declined' }>;
   }> {
-    const redisKey = `dashboard:performance:${organizationId}`;
-    
-    // Try to get from cache first
-    try {
-      const redis = await getRedisClient();
-      const cached = await redis.get(redisKey);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.currentPeriod && parsed.previousPeriod) {
-            console.log(`✅ Returning dashboard performance for org ${organizationId} from Redis cache`);
-            return {
-              ...parsed,
-              currentPeriod: {
-                ...parsed.currentPeriod,
-                // Convert any date strings back to Date objects if needed
-              },
-              previousPeriod: {
-                ...parsed.previousPeriod,
-                // Convert any date strings back to Date objects if needed
-              }
-            };
-          } else {
-            console.warn('⚠️ Cached dashboard performance is invalid, regenerating...');
-          }
-        } catch (err) {
-          console.error('❌ Error parsing cached dashboard performance:', err);
-        }
-      }
-    } catch (err) {
-      console.error('❌ Redis error (fetching dashboard performance):', err);
-    }
+    // Completely disable caching for dashboard
+    console.log(`🔄 Caching disabled for dashboard performance`);
 
     // Get current user ID from context
     const userId = UserContextManager.getCurrentUserId();
@@ -535,15 +415,8 @@ ${JSON.stringify(analytics, null, 2)}
       improvements
     };
 
-    // Cache the result
-    try {
-      const redis = await getRedisClient();
-      await redis.set(redisKey, JSON.stringify(performanceData), { EX: 7200 }); // Cache for 2 hours
-      console.log(`✅ Cached dashboard performance for org ${organizationId}`);
-    } catch (err) {
-      console.error('❌ Failed to cache dashboard performance in Redis:', err);
-    }
-
+    // No caching - always return fresh data
+    console.log(`✅ Returning fresh dashboard performance (no caching)`);
     return performanceData;
   }
 
@@ -565,6 +438,312 @@ ${JSON.stringify(analytics, null, 2)}
     } catch (err) {
       console.error('❌ Failed to clear dashboard cache:', err);
     }
+  }
+
+  /**
+   * Get time-series data for charts
+   */
+  async getTimeSeriesData(organizationId: string, timeRange?: { start: string; end: string }): Promise<{
+    volumeData: Array<{ date: string; tickets: number }>;
+    satisfactionData: Array<{ date: string; satisfaction: number }>;
+  }> {
+    // Completely disable caching for dashboard to ensure fresh data
+    const useCache = false;
+    console.log(`🔄 Caching completely disabled for dashboard`);
+    
+    // Skip cache entirely - always fetch fresh data
+    console.log(`🔄 Skipping cache, fetching fresh time-series data`);
+
+    // Get current user ID from context
+    const userId = UserContextManager.getCurrentUserId();
+    if (!userId) {
+      throw new Error('User context not available for analytics');
+    }
+
+    // Use provided time range or fall back to organization settings
+    let analyticsTimeRange: { start: string; end: string } | undefined = timeRange;
+    
+    if (!analyticsTimeRange) {
+      // Get organization dashboard settings
+      const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId);
+      const defaultSettings = dashboardSettingsService.getDefaultSettings();
+      const settings = dashboardSettings || defaultSettings;
+
+      // Calculate time range based on settings
+      const calculatedTimeRange = dashboardSettingsService.calculateTimeRange(settings);
+      analyticsTimeRange = calculatedTimeRange || undefined;
+    }
+
+    // Get real ticket data from Qdrant for time-series analysis
+    console.log(`🔄 Fetching tickets for time range:`, analyticsTimeRange);
+    const tickets = await this.analyticsService['getAllTicketsForOrganization'](organizationId, analyticsTimeRange);
+    console.log(`📊 Found ${tickets.length} tickets for time-series analysis`);
+    
+    // Generate time-series data from real ticket data with adaptive granularity
+    const volumeData: Array<{ date: string; tickets: number }> = [];
+    const satisfactionData: Array<{ date: string; satisfaction: number }> = [];
+
+    // Determine granularity based on time range (following common practices)
+    let granularity: 'minutes' | 'hours' | 'days' = 'days';
+    let intervalMinutes: number = 1440; // Default: 1 day
+    let timeFormat: string = 'MMM dd';
+    
+    if (analyticsTimeRange) {
+      const startDate = new Date(analyticsTimeRange.start);
+      const endDate = new Date(analyticsTimeRange.end);
+      const timeDiffMs = endDate.getTime() - startDate.getTime();
+      const timeDiffMinutes = timeDiffMs / (1000 * 60);
+      const timeDiffHours = timeDiffMinutes / 60;
+      const timeDiffDays = timeDiffHours / 24;
+      
+      console.log(`⏰ Time range received:`, {
+        start: analyticsTimeRange.start,
+        end: analyticsTimeRange.end,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString()
+      });
+      console.log(`⏰ Time range analysis: ${timeDiffMinutes.toFixed(0)} minutes, ${timeDiffHours.toFixed(2)} hours, ${timeDiffDays.toFixed(2)} days`);
+      
+      // Determine optimal granularity based on time range (following common practices)
+      console.log(`🔍 Granularity decision: ${timeDiffMinutes} minutes (${timeDiffMinutes <= 30 ? '≤30' : timeDiffMinutes <= 120 ? '≤120' : timeDiffMinutes <= 480 ? '≤480' : timeDiffHours <= 24 ? '≤24h' : timeDiffDays <= 7 ? '≤7d' : '>7d'})`);
+      
+      if (timeDiffMinutes <= 30) {
+        // 30 minutes or less: 5-minute intervals
+        granularity = 'minutes';
+        intervalMinutes = 5;
+        timeFormat = 'HH:mm';
+        console.log(`📈 Using 5-minute intervals`);
+      } else if (timeDiffMinutes <= 120) {
+        // 2 hours or less: 15-minute intervals
+        granularity = 'minutes';
+        intervalMinutes = 15;
+        timeFormat = 'HH:mm';
+        console.log(`📈 Using 15-minute intervals`);
+      } else if (timeDiffMinutes <= 480) {
+        // 8 hours or less: 30-minute intervals
+        granularity = 'minutes';
+        intervalMinutes = 30;
+        timeFormat = 'HH:mm';
+        console.log(`📈 Using 30-minute intervals`);
+      } else if (timeDiffHours <= 24) {
+        // 24 hours or less: 1-hour intervals
+        granularity = 'hours';
+        intervalMinutes = 60;
+        timeFormat = 'HH:mm';
+        console.log(`📈 Using 1-hour intervals`);
+      } else if (timeDiffDays <= 7) {
+        // 7 days or less: 6-hour intervals
+        granularity = 'hours';
+        intervalMinutes = 360;
+        timeFormat = 'MMM dd HH:mm';
+        console.log(`📈 Using 6-hour intervals`);
+      } else {
+        // More than 7 days: daily intervals
+        granularity = 'days';
+        intervalMinutes = 1440;
+        timeFormat = 'MMM dd';
+        console.log(`📈 Using daily intervals`);
+      }
+    }
+
+    // Group tickets by time granularity
+    const ticketsByTime = new Map<string, any[]>();
+    const satisfactionByTime = new Map<string, { positive: number; negative: number; neutral: number }>();
+
+    tickets.forEach(ticket => {
+      const createdAt = new Date(ticket.payload?.created_at || ticket.payload?.timestamp || Date.now());
+      let timeKey: string;
+      
+      if (granularity === 'minutes') {
+        // Group by custom minute intervals
+        const totalMinutes = createdAt.getHours() * 60 + createdAt.getMinutes();
+        const intervalIndex = Math.floor(totalMinutes / intervalMinutes);
+        const timeSlot = new Date(createdAt);
+        timeSlot.setHours(Math.floor(intervalIndex * intervalMinutes / 60));
+        timeSlot.setMinutes((intervalIndex * intervalMinutes) % 60, 0, 0);
+        timeKey = timeSlot.toISOString();
+      } else if (granularity === 'hours') {
+        if (intervalMinutes === 60) {
+          // Group by hour
+          const timeSlot = new Date(createdAt);
+          timeSlot.setMinutes(0, 0, 0);
+          timeKey = timeSlot.toISOString();
+        } else {
+          // Group by custom hour intervals (e.g., 6-hour intervals)
+          const totalHours = createdAt.getHours() + createdAt.getDate() * 24;
+          const intervalIndex = Math.floor(totalHours / (intervalMinutes / 60));
+          const timeSlot = new Date(createdAt);
+          timeSlot.setDate(Math.floor(intervalIndex * (intervalMinutes / 60) / 24) + 1);
+          timeSlot.setHours((intervalIndex * (intervalMinutes / 60)) % 24, 0, 0);
+          timeKey = timeSlot.toISOString();
+        }
+      } else {
+        // Group by day
+        timeKey = createdAt.toISOString().split('T')[0];
+      }
+      
+      if (!ticketsByTime.has(timeKey)) {
+        ticketsByTime.set(timeKey, []);
+        satisfactionByTime.set(timeKey, { positive: 0, negative: 0, neutral: 0 });
+      }
+      
+      ticketsByTime.get(timeKey)!.push(ticket);
+      
+      // Track sentiment for satisfaction calculation
+      const sentiment = ticket.payload?.sentiment || 'neutral';
+      const current = satisfactionByTime.get(timeKey)!;
+      current[sentiment as keyof typeof current]++;
+    });
+
+    // Generate data points for the time range
+    if (analyticsTimeRange) {
+      const startDate = new Date(analyticsTimeRange.start);
+      const endDate = new Date(analyticsTimeRange.end);
+      const timeDiffMs = endDate.getTime() - startDate.getTime();
+      const timeDiffMinutes = timeDiffMs / (1000 * 60);
+      
+      let currentDate = new Date(startDate);
+      const maxPoints = Math.ceil(timeDiffMinutes / intervalMinutes) + 1;
+      let pointCount = 0;
+      
+      while (currentDate <= endDate && pointCount < maxPoints) {
+        let timeKey: string;
+        let displayTime: string;
+        
+        if (granularity === 'minutes') {
+          // Create custom minute intervals
+          const totalMinutes = currentDate.getHours() * 60 + currentDate.getMinutes();
+          const intervalIndex = Math.floor(totalMinutes / intervalMinutes);
+          const timeSlot = new Date(currentDate);
+          timeSlot.setHours(Math.floor(intervalIndex * intervalMinutes / 60));
+          timeSlot.setMinutes((intervalIndex * intervalMinutes) % 60, 0, 0);
+          timeKey = timeSlot.toISOString();
+          
+          // Format display time based on interval
+          if (intervalMinutes < 60) {
+            displayTime = timeSlot.toLocaleTimeString('en-US', { 
+              hour: '2-digit', 
+              minute: '2-digit',
+              hour12: false 
+            });
+          } else {
+            displayTime = timeSlot.toLocaleTimeString('en-US', { 
+              hour: '2-digit',
+              hour12: false 
+            });
+          }
+        } else if (granularity === 'hours') {
+          if (intervalMinutes === 60) {
+            // Create hourly intervals
+            const timeSlot = new Date(currentDate);
+            timeSlot.setMinutes(0, 0, 0);
+            timeKey = timeSlot.toISOString();
+            displayTime = timeSlot.toLocaleTimeString('en-US', { 
+              hour: '2-digit',
+              hour12: false 
+            });
+          } else {
+            // Create custom hour intervals (e.g., 6-hour intervals)
+            const totalHours = currentDate.getHours() + currentDate.getDate() * 24;
+            const intervalIndex = Math.floor(totalHours / (intervalMinutes / 60));
+            const timeSlot = new Date(currentDate);
+            timeSlot.setDate(Math.floor(intervalIndex * (intervalMinutes / 60) / 24) + 1);
+            timeSlot.setHours((intervalIndex * (intervalMinutes / 60)) % 24, 0, 0);
+            timeKey = timeSlot.toISOString();
+            displayTime = timeSlot.toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric' 
+            }) + ' ' + timeSlot.toLocaleTimeString('en-US', { 
+              hour: '2-digit',
+              hour12: false 
+            });
+          }
+        } else {
+          // Create daily intervals
+          timeKey = currentDate.toISOString().split('T')[0];
+          displayTime = currentDate.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+          });
+        }
+        
+        const timeTickets = ticketsByTime.get(timeKey) || [];
+        const timeSentiment = satisfactionByTime.get(timeKey) || { positive: 0, negative: 0, neutral: 0 };
+        
+        // Calculate satisfaction score for this time period
+        const totalTimeTickets = timeSentiment.positive + timeSentiment.negative + timeSentiment.neutral;
+        const satisfaction = totalTimeTickets > 0 ? 
+          (timeSentiment.positive / totalTimeTickets) * 100 : 0;
+        
+        volumeData.push({
+          date: displayTime,
+          tickets: timeTickets.length
+        });
+        
+        satisfactionData.push({
+          date: displayTime,
+          satisfaction: Math.round(satisfaction)
+        });
+        
+        // Move to next time interval
+        if (granularity === 'minutes') {
+          currentDate.setMinutes(currentDate.getMinutes() + intervalMinutes);
+        } else if (granularity === 'hours') {
+          currentDate.setHours(currentDate.getHours() + (intervalMinutes / 60));
+        } else {
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+        
+        pointCount++;
+      }
+    } else {
+      // If no time range, create a simple 7-day view with daily granularity
+      for (let i = 6; i >= 0; i--) {
+        const currentDate = new Date();
+        currentDate.setDate(currentDate.getDate() - i);
+        
+        const dateStr = currentDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        
+        const dateKey = currentDate.toISOString().split('T')[0];
+        const dayTickets = ticketsByTime.get(dateKey) || [];
+        const daySentiment = satisfactionByTime.get(dateKey) || { positive: 0, negative: 0, neutral: 0 };
+        
+        // Calculate satisfaction score for this day
+        const totalDayTickets = daySentiment.positive + daySentiment.negative + daySentiment.neutral;
+        const satisfaction = totalDayTickets > 0 ? 
+          (daySentiment.positive / totalDayTickets) * 100 : 0;
+        
+        volumeData.push({
+          date: dateStr,
+          tickets: dayTickets.length
+        });
+        
+        satisfactionData.push({
+          date: dateStr,
+          satisfaction: Math.round(satisfaction)
+        });
+      }
+    }
+
+    const timeSeriesData = {
+      volumeData,
+      satisfactionData
+    };
+
+    console.log(`📊 Generated time-series data:`, {
+      volumeDataPoints: volumeData.length,
+      satisfactionDataPoints: satisfactionData.length,
+      granularity,
+      timeRange: analyticsTimeRange
+    });
+
+    // No caching - always return fresh data
+    console.log(`✅ Returning fresh time-series data (no caching)`);
+
+    return timeSeriesData;
   }
 
   /**

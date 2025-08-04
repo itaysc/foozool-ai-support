@@ -223,4 +223,8 @@ export interface DashboardData {
   insights: DashboardInsights;
   alerts: DashboardAlert[];
   performance: PerformanceComparison;
+  timeSeriesData?: {
+    volumeData: Array<{ date: string; tickets: number }>;
+    satisfactionData: Array<{ date: string; satisfaction: number }>;
+  };
 } 

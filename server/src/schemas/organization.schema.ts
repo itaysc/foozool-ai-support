@@ -52,6 +52,8 @@ const OrganizationSchema: Schema = new Schema<IOrganization>({
   externalId: String,
   notes: [String],
   tags: [String],
+  country: String,
+  regions: [String],
   url: String,
   contact: {
     name: String,

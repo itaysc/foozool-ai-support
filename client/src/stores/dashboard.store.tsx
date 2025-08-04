@@ -13,6 +13,10 @@ class DashboardStore {
   insights: DashboardInsights | null = null;
   alerts: DashboardAlert[] = [];
   performance: PerformanceComparison | null = null;
+  timeSeriesData: {
+    volumeData: Array<{ date: string; tickets: number }>;
+    satisfactionData: Array<{ date: string; satisfaction: number }>;
+  } | null = null;
   isLoading = false;
   error: string | null = null;
   lastUpdated: Date | null = null;
@@ -45,15 +49,22 @@ class DashboardStore {
     this.performance = performance;
   };
 
+  setTimeSeriesData = (timeSeriesData: {
+    volumeData: Array<{ date: string; tickets: number }>;
+    satisfactionData: Array<{ date: string; satisfaction: number }>;
+  }) => {
+    this.timeSeriesData = timeSeriesData;
+  };
+
   setLastUpdated = (date: Date) => {
     this.lastUpdated = date;
   };
 
-  fetchMetrics = async () => {
+  fetchMetrics = async (timeRange?: { start: string; end: string }) => {
     try {
       this.setLoading(true);
       this.setError(null);
-      const metrics = await dashboardService.getMetrics();
+      const metrics = await dashboardService.getMetrics(timeRange);
       runInAction(() => {
         this.setMetrics(metrics);
         this.setLastUpdated(new Date());
@@ -69,11 +80,11 @@ class DashboardStore {
     }
   };
 
-  fetchInsights = async () => {
+  fetchInsights = async (timeRange?: { start: string; end: string }) => {
     try {
       this.setLoading(true);
       this.setError(null);
-      const insights = await dashboardService.getInsights();
+      const insights = await dashboardService.getInsights(timeRange);
       runInAction(() => {
         this.setInsights(insights);
         this.setLastUpdated(new Date());
@@ -89,11 +100,11 @@ class DashboardStore {
     }
   };
 
-  fetchAlerts = async () => {
+  fetchAlerts = async (timeRange?: { start: string; end: string }) => {
     try {
       this.setLoading(true);
       this.setError(null);
-      const alerts = await dashboardService.getAlerts();
+      const alerts = await dashboardService.getAlerts(timeRange);
       runInAction(() => {
         this.setAlerts(alerts);
         this.setLastUpdated(new Date());
@@ -129,19 +140,32 @@ class DashboardStore {
     }
   };
 
-  fetchAllDashboardData = async () => {
+  fetchAllDashboardData = async (timeRange?: { start: string; end: string }) => {
     try {
+      console.log('🔄 Fetching dashboard data with time range:', timeRange);
       this.setLoading(true);
       this.setError(null);
-      const data: DashboardData = await dashboardService.getAllDashboardData();
+      const data: DashboardData = await dashboardService.getAllDashboardData(timeRange);
+      console.log('📊 Received dashboard data:', data);
       runInAction(() => {
         this.setMetrics(data.metrics);
         this.setInsights(data.insights);
         this.setAlerts(data.alerts);
         this.setPerformance(data.performance);
+        if (data.timeSeriesData) {
+          console.log('📈 Setting time series data:', data.timeSeriesData);
+          console.log('📊 Volume data points:', data.timeSeriesData.volumeData.length);
+          console.log('📊 Satisfaction data points:', data.timeSeriesData.satisfactionData.length);
+          console.log('📊 First volume point:', data.timeSeriesData.volumeData[0]);
+          console.log('📊 Last volume point:', data.timeSeriesData.volumeData[data.timeSeriesData.volumeData.length - 1]);
+          this.setTimeSeriesData(data.timeSeriesData);
+        } else {
+          console.log('⚠️ No time series data received');
+        }
         this.setLastUpdated(new Date());
       });
     } catch (error: any) {
+      console.error('❌ Error fetching dashboard data:', error);
       runInAction(() => {
         this.setError(error.message || 'Failed to fetch dashboard data');
       });
@@ -157,6 +181,7 @@ class DashboardStore {
     this.insights = null;
     this.alerts = [];
     this.performance = null;
+    this.timeSeriesData = null;
     this.error = null;
     this.lastUpdated = null;
   };

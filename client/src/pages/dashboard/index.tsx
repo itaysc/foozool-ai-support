@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { observer } from 'mobx-react';
 import { toJS } from 'mobx';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -54,10 +55,20 @@ import {
 } from 'recharts';
 import dashboardStore from '@/stores/dashboard.store';
 import { useMainLayoutContext } from '@/context/mainLayout.context';
+import TimeRangeSelector from '@/components/TimeRangeSelector';
+import { format } from 'date-fns';
 
 
 const Dashboard = observer(() => {
   const { setIsLoading } = useMainLayoutContext();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  const [timeRange, setTimeRange] = useState<{
+    start: Date;
+    end: Date;
+    label: string;
+  } | undefined>(undefined);
 
   // Debug: Log the metrics data structure
   React.useEffect(() => {
@@ -74,7 +85,34 @@ const Dashboard = observer(() => {
     }
   }, [dashboardStore.metrics]);
 
+  // Initialize time range from URL params on mount
   useEffect(() => {
+    const startParam = searchParams.get('start');
+    const endParam = searchParams.get('end');
+    const labelParam = searchParams.get('label');
+    
+    if (startParam && endParam) {
+      // Convert yyyy-mm-dd format to Date objects
+      const startDate = new Date(startParam + 'T00:00:00');
+      const endDate = new Date(endParam + 'T23:59:59');
+      
+      if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+        setTimeRange({
+          start: startDate,
+          end: endDate,
+          label: labelParam || `${format(startDate, 'yyyy-MM-dd')} - ${format(endDate, 'yyyy-MM-dd')}`
+        });
+        
+        // Fetch data with the time range from URL (convert to ISO strings for API)
+        dashboardStore.fetchAllDashboardData({
+          start: startDate.toISOString(),
+          end: endDate.toISOString()
+        });
+        return;
+      }
+    }
+    
+    // Default fetch if no valid time range in URL
     const fetchData = async () => {
       setIsLoading(true);
       await dashboardStore.fetchAllDashboardData();
@@ -82,12 +120,47 @@ const Dashboard = observer(() => {
     };
 
     fetchData();
-  }, [setIsLoading]);
+  }, [setIsLoading, searchParams]);
 
   const handleRefresh = async () => {
     setIsLoading(true);
     await dashboardStore.fetchAllDashboardData();
     setIsLoading(false);
+  };
+
+  const handleTimeRangeChange = (newTimeRange: {
+    start: Date;
+    end: Date;
+    label: string;
+  }) => {
+    console.log('🔄 Time range changed:', newTimeRange);
+    setTimeRange(newTimeRange);
+    
+    // Convert dates to yyyy-mm-dd format for URL
+    const startDate = format(newTimeRange.start, 'yyyy-MM-dd');
+    const endDate = format(newTimeRange.end, 'yyyy-MM-dd');
+    
+    // For API calls, use full ISO strings
+    const startISO = newTimeRange.start.toISOString();
+    const endISO = newTimeRange.end.toISOString();
+    
+    console.log('📅 API time range:', { start: startISO, end: endISO });
+    
+    // Update URL parameters with date format
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('start', startDate);
+    newSearchParams.set('end', endDate);
+    newSearchParams.set('label', newTimeRange.label);
+    setSearchParams(newSearchParams);
+    
+    // Clear existing data to force fresh fetch and prevent caching issues
+    dashboardStore.clearData();
+    
+    // Update dashboard data with new time range (using ISO strings for API)
+    dashboardStore.fetchAllDashboardData({
+      start: startISO,
+      end: endISO
+    });
   };
 
   const getTrendIcon = (trend: string) => {
@@ -164,6 +237,13 @@ const Dashboard = observer(() => {
           </Tooltip>
         </Box>
       </Box>
+
+      {/* Time Range Selector */}
+      <TimeRangeSelector 
+        onTimeRangeChange={handleTimeRangeChange}
+        currentTimeRange={timeRange}
+        key={timeRange?.label || 'default'}
+      />
 
       {/* Alerts Section */}
       {dashboardStore.alerts.length > 0 && (
@@ -378,7 +458,7 @@ const Dashboard = observer(() => {
                     
                     return (
                       <BarChart 
-                        data={intentsData}
+                        data={toJS(intentsData)}
                         margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" />
@@ -413,7 +493,7 @@ const Dashboard = observer(() => {
       <Box display="flex" flexWrap="wrap" gap={3} mb={3}>
         {/* Volume Trend */}
         {dashboardStore.metrics && (
-          <Box flex="1 1 400px" minWidth="400px">
+          <Box flex="1 1 500px" minWidth="500px">
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
@@ -422,12 +502,64 @@ const Dashboard = observer(() => {
                   </Typography>
                   {getTrendIcon(dashboardStore.metrics.volumeTrend)}
                 </Box>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography variant="h4">
-                    {dashboardStore.metrics.volumeTrend.charAt(0).toUpperCase() + dashboardStore.metrics.volumeTrend.slice(1)}
-                  </Typography>
-                </Box>
-                <Typography color="text.secondary">
+                                 <ResponsiveContainer width="100%" height={250}>
+                   {dashboardStore.isLoading ? (
+                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                       <CircularProgress size={40} />
+                     </Box>
+                   ) : dashboardStore.timeSeriesData ? (
+                     <LineChart 
+                       key={`volume-${dashboardStore.lastUpdated?.getTime()}-${dashboardStore.timeSeriesData?.volumeData.length || 0}`}
+                       data={toJS(dashboardStore.timeSeriesData.volumeData)}
+                     >
+                       <CartesianGrid strokeDasharray="3 3" />
+                       <XAxis 
+                         dataKey="date" 
+                         tick={{ fontSize: 12 }}
+                         interval="preserveStartEnd"
+                       />
+                       <YAxis 
+                         tick={{ fontSize: 12 }}
+                         domain={['dataMin - 10', 'dataMax + 10']}
+                       />
+                       <RechartsTooltip 
+                         formatter={(value) => [`${value} tickets`, 'Volume']}
+                         labelFormatter={(label) => {
+                           // Check if the label contains time (HH:mm format)
+                           if (label && typeof label === 'string') {
+                             if (label.includes(':')) {
+                               // Time format (HH:mm) - show as "Jul 08 12:00"
+                               // Use the time range start date to get the correct date
+                               const startDate = timeRange?.start || new Date();
+                               const [hours, minutes] = label.split(':');
+                               const date = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), parseInt(hours), parseInt(minutes));
+                               return `Date: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${label}`;
+                             } else {
+                               // Date format (MMM dd) - show as "Jul 08"
+                               return `Date: ${label}`;
+                             }
+                           }
+                           return `Date: ${label}`;
+                         }}
+                       />
+                       <Line 
+                         type="monotone" 
+                         dataKey="tickets" 
+                         stroke="#8884d8" 
+                         strokeWidth={2}
+                         dot={{ fill: '#8884d8', strokeWidth: 2, r: 4 }}
+                         activeDot={{ r: 6, stroke: '#8884d8', strokeWidth: 2 }}
+                       />
+                     </LineChart>
+                   ) : (
+                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                       <Typography variant="body2" color="text.secondary">
+                         No volume data available
+                       </Typography>
+                     </Box>
+                   )}
+                 </ResponsiveContainer>
+                <Typography color="text.secondary" align="center" mt={1}>
                   Ticket volume is {dashboardStore.metrics.volumeTrend}
                 </Typography>
               </CardContent>
@@ -437,7 +569,7 @@ const Dashboard = observer(() => {
 
         {/* Satisfaction Trend */}
         {dashboardStore.metrics && (
-          <Box flex="1 1 400px" minWidth="400px">
+          <Box flex="1 1 500px" minWidth="500px">
             <Card>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
@@ -446,12 +578,65 @@ const Dashboard = observer(() => {
                   </Typography>
                   {getTrendIcon(dashboardStore.metrics.satisfactionTrend)}
                 </Box>
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography variant="h4">
-                    {dashboardStore.metrics.satisfactionTrend.charAt(0).toUpperCase() + dashboardStore.metrics.satisfactionTrend.slice(1)}
-                  </Typography>
-                </Box>
-                <Typography color="text.secondary">
+                                 <ResponsiveContainer width="100%" height={250}>
+                   {dashboardStore.isLoading ? (
+                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                       <CircularProgress size={40} />
+                     </Box>
+                   ) : dashboardStore.timeSeriesData ? (
+                     <LineChart 
+                       key={`satisfaction-${dashboardStore.lastUpdated?.getTime()}-${dashboardStore.timeSeriesData?.satisfactionData.length || 0}`}
+                       data={toJS(dashboardStore.timeSeriesData.satisfactionData)}
+                     >
+                       <CartesianGrid strokeDasharray="3 3" />
+                       <XAxis 
+                         dataKey="date" 
+                         tick={{ fontSize: 12 }}
+                         interval="preserveStartEnd"
+                       />
+                       <YAxis 
+                         tick={{ fontSize: 12 }}
+                         domain={[0, 100]}
+                         tickFormatter={(value) => `${value}%`}
+                       />
+                       <RechartsTooltip 
+                         formatter={(value) => [`${value}%`, 'Satisfaction']}
+                         labelFormatter={(label) => {
+                           // Check if the label contains time (HH:mm format)
+                           if (label && typeof label === 'string') {
+                             if (label.includes(':')) {
+                               // Time format (HH:mm) - show as "Jul 08 12:00"
+                               // Use the time range start date to get the correct date
+                               const startDate = timeRange?.start || new Date();
+                               const [hours, minutes] = label.split(':');
+                               const date = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), parseInt(hours), parseInt(minutes));
+                               return `Date: ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} ${label}`;
+                             } else {
+                               // Date format (MMM dd) - show as "Jul 08"
+                               return `Date: ${label}`;
+                             }
+                           }
+                           return `Date: ${label}`;
+                         }}
+                       />
+                       <Line 
+                         type="monotone" 
+                         dataKey="satisfaction" 
+                         stroke="#82ca9d" 
+                         strokeWidth={2}
+                         dot={{ fill: '#82ca9d', strokeWidth: 2, r: 4 }}
+                         activeDot={{ r: 6, stroke: '#82ca9d', strokeWidth: 2 }}
+                       />
+                     </LineChart>
+                   ) : (
+                     <Box display="flex" alignItems="center" justifyContent="center" height="100%">
+                       <Typography variant="body2" color="text.secondary">
+                         No satisfaction data available
+                       </Typography>
+                     </Box>
+                   )}
+                 </ResponsiveContainer>
+                <Typography color="text.secondary" align="center" mt={1}>
                   Customer satisfaction is {dashboardStore.metrics.satisfactionTrend}
                 </Typography>
               </CardContent>

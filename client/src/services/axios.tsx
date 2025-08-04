@@ -27,16 +27,19 @@ const processQueue = (error: any, token: string | null = null) => {
 
 export async function refreshToken() {
   try {
+    console.log('🔄 Making refresh token request...');
     // Use a separate axios instance for refresh token to avoid interceptor conflicts
     const refreshInstance = axios.create({
       withCredentials: true,
-      baseURL: import.meta.env.VITE_API_URL
+      baseURL: config.apiUrl // Use the same base URL as the main instance
     });
     
     const response = await refreshInstance.post('/auth/refresh-token', {});
+    console.log('🔄 Refresh token response:', response.data);
     
     return response.data; // Return the full response data
   } catch (err: any) {
+    console.error('❌ Refresh token error:', err.response?.status, err.response?.data);
     // Check if it's a 401 or 403 error (invalid refresh token)
     if (err.response?.status === 401 || err.response?.status === 403) {
       return { success: false, message: 'Invalid refresh token' };
@@ -76,15 +79,25 @@ instance.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        console.log('🔄 Attempting to refresh token...');
         const result = await refreshToken();
+        console.log('🔄 Refresh token result:', result);
         
         if (result.success) {
+          console.log('✅ Token refresh successful, retrying original request...');
+          console.log('🍪 Checking if cookies are available...');
+          
+          // Add a small delay to ensure the cookie is set
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           // Process queued requests
           processQueue(null, null);
           
           // Retry the original request (cookies will be sent automatically)
+          console.log('🔄 Retrying original request:', originalRequest.url);
           return instance(originalRequest);
         } else {
+          console.log('❌ Token refresh failed:', result.message);
           // Refresh failed, but only redirect if it's an invalid token error
           processQueue(error, null);
           if (result.message === 'Invalid refresh token') {

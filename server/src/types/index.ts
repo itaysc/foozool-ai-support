@@ -12,6 +12,7 @@ export { IAgentSuggestion } from './agentSuggestion';
 export { ICreateTicketPayload } from './zendesk/createTicketPayload';
 export { IZendeskTicketComment } from './zendesk/zendeskTicketComment';
 export { ITicketSearchResult } from './zendesk/ticketSearchResult';
+export { Region } from './region';
 
 // Autonomous AI Types
 export * from './autonomousAI';

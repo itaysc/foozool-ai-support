@@ -1,3 +1,4 @@
+import { Region } from "./region";
 
 export interface OrganizationContact {
   name?: string;
@@ -48,6 +49,8 @@ export interface DashboardSettings {
 export interface IOrganization {
   _id?: string;
   name: string;
+  country?: string;
+  regions?: Region[];
   signature: string;
   details?: string;
   externalId?: string;

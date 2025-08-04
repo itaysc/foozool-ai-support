@@ -17,3 +17,4 @@ export * from './insights';
 export * from './LLMPrice';
 export * from './agentSuggestion';
 export * from './esTicket';
+export * from './region';

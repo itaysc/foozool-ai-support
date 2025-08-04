@@ -1,0 +1,16 @@
+export type Region =
+'EMEA'
+| 'APAC'
+| 'LATAM'
+| 'NAM'
+| 'SAM'
+| 'MEA'
+| 'CIS'
+| 'ANZ'
+| 'ASEAN'
+| 'DACH'
+| 'BENELUX'
+| 'NORDICS'
+| 'CEE'
+| 'MENA'
+| 'Global';

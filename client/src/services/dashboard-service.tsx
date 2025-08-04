@@ -16,10 +16,25 @@ const dashboardService = {
   /**
    * Get comprehensive dashboard metrics
    */
-  async getMetrics(): Promise<DashboardMetrics> {
+  async getMetrics(timeRange?: { start: string; end: string }): Promise<DashboardMetrics> {
     try {
-      const response = await axios.get(getRoute('metrics'), {
-        params: { useCache: false }
+      const params: any = { 
+        useCache: false,
+        noCache: true,
+        _t: Date.now()
+      };
+      if (timeRange) {
+        params.start = timeRange.start;
+        params.end = timeRange.end;
+      }
+      
+      const response = await axios.get(getRoute('metrics'), { 
+        params,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
       return response.data.data;
     } catch (error) {
@@ -31,10 +46,25 @@ const dashboardService = {
   /**
    * Get AI-powered dashboard insights
    */
-  async getInsights(): Promise<DashboardInsights> {
+  async getInsights(timeRange?: { start: string; end: string }): Promise<DashboardInsights> {
     try {
-      const response = await axios.get(getRoute('insights'), {
-        params: { useCache: false }
+      const params: any = { 
+        useCache: false,
+        noCache: true,
+        _t: Date.now()
+      };
+      if (timeRange) {
+        params.start = timeRange.start;
+        params.end = timeRange.end;
+      }
+      
+      const response = await axios.get(getRoute('insights'), { 
+        params,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
       return response.data.data;
     } catch (error) {
@@ -46,10 +76,25 @@ const dashboardService = {
   /**
    * Get real-time alerts and notifications
    */
-  async getAlerts(): Promise<DashboardAlert[]> {
+  async getAlerts(timeRange?: { start: string; end: string }): Promise<DashboardAlert[]> {
     try {
-      const response = await axios.get(getRoute('alerts'), {
-        params: { useCache: false }
+      const params: any = { 
+        useCache: false,
+        noCache: true,
+        _t: Date.now()
+      };
+      if (timeRange) {
+        params.start = timeRange.start;
+        params.end = timeRange.end;
+      }
+      
+      const response = await axios.get(getRoute('alerts'), { 
+        params,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
       return response.data.data.map((alert: any) => ({
         ...alert,
@@ -68,7 +113,16 @@ const dashboardService = {
     try {
       console.log('🔍 Dashboard service: Making performance request to:', getRoute('performance'));
       const response = await axios.get(getRoute('performance'), {
-        params: { useCache: false }
+        params: { 
+          useCache: false,
+          noCache: true,
+          _t: Date.now()
+        },
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
       console.log('🔍 Dashboard service: Performance response received');
       return response.data.data;
@@ -79,22 +133,59 @@ const dashboardService = {
   },
 
   /**
+   * Get time-series data for charts
+   */
+  async getTimeSeriesData(timeRange?: { start: string; end: string }): Promise<{
+    volumeData: Array<{ date: string; tickets: number }>;
+    satisfactionData: Array<{ date: string; satisfaction: number }>;
+  }> {
+    try {
+      const params: any = { 
+        useCache: false,
+        noCache: true,
+        _t: Date.now()
+      };
+      if (timeRange) {
+        params.start = timeRange.start;
+        params.end = timeRange.end;
+      }
+      
+      console.log('🔄 Calling time-series endpoint with params:', params);
+      const response = await axios.get(getRoute('timeseries'), { 
+        params,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      console.log('📈 Time-series response:', response.data);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching time-series data:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get all dashboard data in one call
    */
-  async getAllDashboardData(): Promise<DashboardData> {
+  async getAllDashboardData(timeRange?: { start: string; end: string }): Promise<DashboardData> {
     try {
-      const [metrics, insights, alerts, performance] = await Promise.all([
-        this.getMetrics(),
-        this.getInsights(),
-        this.getAlerts(),
-        this.getPerformance()
+      const [metrics, insights, alerts, performance, timeSeriesData] = await Promise.all([
+        this.getMetrics(timeRange),
+        this.getInsights(timeRange),
+        this.getAlerts(timeRange),
+        this.getPerformance(),
+        this.getTimeSeriesData(timeRange)
       ]);
 
       return {
         metrics,
         insights,
         alerts,
-        performance
+        performance,
+        timeSeriesData
       };
     } catch (error) {
       console.error('Error fetching all dashboard data:', error);

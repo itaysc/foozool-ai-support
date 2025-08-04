@@ -7,6 +7,7 @@ import { validateRequest } from '../../../middleware/validateRequest';
 import { getToken } from './validations';
 import { isTokenAboutToExpire, signJwt, setJwtCookie } from './utils';
 import { getUserByEmail } from '../../../services/users/v1';
+import { UserModel } from '../../../schemas/user.schema';
 const router = express.Router();
 
 
@@ -111,7 +112,9 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
         maxAge: 15 * 60 * 1000, // 15 minutes
-        path: '/'
+        path: '/',
+        // Don't set domain in development to allow cross-port cookies
+        domain: process.env.NODE_ENV === 'production' ? undefined : undefined
       }
     });
     
@@ -124,7 +127,9 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/'
+        path: '/',
+        // Don't set domain in development to allow cross-port cookies
+        domain: process.env.NODE_ENV === 'production' ? undefined : undefined
       } 
     });
 
@@ -160,7 +165,7 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
     return;
   }
   try {
-    jwt.verify(refreshToken, config.JWT_SECRET, (err, data) => {
+    jwt.verify(refreshToken, config.JWT_SECRET, async (err, data) => {
       if (err) {
         return res.status(403).json({ 
           success: false, 
@@ -169,8 +174,25 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
       }
       // Only minimal info in refresh token
       const { user } = data as any;
-      // Optionally: fetch user from DB to check if still valid
-      const newAccessToken = signJwt({ user }, { expiresIn: '15m' });
+      
+      // Fetch the full user data from DB to ensure we have the complete user object
+      const fullUser = await UserModel.findById(user.id).lean();
+      if (!fullUser) {
+        return res.status(403).json({ 
+          success: false, 
+          message: 'User not found' 
+        });
+      }
+      
+      // Create new access token with the same payload structure as /token route
+      const newAccessToken = signJwt({ user: fullUser }, { expiresIn: '15m' });
+      
+      // Clear the old access token cookie first
+      res.clearCookie('accessToken', {
+        path: '/',
+        // Don't set domain in development to allow cross-port cookies
+        domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+      });
       
       // Set new access token as secure httpOnly cookie
       setJwtCookie({ 
@@ -182,10 +204,21 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
           secure: process.env.NODE_ENV === 'production',
           sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
           maxAge: 15 * 60 * 1000, // 15 minutes
-          path: '/'
+          path: '/',
+          // Don't set domain in development to allow cross-port cookies
+          domain: process.env.NODE_ENV === 'production' ? undefined : undefined
         }
       });
       
+      console.log('🔄 Token refreshed successfully, new access token set as cookie');
+      console.log('🍪 Cookie options used:', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        maxAge: 15 * 60 * 1000,
+        path: '/',
+        domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+      });
       res.json({ 
         success: true, 
         message: 'Token refreshed successfully' 
@@ -226,9 +259,17 @@ router.get('/isAuthorized', async (req: Request, res: Response) => {
 });
 
 router.get('/signout', (req: Request, res: Response) => {
-  // Clear both JWT cookies
-  res.clearCookie('accessToken');
-  res.clearCookie('refreshToken');
+  // Clear both JWT cookies with same options as when they were set
+  res.clearCookie('accessToken', {
+    path: '/',
+    // Don't set domain in development to allow cross-port cookies
+    domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+  });
+  res.clearCookie('refreshToken', {
+    path: '/',
+    // Don't set domain in development to allow cross-port cookies
+    domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+  });
   res.status(200).send({ message: 'ok' });
 });
 

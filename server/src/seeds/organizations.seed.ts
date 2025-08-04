@@ -4,7 +4,7 @@ import { OrganizationModel, SeedTrackModel } from "src/schemas";
 const organizationsSeed: IOrganization[] = [
   {
     name: 'demo organization',
-    details: 'demo organization',
+    details: 'Selling electronic goods such as phones, tablets, consoles, batteries and more',
     signature: 'demo',
     url: 'https://demo.com',
     contact: {

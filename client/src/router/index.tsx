@@ -1,5 +1,5 @@
 import AvatarScene from "@/3d";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Test from "@/pages/test";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
@@ -21,7 +21,7 @@ const Router = () => {
                 <Route path="/login" element={<Login />} />                
                 {/* Protected routes with layout */}
                 <Route path="/" element={<Layout />}>
-                    <Route index element={<ProtectedRoute element={<Dashboard />} />} />
+                    <Route index element={<Navigate to="/dashboard" replace />} />
                     <Route path="dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
                     <Route path="settings" element={<ProtectedRoute element={<Settings />} />} />
                 </Route>

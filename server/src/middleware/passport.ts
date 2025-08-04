@@ -25,6 +25,8 @@ function initializeJWTStrategies() {
 
   // Strategy that checks for jwt in the accessToken cookie
   const cookieExtractor = (req: Request) => {
+    console.log('🍪 Available cookies:', Object.keys(req.cookies || {}));
+    console.log('🍪 accessToken cookie:', req.cookies['accessToken'] ? '***PRESENT***' : 'missing');
     return req.cookies['accessToken'] || null;
   };
 
