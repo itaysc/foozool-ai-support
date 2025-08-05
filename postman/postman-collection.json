@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Foozool Support AI API Collection",
-    "description": "Complete API collection for Foozool Support AI - includes both Node.js server and Python ML service endpoints",
+    "name": "TKTAI",
+    "description": "Complete API collection for TKTAI - includes both Node.js server and Python ML service endpoints",
     "version": "1.0.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -1555,6 +1555,101 @@
               "response": []
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "🔄 Database Migrations",
+      "item": [
+        {
+          "name": "Run All Migrations",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/migrations/run-all",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "migrations", "run-all"]
+            },
+            "description": "Run all available migrations for the organization. Migrations are idempotent and will not run if already completed."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Specific Migration",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/migrations/run/created-at-to-integer",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "migrations", "run", "created-at-to-integer"]
+            },
+            "description": "Run a specific migration by name. Replace 'created-at-to-integer' with the desired migration name."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Migration Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/migrations/status",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "migrations", "status"]
+            },
+            "description": "Get available migrations and their status for the organization."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Migration History",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/migrations/history",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "migrations", "history"]
+            },
+            "description": "Get detailed migration history for the organization."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Created At Migration",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/migrations/check-created-at",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "migrations", "check-created-at"]
+            },
+            "description": "Check if created_at migration is needed by sampling Qdrant data."
+          },
+          "response": []
         }
       ]
     }

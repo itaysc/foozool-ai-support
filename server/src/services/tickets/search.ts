@@ -38,7 +38,7 @@ export async function knnSearch({
       sentiment_score: result.payload?.sentiment_score || 0,
       sentiment: result.payload?.sentiment || 'neutral',
       customer_id: result.payload?.customer_id || '',
-      created_at: result.payload?.created_at || new Date().toISOString(),
+      created_at: result.payload?.timestamp || (result.payload?.created_at ? new Date(result.payload.created_at).toISOString() : new Date().toISOString()),
       embedding: result.vector || []
     } as IESTicket));
 

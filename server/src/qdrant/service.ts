@@ -283,7 +283,7 @@ export async function processGoogleDriveFiles({
                             chunk_word_count: chunk.wordCount,
                             mime_type: fileMetadata.mimeType || 'text/plain',
                             file_type: fileType,
-                            created_at: fileMetadata.createdTime || new Date().toISOString(),
+                            created_at: fileMetadata.createdTime ? new Date(fileMetadata.createdTime).getTime() : Date.now(),
                             modified_time: fileMetadata.modifiedTime || new Date().toISOString(),
                             processing_timestamp: new Date().toISOString(),
                             embedding_quality_score: chunk.qualityScore,

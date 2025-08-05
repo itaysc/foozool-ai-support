@@ -17,7 +17,7 @@ export const googleFileCollectionConfig = {
         chunk_word_count: 'number', // Word count of chunk
         mime_type: 'string',
         file_type: 'string', // Derived from mime_type (document, spreadsheet, etc.)
-        created_at: 'string', // ISO date string
+        created_at: 'integer', // Unix timestamp in milliseconds
         modified_time: 'string', // ISO date string
         processing_timestamp: 'string', // When the chunk was processed
         embedding_quality_score: 'number', // Quality metric for the embedding
@@ -41,7 +41,7 @@ export interface QdrantGoogleFilePoint {
         chunk_word_count: number;
         mime_type: string;
         file_type: string;
-        created_at: string;
+        created_at: number; // Unix timestamp in milliseconds
         modified_time: string;
         processing_timestamp: string;
         embedding_quality_score: number;
@@ -113,10 +113,10 @@ export const googleFileFilters = {
     byDateRange: (startDate: string, endDate: string) => ({
         must: [
             {
-                key: 'modified_time',
+                key: 'created_at',
                 range: {
-                    gte: startDate,
-                    lte: endDate
+                    gte: new Date(startDate).getTime(),
+                    lte: new Date(endDate).getTime()
                 }
             }
         ]

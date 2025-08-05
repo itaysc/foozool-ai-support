@@ -71,7 +71,8 @@ export async function loadStubData(): Promise<IResponse<any>> {
                         organization: org!._id!.toString(),
                         sentiment_score: sentiment.score,
                         sentiment: sentiment.sentiment,
-                        created_at: createdAt,
+                        created_at: new Date(createdAt).getTime(),
+                        timestamp: new Date(createdAt).toISOString(),
                         tags: [ticket['Product Purchased']]
                     }
                 });
@@ -235,7 +236,8 @@ export async function loadStubData3(): Promise<IResponse<any>> {
                                 organization: org!._id!.toString(),
                                 sentiment_score: sentiment.score,
                                 sentiment: sentiment.sentiment,
-                                created_at: createdAt,
+                                created_at: new Date(createdAt).getTime(),
+                                timestamp: new Date(createdAt).toISOString(),
                                 tags: [intent]
                             }
                         });

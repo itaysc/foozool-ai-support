@@ -589,7 +589,7 @@ ${JSON.stringify(analytics, null, 2)}
 
     tickets.forEach(ticket => {
       const createdAtRaw = ticket.payload?.created_at || ticket.payload?.timestamp;
-      const createdAt = createdAtRaw && typeof createdAtRaw === 'string' ? new Date(createdAtRaw) : new Date();
+      const createdAt = createdAtRaw && typeof createdAtRaw === 'number' ? new Date(createdAtRaw) : new Date();
       let timeKey: string;
       
       if (granularity === 'minutes') {

@@ -47,8 +47,8 @@ export class QdrantAnalyticsService {
         filter.must.push({
           key: 'created_at',
           range: {
-            gte: timeRange.start,
-            lte: timeRange.end
+            gte: new Date(timeRange.start).getTime(),
+            lte: new Date(timeRange.end).getTime()
           }
         });
         console.log(`🔍 Filtering tickets by time range: ${timeRange.start} to ${timeRange.end}`);
@@ -533,7 +533,7 @@ export class QdrantAnalyticsService {
     // Volume spike detection (simplified)
     const recentTickets = tickets.filter(t => {
       const createdAt = t.payload?.created_at;
-      if (!createdAt || typeof createdAt !== 'string') {
+      if (!createdAt || typeof createdAt !== 'number') {
         return false;
       }
       const ticketDate = new Date(createdAt);
@@ -562,10 +562,10 @@ export class QdrantAnalyticsService {
       const aCreatedAt = a.payload?.created_at;
       const bCreatedAt = b.payload?.created_at;
       
-      if (!aCreatedAt || typeof aCreatedAt !== 'string') return -1;
-      if (!bCreatedAt || typeof bCreatedAt !== 'string') return 1;
+      if (!aCreatedAt || typeof aCreatedAt !== 'number') return -1;
+      if (!bCreatedAt || typeof bCreatedAt !== 'number') return 1;
       
-      return new Date(aCreatedAt).getTime() - new Date(bCreatedAt).getTime();
+      return aCreatedAt - bCreatedAt;
     });
 
     const midPoint = Math.floor(sortedTickets.length / 2);
@@ -585,10 +585,10 @@ export class QdrantAnalyticsService {
       const aCreatedAt = a.payload?.created_at;
       const bCreatedAt = b.payload?.created_at;
       
-      if (!aCreatedAt || typeof aCreatedAt !== 'string') return -1;
-      if (!bCreatedAt || typeof bCreatedAt !== 'string') return 1;
+      if (!aCreatedAt || typeof aCreatedAt !== 'number') return -1;
+      if (!bCreatedAt || typeof bCreatedAt !== 'number') return 1;
       
-      return new Date(aCreatedAt).getTime() - new Date(bCreatedAt).getTime();
+      return aCreatedAt - bCreatedAt;
     });
 
     const midPoint = Math.floor(sortedTickets.length / 2);
@@ -614,10 +614,10 @@ export class QdrantAnalyticsService {
       const aCreatedAt = a.payload?.created_at;
       const bCreatedAt = b.payload?.created_at;
       
-      if (!aCreatedAt || typeof aCreatedAt !== 'string') return -1;
-      if (!bCreatedAt || typeof bCreatedAt !== 'string') return 1;
+      if (!aCreatedAt || typeof aCreatedAt !== 'number') return -1;
+      if (!bCreatedAt || typeof bCreatedAt !== 'number') return 1;
       
-      return new Date(aCreatedAt).getTime() - new Date(bCreatedAt).getTime();
+      return aCreatedAt - bCreatedAt;
     });
 
     const midPoint = Math.floor(sortedTickets.length / 2);

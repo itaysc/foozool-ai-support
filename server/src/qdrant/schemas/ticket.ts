@@ -1,6 +1,6 @@
 // Qdrant collection configuration for tickets
 export const ticketCollectionConfig = {
-    name: 'tickets',
+    name: 'tickets_v2',
     vectorConfig: {
         size: 768, // SBERT embedding dimension
         distance: 'Cosine' as const, // Cosine similarity for semantic search
@@ -14,7 +14,8 @@ export const ticketCollectionConfig = {
         sentiment_score: 'number',
         sentiment: 'string',
         customer_id: 'string',
-        created_at: 'string', // ISO date string
+        created_at: 'integer', // Unix timestamp in milliseconds
+        timestamp: 'string', // Original ISO string timestamp
         channel: 'string',
         status: 'string',
         tags: 'array', // array of strings
@@ -31,7 +32,8 @@ export interface QdrantTicketPoint {
         organization: string;
         sentiment_score: number;
         sentiment: string;
-        created_at: string;
+        created_at: number; // Unix timestamp in milliseconds
+        timestamp: string; // Original ISO string timestamp
         tags?: string[];
         intent?: string;
     };
@@ -62,8 +64,8 @@ export const ticketFilters = {
             {
                 key: 'created_at',
                 range: {
-                    gte: startDate,
-                    lte: endDate
+                    gte: new Date(startDate).getTime(),
+                    lte: new Date(endDate).getTime()
                 }
             }
         ]

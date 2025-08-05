@@ -29,7 +29,9 @@ import QdrantService from "./qdrant/service";
 import { googleFileCollectionConfig } from './qdrant/schemas/googleFile';
 import { startAllJobs } from './jobs';
 import searchRoutesV1 from './routes/search/v1';
+import migrationsRoutesV1 from './routes/migrations/v1';
 import { ensureIndexes } from './utils/ensureIndexes';
+import { ticketCollectionConfig } from './qdrant/schemas/ticket';
 
 export interface IServer {
   startServer: (callback: (port: number) => void) => void;
@@ -84,6 +86,7 @@ export default class Server{
       this.app.use('/api/v1/faker', fakerRoutesV1);
       this.app.use('/api/v1/google', googleRoutesV1);
       this.app.use('/api/v1/search', searchRoutesV1);
+      this.app.use('/api/v1/migrations', migrationsRoutesV1);
       // Swagger documentation
       this.app.use('/api/swagger', swaggerRoutesV1);
       
@@ -175,7 +178,7 @@ export default class Server{
 
   public async initQdrant() {
     const qdrantService = new QdrantService();
-    await qdrantService.createCollection({ collectionName: 'tickets', vectorSize: 768 });
+    await qdrantService.createCollection({ collectionName: ticketCollectionConfig.name, vectorSize: 768 });
     await qdrantService.createCollection({
       collectionName: googleFileCollectionConfig.name,
       vectorSize: googleFileCollectionConfig.vectorConfig.size,
@@ -192,12 +195,12 @@ export default class Server{
       field_schema: 'float'
     });
     // Create index for created_at for date range filtering in tickets collection
-    await qdrantService.client.createPayloadIndex('tickets', {
+    await qdrantService.client.createPayloadIndex(ticketCollectionConfig.name, {
       field_name: 'created_at',
       field_schema: 'integer'
     });
     // Create index for organization for filtering in tickets collection
-    await qdrantService.client.createPayloadIndex('tickets', {
+    await qdrantService.client.createPayloadIndex(ticketCollectionConfig.name, {
       field_name: 'organization',
       field_schema: 'keyword'
     });
