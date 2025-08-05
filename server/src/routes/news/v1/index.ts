@@ -1,23 +1,8 @@
 import { Router } from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
-import { validateRequest } from '../../../middleware/validateRequest';
-import { z } from 'zod';
 import { newsService } from '../../../services/news';
 
 const router = Router();
-
-// Validation schemas
-const getNewsSchema = z.object({
-  params: z.object({
-    organizationId: z.string().min(1, 'Organization ID is required')
-  })
-});
-
-const getActionItemsSchema = z.object({
-  params: z.object({
-    organizationId: z.string().min(1, 'Organization ID is required')
-  })
-});
 
 /**
  * GET /api/v1/news/:organizationId
@@ -26,7 +11,6 @@ const getActionItemsSchema = z.object({
 router.get(
   '/:organizationId',
   authenticateJWT,
-  validateRequest(getNewsSchema),
   async (req, res) => {
     try {
       const { organizationId } = req.params;
@@ -61,7 +45,6 @@ router.get(
 router.get(
   '/:organizationId/action-items',
   authenticateJWT,
-  validateRequest(getActionItemsSchema),
   async (req, res) => {
     try {
       const { organizationId } = req.params;
@@ -76,6 +59,7 @@ router.get(
           actionItems: newsData.actionItems,
           count: newsData.actionItems.length,
           organizationId,
+          rssUrl: newsData.rssUrl,
           lastUpdated: new Date().toISOString()
         }
       });
@@ -97,7 +81,6 @@ router.get(
 router.get(
   '/:organizationId/summary',
   authenticateJWT,
-  validateRequest(getNewsSchema),
   async (req, res) => {
     try {
       const { organizationId } = req.params;
@@ -115,6 +98,7 @@ router.get(
             item.relevance === 'high' || item.relevance === 'medium'
           ).length,
           organizationId,
+          rssUrl: newsData.rssUrl,
           lastUpdated: new Date().toISOString()
         }
       });
@@ -136,7 +120,6 @@ router.get(
 router.get(
   '/:organizationId/full',
   authenticateJWT,
-  validateRequest(getNewsSchema),
   async (req, res) => {
     try {
       const { organizationId } = req.params;

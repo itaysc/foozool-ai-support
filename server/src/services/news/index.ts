@@ -53,47 +53,8 @@ export class NewsService {
     // Base Google News RSS URL
     let baseUrl = 'https://news.google.com/rss/search?q=';
     
-    // Build search query based on organization details
-    let searchTerms: string[] = [];
-    
-    // Add organization details/business type
-    if (details) {
-      searchTerms.push(details);
-    }
-    
-    // Add country-specific terms
-    if (country) {
-      searchTerms.push(country);
-    }
-    
-    // Add region-specific terms
-    if (regions && regions.length > 0) {
-      regions.forEach((region: string) => {
-        searchTerms.push(region);
-      });
-    }
-    
-    // Add industry-specific keywords based on details
-    if (details) {
-      const industryKeywords = await this.getIndustryKeywords(details, country || '', regions || [], userId);
-      searchTerms.push(...industryKeywords);
-    }
-    
-    // Add general business impact keywords
-    const impactKeywords = [
-      'supply chain',
-      'raw materials',
-      'price increase',
-      'shortage',
-      'geopolitical',
-      'trade',
-      'tariffs',
-      'inflation',
-      'economic impact',
-      'market trends'
-    ];
-    
-    searchTerms.push(...impactKeywords);
+    // Generate all search terms using LLM
+    const searchTerms = await this.generateSearchTerms(details, country, regions, userId);
     
     // Combine all terms and encode for URL
     const query = searchTerms.join(' OR ');
@@ -103,27 +64,55 @@ export class NewsService {
   }
 
   /**
-   * Get industry-specific keywords based on organization details using LLM
+   * Generate comprehensive search terms for news monitoring using LLM
    */
-  private async getIndustryKeywords(details: string, country: string, regions: string[], userId: string): Promise<string[]> {
+  private async generateSearchTerms(details: string, country: string, regions: string[], userId: string): Promise<string[]> {
     try {
       const prompt = `
-        Based on the following organization details, generate 5-8 relevant industry-specific keywords for news monitoring.
+        Generate comprehensive search terms for news monitoring that will help identify business-impacting news for customer support and operations.
         
         Organization Details: ${details}
         Country: ${country}
         Regions: ${regions.join(', ')}
         
-        Generate keywords that would be relevant for:
-        - Industry-specific news (supply chain, market trends, regulations)
-        - Business impact factors (raw materials, pricing, competition)
-        - Regional/geopolitical factors affecting the business
-        - Technology trends affecting the industry
+        Generate 15-25 search terms that cover:
         
-        Return only the keywords as a JSON array of strings, no explanations:
-        ["keyword1", "keyword2", "keyword3"]
+        1. **Business Operations Impact**:
+           - Supply chain disruptions, logistics issues, manufacturing delays
+           - Raw materials shortages, cost increases, pricing changes
+           - Quality issues, product availability, delivery problems
         
-        Focus on specific, actionable keywords that would help identify relevant news articles.
+        2. **Customer Support Relevance**:
+           - Customer complaints, satisfaction issues, service quality
+           - Delivery delays, product defects, warranty issues
+           - Customer expectations, service standards, support challenges
+        
+        3. **Industry-Specific Factors**:
+           - Industry regulations, compliance requirements, legal changes
+           - Competitor issues, market disruptions, industry trends
+           - Technology changes affecting the business or customers
+        
+        4. **Economic and Regional Factors**:
+           - Inflation, currency fluctuations, economic sanctions
+           - Geopolitical events, trade restrictions, regional conflicts
+           - Local market conditions, regional business climate
+        
+        5. **Digital and Technology Impact**:
+           - E-commerce trends, online shopping behavior
+           - Digital transformation, automation, customer experience
+           - Technology adoption, digital customer support trends
+        
+        Focus on terms that would help identify news that:
+        - Could impact customer support operations
+        - Might affect product availability or quality
+        - Could influence customer expectations or complaints
+        - May require proactive customer communication
+        - Could impact business operations and costs
+        
+        Return only the search terms as a JSON array of strings, no explanations:
+        ["term1", "term2", "term3"]
+        
+        Make terms specific and actionable for business intelligence.
       `;
       
       const response = await callLLM({
@@ -137,33 +126,54 @@ export class NewsService {
       });
       
       const result = response.data || '';
-      let keywords: string[];
+      let searchTerms: string[];
       
       try {
-        keywords = JSON.parse(result);
+        searchTerms = JSON.parse(result);
       } catch (parseError) {
-        console.warn('Failed to parse LLM keywords, using fallback keywords');
-        // Fallback to basic keywords based on common terms
-        const lowerDetails = details.toLowerCase();
-        if (lowerDetails.includes('electronic') || lowerDetails.includes('tech')) {
-          keywords = ['semiconductor', 'chip shortage', 'electronics supply'];
-        } else if (lowerDetails.includes('auto') || lowerDetails.includes('car')) {
-          keywords = ['automotive industry', 'car manufacturing', 'vehicle supply'];
-        } else if (lowerDetails.includes('food') || lowerDetails.includes('beverage')) {
-          keywords = ['food supply', 'agriculture', 'commodity prices'];
-        } else if (lowerDetails.includes('retail') || lowerDetails.includes('store')) {
-          keywords = ['retail industry', 'consumer spending', 'e-commerce'];
-        } else {
-          keywords = ['supply chain', 'market trends', 'industry news'];
-        }
+        console.warn('Failed to parse LLM search terms, using fallback terms');
+        // Fallback to comprehensive business-impacting terms
+        searchTerms = [
+          'supply chain disruption',
+          'customer complaints',
+          'delivery delays',
+          'price increase',
+          'quality issues',
+          'product availability',
+          'customer satisfaction',
+          'logistics problems',
+          'manufacturing delays',
+          'service quality',
+          'inflation impact',
+          'raw materials shortage',
+          'customer expectations',
+          'support challenges',
+          'business operations'
+        ];
       }
       
-      return Array.isArray(keywords) ? keywords : [];
+      return Array.isArray(searchTerms) ? searchTerms : [];
       
     } catch (error) {
-      console.error('Error generating industry keywords:', error);
-      // Return basic fallback keywords
-      return ['supply chain', 'market trends', 'industry news'];
+      console.error('Error generating search terms:', error);
+      // Return comprehensive fallback terms focused on business impact
+      return [
+        'supply chain disruption',
+        'customer complaints',
+        'delivery delays',
+        'price increase',
+        'quality issues',
+        'product availability',
+        'customer satisfaction',
+        'logistics problems',
+        'manufacturing delays',
+        'service quality',
+        'inflation impact',
+        'raw materials shortage',
+        'customer expectations',
+        'support challenges',
+        'business operations'
+      ];
     }
   }
 
@@ -225,13 +235,35 @@ export class NewsService {
           "reasoning": "brief explanation"
         }
         
-        Consider factors like:
-        - Direct impact on the organization's industry
-        - Supply chain implications
-        - Market trends affecting the business
-        - Regulatory changes
-        - Economic factors
-        - Geopolitical events
+        Focus on business impact factors that could affect customer support and operations:
+        
+        **High Relevance Criteria:**
+        - Direct impact on product availability, quality, or delivery
+        - Supply chain disruptions affecting the business
+        - Customer complaints or satisfaction issues in the industry
+        - Regulatory changes affecting operations or compliance
+        - Significant price increases or cost changes
+        - Technology changes affecting customer experience
+        
+        **Medium Relevance Criteria:**
+        - Indirect impact on business operations
+        - Market trends that could influence customer behavior
+        - Economic factors affecting purchasing power
+        - Industry-wide changes or disruptions
+        - Regional events affecting business climate
+        
+        **Low Relevance Criteria:**
+        - General news with minimal business impact
+        - Unrelated industry developments
+        - Events with no direct connection to operations
+        
+        Consider how this news might:
+        - Generate customer complaints or support requests
+        - Affect product delivery or availability
+        - Impact customer expectations or satisfaction
+        - Require proactive customer communication
+        - Influence support team workload or processes
+        - Affect business costs or pricing strategies
         `;
         
         const analysisResponse = await callLLM({
@@ -329,7 +361,7 @@ export class NewsService {
       const actionItemsPrompt = `
         Based on the following news items for an organization that operates in ${organization.details || 'various industries'} 
         in ${organization.country || 'multiple countries'} and regions: ${organization.regions?.join(', ') || 'global'},
-        generate specific action items that the organization should consider.
+        generate specific action items focused on customer support and business operations.
         
         News Items:
         ${relevantItems.map(item => `- ${item.title}: ${item.contentSnippet} (Impact: ${item.impact})`).join('\n')}
@@ -340,18 +372,46 @@ export class NewsService {
             "title": "Action item title",
             "description": "Detailed description of the action needed",
             "priority": "high|medium|low",
-            "category": "supply_chain|market_research|risk_management|strategy|operations",
-            "impact": "Description of potential impact",
-            "suggestedActions": ["specific action 1", "specific action 2"]
+            "category": "customer_support|supply_chain|operations|communication|risk_management|strategy",
+            "impact": "Description of potential impact on business and customers",
+            "suggestedActions": ["specific action 1", "specific action 2", "specific action 3"]
           }
         ]
         
         Focus on actionable insights that can help the organization:
-        - Mitigate risks
-        - Capitalize on opportunities
-        - Prepare for market changes
-        - Optimize operations
-        - Strengthen supply chains
+        
+        **Customer Support Focus:**
+        - Prepare support teams for potential customer complaints
+        - Develop proactive communication strategies
+        - Update customer-facing information and policies
+        - Enhance support processes for new challenges
+        - Train support staff on new issues or policies
+        
+        **Business Operations Focus:**
+        - Mitigate supply chain and delivery risks
+        - Address quality or availability issues
+        - Optimize operations for new market conditions
+        - Prepare for regulatory or compliance changes
+        - Manage cost and pricing implications
+        
+        **Communication Focus:**
+        - Develop customer communication strategies
+        - Update website and marketing materials
+        - Prepare FAQ and support documentation
+        - Plan internal communication to staff
+        
+        **Risk Management Focus:**
+        - Identify and mitigate potential risks
+        - Develop contingency plans
+        - Monitor and track emerging issues
+        - Prepare for worst-case scenarios
+        
+        Prioritize actions that will:
+        - Reduce customer complaints and support workload
+        - Improve customer satisfaction and experience
+        - Protect business operations and reputation
+        - Enable proactive rather than reactive responses
+        - Support long-term business sustainability
         `;
       
       const actionItemsResponse = await callLLM({
@@ -389,6 +449,7 @@ export class NewsService {
     news: ProcessedNewsItem[];
     summary: string;
     actionItems: ActionItem[];
+    rssUrl: string;
   }> {
     try {
       // Get user ID from context
@@ -433,7 +494,8 @@ export class NewsService {
       const result = {
         news: processedNews,
         summary,
-        actionItems
+        actionItems,
+        rssUrl
       };
       
       // Cache for 4 hours
@@ -500,6 +562,7 @@ export class NewsService {
     news: ProcessedNewsItem[];
     summary: string;
     actionItems: ActionItem[];
+    rssUrl: string;
   }> {
     const systemUserId = 'system-news-monitoring';
     
@@ -538,7 +601,8 @@ export class NewsService {
       const result = {
         news: processedNews,
         summary,
-        actionItems
+        actionItems,
+        rssUrl
       };
       
       // Cache for 4 hours

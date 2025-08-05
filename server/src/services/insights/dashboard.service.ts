@@ -85,10 +85,13 @@ export class DashboardService {
     if (analyticsTimeRange) {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      recentAnalytics = await this.analyticsService.generateAnalytics({
+      const recentTimeRange = {
         start: sevenDaysAgo.toISOString(),
         end: new Date().toISOString()
-      });
+      };
+      console.log(`📅 Calculating recent tickets for last 7 days: ${recentTimeRange.start} to ${recentTimeRange.end}`);
+      recentAnalytics = await this.analyticsService.generateAnalytics(recentTimeRange);
+      console.log(`📊 Recent tickets (7 days): ${recentAnalytics.totalTickets}`);
     }
 
     // Get active insights count
@@ -218,11 +221,9 @@ ${JSON.stringify(analytics, null, 2)}
 
     try {
       const responseText = response.data ? sanitizeText(response.data) : '';
-      console.log('LLM Response:', responseText);
       
       // Try to extract JSON from the response
       const jsonText = extractJSONFromText(responseText);
-      console.log('Extracted JSON text:', jsonText);
       
       const result = JSON.parse(jsonText);
       
@@ -272,22 +273,42 @@ ${JSON.stringify(analytics, null, 2)}
     // Get recent analytics
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentAnalytics = await this.analyticsService.generateAnalytics({
+    const recentTimeRange = {
       start: sevenDaysAgo.toISOString(),
       end: new Date().toISOString()
-    });
+    };
+    console.log(`🚨 Alert check: Getting analytics for last 7 days: ${recentTimeRange.start} to ${recentTimeRange.end}`);
+    const recentAnalytics = await this.analyticsService.generateAnalytics(recentTimeRange);
+    console.log(`🚨 Alert check: Recent tickets count: ${recentAnalytics.totalTickets}`);
 
-    // Check for volume spikes
-    if (recentAnalytics.totalTickets > 50) { // Adjust threshold as needed
+    // Check for volume spikes with more reasonable thresholds
+    const volumeThreshold = 100; // Increase threshold to 100 tickets
+    if (recentAnalytics.totalTickets > volumeThreshold) {
+      console.log(`🚨 Creating volume spike alert for ${recentAnalytics.totalTickets} tickets (threshold: ${volumeThreshold})`);
+      
+      // Determine severity based on volume
+      let severity: 'low' | 'medium' | 'high' | 'critical' = 'medium';
+      if (recentAnalytics.totalTickets > 1000) {
+        severity = 'critical';
+      } else if (recentAnalytics.totalTickets > 500) {
+        severity = 'high';
+      } else if (recentAnalytics.totalTickets > 200) {
+        severity = 'medium';
+      } else {
+        severity = 'low';
+      }
+      
       alerts.push({
         id: `volume-spike-${Date.now()}`,
         type: 'anomaly',
         title: 'High Ticket Volume Detected',
         description: `${recentAnalytics.totalTickets} tickets in the last 7 days. Consider increasing support capacity.`,
-        severity: 'medium',
+        severity,
         timestamp: new Date(),
         actionable: true
       });
+    } else {
+      console.log(`✅ Ticket volume (${recentAnalytics.totalTickets}) is within normal range (threshold: ${volumeThreshold})`);
     }
 
     // Check for negative sentiment spike
@@ -412,13 +433,53 @@ ${JSON.stringify(analytics, null, 2)}
         `dashboard:metrics:${organizationId}`,
         `dashboard:insights:${organizationId}`,
         `dashboard:alerts:${organizationId}`,
-        `dashboard:performance:${organizationId}`
+        `dashboard:performance:${organizationId}`,
+        `analytics:${organizationId}` // Also clear analytics cache
       ];
       
       await Promise.all(keys.map(key => redis.del(key)));
       console.log(`✅ Cleared dashboard cache for org ${organizationId}`);
     } catch (err) {
       console.error('❌ Failed to clear dashboard cache:', err);
+    }
+  }
+
+  /**
+   * Debug function to check what's in Qdrant for an organization
+   */
+  async debugOrganizationData(organizationId: string): Promise<{
+    qdrantTickets: number;
+    redisCache: any;
+    organizationExists: boolean;
+  }> {
+    try {
+      // Check Qdrant tickets
+      const analytics = await this.analyticsService.generateAnalytics();
+      const qdrantTickets = analytics.totalTickets;
+      
+      // Check Redis cache
+      let redisCache = null;
+      try {
+        const redis = await getRedisClient();
+        const cached = await redis.get(`analytics:${organizationId}`);
+        if (cached) {
+          redisCache = JSON.parse(cached);
+        }
+      } catch (err) {
+        console.error('Redis error in debug:', err);
+      }
+      
+      // Check if organization exists (you might need to implement this based on your org model)
+      const organizationExists = true; // Placeholder - implement based on your org model
+      
+      return {
+        qdrantTickets,
+        redisCache,
+        organizationExists
+      };
+    } catch (error) {
+      console.error('Error in debug function:', error);
+      throw error;
     }
   }
 
@@ -527,7 +588,8 @@ ${JSON.stringify(analytics, null, 2)}
     const satisfactionByTime = new Map<string, { positive: number; negative: number; neutral: number }>();
 
     tickets.forEach(ticket => {
-      const createdAt = new Date(ticket.payload?.created_at || ticket.payload?.timestamp || Date.now());
+      const createdAtRaw = ticket.payload?.created_at || ticket.payload?.timestamp;
+      const createdAt = createdAtRaw && typeof createdAtRaw === 'string' ? new Date(createdAtRaw) : new Date();
       let timeKey: string;
       
       if (granularity === 'minutes') {

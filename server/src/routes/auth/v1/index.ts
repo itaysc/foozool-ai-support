@@ -136,6 +136,7 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
     console.log('Tokens generated successfully for user:', email);
     res.json({ 
       status: 'success',
+      accessToken,
       user: {
         id: userRes.payload._id,
         email: userRes.payload.email,

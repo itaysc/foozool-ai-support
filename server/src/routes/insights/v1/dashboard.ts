@@ -12,6 +12,128 @@ router.use(authenticateJWT);
 router.use('/', dashboardSettingsTestRouter);
 
 /**
+ * @route GET /api/v1/insights/dashboard/debug
+ * @desc Debug endpoint to check organization data
+ * @access Private
+ */
+router.get('/debug', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization.toString();
+    
+    const dashboardService = new DashboardService();
+    const debugData = await dashboardService.debugOrganizationData(organizationId);
+
+    res.status(200).json({
+      success: true,
+      data: debugData
+    });
+
+  } catch (error) {
+    console.error('Error in debug endpoint:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get debug data',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route GET /api/v1/insights/dashboard/debug-tickets
+ * @desc Debug endpoint to check ticket counts and time ranges
+ * @access Private
+ */
+router.get('/debug-tickets', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    const dashboardService = new DashboardService();
+    const analyticsService = dashboardService['analyticsService'];
+    
+    // Get total tickets for organization
+    const allTickets = await analyticsService['getAllTicketsForOrganization'](organizationId);
+    
+    // Get recent tickets (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentTickets = await analyticsService['getAllTicketsForOrganization'](organizationId, {
+      start: sevenDaysAgo.toISOString(),
+      end: new Date().toISOString()
+    });
+    
+    // Get tickets for custom time range if provided
+    let customRangeTickets: any[] | null = null;
+    if (start && end) {
+      customRangeTickets = await analyticsService['getAllTicketsForOrganization'](organizationId, {
+        start: start as string,
+        end: end as string
+      });
+    }
+    
+    // Sample some tickets to check their created_at dates
+    const sampleTickets = allTickets.slice(0, 5).map(ticket => ({
+      id: ticket.id,
+      created_at: ticket.payload?.created_at,
+      organization: ticket.payload?.organization,
+      subject: ticket.payload?.subject?.substring(0, 50) + '...'
+    }));
+
+    const debugData = {
+      totalTickets: allTickets.length,
+      recentTickets: recentTickets.length,
+      customRangeTickets: customRangeTickets ? customRangeTickets.length : null,
+      customRange: start && end ? { start, end } : null,
+      sampleTickets,
+      timeRanges: {
+        sevenDaysAgo: sevenDaysAgo.toISOString(),
+        now: new Date().toISOString()
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      data: debugData
+    });
+
+  } catch (error) {
+    console.error('Error in debug tickets endpoint:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get debug tickets data',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route POST /api/v1/insights/dashboard/clear-cache
+ * @desc Clear dashboard cache for the organization
+ * @access Private
+ */
+router.post('/clear-cache', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization.toString();
+    
+    const dashboardService = new DashboardService();
+    await dashboardService.clearDashboardCache(organizationId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Dashboard cache cleared successfully'
+    });
+
+  } catch (error) {
+    console.error('Error clearing dashboard cache:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to clear dashboard cache',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
  * @route GET /api/v1/insights/dashboard/metrics
  * @desc Get comprehensive dashboard metricsd
  * @access Private

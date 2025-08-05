@@ -2,7 +2,7 @@ import { colors } from '@mui/material';
 import { palette, width } from '@mui/system';
 import { DefaultTheme } from 'styled-components';
 
-const theme: DefaultTheme = {
+const theme: any = {
   colors: {
     // Primary color palette
     primary: {

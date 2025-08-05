@@ -194,7 +194,7 @@ export default class Server{
     // Create index for created_at for date range filtering in tickets collection
     await qdrantService.client.createPayloadIndex('tickets', {
       field_name: 'created_at',
-      field_schema: 'datetime'
+      field_schema: 'integer'
     });
     // Create index for organization for filtering in tickets collection
     await qdrantService.client.createPayloadIndex('tickets', {

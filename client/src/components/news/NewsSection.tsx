@@ -148,6 +148,19 @@ const NewsSection = observer(({ organizationId }: NewsSectionProps) => {
               Last updated: {newsStore.lastUpdated.toLocaleTimeString()}
             </Typography>
           )}
+          {newsStore.newsData?.rssUrl && (
+            <Tooltip title="View Google News RSS Feed">
+              <IconButton 
+                component="a" 
+                href={newsStore.newsData.rssUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                color="primary"
+              >
+                <OpenInNew />
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title="Refresh news">
             <IconButton onClick={handleRefresh} disabled={newsStore.isLoading}>
               <Refresh />
@@ -270,7 +283,7 @@ const NewsSection = observer(({ organizationId }: NewsSectionProps) => {
               <Typography variant="body1" paragraph>
                 {newsStore.newsSummary.summary}
               </Typography>
-              <Box display="flex" gap={2}>
+              <Box display="flex" gap={2} alignItems="center">
                 <Chip 
                   label={`${newsStore.newsSummary.newsCount} total articles`} 
                   size="small" 
@@ -281,6 +294,20 @@ const NewsSection = observer(({ organizationId }: NewsSectionProps) => {
                   size="small" 
                   color="primary"
                 />
+                {newsStore.newsSummary.rssUrl && (
+                  <Tooltip title="View Google News RSS Feed">
+                    <IconButton 
+                      size="small"
+                      component="a" 
+                      href={newsStore.newsSummary.rssUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      color="primary"
+                    >
+                      <OpenInNew fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </Box>
             </CardContent>
           </Card>

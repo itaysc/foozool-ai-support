@@ -34,7 +34,8 @@ import {
   Timeline,
   Assessment,
   Notifications,
-  Speed
+  Speed,
+  BugReport
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -236,6 +237,75 @@ const Dashboard = observer(() => {
           <Tooltip title="Refresh data">
             <IconButton onClick={handleRefresh} disabled={dashboardStore.isLoading}>
               <Refresh />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Clear cache and refresh">
+            <IconButton 
+              onClick={async () => {
+                try {
+                  // Clear cache
+                  await fetch('/api/v1/insights/dashboard/clear-cache', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                  });
+                  // Refresh data
+                  await handleRefresh();
+                } catch (error) {
+                  console.error('Error clearing cache:', error);
+                }
+              }} 
+              disabled={dashboardStore.isLoading}
+              color="warning"
+            >
+              <Refresh color="warning" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Debug data">
+            <IconButton 
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/v1/insights/dashboard/debug', {
+                    headers: {
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                  });
+                  const data = await response.json();
+                  console.log('🔍 Debug data:', data);
+                  alert(`Debug Info:\nQdrant Tickets: ${data.data.qdrantTickets}\nRedis Cache: ${data.data.redisCache ? 'Present' : 'None'}\nOrganization Exists: ${data.data.organizationExists}`);
+                } catch (error) {
+                  console.error('Error getting debug data:', error);
+                }
+              }} 
+              disabled={dashboardStore.isLoading}
+              color="info"
+            >
+              <BugReport />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Debug tickets">
+            <IconButton 
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/v1/insights/dashboard/debug-tickets', {
+                    headers: {
+                      'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                  });
+                  const data = await response.json();
+                  console.log('🔍 Debug tickets data:', data);
+                  const debugInfo = data.data;
+                  alert(`Ticket Debug Info:\nTotal Tickets: ${debugInfo.totalTickets}\nRecent Tickets (7d): ${debugInfo.recentTickets}\nCustom Range: ${debugInfo.customRangeTickets || 'N/A'}\n\nSample Tickets:\n${debugInfo.sampleTickets.map((t: any) => `${t.id}: ${t.created_at}`).join('\n')}`);
+                } catch (error) {
+                  console.error('Error getting debug tickets data:', error);
+                }
+              }} 
+              disabled={dashboardStore.isLoading}
+              color="warning"
+            >
+              <Assessment />
             </IconButton>
           </Tooltip>
         </Box>

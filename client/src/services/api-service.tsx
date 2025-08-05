@@ -191,6 +191,29 @@ const apiService = {
       });
       return response.data;
     }
+  },
+
+  // News API
+  news: {
+    async getRawNews(organizationId: string) {
+      const response = await axios.get(getRoute(`news/${organizationId}`));
+      return response.data;
+    },
+
+    async getActionItems(organizationId: string) {
+      const response = await axios.get(getRoute(`news/${organizationId}/action-items`));
+      return response.data;
+    },
+
+    async getNewsSummary(organizationId: string) {
+      const response = await axios.get(getRoute(`news/${organizationId}/summary`));
+      return response.data;
+    },
+
+    async getFullNewsData(organizationId: string) {
+      const response = await axios.get(getRoute(`news/${organizationId}/full`));
+      return response.data;
+    }
   }
 };
 

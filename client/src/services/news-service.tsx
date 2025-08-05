@@ -30,6 +30,7 @@ export interface NewsData {
   summary: string;
   actionItems: ActionItem[];
   organizationId: string;
+  rssUrl: string;
   lastUpdated: string;
 }
 
@@ -38,6 +39,7 @@ export interface NewsSummary {
   newsCount: number;
   relevantNewsCount: number;
   organizationId: string;
+  rssUrl: string;
   lastUpdated: string;
 }
 
@@ -45,6 +47,7 @@ export interface ActionItemsData {
   actionItems: ActionItem[];
   count: number;
   organizationId: string;
+  rssUrl: string;
   lastUpdated: string;
 }
 
@@ -54,7 +57,7 @@ class NewsService {
    */
   async getRawNews(organizationId: string): Promise<NewsItem[]> {
     try {
-      const response = await apiService.get(`/api/v1/news/${organizationId}`);
+      const response = await apiService.news.getRawNews(organizationId);
       return response.data.news;
     } catch (error: any) {
       console.error('Error fetching raw news:', error);
@@ -67,7 +70,7 @@ class NewsService {
    */
   async getActionItems(organizationId: string): Promise<ActionItemsData> {
     try {
-      const response = await apiService.get(`/api/v1/news/${organizationId}/action-items`);
+      const response = await apiService.news.getActionItems(organizationId);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching action items:', error);
@@ -80,7 +83,7 @@ class NewsService {
    */
   async getNewsSummary(organizationId: string): Promise<NewsSummary> {
     try {
-      const response = await apiService.get(`/api/v1/news/${organizationId}/summary`);
+      const response = await apiService.news.getNewsSummary(organizationId);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching news summary:', error);
@@ -93,7 +96,7 @@ class NewsService {
    */
   async getFullNewsData(organizationId: string): Promise<NewsData> {
     try {
-      const response = await apiService.get(`/api/v1/news/${organizationId}/full`);
+      const response = await apiService.news.getFullNewsData(organizationId);
       return response.data;
     } catch (error: any) {
       console.error('Error fetching full news data:', error);

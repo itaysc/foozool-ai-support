@@ -96,11 +96,12 @@ const Login = () => {
   return (
     <Container>
       <ColumnWrapper>
-        <Logo src="/logo/logo-transparent-blue.svg" alt="foozool logo" />
+        {/* <Logo src="/logo/logo-transparent-blue.svg" alt="foozool logo" /> */}
+        <h1 style={{ textAlign: 'center', marginBottom: '2rem', color: theme.colors.primary.main }}>TKTAI</h1>
         <FormWrapper>
-          <Typography variant="h5" align="center" gutterBottom color={theme.colors.primary.main}>
+          {/* <Typography variant="h5" align="center" gutterBottom color={theme.colors.primary.main}>
             Login
-          </Typography>
+          </Typography> */}
           <StyledForm onSubmit={formik.handleSubmit}>
             <TextField
               fullWidth

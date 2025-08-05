@@ -17,34 +17,64 @@ export class QdrantAnalyticsService {
    * Extract all tickets for an organization from Qdrant
    */
   private async getAllTicketsForOrganization(organizationId: string, timeRange?: { start: string; end: string }): Promise<any[]> {
-    let filter: Record<string, any> = {
-      must: [
-        {
-          key: 'organization',
-          match: { value: organizationId }
-        }
-      ]
-    };
+    try {
+      // Validate organization ID
+      if (!organizationId || typeof organizationId !== 'string') {
+        console.error('❌ Invalid organization ID:', organizationId);
+        return [];
+      }
 
-    // Add time filter if provided (if timeRange is null/undefined, use all time)
-    if (timeRange && timeRange.start && timeRange.end) {
-      filter.must.push({
-        key: 'created_at',
-        range: {
-          gte: timeRange.start,
-          lte: timeRange.end
+      let filter: Record<string, any> = {
+        must: [
+          {
+            key: 'organization',
+            match: { value: organizationId }
+          }
+        ]
+      };
+
+      // Add time filter if provided (if timeRange is null/undefined, use all time)
+      if (timeRange && timeRange.start && timeRange.end) {
+        // Validate time range format
+        const startDate = new Date(timeRange.start);
+        const endDate = new Date(timeRange.end);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+          console.error('❌ Invalid time range format:', timeRange);
+          return [];
         }
+        
+        filter.must.push({
+          key: 'created_at',
+          range: {
+            gte: timeRange.start,
+            lte: timeRange.end
+          }
+        });
+        console.log(`🔍 Filtering tickets by time range: ${timeRange.start} to ${timeRange.end}`);
+      } else {
+        console.log(`🔍 No time range provided, fetching all tickets for organization ${organizationId}`);
+      }
+
+      console.log(`🔍 Qdrant filter structure:`, JSON.stringify(filter, null, 2));
+
+      const tickets = await this.qdrantService.client.scroll(ticketCollectionConfig.name, {
+        limit: 50000, // Increased limit to handle more tickets
+        filter,
+        with_payload: true,
+        with_vector: false,
       });
+
+      const returnedTickets = tickets.points || [];
+      console.log(`📊 Retrieved ${returnedTickets.length} tickets for organization ${organizationId}`);
+      
+      return returnedTickets;
+    } catch (error) {
+      console.error('❌ Error in getAllTicketsForOrganization:', error);
+      console.error('❌ Organization ID:', organizationId);
+      console.error('❌ Time range:', timeRange);
+      return [];
     }
-
-    const tickets = await this.qdrantService.client.scroll(ticketCollectionConfig.name, {
-      limit: 10000, // Adjust based on your needs
-      filter,
-      with_payload: true,
-      with_vector: false,
-    });
-
-    return tickets.points || [];
   }
 
   /**
@@ -502,9 +532,13 @@ export class QdrantAnalyticsService {
 
     // Volume spike detection (simplified)
     const recentTickets = tickets.filter(t => {
-      const createdAt = new Date(t.payload?.created_at);
+      const createdAt = t.payload?.created_at;
+      if (!createdAt || typeof createdAt !== 'string') {
+        return false;
+      }
+      const ticketDate = new Date(createdAt);
       const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      return createdAt > oneWeekAgo;
+      return ticketDate > oneWeekAgo;
     });
 
     if (recentTickets.length > totalTickets * 0.3) {
@@ -524,9 +558,15 @@ export class QdrantAnalyticsService {
    */
   private calculateVolumeTrend(tickets: any[]): 'increasing' | 'decreasing' | 'stable' {
     // Simplified trend calculation - you might want to implement more sophisticated analysis
-    const sortedTickets = tickets.sort((a, b) => 
-      new Date(a.payload?.created_at).getTime() - new Date(b.payload?.created_at).getTime()
-    );
+    const sortedTickets = tickets.sort((a, b) => {
+      const aCreatedAt = a.payload?.created_at;
+      const bCreatedAt = b.payload?.created_at;
+      
+      if (!aCreatedAt || typeof aCreatedAt !== 'string') return -1;
+      if (!bCreatedAt || typeof bCreatedAt !== 'string') return 1;
+      
+      return new Date(aCreatedAt).getTime() - new Date(bCreatedAt).getTime();
+    });
 
     const midPoint = Math.floor(sortedTickets.length / 2);
     const firstHalf = sortedTickets.slice(0, midPoint).length;
@@ -541,9 +581,15 @@ export class QdrantAnalyticsService {
    * Calculate satisfaction trend
    */
   private calculateSatisfactionTrend(tickets: any[]): 'increasing' | 'decreasing' | 'stable' {
-    const sortedTickets = tickets.sort((a, b) => 
-      new Date(a.payload?.created_at).getTime() - new Date(b.payload?.created_at).getTime()
-    );
+    const sortedTickets = tickets.sort((a, b) => {
+      const aCreatedAt = a.payload?.created_at;
+      const bCreatedAt = b.payload?.created_at;
+      
+      if (!aCreatedAt || typeof aCreatedAt !== 'string') return -1;
+      if (!bCreatedAt || typeof bCreatedAt !== 'string') return 1;
+      
+      return new Date(aCreatedAt).getTime() - new Date(bCreatedAt).getTime();
+    });
 
     const midPoint = Math.floor(sortedTickets.length / 2);
     const firstHalf = sortedTickets.slice(0, midPoint);
@@ -564,9 +610,15 @@ export class QdrantAnalyticsService {
    * Calculate percentage change
    */
   private calculatePercentageChange(tickets: any[]): number {
-    const sortedTickets = tickets.sort((a, b) => 
-      new Date(a.payload?.created_at).getTime() - new Date(b.payload?.created_at).getTime()
-    );
+    const sortedTickets = tickets.sort((a, b) => {
+      const aCreatedAt = a.payload?.created_at;
+      const bCreatedAt = b.payload?.created_at;
+      
+      if (!aCreatedAt || typeof aCreatedAt !== 'string') return -1;
+      if (!bCreatedAt || typeof bCreatedAt !== 'string') return 1;
+      
+      return new Date(aCreatedAt).getTime() - new Date(bCreatedAt).getTime();
+    });
 
     const midPoint = Math.floor(sortedTickets.length / 2);
     const firstHalf = sortedTickets.slice(0, midPoint).length;

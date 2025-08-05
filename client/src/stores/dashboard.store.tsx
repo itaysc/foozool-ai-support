@@ -148,6 +148,9 @@ class DashboardStore {
       const data: DashboardData = await dashboardService.getAllDashboardData(timeRange);
       console.log('📊 Received dashboard data:', data);
       runInAction(() => {
+        console.log('📊 Setting metrics:', data.metrics);
+        console.log('📊 Total tickets:', data.metrics?.totalTickets);
+        console.log('📊 Recent tickets:', data.metrics?.recentTickets);
         this.setMetrics(data.metrics);
         this.setInsights(data.insights);
         this.setAlerts(data.alerts);
