@@ -729,33 +729,71 @@ const Dashboard = observer(() => {
                   <Typography variant="h6" gutterBottom>
                     Top Issues
                   </Typography>
-                  <List>
+                  <Box>
                     {toJS(dashboardStore.insights.topIssues).slice(0, 5).map((issue, index) => (
-                      <ListItem key={index} divider>
-                        <ListItemIcon>
-                          <Avatar sx={{ bgcolor: getSeverityColor(issue.severity) + '.main', width: 32, height: 32 }}>
-                            {index + 1}
-                          </Avatar>
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={issue.title}
-                          secondary={issue.description}
-                        />
-                        <Box display="flex" gap={1} mt={1}>
-                          <Chip 
-                            label={issue.severity} 
-                            size="small" 
-                            color={getSeverityColor(issue.severity) as any}
-                          />
-                          <Chip 
-                            label={`${issue.affectedTickets} tickets`} 
-                            size="small" 
-                            variant="outlined"
-                          />
+                      <Box 
+                        key={index} 
+                        sx={{ 
+                          borderBottom: '1px solid #e0e0e0',
+                          py: 2,
+                          '&:last-child': { borderBottom: 'none' }
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" width="100%">
+                          {/* Number */}
+                          <Box sx={{ width: 50, display: 'flex', justifyContent: 'center' }}>
+                            <Avatar 
+                              sx={{ 
+                                bgcolor: getSeverityColor(issue.severity) + '.main', 
+                                width: 32, 
+                                height: 32
+                              }}
+                            >
+                              {index + 1}
+                            </Avatar>
+                          </Box>
+                          
+                          {/* Title */}
+                          <Box sx={{ flex: 1, px: 2 }}>
+                            <Typography variant="subtitle1" fontWeight="medium">
+                              {issue.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                              {issue.description}
+                            </Typography>
+                          </Box>
+                          
+                          {/* Priority Tag */}
+                          <Box sx={{ width: 80, display: 'flex', justifyContent: 'center' }}>
+                            <Chip 
+                              label={issue.severity} 
+                              size="small" 
+                              color={getSeverityColor(issue.severity) as any}
+                              sx={{ 
+                                width: 70, 
+                                height: 28,
+                                fontSize: '0.8rem'
+                              }}
+                            />
+                          </Box>
+                          
+                          {/* Ticket Count Tag */}
+                          <Box sx={{ width: 100, display: 'flex', justifyContent: 'center' }}>
+                            <Chip 
+                              label={`${issue.affectedTickets} tickets`} 
+                              size="small" 
+                              variant="outlined"
+                              sx={{ 
+                                width: 90, 
+                                height: 28,
+                                fontSize: '0.8rem'
+                              }}
+                            />
+                          </Box>
                         </Box>
-                      </ListItem>
+                      </Box>
                     ))}
-                  </List>
+                  </Box>
                 </CardContent>
               </Card>
             </Box>
@@ -769,34 +807,63 @@ const Dashboard = observer(() => {
                   <Typography variant="h6" gutterBottom>
                     Recommendations
                   </Typography>
-                  <List>
+                  <Box>
                     {toJS(dashboardStore.insights.recommendations).slice(0, 5).map((rec, index) => (
-                      <ListItem key={index} divider>
-                        <ListItemIcon>
-                          <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                            {index + 1}
-                          </Avatar>
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={rec.title}
-                          secondary={rec.description}
-                        />
-                        <Box display="flex" flexDirection="column" gap={1}>
-                          <Chip 
-                            label={rec.priority} 
-                            size="small" 
-                            color={getSeverityColor(rec.priority) as any}
-                          />
-                          {rec.actionItems.length > 0 && (
-                            <Typography variant="caption" color="text.secondary">
-                              Actions: {rec.actionItems.slice(0, 2).join(', ')}
-                              {rec.actionItems.length > 2 && '...'}
+                      <Box 
+                        key={index} 
+                        sx={{ 
+                          borderBottom: '1px solid #e0e0e0',
+                          py: 2,
+                          '&:last-child': { borderBottom: 'none' }
+                        }}
+                      >
+                        <Box display="flex" alignItems="flex-start" width="100%">
+                          {/* Number */}
+                          <Box sx={{ width: 50, display: 'flex', justifyContent: 'center' }}>
+                            <Avatar 
+                              sx={{ 
+                                bgcolor: 'primary.main', 
+                                width: 32, 
+                                height: 32
+                              }}
+                            >
+                              {index + 1}
+                            </Avatar>
+                          </Box>
+                          
+                          {/* Content */}
+                          <Box sx={{ flex: 1, px: 2 }}>
+                            <Typography variant="subtitle1" fontWeight="medium">
+                              {rec.title}
                             </Typography>
-                          )}
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 1 }}>
+                              {rec.description}
+                            </Typography>
+                            {rec.actionItems.length > 0 && (
+                              <Typography variant="caption" color="text.secondary">
+                                Actions: {rec.actionItems.slice(0, 2).join(', ')}
+                                {rec.actionItems.length > 2 && '...'}
+                              </Typography>
+                            )}
+                          </Box>
+                          
+                          {/* Priority Tag */}
+                          <Box sx={{ width: 80, display: 'flex', justifyContent: 'center' }}>
+                            <Chip 
+                              label={rec.priority} 
+                              size="small" 
+                              color={getSeverityColor(rec.priority) as any}
+                              sx={{ 
+                                width: 70, 
+                                height: 28,
+                                fontSize: '0.8rem'
+                              }}
+                            />
+                          </Box>
                         </Box>
-                      </ListItem>
+                      </Box>
                     ))}
-                  </List>
+                  </Box>
                 </CardContent>
               </Card>
             </Box>
