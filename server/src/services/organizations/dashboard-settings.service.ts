@@ -7,7 +7,7 @@ export class DashboardSettingsService {
    */
   async getDashboardSettings(organizationId: string): Promise<DashboardSettings | null> {
     try {
-      const organization = await OrganizationModel.findById(organizationId);
+      const organization = await OrganizationModel.findById(organizationId).lean();
       return organization?.dashboardSettings || null;
     } catch (error) {
       console.error('❌ Error fetching dashboard settings:', error);

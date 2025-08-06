@@ -120,7 +120,6 @@ export interface TicketAnalytics {
   };
   intentDistribution: Record<string, number>;
   tagFrequency: Record<string, number>;
-  topSubjects: Array<{ subject: string; count: number }>;
   trends: {
     volumeTrend: VolumeTrend;
     satisfactionTrend: SatisfactionTrend;
@@ -142,7 +141,7 @@ export interface InsightGenerationRequest {
   };
   includeTrends?: boolean;
   includeAnomalies?: boolean;
-  includeTopIssues?: boolean;
+  includeFuturePredictions?: boolean;
 } 
 
 export interface QdrantInsightsResult {
@@ -176,14 +175,19 @@ export interface DashboardMetrics {
   customerSatisfactionScore?: number;
 }
 
+export interface FuturePrediction {
+  title: string;
+  prediction: string;
+  reasoning: string;
+  suggestedActions: string[];
+  confidence: 'high' | 'medium' | 'low';
+  category: 'ticket_volume' | 'csat' | 'profit_impact' | 'external_event' | 'product_issue' | 'market_change';
+  timeframe: string;
+  impact: 'positive' | 'negative' | 'neutral';
+}
+
 export interface DashboardInsights {
-  topIssues: Array<{
-    title: string;
-    description: string;
-    severity: string;
-    confidence: number;
-    affectedTickets: number;
-  }>;
+  futurePredictions: FuturePrediction[];
   trends: Array<{
     title: string;
     description: string;

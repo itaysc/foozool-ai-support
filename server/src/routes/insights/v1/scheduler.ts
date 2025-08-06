@@ -33,32 +33,33 @@ router.get('/status', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
- * @route POST /api/v1/insights/scheduler/trigger/:jobName
- * @desc Manually trigger a specific job
+ * @route POST /api/v1/insights/scheduler/trigger
+ * @desc Trigger insights generation manually
  * @access Private
  */
-router.post('/trigger/:jobName', async (req: Request, res: Response): Promise<void> => {
+router.post('/trigger', async (req: Request, res: Response): Promise<void> => {
   try {
-    const { jobName } = req.params;
-    const success = await insightsScheduler.triggerJob(jobName);
+    const organizationId = req.user!.organization.toString();
+    const { timeRange, includeTrends, includeAnomalies, includeFuturePredictions } = req.body;
 
-    if (success) {
-      res.status(200).json({
-        success: true,
-        message: `Job ${jobName} triggered successfully`
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: `Failed to trigger job ${jobName}`
-      });
-    }
+    const orchestratorService = new InsightsOrchestratorService();
+    const result = await orchestratorService.generateInsightsForOrganization(organizationId, {
+      timeRange,
+      includeTrends,
+      includeAnomalies,
+      includeFuturePredictions
+    });
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
 
   } catch (error) {
-    console.error('Error triggering job:', error);
+    console.error('Error triggering insights generation:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Failed to trigger job',
+      error: 'Failed to trigger insights generation',
       message: (error as Error).message
     });
   }
@@ -141,39 +142,6 @@ router.put('/job/:jobName', async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ 
       success: false,
       error: 'Failed to update job configuration',
-      message: (error as Error).message
-    });
-  }
-});
-
-/**
- * @route POST /api/v1/insights/scheduler/generate
- * @desc Manually generate insights for organization
- * @access Private
- */
-router.post('/generate', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const organizationId = req.user!.organization.toString();
-    const { timeRange, includeTrends, includeAnomalies, includeTopIssues } = req.body;
-
-    const orchestratorService = new InsightsOrchestratorService();
-    const result = await orchestratorService.generateInsightsForOrganization(organizationId, {
-      timeRange,
-      includeTrends,
-      includeAnomalies,
-      includeTopIssues
-    });
-
-    res.status(200).json({
-      success: true,
-      data: result
-    });
-
-  } catch (error) {
-    console.error('Error generating insights:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to generate insights',
       message: (error as Error).message
     });
   }

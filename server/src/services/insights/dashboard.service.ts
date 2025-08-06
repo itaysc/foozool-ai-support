@@ -26,12 +26,15 @@ interface DashboardMetrics {
 }
 
 interface DashboardInsights {
-  topIssues: Array<{
+  futurePredictions: Array<{
     title: string;
-    description: string;
-    severity: string;
-    confidence: number;
-    affectedTickets: number;
+    prediction: string;
+    reasoning: string;
+    suggestedActions: string[];
+    confidence: 'high' | 'medium' | 'low';
+    category: 'ticket_volume' | 'csat' | 'profit_impact' | 'external_event' | 'product_issue' | 'market_change';
+    timeframe: string;
+    impact: 'positive' | 'negative' | 'neutral';
   }>;
   trends: Array<{
     title: string;
@@ -58,8 +61,9 @@ export class DashboardService {
    * Get comprehensive dashboard metrics
    */
   async getDashboardMetrics(organizationId: string, timeRange?: { start: string; end: string }): Promise<DashboardMetrics> {
-    // Completely disable caching for dashboard
-    console.log(`🔄 Caching disabled for dashboard metrics`);
+    // Check if caching should be used based on user context
+    const useCache = UserContextManager.getUseCache();
+    console.log(`🔄 Dashboard metrics caching: ${useCache ? 'enabled' : 'disabled'}`);
 
     // Use provided time range or fall back to organization settings
     let analyticsTimeRange: { start: string; end: string } | undefined = timeRange;
@@ -77,32 +81,45 @@ export class DashboardService {
     
     console.log(`🔍 Using analytics time range for org ${organizationId}:`, analyticsTimeRange ? `${analyticsTimeRange.start} to ${analyticsTimeRange.end}` : 'all time');
 
-    // Get analytics based on time range
+    // Get analytics based on time range - this is the main data source
     const analytics = await this.analyticsService.generateAnalytics(analyticsTimeRange || undefined);
     
-    // Get recent analytics (last 7 days) for comparison if not using all-time
+    // Only calculate recent analytics if we have a specific time range and it's not too short
     let recentAnalytics: TicketAnalytics | null = null;
     if (analyticsTimeRange) {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const recentTimeRange = {
-        start: sevenDaysAgo.toISOString(),
-        end: new Date().toISOString()
-      };
-      console.log(`📅 Calculating recent tickets for last 7 days: ${recentTimeRange.start} to ${recentTimeRange.end}`);
-      recentAnalytics = await this.analyticsService.generateAnalytics(recentTimeRange);
-      console.log(`📊 Recent tickets (7 days): ${recentAnalytics.totalTickets}`);
+      const startDate = new Date(analyticsTimeRange.start);
+      const endDate = new Date(analyticsTimeRange.end);
+      const timeDiffDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // Only calculate recent tickets if the time range is more than 7 days
+      if (timeDiffDays > 7) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const recentTimeRange = {
+          start: sevenDaysAgo.toISOString(),
+          end: new Date().toISOString()
+        };
+        console.log(`📅 Calculating recent tickets for last 7 days: ${recentTimeRange.start} to ${recentTimeRange.end}`);
+        recentAnalytics = await this.analyticsService.generateAnalytics(recentTimeRange);
+        console.log(`📊 Recent tickets (7 days): ${recentAnalytics.totalTickets}`);
+      } else {
+        // For short time ranges, use the same data
+        recentAnalytics = analytics;
+      }
     }
 
-    // Get active insights count
-    const activeInsights = await InsightModel.countDocuments({ status: 'active' });
-    const highPriorityInsights = await InsightModel.countDocuments({ 
-      status: 'active',
-      severity: { $in: ['high', 'critical'] }
-    });
+    // Get active insights count - this is a lightweight database query
+    const [activeInsights, highPriorityInsights] = await Promise.all([
+      InsightModel.countDocuments({ status: 'active' }),
+      InsightModel.countDocuments({ 
+        status: 'active',
+        severity: { $in: ['high', 'critical'] }
+      })
+    ]);
 
     // Calculate top intents with percentages
     const totalTickets = analytics.totalTickets;
+    
     const topIntents = Object.entries(analytics.intentDistribution)
       .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 5)
@@ -111,6 +128,8 @@ export class DashboardService {
         count: count as number,
         percentage: totalTickets > 0 ? ((count as number) / totalTickets) * 100 : 0
       }));
+    
+    console.log(`🔍 Final topIntents array:`, topIntents);
 
     // Calculate top tags with percentages
     const totalTagUsage = Object.values(analytics.tagFrequency).reduce((sum, count) => sum + (count as number), 0);
@@ -135,8 +154,6 @@ export class DashboardService {
       highPriorityInsights
     };
 
-    // No caching - always return fresh data
-    console.log(`✅ Returning fresh dashboard metrics (no caching)`);
     return metrics;
   }
 
@@ -144,8 +161,9 @@ export class DashboardService {
    * Generate AI-powered dashboard insights
    */
   async getDashboardInsights(organizationId: string, timeRange?: { start: string; end: string }): Promise<DashboardInsights> {
-    // Disable caching for dashboard insights
-    console.log(`🔄 Caching disabled for dashboard insights`);
+    // Check if caching should be used based on user context
+    const useCache = UserContextManager.getUseCache();
+    console.log(`🔄 Dashboard insights caching: ${useCache ? 'enabled' : 'disabled'}`);
 
     const metrics = await this.getDashboardMetrics(organizationId, timeRange);
     
@@ -157,13 +175,41 @@ export class DashboardService {
 
     const analytics = await this.analyticsService.generateAnalytics(timeRange);
 
-    // Generate AI insights using LLM
+    // Get news data for the organization
+    let newsData: {
+      news: Array<{
+        title: string;
+        content: string;
+        pubDate: string;
+        source: string;
+      }>;
+      summary: string;
+      actionItems: Array<{
+        title: string;
+        description: string;
+        priority: string;
+        category: string;
+        impact: string;
+        suggestedActions: string[];
+      }>;
+      rssUrl?: string;
+    } | null = null;
+    try {
+      const { newsService } = await import('../news');
+      newsData = await newsService.getNewsForOrganization(organizationId);
+      console.log(`📰 Fetched ${newsData.news.length} news items for predictions`);
+    } catch (error) {
+      console.warn('⚠️ Failed to fetch news data for predictions:', error);
+      newsData = { news: [], summary: 'No news data available', actionItems: [] };
+    }
+
+    // Generate AI insights using LLM with focus on future predictions
     const prompt = `
-You are a data analyst specializing in customer support analytics. Analyze the following support metrics and generate actionable insights.
+You are a strategic business analyst specializing in customer support and business intelligence. Analyze the following data to generate actionable future predictions that will help the organization prepare for upcoming challenges and opportunities.
 
 **IMPORTANT: You must respond with ONLY valid JSON. Do not include any explanatory text before or after the JSON.**
 
-**Metrics Summary:**
+**Current Metrics Summary:**
 - Total Tickets: ${metrics.totalTickets}
 - Recent Tickets (7 days): ${metrics.recentTickets}
 - Sentiment Breakdown: ${JSON.stringify(metrics.sentimentBreakdown)}
@@ -177,15 +223,24 @@ You are a data analyst specializing in customer support analytics. Analyze the f
 **Analytics Data:**
 ${JSON.stringify(analytics, null, 2)}
 
+**Relevant News Summary:**
+${newsData?.summary || 'No news data available'}
+
+**News Action Items:**
+${JSON.stringify(newsData?.actionItems || [], null, 2)}
+
 **REQUIRED OUTPUT FORMAT (JSON ONLY):**
 {
-  "topIssues": [
+  "futurePredictions": [
     {
-      "title": "Brief issue title",
-      "description": "Detailed description of the issue",
-      "severity": "low|medium|high|critical",
-      "confidence": 0.0-1.0,
-      "affectedTickets": number
+      "title": "Predicted: [Specific Prediction]",
+      "prediction": "Clear, specific prediction about what will happen",
+      "reasoning": "Data-driven explanation of why this prediction is made",
+      "suggestedActions": ["Action 1", "Action 2", "Action 3"],
+      "confidence": "high|medium|low",
+      "category": "ticket_volume|csat|profit_impact|external_event|product_issue|market_change",
+      "timeframe": "next week|next month|next quarter|next 6 months",
+      "impact": "positive|negative|neutral"
     }
   ],
   "trends": [
@@ -206,17 +261,45 @@ ${JSON.stringify(analytics, null, 2)}
   ]
 }
 
+**PREDICTION GUIDELINES:**
+
+Focus on predictions that will impact:
+1. **Customer Satisfaction (CSAT)** - Changes in customer sentiment, satisfaction scores, or support quality
+2. **Ticket Volume** - Expected increases/decreases in support requests, specific types of tickets
+3. **Business Impact** - Effects on profits, costs, operations, or market position
+4. **External Factors** - Geopolitical events, competitor actions, market changes, regulatory changes
+5. **Product Issues** - Quality problems, supply chain issues, delivery delays, product recalls
+
+**EXAMPLES OF GOOD PREDICTIONS:**
+- "Expect 25% increase in billing tickets next month due to annual subscription renewals"
+- "CSAT will likely drop 10% in Q2 due to recent product update causing confusion"
+- "Competitor's service outage will lead to 40% surge in new customer sign-ups"
+- "Supply chain disruption will cause 15% increase in delivery delay complaints"
+- "New regulation will require 30% more compliance-related support requests"
+
+**REASONING REQUIREMENTS:**
+- Reference specific data points from metrics, analytics, or news
+- Connect current trends to future outcomes
+- Explain the causal relationship between current data and predictions
+- Include confidence level based on data strength
+
+**SUGGESTED ACTIONS:**
+- Be specific and actionable
+- Focus on proactive measures
+- Include both immediate and strategic actions
+- Consider resource allocation and timing
+
 **CRITICAL: Respond with ONLY the JSON object above. No additional text, no explanations, no markdown formatting.**
 `;
 
     const response = await callLLM({
-      userId: userId, // Use actual user ID from context
+      userId: userId,
       prompt,
       model: 'mistralai/Mistral-7B-Instruct-v0.1',
-      maxTokens: 3000,
+      maxTokens: 4000,
       temperature: 0.2,
       isChat: true,
-      systemMsg: 'You are an expert data analyst. You must ALWAYS respond with valid JSON only. Never include explanatory text, markdown, or any other formatting. Your response must be parseable by JSON.parse().',
+      systemMsg: 'You are an expert business analyst specializing in predictive analytics. You must ALWAYS respond with valid JSON only. Never include explanatory text, markdown, or any other formatting. Your response must be parseable by JSON.parse(). Focus on actionable, data-driven predictions that help businesses prepare for future challenges and opportunities.',
     });
 
     try {
@@ -227,8 +310,19 @@ ${JSON.stringify(analytics, null, 2)}
       
       const result = JSON.parse(jsonText);
       
+      // Ensure the structure is correct
+      if (!result.futurePredictions) {
+        result.futurePredictions = [];
+      }
+      if (!result.trends) {
+        result.trends = [];
+      }
+      if (!result.recommendations) {
+        result.recommendations = [];
+      }
+      
       // No caching - always return fresh data
-      console.log(`✅ Returning fresh dashboard insights (no caching)`);
+      console.log(`✅ Returning fresh dashboard insights with ${result.futurePredictions.length} future predictions`);
       
       return result;
     } catch (error) {
@@ -238,7 +332,7 @@ ${JSON.stringify(analytics, null, 2)}
       
       // Return default structure if parsing fails
       return {
-        topIssues: [],
+        futurePredictions: [],
         trends: [],
         recommendations: []
       };
@@ -257,8 +351,9 @@ ${JSON.stringify(analytics, null, 2)}
     timestamp: Date;
     actionable: boolean;
   }>> {
-    // Completely disable caching for dashboard
-    console.log(`🔄 Caching disabled for dashboard alerts`);
+    // Check if caching should be used based on user context
+    const useCache = UserContextManager.getUseCache();
+    console.log(`🔄 Dashboard alerts caching: ${useCache ? 'enabled' : 'disabled'}`);
 
     const alerts: Array<{
       id: string;
@@ -270,29 +365,46 @@ ${JSON.stringify(analytics, null, 2)}
       actionable: boolean;
     }> = [];
 
-    // Get recent analytics
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentTimeRange = {
-      start: sevenDaysAgo.toISOString(),
-      end: new Date().toISOString()
-    };
-    console.log(`🚨 Alert check: Getting analytics for last 7 days: ${recentTimeRange.start} to ${recentTimeRange.end}`);
-    const recentAnalytics = await this.analyticsService.generateAnalytics(recentTimeRange);
+    // Use provided time range or default to last 7 days for alerts
+    let alertTimeRange: { start: string; end: string };
+    if (timeRange) {
+      alertTimeRange = timeRange;
+      console.log(`🚨 Alert check: Using provided time range: ${alertTimeRange.start} to ${alertTimeRange.end}`);
+    } else {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      alertTimeRange = {
+        start: sevenDaysAgo.toISOString(),
+        end: new Date().toISOString()
+      };
+      console.log(`🚨 Alert check: Using default 7-day range: ${alertTimeRange.start} to ${alertTimeRange.end}`);
+    }
+
+    // Get analytics for the alert time range
+    const recentAnalytics = await this.analyticsService.generateAnalytics(alertTimeRange);
     console.log(`🚨 Alert check: Recent tickets count: ${recentAnalytics.totalTickets}`);
 
-    // Check for volume spikes with more reasonable thresholds
-    const volumeThreshold = 100; // Increase threshold to 100 tickets
+    // Calculate time range duration for adaptive thresholds
+    const startDate = new Date(alertTimeRange.start);
+    const endDate = new Date(alertTimeRange.end);
+    const timeDiffDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+    
+    // Adaptive volume threshold based on time range duration
+    const baseVolumeThreshold = 100; // Base threshold for 7 days
+    const volumeThreshold = Math.ceil((baseVolumeThreshold / 7) * timeDiffDays);
+    
     if (recentAnalytics.totalTickets > volumeThreshold) {
       console.log(`🚨 Creating volume spike alert for ${recentAnalytics.totalTickets} tickets (threshold: ${volumeThreshold})`);
       
-      // Determine severity based on volume
+      // Determine severity based on volume and time range
       let severity: 'low' | 'medium' | 'high' | 'critical' = 'medium';
-      if (recentAnalytics.totalTickets > 1000) {
+      const ticketsPerDay = recentAnalytics.totalTickets / timeDiffDays;
+      
+      if (ticketsPerDay > 150) {
         severity = 'critical';
-      } else if (recentAnalytics.totalTickets > 500) {
+      } else if (ticketsPerDay > 75) {
         severity = 'high';
-      } else if (recentAnalytics.totalTickets > 200) {
+      } else if (ticketsPerDay > 30) {
         severity = 'medium';
       } else {
         severity = 'low';
@@ -302,7 +414,7 @@ ${JSON.stringify(analytics, null, 2)}
         id: `volume-spike-${Date.now()}`,
         type: 'anomaly',
         title: 'High Ticket Volume Detected',
-        description: `${recentAnalytics.totalTickets} tickets in the last 7 days. Consider increasing support capacity.`,
+        description: `${recentAnalytics.totalTickets} tickets in the last ${timeDiffDays.toFixed(1)} days (${ticketsPerDay.toFixed(1)} per day). Consider increasing support capacity.`,
         severity,
         timestamp: new Date(),
         actionable: true
@@ -312,7 +424,8 @@ ${JSON.stringify(analytics, null, 2)}
     }
 
     // Check for negative sentiment spike
-    const negativePercentage = (recentAnalytics.sentimentDistribution.negative / recentAnalytics.totalTickets) * 100;
+    const negativePercentage = recentAnalytics.totalTickets > 0 ? 
+      (recentAnalytics.sentimentDistribution.negative / recentAnalytics.totalTickets) * 100 : 0;
     if (negativePercentage > 40) {
       alerts.push({
         id: `sentiment-alert-${Date.now()}`,
@@ -325,9 +438,9 @@ ${JSON.stringify(analytics, null, 2)}
       });
     }
 
-    // Check for new insights
+    // Check for new insights in the same time range
     const recentInsights = await InsightModel.find({
-      createdAt: { $gte: sevenDaysAgo },
+      createdAt: { $gte: startDate, $lte: endDate },
       severity: { $in: ['high', 'critical'] }
     });
 
@@ -337,7 +450,7 @@ ${JSON.stringify(analytics, null, 2)}
         type: 'insight',
         title: `New ${insight.severity} Priority Insight`,
         description: insight.title,
-        severity: insight.severity as any,
+        severity: insight.severity as 'low' | 'medium' | 'high' | 'critical',
         timestamp: insight.createdAt,
         actionable: true
       });
@@ -361,65 +474,109 @@ ${JSON.stringify(analytics, null, 2)}
   /**
    * Get performance comparison with previous periods
    */
-  async getPerformanceComparison(organizationId: string): Promise<{
+  async getPerformanceComparison(organizationId: string, timeRange?: { start: string; end: string }): Promise<{
     currentPeriod: DashboardMetrics;
     previousPeriod: DashboardMetrics;
     improvements: Array<{ metric: string; change: number; direction: 'improved' | 'declined' }>;
   }> {
-    // Completely disable caching for dashboard
-    console.log(`🔄 Caching disabled for dashboard performance`);
+    // Check if caching should be used based on user context
+    const useCache = UserContextManager.getUseCache();
+    console.log(`🔄 Dashboard performance caching: ${useCache ? 'enabled' : 'disabled'}`);
 
-    // Current period (last 30 days)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    // Use provided time range or fall back to organization settings
+    let analyticsTimeRange: { start: string; end: string } | undefined = timeRange;
+    
+    if (!analyticsTimeRange) {
+      // Get organization dashboard settings
+      const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId);
+      const defaultSettings = dashboardSettingsService.getDefaultSettings();
+      const settings = dashboardSettings || defaultSettings;
+
+      // Calculate time range based on settings
+      const calculatedTimeRange = dashboardSettingsService.calculateTimeRange(settings);
+      analyticsTimeRange = calculatedTimeRange || undefined;
+    }
+
+    if (!analyticsTimeRange) {
+      // If no time range is available, return empty comparison
+      return {
+        currentPeriod: await this.getDashboardMetrics(organizationId),
+        previousPeriod: await this.getDashboardMetrics(organizationId),
+        improvements: []
+      };
+    }
+
+    // Calculate current period based on provided time range
+    const currentPeriodStart = new Date(analyticsTimeRange.start);
+    const currentPeriodEnd = new Date(analyticsTimeRange.end);
+    const currentPeriodDuration = currentPeriodEnd.getTime() - currentPeriodStart.getTime();
+
+    // Calculate previous period with same duration
+    const previousPeriodEnd = new Date(currentPeriodStart);
+    const previousPeriodStart = new Date(currentPeriodStart.getTime() - currentPeriodDuration);
+
+    console.log(`📊 Performance comparison periods:`, {
+      current: { start: currentPeriodStart.toISOString(), end: currentPeriodEnd.toISOString() },
+      previous: { start: previousPeriodStart.toISOString(), end: previousPeriodEnd.toISOString() }
+    });
+
+    // Get analytics for both periods
     const currentPeriod = await this.analyticsService.generateAnalytics({
-      start: thirtyDaysAgo.toISOString(),
-      end: new Date().toISOString()
+      start: currentPeriodStart.toISOString(),
+      end: currentPeriodEnd.toISOString()
     });
 
-    // Previous period (30-60 days ago)
-    const sixtyDaysAgo = new Date();
-    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
     const previousPeriod = await this.analyticsService.generateAnalytics({
-      start: sixtyDaysAgo.toISOString(),
-      end: thirtyDaysAgo.toISOString()
+      start: previousPeriodStart.toISOString(),
+      end: previousPeriodEnd.toISOString()
     });
 
-    // Calculate improvements
+    // Calculate improvements based on anomaly detection
     const improvements: Array<{ metric: string; change: number; direction: 'improved' | 'declined' }> = [];
     
-    // Volume change
+    // Volume change anomaly detection
     const volumeChange = currentPeriod.totalTickets - previousPeriod.totalTickets;
-    if (Math.abs(volumeChange) > 0) {
+    const volumeChangePercentage = previousPeriod.totalTickets > 0 ? 
+      (volumeChange / previousPeriod.totalTickets) * 100 : 0;
+    
+    // Only flag as anomaly if change is significant (>20% change)
+    if (Math.abs(volumeChangePercentage) > 20) {
       improvements.push({
         metric: 'Ticket Volume',
-        change: Math.abs(volumeChange),
+        change: Math.abs(volumeChangePercentage),
         direction: volumeChange > 0 ? 'declined' : 'improved'
       });
     }
 
-    // Sentiment improvement
+    // Sentiment improvement anomaly detection
     const currentNegativeRate = currentPeriod.totalTickets > 0 ? 
       (currentPeriod.sentimentDistribution.negative / currentPeriod.totalTickets) * 100 : 0;
     const previousNegativeRate = previousPeriod.totalTickets > 0 ? 
       (previousPeriod.sentimentDistribution.negative / previousPeriod.totalTickets) * 100 : 0;
     
-    if (Math.abs(currentNegativeRate - previousNegativeRate) > 5) {
+    const sentimentChange = Math.abs(currentNegativeRate - previousNegativeRate);
+    // Only flag as anomaly if sentiment change is significant (>10% change)
+    if (sentimentChange > 10) {
       improvements.push({
         metric: 'Negative Sentiment',
-        change: Math.abs(currentNegativeRate - previousNegativeRate),
+        change: sentimentChange,
         direction: currentNegativeRate < previousNegativeRate ? 'improved' : 'declined'
       });
     }
 
     const performanceData = {
-      currentPeriod: await this.getDashboardMetrics(organizationId),
-      previousPeriod: await this.getDashboardMetrics(organizationId), // Simplified for now
+      currentPeriod: await this.getDashboardMetrics(organizationId, {
+        start: currentPeriodStart.toISOString(),
+        end: currentPeriodEnd.toISOString()
+      }),
+      previousPeriod: await this.getDashboardMetrics(organizationId, {
+        start: previousPeriodStart.toISOString(),
+        end: previousPeriodEnd.toISOString()
+      }),
       improvements
     };
 
-    // No caching - always return fresh data
-    console.log(`✅ Returning fresh dashboard performance (no caching)`);
+    console.log(`✅ Returning dashboard performance data (caching: ${useCache ? 'enabled' : 'disabled'})`);
     return performanceData;
   }
 
@@ -449,7 +606,7 @@ ${JSON.stringify(analytics, null, 2)}
    */
   async debugOrganizationData(organizationId: string): Promise<{
     qdrantTickets: number;
-    redisCache: any;
+    redisCache: unknown;
     organizationExists: boolean;
   }> {
     try {
@@ -490,12 +647,13 @@ ${JSON.stringify(analytics, null, 2)}
     volumeData: Array<{ date: string; tickets: number }>;
     satisfactionData: Array<{ date: string; satisfaction: number }>;
   }> {
-    // Completely disable caching for dashboard to ensure fresh data
-    const useCache = false;
-    console.log(`🔄 Caching completely disabled for dashboard`);
+    // Check if caching should be used based on user context
+    const useCache = UserContextManager.getUseCache();
+    console.log(`🔄 Dashboard time-series caching: ${useCache ? 'enabled' : 'disabled'}`);
     
-    // Skip cache entirely - always fetch fresh data
-    console.log(`🔄 Skipping cache, fetching fresh time-series data`);
+    if (!useCache) {
+      console.log(`🔄 Skipping cache, fetching fresh time-series data`);
+    }
 
     // Use provided time range or fall back to organization settings
     let analyticsTimeRange: { start: string; end: string } | undefined = timeRange;
@@ -513,7 +671,7 @@ ${JSON.stringify(analytics, null, 2)}
 
     // Get real ticket data from Qdrant for time-series analysis
     console.log(`🔄 Fetching tickets for time range:`, analyticsTimeRange);
-    const tickets = await this.analyticsService['getAllTicketsForOrganization'](organizationId, analyticsTimeRange);
+    const tickets = await this.analyticsService['getAllTicketsForOrganization'](analyticsTimeRange);
     console.log(`📊 Found ${tickets.length} tickets for time-series analysis`);
     
     // Generate time-series data from real ticket data with adaptive granularity
@@ -523,7 +681,6 @@ ${JSON.stringify(analytics, null, 2)}
     // Determine granularity based on time range (following common practices)
     let granularity: 'minutes' | 'hours' | 'days' = 'days';
     let intervalMinutes: number = 1440; // Default: 1 day
-    let timeFormat: string = 'MMM dd';
     
     if (analyticsTimeRange) {
       const startDate = new Date(analyticsTimeRange.start);
@@ -533,60 +690,55 @@ ${JSON.stringify(analytics, null, 2)}
       const timeDiffHours = timeDiffMinutes / 60;
       const timeDiffDays = timeDiffHours / 24;
       
-      console.log(`⏰ Time range received:`, {
-        start: analyticsTimeRange.start,
-        end: analyticsTimeRange.end,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString()
-      });
       console.log(`⏰ Time range analysis: ${timeDiffMinutes.toFixed(0)} minutes, ${timeDiffHours.toFixed(2)} hours, ${timeDiffDays.toFixed(2)} days`);
       
       // Determine optimal granularity based on time range (following common practices)
-      console.log(`🔍 Granularity decision: ${timeDiffMinutes} minutes (${timeDiffMinutes <= 30 ? '≤30' : timeDiffMinutes <= 120 ? '≤120' : timeDiffMinutes <= 480 ? '≤480' : timeDiffHours <= 24 ? '≤24h' : timeDiffDays <= 7 ? '≤7d' : '>7d'})`);
-      
       if (timeDiffMinutes <= 30) {
         // 30 minutes or less: 5-minute intervals
         granularity = 'minutes';
         intervalMinutes = 5;
-        timeFormat = 'HH:mm';
         console.log(`📈 Using 5-minute intervals`);
       } else if (timeDiffMinutes <= 120) {
         // 2 hours or less: 15-minute intervals
         granularity = 'minutes';
         intervalMinutes = 15;
-        timeFormat = 'HH:mm';
         console.log(`📈 Using 15-minute intervals`);
       } else if (timeDiffMinutes <= 480) {
         // 8 hours or less: 30-minute intervals
         granularity = 'minutes';
         intervalMinutes = 30;
-        timeFormat = 'HH:mm';
         console.log(`📈 Using 30-minute intervals`);
       } else if (timeDiffHours <= 24) {
         // 24 hours or less: 1-hour intervals
         granularity = 'hours';
         intervalMinutes = 60;
-        timeFormat = 'HH:mm';
         console.log(`📈 Using 1-hour intervals`);
       } else if (timeDiffDays <= 7) {
         // 7 days or less: 6-hour intervals
         granularity = 'hours';
         intervalMinutes = 360;
-        timeFormat = 'MMM dd HH:mm';
         console.log(`📈 Using 6-hour intervals`);
       } else {
         // More than 7 days: daily intervals
         granularity = 'days';
         intervalMinutes = 1440;
-        timeFormat = 'MMM dd';
         console.log(`📈 Using daily intervals`);
       }
     }
 
-    // Group tickets by time granularity
-    const ticketsByTime = new Map<string, any[]>();
-    const satisfactionByTime = new Map<string, { positive: number; negative: number; neutral: number }>();
-
+    // Pre-process tickets for better performance
+    const ticketsByTime = new Map<string, { 
+      tickets: Array<{
+        payload?: {
+          created_at?: number;
+          timestamp?: number;
+          sentiment?: string;
+        };
+      }>; 
+      sentiment: { positive: number; negative: number; neutral: number } 
+    }>();
+    
+    // Group tickets by time granularity in a single pass
     tickets.forEach(ticket => {
       const createdAtRaw = ticket.payload?.created_at || ticket.payload?.timestamp;
       const createdAt = createdAtRaw && typeof createdAtRaw === 'number' ? new Date(createdAtRaw) : new Date();
@@ -621,16 +773,18 @@ ${JSON.stringify(analytics, null, 2)}
       }
       
       if (!ticketsByTime.has(timeKey)) {
-        ticketsByTime.set(timeKey, []);
-        satisfactionByTime.set(timeKey, { positive: 0, negative: 0, neutral: 0 });
+        ticketsByTime.set(timeKey, { 
+          tickets: [], 
+          sentiment: { positive: 0, negative: 0, neutral: 0 } 
+        });
       }
       
-      ticketsByTime.get(timeKey)!.push(ticket);
+      const timeSlot = ticketsByTime.get(timeKey)!;
+      timeSlot.tickets.push(ticket);
       
       // Track sentiment for satisfaction calculation
       const sentiment = ticket.payload?.sentiment || 'neutral';
-      const current = satisfactionByTime.get(timeKey)!;
-      current[sentiment as keyof typeof current]++;
+      timeSlot.sentiment[sentiment as keyof typeof timeSlot.sentiment]++;
     });
 
     // Generate data points for the time range
@@ -640,7 +794,7 @@ ${JSON.stringify(analytics, null, 2)}
       const timeDiffMs = endDate.getTime() - startDate.getTime();
       const timeDiffMinutes = timeDiffMs / (1000 * 60);
       
-      let currentDate = new Date(startDate);
+      const currentDate = new Date(startDate);
       const maxPoints = Math.ceil(timeDiffMinutes / intervalMinutes) + 1;
       let pointCount = 0;
       
@@ -705,17 +859,16 @@ ${JSON.stringify(analytics, null, 2)}
           });
         }
         
-        const timeTickets = ticketsByTime.get(timeKey) || [];
-        const timeSentiment = satisfactionByTime.get(timeKey) || { positive: 0, negative: 0, neutral: 0 };
+        const timeSlot = ticketsByTime.get(timeKey) || { tickets: [], sentiment: { positive: 0, negative: 0, neutral: 0 } };
         
         // Calculate satisfaction score for this time period
-        const totalTimeTickets = timeSentiment.positive + timeSentiment.negative + timeSentiment.neutral;
+        const totalTimeTickets = timeSlot.sentiment.positive + timeSlot.sentiment.negative + timeSlot.sentiment.neutral;
         const satisfaction = totalTimeTickets > 0 ? 
-          (timeSentiment.positive / totalTimeTickets) * 100 : 0;
+          (timeSlot.sentiment.positive / totalTimeTickets) * 100 : 0;
         
         volumeData.push({
           date: displayTime,
-          tickets: timeTickets.length
+          tickets: timeSlot.tickets.length
         });
         
         satisfactionData.push({
@@ -746,17 +899,16 @@ ${JSON.stringify(analytics, null, 2)}
         });
         
         const dateKey = currentDate.toISOString().split('T')[0];
-        const dayTickets = ticketsByTime.get(dateKey) || [];
-        const daySentiment = satisfactionByTime.get(dateKey) || { positive: 0, negative: 0, neutral: 0 };
+        const timeSlot = ticketsByTime.get(dateKey) || { tickets: [], sentiment: { positive: 0, negative: 0, neutral: 0 } };
         
         // Calculate satisfaction score for this day
-        const totalDayTickets = daySentiment.positive + daySentiment.negative + daySentiment.neutral;
+        const totalDayTickets = timeSlot.sentiment.positive + timeSlot.sentiment.negative + timeSlot.sentiment.neutral;
         const satisfaction = totalDayTickets > 0 ? 
-          (daySentiment.positive / totalDayTickets) * 100 : 0;
+          (timeSlot.sentiment.positive / totalDayTickets) * 100 : 0;
         
         volumeData.push({
           date: dateStr,
-          tickets: dayTickets.length
+          tickets: timeSlot.tickets.length
         });
         
         satisfactionData.push({

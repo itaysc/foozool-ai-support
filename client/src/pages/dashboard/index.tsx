@@ -545,10 +545,15 @@ const Dashboard = observer(() => {
                         />
                         <YAxis />
                         <RechartsTooltip 
-                          formatter={(value, name) => [
-                            name === 'count' ? `${value} tickets` : `${value}%`, 
-                            name === 'count' ? 'Count' : 'Percentage'
-                          ]}
+                          formatter={(value, name) => {
+                            if (name === 'count') {
+                              return [`${value} tickets`, 'Count'];
+                            } else if (name === 'percentage') {
+                              return [`${value}%`, 'Percentage'];
+                            } else {
+                              return [value, name];
+                            }
+                          }}
                           labelFormatter={(label) => `Intent: ${label}`}
                         />
                         <Bar dataKey="count" fill="#8884d8" name="Count" />
@@ -721,30 +726,32 @@ const Dashboard = observer(() => {
       {/* Insights Section */}
       {dashboardStore.insights && (
         <Box display="flex" flexWrap="wrap" gap={3}>
-          {/* Top Issues */}
-          {dashboardStore.insights.topIssues.length > 0 && (
-            <Box flex="1 1 500px" minWidth="500px">
+          {/* Future Predictions */}
+          {dashboardStore.insights.futurePredictions && dashboardStore.insights.futurePredictions.length > 0 && (
+            <Box flex="1 1 600px" minWidth="600px">
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Top Issues
+                  <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
+                    <Timeline color="primary" />
+                    Future Predictions
                   </Typography>
                   <Box>
-                    {toJS(dashboardStore.insights.topIssues).slice(0, 5).map((issue, index) => (
+                    {toJS(dashboardStore.insights.futurePredictions).slice(0, 5).map((prediction, index) => (
                       <Box 
                         key={index} 
                         sx={{ 
                           borderBottom: '1px solid #e0e0e0',
-                          py: 2,
+                          py: 3,
                           '&:last-child': { borderBottom: 'none' }
                         }}
                       >
-                        <Box display="flex" alignItems="center" width="100%">
-                          {/* Number */}
+                        <Box display="flex" alignItems="flex-start" width="100%">
+                          {/* Prediction Number */}
                           <Box sx={{ width: 50, display: 'flex', justifyContent: 'center' }}>
                             <Avatar 
                               sx={{ 
-                                bgcolor: getSeverityColor(issue.severity) + '.main', 
+                                bgcolor: prediction.impact === 'negative' ? 'error.main' : 
+                                         prediction.impact === 'positive' ? 'success.main' : 'info.main', 
                                 width: 32, 
                                 height: 32
                               }}
@@ -753,41 +760,75 @@ const Dashboard = observer(() => {
                             </Avatar>
                           </Box>
                           
-                          {/* Title */}
+                          {/* Prediction Content */}
                           <Box sx={{ flex: 1, px: 2 }}>
-                            <Typography variant="subtitle1" fontWeight="medium">
-                              {issue.title}
+                            <Typography variant="subtitle1" fontWeight="medium" color="primary">
+                              {prediction.title}
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                              {issue.description}
+                            <Typography variant="body2" sx={{ mt: 1, mb: 1.5 }}>
+                              <strong>Prediction:</strong> {prediction.prediction}
                             </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                              <strong>Reasoning:</strong> {prediction.reasoning}
+                            </Typography>
+                            
+                            {/* Suggested Actions */}
+                            {prediction.suggestedActions && prediction.suggestedActions.length > 0 && (
+                              <Box sx={{ mt: 2 }}>
+                                <Typography variant="body2" fontWeight="medium" color="text.secondary" sx={{ mb: 1 }}>
+                                  Suggested Actions:
+                                </Typography>
+                                <Box display="flex" flexWrap="wrap" gap={1}>
+                                  {prediction.suggestedActions.slice(0, 3).map((action, actionIndex) => (
+                                    <Chip 
+                                      key={actionIndex}
+                                      label={action} 
+                                      size="small" 
+                                      variant="outlined"
+                                      sx={{ 
+                                        fontSize: '0.75rem',
+                                        maxWidth: '200px'
+                                      }}
+                                    />
+                                  ))}
+                                  {prediction.suggestedActions.length > 3 && (
+                                    <Chip 
+                                      label={`+${prediction.suggestedActions.length - 3} more`} 
+                                      size="small" 
+                                      variant="outlined"
+                                      sx={{ fontSize: '0.75rem' }}
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+                            )}
                           </Box>
                           
-                          {/* Priority Tag */}
-                          <Box sx={{ width: 80, display: 'flex', justifyContent: 'center' }}>
+                          {/* Prediction Metadata */}
+                          <Box sx={{ width: 120, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            {/* Confidence */}
                             <Chip 
-                              label={issue.severity} 
+                              label={`${prediction.confidence} confidence`} 
                               size="small" 
-                              color={getSeverityColor(issue.severity) as any}
-                              sx={{ 
-                                width: 70, 
-                                height: 28,
-                                fontSize: '0.8rem'
-                              }}
+                              color={prediction.confidence === 'high' ? 'success' : 
+                                     prediction.confidence === 'medium' ? 'warning' : 'default'}
+                              sx={{ fontSize: '0.7rem' }}
                             />
-                          </Box>
-                          
-                          {/* Ticket Count Tag */}
-                          <Box sx={{ width: 100, display: 'flex', justifyContent: 'center' }}>
+                            
+                            {/* Timeframe */}
                             <Chip 
-                              label={`${issue.affectedTickets} tickets`} 
+                              label={prediction.timeframe} 
                               size="small" 
                               variant="outlined"
-                              sx={{ 
-                                width: 90, 
-                                height: 28,
-                                fontSize: '0.8rem'
-                              }}
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                            
+                            {/* Category */}
+                            <Chip 
+                              label={prediction.category.replace('_', ' ')} 
+                              size="small" 
+                              variant="outlined"
+                              sx={{ fontSize: '0.7rem' }}
                             />
                           </Box>
                         </Box>
@@ -800,7 +841,7 @@ const Dashboard = observer(() => {
           )}
 
           {/* Recommendations */}
-          {dashboardStore.insights.recommendations.length > 0 && (
+          {dashboardStore.insights.recommendations && dashboardStore.insights.recommendations.length > 0 && (
             <Box flex="1 1 500px" minWidth="500px">
               <Card>
                 <CardContent>

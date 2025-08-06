@@ -18,6 +18,13 @@ interface CleanupResult {
   errors: string[];
 }
 
+interface InsightsGenerationOptions {
+  timeRange?: { start: string; end: string };
+  includeTrends?: boolean;
+  includeAnomalies?: boolean;
+  includeFuturePredictions?: boolean;
+}
+
 export class InsightsOrchestratorService {
   private analyticsService: QdrantAnalyticsService;
 
@@ -32,7 +39,7 @@ export class InsightsOrchestratorService {
     timeRange?: { start: string; end: string };
     includeTrends?: boolean;
     includeAnomalies?: boolean;
-    includeTopIssues?: boolean;
+    includeFuturePredictions?: boolean;
   }): Promise<{
     success: boolean;
     insightsGenerated: number;

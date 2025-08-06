@@ -45,19 +45,18 @@ router.get('/debug', async (req: Request, res: Response): Promise<void> => {
  */
 router.get('/debug-tickets', async (req: Request, res: Response): Promise<void> => {
   try {
-    const organizationId = req.user!.organization.toString();
     const { start, end } = req.query;
     
     const dashboardService = new DashboardService();
     const analyticsService = dashboardService['analyticsService'];
     
     // Get total tickets for organization
-    const allTickets = await analyticsService['getAllTicketsForOrganization'](organizationId);
+    const allTickets = await analyticsService['getAllTicketsForOrganization']();
     
     // Get recent tickets (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentTickets = await analyticsService['getAllTicketsForOrganization'](organizationId, {
+    const recentTickets = await analyticsService['getAllTicketsForOrganization']({
       start: sevenDaysAgo.toISOString(),
       end: new Date().toISOString()
     });
@@ -65,7 +64,7 @@ router.get('/debug-tickets', async (req: Request, res: Response): Promise<void> 
     // Get tickets for custom time range if provided
     let customRangeTickets: any[] | null = null;
     if (start && end) {
-      customRangeTickets = await analyticsService['getAllTicketsForOrganization'](organizationId, {
+      customRangeTickets = await analyticsService['getAllTicketsForOrganization']({
         start: start as string,
         end: end as string
       });
@@ -101,6 +100,63 @@ router.get('/debug-tickets', async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ 
       success: false,
       error: 'Failed to get debug tickets data',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route GET /api/v1/insights/dashboard/debug-qdrant
+ * @desc Debug endpoint to check Qdrant data directly
+ * @access Private
+ */
+router.get('/debug-qdrant', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    const dashboardService = new DashboardService();
+    const analyticsService = dashboardService['analyticsService'];
+    
+    // Get raw Qdrant data
+    const tickets = await analyticsService['getAllTicketsForOrganization']({
+      start: start as string,
+      end: end as string
+    });
+    
+    // Calculate intent distribution manually
+    const intentCounts = tickets.reduce((acc, ticket) => {
+      const intent = ticket.payload?.intent || 'unknown';
+      acc[intent] = (acc[intent] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    // Sample tickets
+    const sampleTickets = tickets.slice(0, 5).map(ticket => ({
+      id: ticket.id,
+      intent: ticket.payload?.intent,
+      subject: ticket.payload?.subject?.substring(0, 100),
+      organization: ticket.payload?.organization,
+      created_at: ticket.payload?.created_at
+    }));
+
+    const debugData = {
+      totalTickets: tickets.length,
+      intentDistribution: intentCounts,
+      sampleTickets,
+      timeRange: start && end ? { start, end } : 'all time'
+    };
+
+    res.status(200).json({
+      success: true,
+      data: debugData
+    });
+
+  } catch (error) {
+    console.error('Error in debug Qdrant endpoint:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get debug Qdrant data',
       message: (error as Error).message
     });
   }

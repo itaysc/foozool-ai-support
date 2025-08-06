@@ -5,13 +5,11 @@ export const LoadingPage = () => {
     <styled.Body>
       <styled.LoadingContainer>
         <styled.LoadingText>
-          <span>F</span>
-          <span>O</span>
-          <span>O</span>
-          <span>Z</span>
-          <span>O</span>
-          <span>O</span>
-          <span>L</span>
+          <span>T</span>
+          <span>K</span>
+          <span>T</span>
+          <span>A</span>
+          <span>I</span>
         </styled.LoadingText>
       </styled.LoadingContainer>
       <styled.Socials>

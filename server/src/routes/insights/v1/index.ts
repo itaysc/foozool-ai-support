@@ -194,7 +194,7 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
       timeRange, 
       includeTrends = true, 
       includeAnomalies = true, 
-      includeTopIssues = true 
+      includeFuturePredictions = true 
     } = req.body;
 
     const analyticsService = new QdrantAnalyticsService();
@@ -202,7 +202,7 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
       timeRange,
       includeTrends,
       includeAnomalies,
-      includeTopIssues
+      includeFuturePredictions
     });
 
     res.status(200).json({

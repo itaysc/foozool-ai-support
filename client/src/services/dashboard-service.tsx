@@ -19,8 +19,7 @@ const dashboardService = {
   async getMetrics(timeRange?: { start: string; end: string }): Promise<DashboardMetrics> {
     try {
       const params: any = { 
-        useCache: false,
-        noCache: true,
+        useCache: 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -49,8 +48,7 @@ const dashboardService = {
   async getInsights(timeRange?: { start: string; end: string }): Promise<DashboardInsights> {
     try {
       const params: any = { 
-        useCache: false,
-        noCache: true,
+        useCache: 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -79,8 +77,7 @@ const dashboardService = {
   async getAlerts(timeRange?: { start: string; end: string }): Promise<DashboardAlert[]> {
     try {
       const params: any = { 
-        useCache: false,
-        noCache: true,
+        useCache: 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -114,8 +111,7 @@ const dashboardService = {
       console.log('🔍 Dashboard service: Making performance request to:', getRoute('performance'));
       const response = await axios.get(getRoute('performance'), {
         params: { 
-          useCache: false,
-          noCache: true,
+          useCache: 'false',
           _t: Date.now()
         },
         headers: {
@@ -141,8 +137,7 @@ const dashboardService = {
   }> {
     try {
       const params: any = { 
-        useCache: false,
-        noCache: true,
+        useCache: 'false',
         _t: Date.now()
       };
       if (timeRange) {

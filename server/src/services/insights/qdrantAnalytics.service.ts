@@ -2,6 +2,7 @@ import QdrantService from '../../qdrant/service';
 import { ticketCollectionConfig } from '../../qdrant/schemas/ticket';
 import { InsightModel } from '../../schemas/insight.schema';
 import { v4 as uuidv4 } from 'uuid';
+import get from 'lodash/get';
 import type { TicketAnalytics, InsightGenerationRequest, QdrantInsightsResult, TicketInsight } from 'src/types/insights';
 import { getRedisClient } from '../redis/client';
 import { UserContextManager } from '../../context/userContext';
@@ -16,8 +17,9 @@ export class QdrantAnalyticsService {
   /**
    * Extract all tickets for an organization from Qdrant
    */
-  private async getAllTicketsForOrganization(organizationId: string, timeRange?: { start: string; end: string }): Promise<any[]> {
+  private async getAllTicketsForOrganization(timeRange?: { start: string; end: string }): Promise<any[]> {
     try {
+      const organizationId = UserContextManager.getCurrentOrganizationId();
       // Validate organization ID
       if (!organizationId || typeof organizationId !== 'string') {
         console.error('❌ Invalid organization ID:', organizationId);
@@ -51,12 +53,7 @@ export class QdrantAnalyticsService {
             lte: new Date(timeRange.end).getTime()
           }
         });
-        console.log(`🔍 Filtering tickets by time range: ${timeRange.start} to ${timeRange.end}`);
-      } else {
-        console.log(`🔍 No time range provided, fetching all tickets for organization ${organizationId}`);
       }
-
-      console.log(`🔍 Qdrant filter structure:`, JSON.stringify(filter, null, 2));
 
       const tickets = await this.qdrantService.client.scroll(ticketCollectionConfig.name, {
         limit: 50000, // Increased limit to handle more tickets
@@ -67,9 +64,9 @@ export class QdrantAnalyticsService {
 
       const returnedTickets = tickets.points || [];
       console.log(`📊 Retrieved ${returnedTickets.length} tickets for organization ${organizationId}`);
-      
       return returnedTickets;
     } catch (error) {
+      const organizationId = UserContextManager.getCurrentOrganizationId();
       console.error('❌ Error in getAllTicketsForOrganization:', error);
       console.error('❌ Organization ID:', organizationId);
       console.error('❌ Time range:', timeRange);
@@ -88,28 +85,34 @@ export class QdrantAnalyticsService {
     }
     
     const redisKey = `analytics:${organizationId}`;
-    try {
-      const redis = await getRedisClient();
-      const cached = await redis.get(redisKey);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (parsed && typeof parsed.totalTickets === 'number') {
-            console.log(`✅ Returning analytics for org ${organizationId} from Redis cache`);
-            return parsed;
-          } else {
-            console.warn('⚠️ Cached analytics is invalid, regenerating...');
+    const useCache = UserContextManager.getUseCache();
+
+    // Check if caching should be used
+    if (useCache) {
+      try {
+        const redis = await getRedisClient();
+        const cached = await redis.get(redisKey);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && typeof parsed.totalTickets === 'number') {
+              return parsed;
+            } else {
+              console.warn('⚠️ Cached analytics is invalid, regenerating...');
+            }
+          } catch (err) {
+            console.error('❌ Error parsing cached analytics:', err);
           }
-        } catch (err) {
-          console.error('❌ Error parsing cached analytics:', err);
         }
+      } catch (err) {
+        console.error('❌ Redis error (fetching analytics):', err);
       }
-    } catch (err) {
-      console.error('❌ Redis error (fetching analytics):', err);
+    } else {
+      console.log(`🔄 Caching disabled by client request - fetching fresh data from Qdrant`);
     }
 
     // If not cached or cache is invalid, generate analytics as before
-    const tickets = await this.getAllTicketsForOrganization(organizationId, timeRange);
+    const tickets = await this.getAllTicketsForOrganization(timeRange);
     if (tickets.length === 0) {
       const emptyAnalytics: TicketAnalytics = {
         totalTickets: 0,
@@ -117,7 +120,6 @@ export class QdrantAnalyticsService {
         sentimentDistribution: { positive: 0, negative: 0, neutral: 0 },
         intentDistribution: {},
         tagFrequency: {},
-        topSubjects: [],
         trends: { volumeTrend: 'stable', satisfactionTrend: 'stable', percentageChange: 0 },
         anomalies: []
       };
@@ -140,11 +142,11 @@ export class QdrantAnalyticsService {
 
     // Calculate intent distribution
     const intentCounts = tickets.reduce((acc, ticket) => {
-      const intent = ticket.payload?.intent || 'unknown';
+      const intent = get(ticket, 'payload.intent.intent', null) || get(ticket, 'payload.intent', null);
       acc[intent] = (acc[intent] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
+    
     // Calculate tag frequency
     const tagCounts: Record<string, number> = {};
     tickets.forEach(ticket => {
@@ -154,26 +156,12 @@ export class QdrantAnalyticsService {
       });
     });
 
-    // Get top subjects (if available in payload)
-    const subjectCounts: Record<string, number> = {};
-    tickets.forEach(ticket => {
-      const subject = ticket.payload?.subject;
-      if (subject) {
-        subjectCounts[subject] = (subjectCounts[subject] || 0) + 1;
-      }
-    });
-
-    const topSubjects = Object.entries(subjectCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 10)
-      .map(([subject, count]) => ({ subject, count }));
-
     // Calculate trends (simplified - you might want to implement more sophisticated trend analysis)
     const volumeTrend = this.calculateVolumeTrend(tickets);
     const satisfactionTrend = this.calculateSatisfactionTrend(tickets);
 
     // Detect anomalies
-    const anomalies = await this.detectAnomalies(tickets, organizationId);
+    const anomalies = await this.detectAnomalies(tickets);
 
     const analytics: TicketAnalytics = {
       totalTickets: tickets.length,
@@ -185,7 +173,6 @@ export class QdrantAnalyticsService {
       },
       intentDistribution: intentCounts,
       tagFrequency: tagCounts,
-      topSubjects,
       trends: {
         volumeTrend,
         satisfactionTrend,
@@ -198,7 +185,6 @@ export class QdrantAnalyticsService {
     try {
       const redis = await getRedisClient();
       await redis.set(redisKey, JSON.stringify(analytics), { EX: 86400 }); // 1 day expiry
-      console.log(`♻️  Cached analytics for org ${organizationId} in Redis`);
     } catch (err) {
       console.error('❌ Failed to cache analytics in Redis:', err);
     }
@@ -232,8 +218,8 @@ export class QdrantAnalyticsService {
     const insights: any[] = [];
 
     // Generate insights based on request parameters
-    if (request.includeTopIssues) {
-      insights.push(...await this.generateTopIssuesInsights(analytics));
+    if (request.includeFuturePredictions) {
+      insights.push(...await this.generateFuturePredictionInsights(analytics));
     }
 
     if (request.includeTrends) {
@@ -264,12 +250,12 @@ export class QdrantAnalyticsService {
   }
 
   /**
-   * Generate insights about top issues and trends
+   * Generate insights about future predictions and trends
    */
-  private async generateTopIssuesInsights(analytics: TicketAnalytics): Promise<TicketInsight[]> {
+  private async generateFuturePredictionInsights(analytics: TicketAnalytics): Promise<TicketInsight[]> {
     const insights: TicketInsight[] = [];
 
-    // Top intents insight (TrendInsight)
+    // Top intents insight (TrendInsight) - focusing on future implications
     const topIntents = Object.entries(analytics.intentDistribution)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5);
@@ -278,8 +264,8 @@ export class QdrantAnalyticsService {
         id: uuidv4(),
         category: 'trend',
         severity: 'medium',
-        title: 'Most Common Customer Intents',
-        description: `The most common customer intents are: ${topIntents.map(([intent, count]) => `${intent} (${count} tickets)`).join(', ')}. This indicates the primary areas where customers need support.`,
+        title: 'Future Customer Intent Trends',
+        description: `Based on current patterns, expect continued focus on: ${topIntents.map(([intent, count]) => `${intent} (${count} tickets)`).join(', ')}. This indicates areas where customers will likely need ongoing support.`,
         confidence: 0.8,
         ticketIds: [],
         status: 'active',
@@ -287,33 +273,12 @@ export class QdrantAnalyticsService {
         updatedAt: new Date(),
         trendType: 'support_volume',
         direction: 'stable',
-        timeFrame: '',
+        timeFrame: 'next month',
         percentageChange: 0
       });
     }
 
-    // Top subjects insight (TrendInsight)
-    const topSubjects = analytics.topSubjects?.slice(0, 5) || [];
-    if (topSubjects.length > 0) {
-      insights.push({
-        id: uuidv4(),
-        category: 'trend',
-        severity: 'low',
-        title: 'Most Common Ticket Subjects',
-        description: `The most common ticket subjects are: ${topSubjects.map(s => `${s.subject} (${s.count} times)`).join(', ')}.`,
-        confidence: 0.7,
-        ticketIds: [],
-        status: 'active',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        trendType: 'support_volume',
-        direction: 'stable',
-        timeFrame: '',
-        percentageChange: 0
-      });
-    }
-
-    // Sentiment insight (CustomerSatisfactionInsight)
+    // Sentiment insight (CustomerSatisfactionInsight) - focusing on future implications
     const totalTickets = analytics.totalTickets;
     const negativePercentage = (analytics.sentimentDistribution.negative / totalTickets) * 100;
     if (negativePercentage > 30) {
@@ -321,8 +286,8 @@ export class QdrantAnalyticsService {
         id: uuidv4(),
         category: 'customer_satisfaction',
         severity: 'high',
-        title: 'High Negative Sentiment Detected',
-        description: `${negativePercentage.toFixed(1)}% of tickets have negative sentiment. This indicates potential customer satisfaction issues that need immediate attention.`,
+        title: 'Predicted CSAT Decline',
+        description: `Current negative sentiment rate of ${negativePercentage.toFixed(1)}% suggests potential CSAT decline. Immediate intervention needed to prevent further deterioration.`,
         confidence: 0.9,
         ticketIds: [],
         status: 'active',
@@ -335,7 +300,7 @@ export class QdrantAnalyticsService {
       });
     }
 
-    // Top tags insight (TrendInsight)
+    // Top tags insight (TrendInsight) - focusing on future implications
     const topTags = Object.entries(analytics.tagFrequency)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5);
@@ -344,8 +309,8 @@ export class QdrantAnalyticsService {
         id: uuidv4(),
         category: 'trend',
         severity: 'low',
-        title: 'Most Common Ticket Tags',
-        description: `The most frequently used tags are: ${topTags.map(([tag, count]) => `${tag} (${count} times)`).join(', ')}. This helps identify common themes in support requests.`,
+        title: 'Emerging Support Themes',
+        description: `Current tag patterns suggest these themes will continue: ${topTags.map(([tag, count]) => `${tag} (${count} times)`).join(', ')}. Prepare support resources accordingly.`,
         confidence: 0.7,
         ticketIds: [],
         status: 'active',
@@ -353,33 +318,29 @@ export class QdrantAnalyticsService {
         updatedAt: new Date(),
         trendType: 'support_volume',
         direction: 'stable',
-        timeFrame: '',
+        timeFrame: 'next quarter',
         percentageChange: 0
       });
     }
 
-    // Top customer segments (TrendInsight)
-    if ((analytics as any).customerSegments) {
-      const segments = (analytics as any).customerSegments as Record<string, number>;
-      const topSegments = Object.entries(segments).sort(([,a], [,b]) => b - a).slice(0, 3);
-      if (topSegments.length > 0) {
-        insights.push({
-          id: uuidv4(),
-          category: 'trend',
-          severity: 'low',
-          title: 'Top Customer Segments',
-          description: `Top customer segments by ticket volume: ${topSegments.map(([seg, count]) => `${seg} (${count})`).join(', ')}.`,
-          confidence: 0.6,
-          ticketIds: [],
-          status: 'active',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          trendType: 'support_volume',
-          direction: 'stable',
-          timeFrame: '',
-          percentageChange: 0
-        });
-      }
+    // Volume trend prediction (TrendInsight)
+    if (analytics.trends.volumeTrend !== 'stable') {
+      insights.push({
+        id: uuidv4(),
+        category: 'trend',
+        severity: analytics.trends.volumeTrend === 'increasing' ? 'medium' : 'low',
+        title: `Predicted Volume ${analytics.trends.volumeTrend === 'increasing' ? 'Growth' : 'Decline'}`,
+        description: `Current ${analytics.trends.volumeTrend} trend suggests ${analytics.trends.volumeTrend === 'increasing' ? 'continued growth' : 'further decline'} in support volume. Plan resource allocation accordingly.`,
+        confidence: 0.8,
+        ticketIds: [],
+        status: 'active',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        trendType: 'support_volume',
+        direction: analytics.trends.volumeTrend,
+        timeFrame: 'next month',
+        percentageChange: analytics.trends.percentageChange
+      });
     }
 
     return insights;
@@ -512,7 +473,7 @@ export class QdrantAnalyticsService {
   /**
    * Detect anomalies in ticket data
    */
-  private async detectAnomalies(tickets: any[], organizationId: string): Promise<any[]> {
+  private async detectAnomalies(tickets: any[]): Promise<any[]> {
     const anomalies: any[] = [];
 
     // Simple anomaly detection - you might want to implement more sophisticated algorithms
