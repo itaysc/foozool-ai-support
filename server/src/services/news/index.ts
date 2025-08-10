@@ -1,7 +1,7 @@
 import Parser from 'rss-parser';
 import { OrganizationModel } from '../../schemas/organization.schema';
 import { summarizeTickets } from '../call-python';
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import { getRedisClient } from '../redis/client';
 import { UserContextManager } from '../../context/userContext';
 
@@ -118,7 +118,6 @@ export class NewsService {
       const response = await callLLM({
         userId,
         prompt,
-        model: 'mistralai/Mistral-7B-Instruct-v0.1',
         maxTokens: 500,
         temperature: 0.3,
         topP: 0.9,
@@ -269,7 +268,6 @@ export class NewsService {
         const analysisResponse = await callLLM({
           userId: 'system',
           prompt: analysisPrompt,
-          model: 'mistralai/Mistral-7B-Instruct-v0.1',
           maxTokens: 300,
           temperature: 0.3,
           topP: 0.9,
@@ -417,7 +415,6 @@ export class NewsService {
       const actionItemsResponse = await callLLM({
         userId: 'system',
         prompt: actionItemsPrompt,
-        model: 'mistralai/Mistral-7B-Instruct-v0.1',
         maxTokens: 1000,
         temperature: 0.3,
         topP: 0.9,

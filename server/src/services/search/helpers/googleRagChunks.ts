@@ -1,4 +1,4 @@
-import { callLLM } from '../../together.ai';
+import { callLLM } from '../../llm';
 import { getSBERTEmbeddingForText } from '../../call-python';
 import { searchGoogleDriveFiles } from '../../../qdrant/service';
 import { summarizeTickets } from '../../call-python';

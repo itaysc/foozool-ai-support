@@ -157,6 +157,55 @@ export interface QdrantInsightsResult {
 
 // --- Dashboard Types ---
 
+export interface UserAgentAnalytics {
+  totalTickets: number;
+  deviceBreakdown: {
+    mobile: { count: number; percentage: number };
+    desktop: { count: number; percentage: number };
+    tablet: { count: number; percentage: number };
+  };
+  osBreakdown: Array<{
+    os: string;
+    count: number;
+    percentage: number;
+    versions: Array<{ version: string; count: number; percentage: number }>;
+  }>;
+  browserBreakdown: Array<{
+    browser: string;
+    count: number;
+    percentage: number;
+    versions: Array<{ version: string; count: number; percentage: number }>;
+  }>;
+  topUserAgents: Array<{
+    userAgent: string;
+    count: number;
+    percentage: number;
+    device: string;
+    os: string;
+    browser: string;
+  }>;
+  anomalies: Array<{
+    type: 'os_spike' | 'browser_spike' | 'device_spike' | 'version_issue';
+    title: string;
+    description: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    data: {
+      metric: string;
+      value: number;
+      expectedRange: [number, number];
+      affectedTickets: number;
+    };
+  }>;
+  insights: Array<{
+    type: 'trend' | 'pattern' | 'recommendation';
+    title: string;
+    description: string;
+    impact: 'positive' | 'negative' | 'neutral';
+    confidence: number;
+    data: Record<string, any>;
+  }>;
+}
+
 export interface DashboardMetrics {
   totalTickets: number;
   recentTickets: number; // Last 7 days
@@ -173,6 +222,16 @@ export interface DashboardMetrics {
   highPriorityInsights: number;
   averageResponseTime?: number;
   customerSatisfactionScore?: number;
+  userAgentAnalytics?: {
+    totalTickets: number;
+    deviceBreakdown: {
+      mobile: { count: number; percentage: number };
+      desktop: { count: number; percentage: number };
+      tablet: { count: number; percentage: number };
+    };
+    topOS: Array<{ os: string; count: number; percentage: number }>;
+    topBrowsers: Array<{ browser: string; count: number; percentage: number }>;
+  };
 }
 
 export interface FuturePrediction {

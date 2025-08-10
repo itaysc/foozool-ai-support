@@ -1,7 +1,7 @@
 import { IProduct } from 'src/types';
 import { faker } from '@faker-js/faker';
 import { ProductModel } from 'src/schemas/product.schema';
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import { buildProductPromptFromTicket } from './prompts';
 import sanitizeJSON from 'src/utils/sanitizeJson';
 

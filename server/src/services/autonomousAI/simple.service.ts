@@ -4,7 +4,7 @@ import {
   TriggerSource
 } from '../../types/autonomousAI';
 import { ActionThresholdModel, ActionLogModel, CustomerTierModel, TicketModel, OrganizationModel } from '../../schemas';
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import { Types } from 'mongoose';
 
 export class SimpleAutonomousAIService {
@@ -137,6 +137,31 @@ export class SimpleAutonomousAIService {
    * Perform AI analysis on ticket
    */
   private static async performAIAnalysis(context: any): Promise<any> {
+    // Get user agent analytics for additional context
+    let userAgentContext = '';
+    try {
+      const { UserAgentAnalyticsService } = await import('../insights/userAgentAnalytics.service');
+      const userAgentService = new UserAgentAnalyticsService();
+      const userAgentAnalytics = await userAgentService.generateUserAgentAnalytics();
+      
+      if (userAgentAnalytics.totalTickets > 0) {
+        const topOS = userAgentAnalytics.osBreakdown[0];
+        const topBrowser = userAgentAnalytics.browserBreakdown[0];
+        const deviceBreakdown = userAgentAnalytics.deviceBreakdown;
+        
+        userAgentContext = `
+User Agent Context (Organization-wide):
+- Top OS: ${topOS?.os || 'Unknown'} (${topOS?.percentage || 0}%)
+- Top Browser: ${topBrowser?.browser || 'Unknown'} (${topBrowser?.percentage || 0}%)
+- Device Distribution: Mobile ${deviceBreakdown.mobile.percentage}%, Desktop ${deviceBreakdown.desktop.percentage}%, Tablet ${deviceBreakdown.tablet.percentage}%
+- Active Anomalies: ${userAgentAnalytics.anomalies.length}
+- Key Insights: ${userAgentAnalytics.insights.map(i => i.title).join(', ')}
+`;
+      }
+    } catch (error) {
+      console.warn('Failed to get user agent context for AI analysis:', error);
+    }
+
     const prompt = `
       Analyze this customer support ticket and provide detailed insights:
       
@@ -146,6 +171,14 @@ export class SimpleAutonomousAIService {
       Status: ${context.ticket.status}
       Tags: ${context.ticket.tags.join(', ')}
       Customer Tier: ${context.customer.tier || 'unknown'}
+      
+      ${userAgentContext}
+      
+      Consider user agent patterns when analyzing:
+      - If there are platform-specific issues (iOS, Android, Windows, macOS)
+      - If browser-specific problems are common
+      - If mobile vs desktop usage patterns affect the issue
+      - If device-specific optimizations are needed
       
       Return a JSON object with the following structure:
       {
@@ -157,11 +190,18 @@ export class SimpleAutonomousAIService {
         "estimatedResolutionTime": number (hours),
         "keywords": string[],
         "intent": string,
-        "suggestedTags": string[]
+        "suggestedTags": string[],
+        "userAgentInsights": {
+          "platformSpecific": boolean,
+          "browserSpecific": boolean,
+          "deviceSpecific": boolean,
+          "recommendedActions": string[]
+        }
       }
       
       Analyze the customer's tone, urgency, and the complexity of their issue.
       Consider their tier level when assessing satisfaction and urgency.
+      Include user agent insights if the issue appears to be platform, browser, or device specific.
     `;
 
     const response = await callLLM({
@@ -169,7 +209,6 @@ export class SimpleAutonomousAIService {
       isChat: true,
       systemMsg: 'You are an AI support analyst. Analyze tickets and provide structured insights.',
       prompt,
-      model: 'meta-llama/Meta-Llama.3.1-8B-Instruct-Turbo',
       maxTokens: 1000,
       temperature: 0.3,
       topP: 0.9,

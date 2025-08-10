@@ -1,6 +1,7 @@
 import { QdrantAnalyticsService } from './qdrantAnalytics.service';
+import { UserAgentAnalyticsService } from './userAgentAnalytics.service';
 import { InsightModel } from '../../schemas/insight.schema';
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import type { VolumeTrend, SatisfactionTrend, TicketAnalytics } from '../../types/insights';
 import { UserContextManager } from '../../context/userContext';
 import sanitizeText, { extractJSONFromText } from 'src/utils/text-sanitize';
@@ -23,6 +24,22 @@ interface DashboardMetrics {
   highPriorityInsights: number;
   averageResponseTime?: number; // If you track this
   customerSatisfactionScore?: number; // If you track this
+  userAgentAnalytics?: {
+    totalTickets: number;
+    deviceBreakdown: {
+      mobile: { count: number; percentage: number };
+      desktop: { count: number; percentage: number };
+      tablet: { count: number; percentage: number };
+    };
+    topOS: Array<{ os: string; count: number; percentage: number }>;
+    topBrowsers: Array<{ browser: string; count: number; percentage: number }>;
+    anomalies: Array<{
+      type: string;
+      title: string;
+      description: string;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+    }>;
+  };
 }
 
 interface DashboardInsights {
@@ -52,9 +69,11 @@ interface DashboardInsights {
 
 export class DashboardService {
   private analyticsService: QdrantAnalyticsService;
+  private userAgentAnalyticsService: UserAgentAnalyticsService;
 
   constructor() {
     this.analyticsService = new QdrantAnalyticsService();
+    this.userAgentAnalyticsService = new UserAgentAnalyticsService();
   }
 
   /**
@@ -142,6 +161,15 @@ export class DashboardService {
         percentage: totalTagUsage > 0 ? ((count as number) / totalTagUsage) * 100 : 0
       }));
 
+    // Get user agent analytics
+    let userAgentAnalytics: any = null;
+    try {
+      userAgentAnalytics = await this.userAgentAnalyticsService.generateUserAgentAnalytics(analyticsTimeRange);
+      console.log(`📱 User agent analytics: ${userAgentAnalytics.totalTickets} tickets with user agent data`);
+    } catch (error) {
+      console.warn('⚠️ Failed to generate user agent analytics:', error);
+    }
+
     const metrics: DashboardMetrics = {
       totalTickets: analytics.totalTickets,
       recentTickets: recentAnalytics?.totalTickets || 0,
@@ -151,7 +179,27 @@ export class DashboardService {
       volumeTrend: analytics.trends.volumeTrend,
       satisfactionTrend: analytics.trends.satisfactionTrend,
       activeInsights,
-      highPriorityInsights
+      highPriorityInsights,
+      userAgentAnalytics: userAgentAnalytics ? {
+        totalTickets: userAgentAnalytics.totalTickets,
+        deviceBreakdown: userAgentAnalytics.deviceBreakdown,
+        topOS: userAgentAnalytics.osBreakdown.slice(0, 5).map(os => ({
+          os: os.os,
+          count: os.count,
+          percentage: os.percentage
+        })),
+        topBrowsers: userAgentAnalytics.browserBreakdown.slice(0, 5).map(browser => ({
+          browser: browser.browser,
+          count: browser.count,
+          percentage: browser.percentage
+        })),
+        anomalies: userAgentAnalytics.anomalies.map(anomaly => ({
+          type: anomaly.type,
+          title: anomaly.title,
+          description: anomaly.description,
+          severity: anomaly.severity
+        }))
+      } : undefined
     };
 
     return metrics;
@@ -234,9 +282,9 @@ ${JSON.stringify(newsData?.actionItems || [], null, 2)}
   "futurePredictions": [
     {
       "title": "Predicted: [Specific Prediction]",
-      "prediction": "Clear, specific prediction about what will happen",
-      "reasoning": "Data-driven explanation of why this prediction is made",
-      "suggestedActions": ["Action 1", "Action 2", "Action 3"],
+      "prediction": "[Write a specific, actionable prediction based on the data]",
+      "reasoning": "[Explain the data points and trends that support this prediction]",
+      "suggestedActions": ["[Specific action 1]", "[Specific action 2]", "[Specific action 3]"],
       "confidence": "high|medium|low",
       "category": "ticket_volume|csat|profit_impact|external_event|product_issue|market_change",
       "timeframe": "next week|next month|next quarter|next 6 months",
@@ -245,18 +293,18 @@ ${JSON.stringify(newsData?.actionItems || [], null, 2)}
   ],
   "trends": [
     {
-      "title": "Trend title",
-      "description": "Description of the trend",
+      "title": "[Specific trend title]",
+      "description": "[Detailed description of the trend with data points]",
       "trend": "increasing|decreasing|stable",
       "impact": "positive|negative|neutral"
     }
   ],
   "recommendations": [
     {
-      "title": "Recommendation title",
-      "description": "Detailed recommendation",
+      "title": "[Specific recommendation title]",
+      "description": "[Detailed recommendation with rationale]",
       "priority": "low|medium|high|critical",
-      "actionItems": ["Action 1", "Action 2", "Action 3"]
+      "actionItems": ["[Specific action 1]", "[Specific action 2]", "[Specific action 3]"]
     }
   ]
 }
@@ -289,17 +337,30 @@ Focus on predictions that will impact:
 - Include both immediate and strategic actions
 - Consider resource allocation and timing
 
-**CRITICAL: Respond with ONLY the JSON object above. No additional text, no explanations, no markdown formatting.**
+**CRITICAL INSTRUCTIONS:**
+1. Respond with ONLY the JSON object above. No additional text, no explanations, no markdown formatting.
+2. Replace ALL placeholder text in brackets (like [Specific Prediction], [Write a specific...], etc.) with actual, specific content.
+3. Use the actual data provided to make real predictions, not generic statements.
+4. Each prediction should be specific, measurable, and actionable.
+5. Reference specific numbers, percentages, and trends from the data in your reasoning.
+6. Make sure all suggested actions are concrete and implementable.
+
+**EXAMPLE OF GOOD PREDICTION:**
+Instead of: "Clear, specific prediction about what will happen"
+Use: "Ticket volume will increase by 35% in the next quarter due to the 20% growth in negative sentiment and 15% increase in billing-related tickets"
+
+**EXAMPLE OF GOOD REASONING:**
+Instead of: "Data-driven explanation of why this prediction is made"
+Use: "Current data shows 45% of tickets are billing-related, with 60% negative sentiment. The recent 25% increase in billing tickets combined with 30% decrease in satisfaction scores indicates growing customer frustration with payment processes."
 `;
 
     const response = await callLLM({
       userId: userId,
       prompt,
-      model: 'mistralai/Mistral-7B-Instruct-v0.1',
       maxTokens: 4000,
       temperature: 0.2,
       isChat: true,
-      systemMsg: 'You are an expert business analyst specializing in predictive analytics. You must ALWAYS respond with valid JSON only. Never include explanatory text, markdown, or any other formatting. Your response must be parseable by JSON.parse(). Focus on actionable, data-driven predictions that help businesses prepare for future challenges and opportunities.',
+      systemMsg: 'You are an expert business analyst specializing in predictive analytics. You must ALWAYS respond with valid JSON only. Never include explanatory text, markdown, or any other formatting. Your response must be parseable by JSON.parse(). Focus on actionable, data-driven predictions that help businesses prepare for future challenges and opportunities. IMPORTANT: Replace all placeholder text in brackets (like [Specific Prediction]) with actual, specific content based on the data provided. Never use placeholder text in your final response.',
     });
 
     try {

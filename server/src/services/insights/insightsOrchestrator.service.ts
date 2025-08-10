@@ -1,6 +1,6 @@
 import { QdrantAnalyticsService } from './qdrantAnalytics.service';
 import { InsightModel } from '../../schemas/insight.schema';
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import { v4 as uuidv4 } from 'uuid';
 import type { TicketAnalytics, TicketInsight } from 'src/types/insights';
 import { UserContextManager } from '../../context/userContext';
@@ -253,7 +253,6 @@ Focus on insights that would be valuable for:
       const response = await callLLM({
         userId: userId || 'system', // Use actual user ID or fallback to system
         prompt,
-        model: 'mistralai/Mistral-7B-Instruct-v0.1',
         maxTokens: 2000,
         temperature: 0.3,
         isChat: true,

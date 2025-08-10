@@ -20,6 +20,7 @@ export const ticketCollectionConfig = {
         status: 'string',
         tags: 'array', // array of strings
         intent: 'string',
+        user_agent: 'string', // User agent string
     } as const,
 };
 
@@ -36,6 +37,7 @@ export interface QdrantTicketPoint {
         timestamp: string; // Original ISO string timestamp
         tags?: string[];
         intent?: string;
+        user_agent?: string; // User agent string
     };
 }
 

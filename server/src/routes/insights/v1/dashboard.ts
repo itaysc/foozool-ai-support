@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { DashboardService } from '../../../services/insights/dashboard.service';
 import dashboardSettingsTestRouter from './dashboard-settings-test';
+import { OptimizedAnalyticsService } from '../../../services/insights/optimizedAnalytics.service';
 
 const router = express.Router();
 
@@ -301,6 +302,44 @@ router.get('/alerts', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
+ * @route GET /api/v1/insights/dashboard/user-agent-analytics
+ * @desc Get detailed user agent analytics and insights
+ * @access Private
+ */
+router.get('/user-agent-analytics', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    // Parse time range from query parameters
+    let timeRange: { start: string; end: string } | undefined;
+    if (start && end) {
+      timeRange = {
+        start: start as string,
+        end: end as string
+      };
+    }
+    
+    const dashboardService = new DashboardService();
+    const userAgentAnalyticsService = dashboardService['userAgentAnalyticsService'];
+    const analytics = await userAgentAnalyticsService.generateUserAgentAnalytics(timeRange);
+
+    res.status(200).json({
+      success: true,
+      data: analytics
+    });
+
+  } catch (error) {
+    console.error('Error fetching user agent analytics:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch user agent analytics',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
  * @route GET /api/v1/insights/dashboard/performance
  * @desc Get performance comparison with previous periods
  * @access Private
@@ -358,6 +397,136 @@ router.get('/timeseries', async (req: Request, res: Response): Promise<void> => 
     res.status(500).json({ 
       success: false,
       error: 'Failed to fetch time-series data',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route GET /api/v1/insights/dashboard/batch
+ * @desc Get all dashboard data in a single request (optimized for performance)
+ * @access Private
+ */
+router.get('/batch', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    // Parse time range from query parameters
+    let timeRange: { start: string; end: string } | undefined;
+    if (start && end) {
+      timeRange = {
+        start: start as string,
+        end: end as string
+      };
+    }
+    
+    const dashboardService = new DashboardService();
+    
+    // Execute all dashboard operations in parallel
+    const [metrics, insights, alerts] = await Promise.all([
+      dashboardService.getDashboardMetrics(organizationId, timeRange),
+      dashboardService.getDashboardInsights(organizationId, timeRange),
+      dashboardService.getAlerts(organizationId, timeRange)
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        metrics,
+        insights,
+        alerts,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching batched dashboard data:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch batched dashboard data',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route GET /api/v1/insights/dashboard/optimized
+ * @desc Get all dashboard data using optimized analytics (single Qdrant query)
+ * @access Private
+ */
+router.get('/optimized', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = req.user!.organization.toString();
+    const { start, end } = req.query;
+    
+    // Parse time range from query parameters
+    let timeRange: { start: string; end: string } | undefined;
+    if (start && end) {
+      timeRange = {
+        start: start as string,
+        end: end as string
+      };
+    }
+    
+    const optimizedService = new OptimizedAnalyticsService();
+    const result = await optimizedService.generateOptimizedAnalytics(timeRange);
+
+    res.status(200).json({
+      success: true,
+      data: result
+    });
+
+  } catch (error) {
+    console.error('Error fetching optimized dashboard data:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch optimized dashboard data',
+      message: (error as Error).message
+    });
+  }
+});
+
+/**
+ * @route GET /api/v1/insights/dashboard/debug-llm
+ * @desc Debug endpoint to check LLM service status
+ * @access Private
+ */
+router.get('/debug-llm', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { LLMService } = await import('../../../services/llm');
+    const { LLMProvider } = await import('../../../services/llm/types');
+    const { llmConfig, isProviderEnabled } = await import('../../../services/llm/config');
+    
+    const llmService = new LLMService();
+    
+    const debugInfo = {
+      defaultProvider: llmService.getDefaultProvider(),
+      availableProviders: llmService.getAvailableProviders(),
+      config: {
+        defaultProvider: llmConfig.defaultProvider,
+        togetherAIEnabled: isProviderEnabled(LLMProvider.TOGETHER_AI),
+        openAIEnabled: isProviderEnabled(LLMProvider.OPENAI),
+        fallbackEnabled: llmConfig.fallbackEnabled
+      },
+      environment: {
+        hasTogetherAIKey: !!process.env.TOGETHER_API_KEY,
+        hasOpenAIKey: !!process.env.OPENAI_API_KEY,
+        togetherAIKeyLength: process.env.TOGETHER_API_KEY?.length || 0,
+        openAIKeyLength: process.env.OPENAI_API_KEY?.length || 0
+      }
+    };
+
+    res.status(200).json({
+      success: true,
+      data: debugInfo
+    });
+
+  } catch (error) {
+    console.error('Error in debug LLM endpoint:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to get debug LLM data',
       message: (error as Error).message
     });
   }

@@ -1,4 +1,4 @@
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import { faker } from '@faker-js/faker';
 import { ICreateTicketPayload } from '../../types';
 import { UserModel } from '../../schemas';
@@ -46,7 +46,6 @@ export const createTicket = async () => {
             isChat: true,
             systemMsg: `You are a customer submitting a support ticket for an electronics store. Respond only with a valid JSON object (no text).`,
             prompt,
-            model: 'mistralai/Mistral-7B-Instruct-v0.1',
             maxTokens: 1000,
             temperature: 0.8,
             topP: 0.9,

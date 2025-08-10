@@ -3,7 +3,7 @@ import { classifyIntent, getSBERTEmbedding, summarizeTickets } from '../call-pyt
 import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
 import { buildAgentSuggestionPrompt, buildPrompt } from './prompts';
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import { addCommentToTicket } from '../zendesk';
 import sanitizeText, { extractCustomerMessage } from 'src/utils/text-sanitize';
 import QdrantService from '../../qdrant/service';
@@ -29,7 +29,6 @@ async function getAgentSuggestion(userId: string, ticketPayload: { subject: stri
   const response = await callLLM({
     userId,
     prompt,
-    model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 1000,
     temperature: 0,
     isChat: true,
@@ -54,7 +53,6 @@ async function generateTicketResponse(
   const response = await callLLM({
     userId,
     prompt,
-    model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 1000,
     temperature: 0.2,
     isChat: true,

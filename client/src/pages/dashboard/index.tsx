@@ -31,11 +31,10 @@ import {
   Info,
   CheckCircle,
   Refresh,
-  Timeline,
-  Assessment,
   Notifications,
   Speed,
-  BugReport
+  BugReport,
+  Timeline
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -59,6 +58,7 @@ import { useMainLayoutContext } from '@/context/mainLayout.context';
 import { useAuth } from '@/context/auth.context';
 import TimeRangeSelector from '@/components/TimeRangeSelector';
 import NewsSection from '@/components/news/NewsSection';
+import UserAgentAnalyticsComponent from '@/components/dashboard/UserAgentAnalytics';
 import { format } from 'date-fns';
 
 
@@ -179,30 +179,36 @@ const Dashboard = observer(() => {
   };
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
+    switch (severity.toLowerCase()) {
       case 'critical':
         return 'error';
       case 'high':
         return 'warning';
       case 'medium':
         return 'info';
+      case 'low':
+        return 'success';
       default:
         return 'default';
     }
   };
 
   const getSeverityIcon = (severity: string) => {
-    switch (severity) {
+    switch (severity.toLowerCase()) {
       case 'critical':
         return <Error />;
       case 'high':
         return <Warning />;
       case 'medium':
         return <Info />;
-      default:
+      case 'low':
         return <CheckCircle />;
+      default:
+        return <Info />;
     }
   };
+
+
 
   if (dashboardStore.isLoading && !dashboardStore.hasData) {
     return (
@@ -305,7 +311,7 @@ const Dashboard = observer(() => {
               disabled={dashboardStore.isLoading}
               color="warning"
             >
-              <Assessment />
+              <BugReport />
             </IconButton>
           </Tooltip>
         </Box>
@@ -375,7 +381,7 @@ const Dashboard = observer(() => {
                       {dashboardStore.metrics.recentTickets.toLocaleString()}
                     </Typography>
                   </Box>
-                  <Assessment color="secondary" sx={{ fontSize: 40 }} />
+                  <TrendingUp color="secondary" sx={{ fontSize: 40 }} />
                 </Box>
               </CardContent>
             </Card>
@@ -723,192 +729,17 @@ const Dashboard = observer(() => {
         )}
       </Box>
 
-      {/* Insights Section */}
-      {dashboardStore.insights && (
-        <Box display="flex" flexWrap="wrap" gap={3}>
-          {/* Future Predictions */}
-          {dashboardStore.insights.futurePredictions && dashboardStore.insights.futurePredictions.length > 0 && (
-            <Box flex="1 1 600px" minWidth="600px">
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
-                    <Timeline color="primary" />
-                    Future Predictions
-                  </Typography>
-                  <Box>
-                    {toJS(dashboardStore.insights.futurePredictions).slice(0, 5).map((prediction, index) => (
-                      <Box 
-                        key={index} 
-                        sx={{ 
-                          borderBottom: '1px solid #e0e0e0',
-                          py: 3,
-                          '&:last-child': { borderBottom: 'none' }
-                        }}
-                      >
-                        <Box display="flex" alignItems="flex-start" width="100%">
-                          {/* Prediction Number */}
-                          <Box sx={{ width: 50, display: 'flex', justifyContent: 'center' }}>
-                            <Avatar 
-                              sx={{ 
-                                bgcolor: prediction.impact === 'negative' ? 'error.main' : 
-                                         prediction.impact === 'positive' ? 'success.main' : 'info.main', 
-                                width: 32, 
-                                height: 32
-                              }}
-                            >
-                              {index + 1}
-                            </Avatar>
-                          </Box>
-                          
-                          {/* Prediction Content */}
-                          <Box sx={{ flex: 1, px: 2 }}>
-                            <Typography variant="subtitle1" fontWeight="medium" color="primary">
-                              {prediction.title}
-                            </Typography>
-                            <Typography variant="body2" sx={{ mt: 1, mb: 1.5 }}>
-                              <strong>Prediction:</strong> {prediction.prediction}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                              <strong>Reasoning:</strong> {prediction.reasoning}
-                            </Typography>
-                            
-                            {/* Suggested Actions */}
-                            {prediction.suggestedActions && prediction.suggestedActions.length > 0 && (
-                              <Box sx={{ mt: 2 }}>
-                                <Typography variant="body2" fontWeight="medium" color="text.secondary" sx={{ mb: 1 }}>
-                                  Suggested Actions:
-                                </Typography>
-                                <Box display="flex" flexWrap="wrap" gap={1}>
-                                  {prediction.suggestedActions.slice(0, 3).map((action, actionIndex) => (
-                                    <Chip 
-                                      key={actionIndex}
-                                      label={action} 
-                                      size="small" 
-                                      variant="outlined"
-                                      sx={{ 
-                                        fontSize: '0.75rem',
-                                        maxWidth: '200px'
-                                      }}
-                                    />
-                                  ))}
-                                  {prediction.suggestedActions.length > 3 && (
-                                    <Chip 
-                                      label={`+${prediction.suggestedActions.length - 3} more`} 
-                                      size="small" 
-                                      variant="outlined"
-                                      sx={{ fontSize: '0.75rem' }}
-                                    />
-                                  )}
-                                </Box>
-                              </Box>
-                            )}
-                          </Box>
-                          
-                          {/* Prediction Metadata */}
-                          <Box sx={{ width: 120, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            {/* Confidence */}
-                            <Chip 
-                              label={`${prediction.confidence} confidence`} 
-                              size="small" 
-                              color={prediction.confidence === 'high' ? 'success' : 
-                                     prediction.confidence === 'medium' ? 'warning' : 'default'}
-                              sx={{ fontSize: '0.7rem' }}
-                            />
-                            
-                            {/* Timeframe */}
-                            <Chip 
-                              label={prediction.timeframe} 
-                              size="small" 
-                              variant="outlined"
-                              sx={{ fontSize: '0.7rem' }}
-                            />
-                            
-                            {/* Category */}
-                            <Chip 
-                              label={prediction.category.replace('_', ' ')} 
-                              size="small" 
-                              variant="outlined"
-                              sx={{ fontSize: '0.7rem' }}
-                            />
-                          </Box>
-                        </Box>
-                      </Box>
-                    ))}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          )}
 
-          {/* Recommendations */}
-          {dashboardStore.insights.recommendations && dashboardStore.insights.recommendations.length > 0 && (
-            <Box flex="1 1 500px" minWidth="500px">
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Recommendations
-                  </Typography>
-                  <Box>
-                    {toJS(dashboardStore.insights.recommendations).slice(0, 5).map((rec, index) => (
-                      <Box 
-                        key={index} 
-                        sx={{ 
-                          borderBottom: '1px solid #e0e0e0',
-                          py: 2,
-                          '&:last-child': { borderBottom: 'none' }
-                        }}
-                      >
-                        <Box display="flex" alignItems="flex-start" width="100%">
-                          {/* Number */}
-                          <Box sx={{ width: 50, display: 'flex', justifyContent: 'center' }}>
-                            <Avatar 
-                              sx={{ 
-                                bgcolor: 'primary.main', 
-                                width: 32, 
-                                height: 32
-                              }}
-                            >
-                              {index + 1}
-                            </Avatar>
-                          </Box>
-                          
-                          {/* Content */}
-                          <Box sx={{ flex: 1, px: 2 }}>
-                            <Typography variant="subtitle1" fontWeight="medium">
-                              {rec.title}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 1 }}>
-                              {rec.description}
-                            </Typography>
-                            {rec.actionItems.length > 0 && (
-                              <Typography variant="caption" color="text.secondary">
-                                Actions: {rec.actionItems.slice(0, 2).join(', ')}
-                                {rec.actionItems.length > 2 && '...'}
-                              </Typography>
-                            )}
-                          </Box>
-                          
-                          {/* Priority Tag */}
-                          <Box sx={{ width: 80, display: 'flex', justifyContent: 'center' }}>
-                            <Chip 
-                              label={rec.priority} 
-                              size="small" 
-                              color={getSeverityColor(rec.priority) as any}
-                              sx={{ 
-                                width: 70, 
-                                height: 28,
-                                fontSize: '0.8rem'
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                      </Box>
-                    ))}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          )}
+
+      {/* User Agent Analytics Section */}
+      {dashboardStore.metrics?.userAgentAnalytics && (
+        <Box mt={4}>
+          <UserAgentAnalyticsComponent
+            data={dashboardStore.metrics.userAgentAnalytics}
+            loading={dashboardStore.isLoading}
+            error={dashboardStore.error}
+            onRefresh={handleRefresh}
+          />
         </Box>
       )}
 

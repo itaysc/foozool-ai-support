@@ -1,5 +1,5 @@
 import { TicketInsight, InsightAnalysisResult } from 'src/types/insights';
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import { InsightModel } from '../../schemas/insight.schema';
 import { v4 as uuidv4 } from 'uuid';
 import config from '../../config';
@@ -54,7 +54,6 @@ Focus on actionable insights that would be valuable for product improvement and 
   const response = await callLLM({
     userId: userId || 'system', // Use actual user ID or fallback to system
     prompt,
-    model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 2000,
     temperature: 0.2,
     isChat: true,
@@ -105,7 +104,6 @@ Generate insights in the same JSON format as before, focusing on anomalies and t
   const response = await callLLM({
     userId: userId || 'system', // Use actual user ID or fallback to system
     prompt,
-    model: 'mistralai/Mistral-7B-Instruct-v0.1',
     maxTokens: 2000,
     temperature: 0.2,
     isChat: true,

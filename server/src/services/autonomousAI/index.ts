@@ -9,7 +9,7 @@ import {
   TriggerSource
 } from '../../types/autonomousAI';
 import { ActionThresholdModel, ActionLogModel, CustomerTierModel, TicketModel, OrganizationModel } from '../../schemas';
-import { callLLM } from '../together.ai';
+import { callLLM } from '../llm';
 import { createZendeskTicket } from '../zendesk';
 import { Types, ObjectId } from 'mongoose';
 
@@ -184,7 +184,6 @@ export class AutonomousAIService {
       isChat: true,
       systemMsg: 'You are an AI support analyst. Analyze tickets and provide structured insights.',
       prompt,
-      model: 'meta-llama/Meta-Llama.3.1-8B-Instruct-Turbo',
       maxTokens: 1000,
       temperature: 0.3,
       topP: 0.9,

@@ -140,6 +140,80 @@ class DashboardStore {
     }
   };
 
+  fetchOptimizedDashboardData = async (timeRange?: { start: string; end: string }) => {
+    try {
+      console.log('🚀 Fetching optimized dashboard data with time range:', timeRange);
+      this.setLoading(true);
+      this.setError(null);
+      
+      const startTime = Date.now();
+      const data = await dashboardService.getOptimizedDashboardData(timeRange);
+      const loadTime = Date.now() - startTime;
+      
+      console.log(`✅ Optimized dashboard loaded in ${loadTime}ms`);
+      console.log('📊 Optimized data received:', data);
+      
+      runInAction(() => {
+        // Set metrics from optimized analytics
+        if (data.analytics) {
+          const metrics: DashboardMetrics = {
+            totalTickets: data.analytics.totalTickets,
+            recentTickets: data.analytics.totalTickets, // TODO: Calculate recent tickets
+            sentimentBreakdown: data.analytics.sentimentDistribution,
+            topIntents: Object.entries(data.analytics.intentDistribution)
+              .sort(([,a], [,b]) => (b as number) - (a as number))
+              .slice(0, 5)
+              .map(([intent, count]) => ({
+                intent,
+                count: count as number,
+                percentage: data.analytics.totalTickets > 0 ? ((count as number) / data.analytics.totalTickets) * 100 : 0
+              })),
+            topTags: Object.entries(data.analytics.tagFrequency)
+              .sort(([,a], [,b]) => (b as number) - (a as number))
+              .slice(0, 5)
+              .map(([tag, count]) => ({
+                tag,
+                count: count as number,
+                percentage: 0 // TODO: Calculate percentage
+              })),
+            volumeTrend: data.analytics.trends.volumeTrend,
+            satisfactionTrend: data.analytics.trends.satisfactionTrend,
+            activeInsights: 0, // TODO: Get from insights
+            highPriorityInsights: 0, // TODO: Get from insights
+            userAgentAnalytics: data.userAgentAnalytics ? {
+              totalTickets: data.userAgentAnalytics.totalTickets,
+              deviceBreakdown: data.userAgentAnalytics.deviceBreakdown,
+              topOS: data.userAgentAnalytics.osBreakdown || [],
+              topBrowsers: data.userAgentAnalytics.browserBreakdown || []
+            } : undefined
+          };
+          this.setMetrics(metrics);
+        }
+        
+        // Set insights
+        if (data.insights) {
+          this.setInsights(data.insights);
+        }
+        
+        // Set alerts
+        if (data.alerts) {
+          this.setAlerts(data.alerts);
+        }
+        
+        this.setLastUpdated(new Date());
+      });
+    } catch (error: any) {
+      console.error('❌ Error fetching optimized dashboard data:', error);
+      runInAction(() => {
+        this.setError(error.message || 'Failed to fetch optimized dashboard data');
+      });
+    } finally {
+      runInAction(() => {
+        this.setLoading(false);
+      });
+    }
+  };
+
   fetchAllDashboardData = async (timeRange?: { start: string; end: string }) => {
     try {
       console.log('🔄 Fetching dashboard data with time range:', timeRange);

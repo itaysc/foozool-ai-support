@@ -163,6 +163,72 @@ const dashboardService = {
   },
 
   /**
+   * Get detailed user agent analytics
+   */
+  async getUserAgentAnalytics(timeRange?: { start: string; end: string }): Promise<any> {
+    try {
+      const params: any = { 
+        useCache: 'false',
+        _t: Date.now()
+      };
+      if (timeRange) {
+        params.start = timeRange.start;
+        params.end = timeRange.end;
+      }
+      
+      const response = await axios.get(getRoute('user-agent-analytics'), { 
+        params,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching user agent analytics:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get all dashboard data using optimized endpoint (single API call)
+   */
+  async getOptimizedDashboardData(timeRange?: { start: string; end: string }): Promise<any> {
+    try {
+      const params: any = { 
+        useCache: 'false',
+        _t: Date.now()
+      };
+      if (timeRange) {
+        params.start = timeRange.start;
+        params.end = timeRange.end;
+      }
+      
+      console.log('🚀 Calling optimized dashboard endpoint');
+      const startTime = Date.now();
+      
+      const response = await axios.get(getRoute('optimized'), { 
+        params,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      
+      const loadTime = Date.now() - startTime;
+      console.log(`✅ Optimized dashboard loaded in ${loadTime}ms`);
+      console.log('📊 Optimized response metadata:', response.data.data.metadata);
+      
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching optimized dashboard data:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Get all dashboard data in one call
    */
   async getAllDashboardData(timeRange?: { start: string; end: string }): Promise<DashboardData> {
