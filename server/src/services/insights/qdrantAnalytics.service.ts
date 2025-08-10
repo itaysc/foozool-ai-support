@@ -84,7 +84,7 @@ export class QdrantAnalyticsService {
       throw new Error('User context not available');
     }
     
-    const redisKey = `analytics:${organizationId}`;
+    const redisKey = `analytics:${organizationId}:${timeRange ? `${timeRange.start}-${timeRange.end}` : 'all-time'}`;
     const useCache = UserContextManager.getUseCache();
 
     // Check if caching should be used

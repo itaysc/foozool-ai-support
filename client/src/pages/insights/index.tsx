@@ -8,12 +8,12 @@ import {
   Typography,
   Avatar,
   Chip,
-  Grid,
   Alert,
   AlertTitle,
   LinearProgress,
   IconButton,
-  Paper
+  Paper,
+  Tooltip
 } from '@mui/material';
 import {
   Timeline,
@@ -43,7 +43,13 @@ const Insights = observer(() => {
 
   const fetchData = async () => {
     if (user?.organization) {
-      await dashboardStore.fetchOptimizedDashboardData();
+      await Promise.all([
+        dashboardStore.fetchOptimizedDashboardData(undefined, true), // Always use cache by default
+        dashboardStore.fetchEnrichedTickets({ 
+          useCache: true,
+          limit: 100 // Limit to 100 tickets for better insights and performance
+        }) // Always use cache by default
+      ]);
     }
   };
 
@@ -62,6 +68,10 @@ const Insights = observer(() => {
       end: newTimeRange.end.toISOString(),
     };
     
+    // Clear existing data and reset first load flags to force fresh fetch
+    dashboardStore.clearData();
+    
+    // Update dashboard data with new time range
     dashboardStore.fetchOptimizedDashboardData(timeRange);
   };
 
@@ -125,7 +135,7 @@ const Insights = observer(() => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
         <Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
-            AI Insights & Analytics
+            Insights & Analytics
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Discover patterns, predictions, and actionable recommendations from your data
@@ -133,9 +143,33 @@ const Insights = observer(() => {
         </Box>
         <Box display="flex" alignItems="center" gap={2}>
           <TimeRangeSelector onTimeRangeChange={handleTimeRangeChange} />
-          <IconButton onClick={handleRefresh} disabled={dashboardStore.isLoading}>
-            <Refresh />
-          </IconButton>
+          <Tooltip title="Refresh data">
+            <IconButton onClick={handleRefresh} disabled={dashboardStore.isLoading}>
+              <Refresh />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Fetch data without cache">
+            <IconButton 
+              onClick={async () => {
+                try {
+                  // Fetch data without cache
+                  await Promise.all([
+                    dashboardStore.fetchOptimizedDashboardData(undefined, false),
+                    dashboardStore.fetchEnrichedTickets({ 
+                      useCache: false,
+                      limit: 100 // Keep consistent limit for insights
+                    })
+                  ]);
+                } catch (error) {
+                  console.error('Error fetching data without cache:', error);
+                }
+              }} 
+              disabled={dashboardStore.isLoading}
+              color="warning"
+            >
+              <Refresh color="warning" />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
 
@@ -155,10 +189,10 @@ const Insights = observer(() => {
       )}
 
       {/* Insights Grid */}
-      <Grid container spacing={3}>
+      <Box display="grid" gridTemplateColumns={{ xs: '1fr', lg: '2fr 1fr' }} gap={3}>
         {/* Future Predictions */}
         {dashboardStore.insights?.futurePredictions && dashboardStore.insights.futurePredictions.length > 0 && (
-          <Grid item xs={12} lg={8}>
+          <Box>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={3}>
@@ -275,12 +309,12 @@ const Insights = observer(() => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         )}
 
         {/* Recommendations */}
         {dashboardStore.insights?.recommendations && dashboardStore.insights.recommendations.length > 0 && (
-          <Grid item xs={12} lg={4}>
+          <Box>
             <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={3}>
@@ -355,9 +389,9 @@ const Insights = observer(() => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
         )}
-      </Grid>
+      </Box>
 
       {/* Anomalies & Insights Section */}
       {dashboardStore.metrics?.userAgentAnalytics?.anomalies && dashboardStore.metrics.userAgentAnalytics.anomalies.length > 0 && (
@@ -376,9 +410,9 @@ const Insights = observer(() => {
                   variant="outlined"
                 />
               </Box>
-              <Grid container spacing={2}>
+              <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '1fr 1fr' }} gap={2}>
                 {dashboardStore.metrics.userAgentAnalytics.anomalies.map((anomaly, index) => (
-                  <Grid item xs={12} md={6} key={index}>
+                  <Box key={index}>
                     <Paper elevation={1} sx={{ p: 2, height: '100%' }}>
                       <Box display="flex" alignItems="flex-start" gap={2}>
                         <Box sx={{ mt: 0.5 }}>
@@ -388,51 +422,134 @@ const Insights = observer(() => {
                           <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
                             {anomaly.title || `Anomaly ${index + 1}`}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                            {anomaly.description || `Anomaly of type: ${anomaly.type}`}
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            {anomaly.description || 'Anomaly detected in user behavior patterns'}
                           </Typography>
-                          <Box display="flex" gap={1}>
-                            <Chip
-                              label={anomaly.severity}
-                              size="small"
+                          <Box display="flex" gap={1} flexWrap="wrap">
+                            <Chip 
+                              label={anomaly.severity} 
+                              size="small" 
                               color={getSeverityColor(anomaly.severity) as any}
-                              sx={{ fontSize: '0.7rem' }}
-                            />
-                            <Chip
-                              label={anomaly.type}
-                              size="small"
                               variant="outlined"
-                              sx={{ fontSize: '0.7rem' }}
                             />
+
                           </Box>
                         </Box>
-                      </Box>
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
+                                              </Box>
+                      </Paper>
+                    </Box>
+                  ))}
+                </Box>
             </CardContent>
           </Card>
         </Box>
       )}
 
-      {/* Empty State */}
-      {(!dashboardStore.insights || 
-        (!dashboardStore.insights.futurePredictions?.length && 
-         !dashboardStore.insights.recommendations?.length)) && 
-       (!dashboardStore.metrics?.userAgentAnalytics?.anomalies?.length) && (
-        <Box mt={4}>
-          <Card>
-            <CardContent>
-              <Box display="flex" flexDirection="column" alignItems="center" py={4}>
-                <Analytics sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No Insights Available
+      {/* Enriched Tickets Section */}
+      <Box mt={4}>
+        <Card>
+          <CardContent>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Analytics color="primary" />
+                <Typography variant="h6" fontWeight="bold">
+                  Enriched Tickets Data
                 </Typography>
-                <Typography variant="body2" color="text.secondary" textAlign="center">
-                  Insights will appear here as we analyze your data and identify patterns, predictions, and recommendations.
+                <Chip 
+                  label={`${dashboardStore.enrichedTickets.length} tickets`} 
+                  size="small" 
+                  color="primary" 
+                  variant="outlined"
+                />
+              </Box>
+              <Box display="flex" alignItems="center" gap={2}>
+                <IconButton 
+                  onClick={() => dashboardStore.refreshEnrichedTickets()} 
+                  disabled={dashboardStore.isLoading}
+                  title="Refresh enriched tickets data (no cache)"
+                >
+                  <Refresh />
+                </IconButton>
+              </Box>
+            </Box>
+            
+            {/* Optimization Note */}
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <AlertTitle>Optimized for Insights</AlertTitle>
+              This section displays a sample of {dashboardStore.enrichedTickets.length} tickets to provide focused insights and predictions. 
+              For comprehensive data analysis, use the dashboard metrics or adjust the time range.
+            </Alert>
+            
+            {dashboardStore.enrichedTickets.length > 0 ? (
+              <Box display="flex" flexWrap="wrap" gap={2}>
+                {dashboardStore.enrichedTickets.slice(0, 6).map((ticket, index) => (
+                  <Box key={index} sx={{ width: { xs: '100%', md: 'calc(50% - 8px)', lg: 'calc(33.333% - 8px)' } }}>
+                    <Paper elevation={1} sx={{ p: 2, height: '100%' }}>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="medium" gutterBottom>
+                          {ticket.payload?.subject?.substring(0, 60) || 'No subject'}...
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          {ticket.payload?.description?.substring(0, 100) || 'No description'}...
+                        </Typography>
+                        <Box display="flex" gap={1} flexWrap="wrap" mb={1}>
+                          <Chip 
+                            label={ticket.payload?.status || 'unknown'} 
+                            size="small" 
+                            color={ticket.payload?.status === 'solved' ? 'success' : 'warning'} 
+                            variant="outlined"
+                          />
+                          {ticket.payload?.tags?.slice(0, 2).map((tag, tagIndex) => (
+                            <Chip 
+                              key={tagIndex}
+                              label={tag} 
+                              size="small" 
+                              variant="outlined"
+                            />
+                          ))}
+                        </Box>
+                        {ticket.zendeskData && (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary">
+                              Priority: {ticket.zendeskData.priority}
+                            </Typography>
+                            {ticket.zendeskData.comments && ticket.zendeskData.comments.length > 0 && (
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                Comments: {ticket.zendeskData.comments.length}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+                    </Paper>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Box textAlign="center" py={3}>
+                <Typography variant="body2" color="text.secondary">
+                  No enriched tickets data available. Click the refresh button to fetch data.
                 </Typography>
               </Box>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* No Data State */}
+      {!dashboardStore.isLoading && 
+       !dashboardStore.insights?.futurePredictions?.length && 
+       !dashboardStore.insights?.recommendations?.length && 
+       !dashboardStore.metrics?.userAgentAnalytics?.anomalies?.length && (
+        <Box mt={4} textAlign="center">
+          <Card>
+            <CardContent>
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No Insights Available
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Insights will appear here as your system analyzes more data. Try changing the time range or refreshing.
+              </Typography>
             </CardContent>
           </Card>
         </Box>
@@ -441,4 +558,4 @@ const Insights = observer(() => {
   );
 });
 
-export default Insights; 
+export default Insights;

@@ -928,6 +928,42 @@
               "response": []
             },
             {
+              "name": "Get Time Series Data",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{nodejs_base_url}}/api/v1/insights/dashboard/timeseries?useCache=true",
+                  "host": ["{{nodejs_base_url}}"],
+                  "path": ["api", "v1", "insights", "dashboard", "timeseries"],
+                  "query": [
+                    {
+                      "key": "useCache",
+                      "value": "true",
+                      "description": "Whether to use Redis cache (default: true)"
+                    },
+                    {
+                      "key": "start",
+                      "value": "",
+                      "description": "Start date in ISO format (optional)"
+                    },
+                    {
+                      "key": "end",
+                      "value": "",
+                      "description": "End date in ISO format (optional)"
+                    }
+                  ]
+                },
+                "description": "Get time-series data for charts including ticket volume and satisfaction trends"
+              },
+              "response": []
+            },
+            {
               "name": "Test Dashboard Settings",
               "request": {
                 "method": "GET",

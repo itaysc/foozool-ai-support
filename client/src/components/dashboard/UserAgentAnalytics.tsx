@@ -9,8 +9,7 @@ import {
   AlertTitle,
   CircularProgress,
   Avatar,
-  IconButton,
-  Grid
+  IconButton
 } from '@mui/material';
 import {
   Refresh,
@@ -154,9 +153,9 @@ const UserAgentAnalyticsComponent: React.FC<UserAgentAnalyticsProps> = ({
         )}
       </Box>
 
-      <Grid container spacing={3}>
+      <Box display="flex" flexWrap="wrap" gap={3}>
         {/* Device Breakdown */}
-        <Grid item xs={12} md={6}>
+        <Box flex="1 1 400px" minWidth="400px">
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -198,10 +197,10 @@ const UserAgentAnalyticsComponent: React.FC<UserAgentAnalyticsProps> = ({
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* OS Distribution */}
-        <Grid item xs={12} md={6}>
+        <Box flex="1 1 400px" minWidth="400px">
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -231,10 +230,10 @@ const UserAgentAnalyticsComponent: React.FC<UserAgentAnalyticsProps> = ({
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Browser Distribution */}
-        <Grid item xs={12} md={6}>
+        <Box flex="1 1 400px" minWidth="400px">
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -264,12 +263,8 @@ const UserAgentAnalyticsComponent: React.FC<UserAgentAnalyticsProps> = ({
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-
-
-
-
-      </Grid>
+        </Box>
+      </Box>
     </Box>
   );
 };

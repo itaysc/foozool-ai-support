@@ -24,10 +24,27 @@ export const ticketCollectionConfig = {
     } as const,
 };
 
-// Type for ticket points in Qdrant
+// Type for ticket points in Qdrant (for writing - requires vector)
 export interface QdrantTicketPoint {
     id: string | number;
-    vector: number[]; // 768-dimensional SBERT embedding
+    vector: number[]; // 768-dimensional SBERT embedding (required when writing)
+    payload: {
+        ticket_id: string;
+        organization: string;
+        sentiment_score: number;
+        sentiment: string;
+        created_at: number; // Unix timestamp in milliseconds
+        timestamp: string; // Original ISO string timestamp
+        tags?: string[];
+        intent?: string;
+        user_agent?: string; // User agent string
+    };
+}
+
+// Type for reading ticket points from Qdrant (vector is optional when with_vector: false)
+export interface QdrantTicketPointRead {
+    id: string | number;
+    vector?: number[]; // 768-dimensional SBERT embedding (optional when reading)
     payload: {
         ticket_id: string;
         organization: string;

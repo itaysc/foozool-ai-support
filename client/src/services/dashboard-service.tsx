@@ -9,6 +9,10 @@ import {
 } from '@/types/insights';
 
 const getRoute = (method: string) => {
+  // Handle special routes that don't follow the dashboard pattern
+  if (method.startsWith('insights/')) {
+    return `${config.apiUrl}/${method}`;
+  }
   return `${config.apiUrl}/insights/dashboard/${method}`;
 };
 
@@ -16,10 +20,10 @@ const dashboardService = {
   /**
    * Get comprehensive dashboard metrics
    */
-  async getMetrics(timeRange?: { start: string; end: string }): Promise<DashboardMetrics> {
+  async getMetrics(timeRange?: { start: string; end: string }, useCache: boolean = true): Promise<DashboardMetrics> {
     try {
       const params: any = { 
-        useCache: 'false',
+        useCache: useCache ? 'true' : 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -30,9 +34,9 @@ const dashboardService = {
       const response = await axios.get(getRoute('metrics'), { 
         params,
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
         }
       });
       return response.data.data;
@@ -45,10 +49,10 @@ const dashboardService = {
   /**
    * Get AI-powered dashboard insights
    */
-  async getInsights(timeRange?: { start: string; end: string }): Promise<DashboardInsights> {
+  async getInsights(timeRange?: { start: string; end: string }, useCache: boolean = true): Promise<DashboardInsights> {
     try {
       const params: any = { 
-        useCache: 'false',
+        useCache: useCache ? 'true' : 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -59,9 +63,9 @@ const dashboardService = {
       const response = await axios.get(getRoute('insights'), { 
         params,
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
         }
       });
       return response.data.data;
@@ -74,10 +78,10 @@ const dashboardService = {
   /**
    * Get real-time alerts and notifications
    */
-  async getAlerts(timeRange?: { start: string; end: string }): Promise<DashboardAlert[]> {
+  async getAlerts(timeRange?: { start: string; end: string }, useCache: boolean = true): Promise<DashboardAlert[]> {
     try {
       const params: any = { 
-        useCache: 'false',
+        useCache: useCache ? 'true' : 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -88,9 +92,9 @@ const dashboardService = {
       const response = await axios.get(getRoute('alerts'), { 
         params,
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
         }
       });
       return response.data.data.map((alert: any) => ({
@@ -104,26 +108,26 @@ const dashboardService = {
   },
 
   /**
-   * Get performance comparison with previous periods
+   * Get performance comparison data
    */
-  async getPerformance(): Promise<PerformanceComparison> {
+  async getPerformance(useCache: boolean = true): Promise<PerformanceComparison> {
     try {
-      console.log('🔍 Dashboard service: Making performance request to:', getRoute('performance'));
-      const response = await axios.get(getRoute('performance'), {
-        params: { 
-          useCache: 'false',
-          _t: Date.now()
-        },
+      const params: any = { 
+        useCache: useCache ? 'true' : 'false',
+        _t: Date.now()
+      };
+      
+      const response = await axios.get(getRoute('performance'), { 
+        params,
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
         }
       });
-      console.log('🔍 Dashboard service: Performance response received');
       return response.data.data;
     } catch (error) {
-      console.error('Error fetching performance comparison:', error);
+      console.error('Error fetching performance data:', error);
       throw error;
     }
   },
@@ -131,13 +135,13 @@ const dashboardService = {
   /**
    * Get time-series data for charts
    */
-  async getTimeSeriesData(timeRange?: { start: string; end: string }): Promise<{
+  async getTimeSeriesData(timeRange?: { start: string; end: string }, useCache: boolean = true): Promise<{
     volumeData: Array<{ date: string; tickets: number }>;
     satisfactionData: Array<{ date: string; satisfaction: number }>;
   }> {
     try {
       const params: any = { 
-        useCache: 'false',
+        useCache: useCache ? 'true' : 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -145,16 +149,14 @@ const dashboardService = {
         params.end = timeRange.end;
       }
       
-      console.log('🔄 Calling time-series endpoint with params:', params);
       const response = await axios.get(getRoute('timeseries'), { 
         params,
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
         }
       });
-      console.log('📈 Time-series response:', response.data);
       return response.data.data;
     } catch (error) {
       console.error('Error fetching time-series data:', error);
@@ -165,10 +167,10 @@ const dashboardService = {
   /**
    * Get detailed user agent analytics
    */
-  async getUserAgentAnalytics(timeRange?: { start: string; end: string }): Promise<any> {
+  async getUserAgentAnalytics(timeRange?: { start: string; end: string }, useCache: boolean = true): Promise<any> {
     try {
       const params: any = { 
-        useCache: 'false',
+        useCache: useCache ? 'true' : 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -179,9 +181,9 @@ const dashboardService = {
       const response = await axios.get(getRoute('user-agent-analytics'), { 
         params,
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
         }
       });
       return response.data.data;
@@ -194,10 +196,10 @@ const dashboardService = {
   /**
    * Get all dashboard data using optimized endpoint (single API call)
    */
-  async getOptimizedDashboardData(timeRange?: { start: string; end: string }): Promise<any> {
+  async getOptimizedDashboardData(timeRange?: { start: string; end: string }, useCache: boolean = true): Promise<any> {
     try {
       const params: any = { 
-        useCache: 'false',
+        useCache: useCache ? 'true' : 'false',
         _t: Date.now()
       };
       if (timeRange) {
@@ -211,9 +213,9 @@ const dashboardService = {
       const response = await axios.get(getRoute('optimized'), { 
         params,
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
         }
       });
       
@@ -224,6 +226,92 @@ const dashboardService = {
       return response.data.data;
     } catch (error) {
       console.error('Error fetching optimized dashboard data:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get enriched tickets with Zendesk data
+   */
+  async getEnrichedTickets(
+    organizationId: string,
+    options: {
+      timeRange?: { start: string; end: string };
+      limit?: number;
+      enrichWithZendesk?: boolean;
+      useCache?: boolean;
+    } = {}
+  ): Promise<any[]> {
+    const {
+      timeRange,
+      limit = 100, // Reduced from 1000 to 100 for better insights
+      enrichWithZendesk = true,
+      useCache = true // Always default to true
+    } = options;
+
+    try {
+      const params = new URLSearchParams({
+        organizationId,
+        limit: limit.toString(),
+        enrichWithZendesk: enrichWithZendesk.toString(),
+        useCache: useCache.toString() // Always send useCache parameter
+      });
+
+      if (timeRange) {
+        params.append('startDate', timeRange.start);
+        params.append('endDate', timeRange.end);
+      }
+
+      const response = await axios.get(getRoute('enriched-tickets'), { 
+        params,
+        headers: {
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
+        }
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching enriched tickets:', error);
+      throw error;
+    }
+  },
+
+  async getEnrichedAnalytics(
+    options: {
+      timeRange?: { start: string; end: string };
+      useOrganizationSettings?: boolean;
+      useCache?: boolean;
+    } = {}
+  ): Promise<any> {
+    const {
+      timeRange,
+      useOrganizationSettings = true,
+      useCache = true // Always default to true
+    } = options;
+
+    try {
+      const params = new URLSearchParams({
+        useOrganizationSettings: useOrganizationSettings.toString(),
+        useCache: useCache.toString() // Always send useCache parameter
+      });
+
+      if (timeRange) {
+        params.append('startDate', timeRange.start);
+        params.append('endDate', timeRange.end);
+      }
+
+      const response = await axios.get(getRoute('insights/enriched-analytics'), { 
+        params,
+        headers: {
+          'Cache-Control': useCache ? 'max-age=300' : 'no-cache, no-store, must-revalidate',
+          'Pragma': useCache ? '' : 'no-cache',
+          'Expires': useCache ? '' : '0'
+        }
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching enriched analytics:', error);
       throw error;
     }
   },

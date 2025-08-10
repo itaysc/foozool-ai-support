@@ -69,28 +69,18 @@ export class LLMService {
     const providerName = request.provider || this.defaultProvider;
     const provider = this.providers.get(providerName);
 
-    console.log(`🔍 LLM Service Debug:`);
-    console.log(`  - Requested provider: ${request.provider || 'default'}`);
-    console.log(`  - Default provider: ${this.defaultProvider}`);
-    console.log(`  - Selected provider: ${providerName}`);
-    console.log(`  - Available providers: ${Array.from(this.providers.keys()).join(', ')}`);
-    console.log(`  - Provider found: ${!!provider}`);
-
     if (!provider) {
       throw new Error(`Provider ${providerName} not found. Available providers: ${Array.from(this.providers.keys()).join(', ')}`);
     }
 
     try {
-      console.log(`🤖 Using LLM provider: ${providerName}`);
       const response = await provider.callLLM(request);
-      console.log(`✅ LLM response received from ${providerName} (${response.usage.totalTokens} tokens)`);
       return response;
     } catch (error) {
       console.error(`❌ Error with provider ${providerName}:`, error);
       
       // If the requested provider fails and fallback is enabled, try the default provider
       if (llmConfig.fallbackEnabled && request.provider && request.provider !== this.defaultProvider) {
-        console.log(`🔄 Falling back to default provider: ${this.defaultProvider}`);
         const fallbackRequest = { ...request, provider: this.defaultProvider };
         return this.callLLM(fallbackRequest);
       }

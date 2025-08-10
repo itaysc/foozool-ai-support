@@ -222,16 +222,7 @@ export interface DashboardMetrics {
   highPriorityInsights: number;
   averageResponseTime?: number;
   customerSatisfactionScore?: number;
-  userAgentAnalytics?: {
-    totalTickets: number;
-    deviceBreakdown: {
-      mobile: { count: number; percentage: number };
-      desktop: { count: number; percentage: number };
-      tablet: { count: number; percentage: number };
-    };
-    topOS: Array<{ os: string; count: number; percentage: number }>;
-    topBrowsers: Array<{ browser: string; count: number; percentage: number }>;
-  };
+  userAgentAnalytics?: UserAgentAnalytics;
 }
 
 export interface FuturePrediction {

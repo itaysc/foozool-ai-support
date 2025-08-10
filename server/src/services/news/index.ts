@@ -47,66 +47,37 @@ export class NewsService {
   /**
    * Generate Google News RSS URL based on organization details
    */
-  private async generateNewsRSSUrl(organization: any, userId: string): Promise<string> {
-    const { details, country, regions } = organization;
-    
-    // Base Google News RSS URL
-    let baseUrl = 'https://news.google.com/rss/search?q=';
-    
-    // Generate all search terms using LLM
-    const searchTerms = await this.generateSearchTerms(details, country, regions, userId);
-    
-    // Combine all terms and encode for URL
+  private async generateNewsRSSUrl(organization: any, userId: string | null): Promise<string> {
+    // Implementation remains the same, userId is not used in RSS generation
+    const baseUrl = 'https://news.google.com/rss/search?q=';
+    const searchTerms = await this.generateSearchTerms(organization.details || '', organization.country || '', organization.regions || [], userId);
     const query = searchTerms.join(' OR ');
-    const encodedQuery = encodeURIComponent(query);
-    
-    return `${baseUrl}${encodedQuery}&hl=en&gl=${country || 'US'}&ceid=${country || 'US'}:en`;
+    return `${baseUrl}${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
   }
 
   /**
    * Generate comprehensive search terms for news monitoring using LLM
    */
-  private async generateSearchTerms(details: string, country: string, regions: string[], userId: string): Promise<string[]> {
+  private async generateSearchTerms(details: string, country: string, regions: string[], userId: string | null): Promise<string[]> {
     try {
+      // Only proceed if we have a valid user ID from context
+      if (!userId) {
+        console.log('No valid user ID available, using fallback search terms');
+        return this.getFallbackSearchTerms();
+      }
+
       const prompt = `
-        Generate comprehensive search terms for news monitoring that will help identify business-impacting news for customer support and operations.
+        Based on the following business details, generate 15 specific search terms for news monitoring that could impact business operations:
         
-        Organization Details: ${details}
+        Business Details: ${details}
         Country: ${country}
         Regions: ${regions.join(', ')}
         
-        Generate 15-25 search terms that cover:
-        
-        1. **Business Operations Impact**:
-           - Supply chain disruptions, logistics issues, manufacturing delays
-           - Raw materials shortages, cost increases, pricing changes
-           - Quality issues, product availability, delivery problems
-        
-        2. **Customer Support Relevance**:
-           - Customer complaints, satisfaction issues, service quality
-           - Delivery delays, product defects, warranty issues
-           - Customer expectations, service standards, support challenges
-        
-        3. **Industry-Specific Factors**:
-           - Industry regulations, compliance requirements, legal changes
-           - Competitor issues, market disruptions, industry trends
-           - Technology changes affecting the business or customers
-        
-        4. **Economic and Regional Factors**:
-           - Inflation, currency fluctuations, economic sanctions
-           - Geopolitical events, trade restrictions, regional conflicts
-           - Local market conditions, regional business climate
-        
-        5. **Digital and Technology Impact**:
-           - E-commerce trends, online shopping behavior
-           - Digital transformation, automation, customer experience
-           - Technology adoption, digital customer support trends
-        
-        Focus on terms that would help identify news that:
-        - Could impact customer support operations
-        - Might affect product availability or quality
-        - Could influence customer expectations or complaints
-        - May require proactive customer communication
+        Focus on terms that:
+        - Could affect supply chain or operations
+        - Might impact customer satisfaction
+        - Could influence pricing or costs
+        - May affect product availability
         - Could impact business operations and costs
         
         Return only the search terms as a JSON array of strings, no explanations:
@@ -131,49 +102,38 @@ export class NewsService {
         searchTerms = JSON.parse(result);
       } catch (parseError) {
         console.warn('Failed to parse LLM search terms, using fallback terms');
-        // Fallback to comprehensive business-impacting terms
-        searchTerms = [
-          'supply chain disruption',
-          'customer complaints',
-          'delivery delays',
-          'price increase',
-          'quality issues',
-          'product availability',
-          'customer satisfaction',
-          'logistics problems',
-          'manufacturing delays',
-          'service quality',
-          'inflation impact',
-          'raw materials shortage',
-          'customer expectations',
-          'support challenges',
-          'business operations'
-        ];
+        return this.getFallbackSearchTerms();
       }
       
-      return Array.isArray(searchTerms) ? searchTerms : [];
+      return Array.isArray(searchTerms) ? searchTerms : this.getFallbackSearchTerms();
       
     } catch (error) {
       console.error('Error generating search terms:', error);
-      // Return comprehensive fallback terms focused on business impact
-      return [
-        'supply chain disruption',
-        'customer complaints',
-        'delivery delays',
-        'price increase',
-        'quality issues',
-        'product availability',
-        'customer satisfaction',
-        'logistics problems',
-        'manufacturing delays',
-        'service quality',
-        'inflation impact',
-        'raw materials shortage',
-        'customer expectations',
-        'support challenges',
-        'business operations'
-      ];
+      return this.getFallbackSearchTerms();
     }
+  }
+
+  /**
+   * Get fallback search terms when LLM is not available
+   */
+  private getFallbackSearchTerms(): string[] {
+    return [
+      'supply chain disruption',
+      'customer complaints',
+      'delivery delays',
+      'price increase',
+      'quality issues',
+      'product availability',
+      'customer satisfaction',
+      'logistics problems',
+      'manufacturing delays',
+      'service quality',
+      'inflation impact',
+      'raw materials shortage',
+      'customer expectations',
+      'support challenges',
+      'business operations'
+    ];
   }
 
   /**
@@ -211,104 +171,106 @@ export class NewsService {
   /**
    * Analyze and categorize news items
    */
-  async analyzeNewsItems(newsItems: NewsItem[], organization: any, userId: string): Promise<ProcessedNewsItem[]> {
-    const processedItems: ProcessedNewsItem[] = [];
-    
-    for (const item of newsItems.slice(0, 20)) { // Limit to 20 items for processing
-      try {
-        // Create a combined text for analysis
-        const combinedText = `${item.title}. ${item.contentSnippet}`;
-        
-        // Analyze relevance and impact using LLM
-        const analysisPrompt = `
-        Analyze this news item for an organization that operates in ${organization.details || 'various industries'} 
-        in ${organization.country || 'multiple countries'} and regions: ${organization.regions?.join(', ') || 'global'}.
-        
-        News: ${combinedText}
-        
-        Provide analysis in JSON format:
-        {
-          "relevance": "high|medium|low",
-          "impact": "positive|negative|neutral", 
-          "categories": ["category1", "category2"],
-          "reasoning": "brief explanation"
-        }
-        
-        Focus on business impact factors that could affect customer support and operations:
-        
-        **High Relevance Criteria:**
-        - Direct impact on product availability, quality, or delivery
-        - Supply chain disruptions affecting the business
-        - Customer complaints or satisfaction issues in the industry
-        - Regulatory changes affecting operations or compliance
-        - Significant price increases or cost changes
-        - Technology changes affecting customer experience
-        
-        **Medium Relevance Criteria:**
-        - Indirect impact on business operations
-        - Market trends that could influence customer behavior
-        - Economic factors affecting purchasing power
-        - Industry-wide changes or disruptions
-        - Regional events affecting business climate
-        
-        **Low Relevance Criteria:**
-        - General news with minimal business impact
-        - Unrelated industry developments
-        - Events with no direct connection to operations
-        
-        Consider how this news might:
-        - Generate customer complaints or support requests
-        - Affect product delivery or availability
-        - Impact customer expectations or satisfaction
-        - Require proactive customer communication
-        - Influence support team workload or processes
-        - Affect business costs or pricing strategies
-        `;
-        
-        const analysisResponse = await callLLM({
-          userId: 'system',
-          prompt: analysisPrompt,
-          maxTokens: 300,
-          temperature: 0.3,
-          topP: 0.9,
-          stop: ['\n\n']
-        });
-        
-        const analysisResult = analysisResponse.data || '';
-        let analysis;
-        
+  async analyzeNewsItems(newsItems: NewsItem[], organization: any, userId: string | null): Promise<ProcessedNewsItem[]> {
+    try {
+      const processedItems: ProcessedNewsItem[] = [];
+      
+      for (const item of newsItems) {
         try {
-          analysis = JSON.parse(analysisResult);
-        } catch (parseError) {
-          console.warn('Failed to parse LLM analysis, using default values');
-          analysis = {
+          // Only use LLM if we have a valid user ID
+          if (userId) {
+            const prompt = `
+              Analyze this news item for business relevance and impact:
+              
+              Title: ${item.title}
+              Content: ${item.content}
+              
+              Return a JSON response with:
+              {
+                "relevance": "high" | "medium" | "low",
+                "impact": "positive" | "negative" | "neutral",
+                "categories": ["category1", "category2"],
+                "summary": "Brief summary of the news item"
+              }
+              
+              Focus on business impact, customer support relevance, and operational implications.
+            `;
+            
+            const response = await callLLM({
+              userId,
+              prompt,
+              maxTokens: 300,
+              temperature: 0.3,
+              topP: 0.9,
+              stop: ['\n\n']
+            });
+            
+            const result = response.data || '';
+            let analysis: any;
+            
+            try {
+              analysis = JSON.parse(result);
+            } catch (parseError) {
+              console.warn('Failed to parse LLM analysis, using default values');
+              analysis = this.getDefaultAnalysis(item);
+            }
+            
+            processedItems.push({
+              ...item,
+              summary: analysis.summary || item.contentSnippet,
+              relevance: analysis.relevance || 'medium',
+              impact: analysis.impact || 'neutral',
+              categories: analysis.categories || ['general']
+            });
+          } else {
+            // No valid user ID, use default analysis
+            console.log('No valid user ID available, using default analysis for news item');
+            processedItems.push({
+              ...item,
+              summary: item.contentSnippet,
+              relevance: 'medium',
+              impact: 'neutral',
+              categories: ['general']
+            });
+          }
+        } catch (error) {
+          console.error('Error analyzing news item:', error);
+          // Add item with default values on error
+          processedItems.push({
+            ...item,
+            summary: item.contentSnippet,
             relevance: 'medium',
             impact: 'neutral',
-            categories: ['general'],
-            reasoning: 'Analysis failed'
-          };
+            categories: ['general']
+          });
         }
-        
-        processedItems.push({
-          ...item,
-          relevance: analysis.relevance || 'medium',
-          impact: analysis.impact || 'neutral',
-          categories: analysis.categories || ['general']
-        });
-        
-      } catch (error) {
-        console.error('Error analyzing news item:', error);
-        // Add item with default analysis
-        processedItems.push({
-          ...item,
-          relevance: 'medium',
-          impact: 'neutral',
-          categories: ['general']
-        });
       }
+      
+      return processedItems;
+      
+    } catch (error) {
+      console.error('Error analyzing news items:', error);
+      // Return items with default values on error
+      return newsItems.map(item => ({
+        ...item,
+        summary: item.contentSnippet,
+        relevance: 'medium',
+        impact: 'neutral',
+        categories: ['general']
+      }));
     }
-    
-    return processedItems;
+  }
+
+  /**
+   * Get default analysis when LLM is not available
+   */
+  private getDefaultAnalysis(item: NewsItem): any {
+    return {
+      relevance: 'medium',
+      impact: 'neutral',
+      categories: ['general'],
+      summary: item.contentSnippet
+    };
   }
 
   /**
@@ -344,99 +306,106 @@ export class NewsService {
   }
 
   /**
-   * Generate action items from news analysis
+   * Generate action items based on news analysis
    */
-  async generateActionItems(newsItems: ProcessedNewsItem[], organization: any, userId: string): Promise<ActionItem[]> {
+  async generateActionItems(newsItems: ProcessedNewsItem[], organization: any, userId: string | null): Promise<ActionItem[]> {
     try {
-      const relevantItems = newsItems.filter(item => 
-        item.relevance === 'high' || (item.relevance === 'medium' && item.impact !== 'neutral')
-      );
+      // Only proceed if we have a valid user ID
+      if (!userId) {
+        console.log('No valid user ID available, using default action items');
+        return this.getDefaultActionItems();
+      }
+
+      const highImpactNews = newsItems.filter(item => item.relevance === 'high' && item.impact === 'negative');
       
-      if (relevantItems.length === 0) {
+      if (highImpactNews.length === 0) {
         return [];
       }
       
-      const actionItemsPrompt = `
-        Based on the following news items for an organization that operates in ${organization.details || 'various industries'} 
-        in ${organization.country || 'multiple countries'} and regions: ${organization.regions?.join(', ') || 'global'},
-        generate specific action items focused on customer support and business operations.
+      const prompt = `
+        Based on these high-impact news items, generate actionable recommendations:
         
-        News Items:
-        ${relevantItems.map(item => `- ${item.title}: ${item.contentSnippet} (Impact: ${item.impact})`).join('\n')}
+        ${highImpactNews.map(item => `
+          - ${item.title}: ${item.summary}
+          Relevance: ${item.relevance}, Impact: ${item.impact}
+        `).join('\n')}
         
-        Provide action items in JSON format:
+        Generate 3-5 action items in JSON format:
         [
           {
-            "title": "Action item title",
-            "description": "Detailed description of the action needed",
+            "title": "Action title",
+            "description": "Detailed description",
             "priority": "high|medium|low",
-            "category": "customer_support|supply_chain|operations|communication|risk_management|strategy",
-            "impact": "Description of potential impact on business and customers",
-            "suggestedActions": ["specific action 1", "specific action 2", "specific action 3"]
+            "category": "category name",
+            "impact": "Expected business impact",
+            "suggestedActions": ["action1", "action2"]
           }
         ]
         
-        Focus on actionable insights that can help the organization:
-        
-        **Customer Support Focus:**
-        - Prepare support teams for potential customer complaints
-        - Develop proactive communication strategies
-        - Update customer-facing information and policies
-        - Enhance support processes for new challenges
-        - Train support staff on new issues or policies
-        
-        **Business Operations Focus:**
-        - Mitigate supply chain and delivery risks
-        - Address quality or availability issues
-        - Optimize operations for new market conditions
-        - Prepare for regulatory or compliance changes
-        - Manage cost and pricing implications
-        
-        **Communication Focus:**
-        - Develop customer communication strategies
-        - Update website and marketing materials
-        - Prepare FAQ and support documentation
-        - Plan internal communication to staff
-        
-        **Risk Management Focus:**
-        - Identify and mitigate potential risks
-        - Develop contingency plans
-        - Monitor and track emerging issues
-        - Prepare for worst-case scenarios
-        
-        Prioritize actions that will:
-        - Reduce customer complaints and support workload
-        - Improve customer satisfaction and experience
-        - Protect business operations and reputation
-        - Enable proactive rather than reactive responses
-        - Support long-term business sustainability
-        `;
+        Focus on actions that:
+        - Address immediate customer concerns
+        - Mitigate business risks
+        - Improve customer support preparedness
+        - Enhance operational resilience
+      `;
       
       const actionItemsResponse = await callLLM({
-        userId: 'system',
-        prompt: actionItemsPrompt,
-        maxTokens: 1000,
-        temperature: 0.3,
+        userId,
+        prompt,
+        maxTokens: 800,
+        temperature: 0.4,
         topP: 0.9,
         stop: ['\n\n']
       });
       
-      const actionItemsResult = actionItemsResponse.data || '';
+      const result = actionItemsResponse.data || '';
       let actionItems: ActionItem[];
       
       try {
-        actionItems = JSON.parse(actionItemsResult);
+        actionItems = JSON.parse(result);
       } catch (parseError) {
-        console.warn('Failed to parse action items, returning empty array');
-        return [];
+        console.warn('Failed to parse LLM action items, using default items');
+        return this.getDefaultActionItems();
       }
       
-      return Array.isArray(actionItems) ? actionItems : [];
+      return Array.isArray(actionItems) ? actionItems : this.getDefaultActionItems();
       
     } catch (error) {
       console.error('Error generating action items:', error);
-      return [];
+      return this.getDefaultActionItems();
     }
+  }
+
+  /**
+   * Get default action items when LLM is not available
+   */
+  private getDefaultActionItems(): ActionItem[] {
+    return [
+      {
+        title: "Monitor Customer Feedback",
+        description: "Keep track of customer inquiries and complaints related to recent news events",
+        priority: "medium",
+        category: "Customer Support",
+        impact: "Proactive customer service and issue prevention",
+        suggestedActions: [
+          "Review customer support tickets for news-related issues",
+          "Prepare response templates for common concerns",
+          "Monitor social media for customer sentiment"
+        ]
+      },
+      {
+        title: "Assess Supply Chain Impact",
+        description: "Evaluate how recent events might affect product availability and delivery",
+        priority: "high",
+        category: "Operations",
+        impact: "Maintain product availability and customer satisfaction",
+        suggestedActions: [
+          "Review inventory levels for affected products",
+          "Communicate with suppliers about potential delays",
+          "Update customers about delivery timelines"
+        ]
+      }
+    ];
   }
 
   /**
@@ -452,9 +421,9 @@ export class NewsService {
       // Get user ID from context
       const userId = UserContextManager.getCurrentUserId();
       if (!userId) {
-        // For background jobs, use system user ID
-        console.log('User context not available, using system user for background processing');
-        return this.getNewsForOrganizationWithSystemUser(organizationId);
+        // For background jobs or when no user context, use fallback approach
+        console.log('User context not available, proceeding with fallback processing');
+        return this.getNewsForOrganizationFallback(organizationId);
       }
       
       // Check Redis cache first
@@ -555,14 +524,12 @@ export class NewsService {
   /**
    * Get news for organization using system user (for background jobs)
    */
-  private async getNewsForOrganizationWithSystemUser(organizationId: string): Promise<{
+  private async getNewsForOrganizationFallback(organizationId: string): Promise<{
     news: ProcessedNewsItem[];
     summary: string;
     actionItems: ActionItem[];
     rssUrl: string;
   }> {
-    const systemUserId = 'system-news-monitoring';
-    
     try {
       // Check Redis cache first
       const cacheKey = `news:${organizationId}`;
@@ -570,7 +537,7 @@ export class NewsService {
       const cachedData = await redisClient.get(cacheKey);
       
       if (cachedData) {
-        console.log('Returning cached news data for system user');
+        console.log('Returning cached news data for fallback processing');
         return JSON.parse(cachedData);
       }
       
@@ -580,20 +547,20 @@ export class NewsService {
         throw new Error('Organization not found');
       }
       
-      // Generate RSS URL
-      const rssUrl = await this.generateNewsRSSUrl(organization, systemUserId);
+      // Generate RSS URL (use null for userId since we don't have one)
+      const rssUrl = await this.generateNewsRSSUrl(organization, null);
       
       // Fetch news
       const newsItems = await this.fetchNewsFromRSS(rssUrl);
       
-      // Analyze news
-      const processedNews = await this.analyzeNewsItems(newsItems, organization, systemUserId);
+      // Analyze news without LLM (use default analysis)
+      const processedNews = await this.analyzeNewsItems(newsItems, organization, null);
       
       // Summarize news
       const summary = await this.summarizeNews(processedNews);
       
-      // Generate action items
-      const actionItems = await this.generateActionItems(processedNews, organization, systemUserId);
+      // Generate action items without LLM (use default items)
+      const actionItems = await this.generateActionItems(processedNews, organization, null);
       
       const result = {
         news: processedNews,
@@ -608,7 +575,7 @@ export class NewsService {
       return result;
       
     } catch (error) {
-      console.error('Error getting news for organization with system user:', error);
+      console.error('Error getting news for organization with fallback processing:', error);
       throw error;
     }
   }
@@ -617,7 +584,7 @@ export class NewsService {
    * Get raw news for organization using system user (for background jobs)
    */
   private async getRawNewsForOrganizationWithSystemUser(organizationId: string): Promise<NewsItem[]> {
-    const systemUserId = 'system-news-monitoring';
+    const systemUserId = 'system';
     
     try {
       // Check Redis cache first
