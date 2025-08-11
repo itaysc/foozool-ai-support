@@ -26,35 +26,80 @@ import {
   Psychology,
   Analytics,
   TrendingDown,
-  Speed
+  Speed,
+  SmartToy,
+  AttachMoney
 } from '@mui/icons-material';
 import dashboardStore from '@/stores/dashboard.store';
 import { useAuth } from '@/context/auth.context';
 import TimeRangeSelector from '@/components/TimeRangeSelector';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 const Insights = observer(() => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
+  // State for time range
+  const [timeRange, setTimeRange] = useState<{
+    start: Date;
+    end: Date;
+    label: string;
+  } | undefined>(undefined);
+
+  // Initialize time range from URL params on mount
   useEffect(() => {
-    if (user?.organization) {
-      fetchData();
+    const startParam = searchParams.get('start');
+    const endParam = searchParams.get('end');
+    const labelParam = searchParams.get('label');
+    if (startParam && endParam) {
+      const startDate = new Date(startParam + 'T00:00:00');
+      const endDate = new Date(endParam + 'T23:59:59');
+      setTimeRange({
+        start: startDate,
+        end: endDate,
+        label: labelParam || '',
+      });
+    } else {
+      // Default: last 7 days
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - 7);
+      setTimeRange({
+        start,
+        end,
+        label: '7d',
+      });
     }
-  }, [user?.organization]);
+  }, []);
 
-  const fetchData = async () => {
-    if (user?.organization) {
+  // Fetch data when timeRange or user changes
+  useEffect(() => {
+    if (user?.organization && timeRange) {
+      fetchData(timeRange);
+    }
+  }, [user?.organization, timeRange]);
+
+  const fetchData = async (range?: { start: Date; end: Date; label: string }) => {
+    if (user?.organization && range) {
+      const timeRangeForApi = {
+        start: range.start.toISOString(),
+        end: range.end.toISOString(),
+      };
       await Promise.all([
-        dashboardStore.fetchOptimizedDashboardData(undefined, true), // Always use cache by default
-        dashboardStore.fetchEnrichedTickets({ 
+        dashboardStore.fetchOptimizedDashboardData(timeRangeForApi, true),
+        dashboardStore.fetchEnrichedTickets({
           useCache: true,
-          limit: 100 // Limit to 100 tickets for better insights and performance
-        }) // Always use cache by default
+          limit: 100,
+          start: timeRangeForApi.start,
+          end: timeRangeForApi.end,
+        }),
       ]);
     }
   };
 
   const handleRefresh = async () => {
-    await fetchData();
+    if (timeRange) await fetchData(timeRange);
   };
 
   const handleTimeRangeChange = (newTimeRange: {
@@ -62,17 +107,15 @@ const Insights = observer(() => {
     end: Date;
     label: string;
   }) => {
-    // Convert dates to ISO strings for the API
-    const timeRange = {
-      start: newTimeRange.start.toISOString(),
-      end: newTimeRange.end.toISOString(),
-    };
-    
+    setTimeRange(newTimeRange);
+    // Update URL params
+    setSearchParams({
+      start: newTimeRange.start.toISOString().slice(0, 10),
+      end: newTimeRange.end.toISOString().slice(0, 10),
+      label: newTimeRange.label,
+    });
     // Clear existing data and reset first load flags to force fresh fetch
     dashboardStore.clearData();
-    
-    // Update dashboard data with new time range
-    dashboardStore.fetchOptimizedDashboardData(timeRange);
   };
 
   const getSeverityColor = (severity: string) => {
@@ -142,7 +185,7 @@ const Insights = observer(() => {
           </Typography>
         </Box>
         <Box display="flex" alignItems="center" gap={2}>
-          <TimeRangeSelector onTimeRangeChange={handleTimeRangeChange} />
+          <TimeRangeSelector onTimeRangeChange={handleTimeRangeChange} currentTimeRange={timeRange} />
           <Tooltip title="Refresh data">
             <IconButton onClick={handleRefresh} disabled={dashboardStore.isLoading}>
               <Refresh />
@@ -532,6 +575,82 @@ const Insights = observer(() => {
                 </Typography>
               </Box>
             )}
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Bot Performance Quick Overview */}
+      <Box mt={4}>
+        <Card>
+          <CardContent>
+            <Box display="flex" alignItems="center" gap={1} mb={3}>
+              <SmartToy color="primary" />
+              <Typography variant="h6" fontWeight="bold">
+                Bot Performance Overview
+              </Typography>
+              <Chip 
+                label="New Feature" 
+                size="small" 
+                color="primary" 
+                variant="outlined"
+              />
+            </Box>
+            
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="body2">
+                Get detailed bot performance analytics, insights, and recommendations on the new{' '}
+                <strong>Bot Performance Dashboard</strong>. Monitor success rates, response times, 
+                cost savings, and more.
+              </Typography>
+            </Alert>
+            
+            <Box display="flex" gap={2} flexWrap="wrap">
+              <Chip 
+                icon={<CheckCircle />}
+                label="Real-time Metrics" 
+                color="success" 
+                variant="outlined"
+              />
+              <Chip 
+                icon={<TrendingUp />}
+                label="Trend Analysis" 
+                color="info" 
+                variant="outlined"
+              />
+              <Chip 
+                icon={<Psychology />}
+                label="AI Insights" 
+                color="secondary" 
+                variant="outlined"
+              />
+              <Chip 
+                icon={<AttachMoney />}
+                label="Cost Tracking" 
+                color="warning" 
+                variant="outlined"
+              />
+            </Box>
+            
+            <Box mt={3}>
+              <button 
+                onClick={() => window.location.href = '/bot-performance'}
+                style={{
+                  background: 'linear-gradient(45deg, #1976d2, #42a5f5)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  transition: 'transform 0.2s',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0px)'}
+              >
+                🤖 View Bot Performance Dashboard
+              </button>
+            </Box>
           </CardContent>
         </Card>
       </Box>

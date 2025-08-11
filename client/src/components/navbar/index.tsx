@@ -7,6 +7,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
+import SmartToy from '@mui/icons-material/SmartToy';
 import { useState } from 'react';
 
 export const Navbar = observer(() => {
@@ -26,7 +27,7 @@ export const Navbar = observer(() => {
 
   const navigationItems = [
     { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-    { path: '/insights', label: 'Insights', icon: AnalyticsIcon },
+    { path: '/bot-performance', label: 'Performance & Insights', icon: SmartToy },
     { path: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
 

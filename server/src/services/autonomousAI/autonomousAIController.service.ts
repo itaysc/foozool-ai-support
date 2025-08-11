@@ -1,7 +1,7 @@
-import { SimpleAutonomousAIService } from './simple.service';
 import { ActionThresholdService } from './actionThreshold.service';
 import { CustomerTierService } from './customerTier.service';
 import { ActionLogService } from './actionLog.service';
+import { SimpleAutonomousAIService } from './simple.service';
 import { IActionExecutionRequest, IActionThresholdInput, ICustomerTierInput } from '../../types/autonomousAI';
 import { UserContextManager } from '../../context/userContext';
 

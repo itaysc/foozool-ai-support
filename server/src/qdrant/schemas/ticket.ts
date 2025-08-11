@@ -21,6 +21,15 @@ export const ticketCollectionConfig = {
         tags: 'array', // array of strings
         intent: 'string',
         user_agent: 'string', // User agent string
+        
+        // Bot Performance Fields
+        bot_processed: 'boolean',
+        bot_actions: 'array', // array of action strings
+        resolution_source: 'string', // 'bot', 'human', 'hybrid'
+        bot_processing_time: 'number', // milliseconds
+        bot_confidence_score: 'number', // 0-1
+        escalated_to_human: 'boolean',
+        bot_model_version: 'string',
     } as const,
 };
 
@@ -37,6 +46,15 @@ export interface QdrantTicketPoint {
         timestamp: string; // Original ISO string timestamp
         tags?: string[];
         intent?: string;
+        
+        // Bot Performance Fields
+        bot_processed?: boolean;
+        bot_actions?: string[];
+        resolution_source?: 'bot' | 'human' | 'hybrid';
+        bot_processing_time?: number; // milliseconds
+        bot_confidence_score?: number; // 0-1
+        escalated_to_human?: boolean;
+        bot_model_version?: string;
         user_agent?: string; // User agent string
     };
 }
@@ -55,6 +73,15 @@ export interface QdrantTicketPointRead {
         tags?: string[];
         intent?: string;
         user_agent?: string; // User agent string
+        
+        // Bot Performance Fields (after migration)
+        bot_processed?: boolean;
+        bot_actions?: string[];
+        resolution_source?: 'bot' | 'human' | 'hybrid';
+        bot_processing_time?: number; // milliseconds
+        bot_confidence_score?: number; // 0-1
+        escalated_to_human?: boolean;
+        bot_model_version?: string;
     };
 }
 

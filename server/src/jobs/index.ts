@@ -1,5 +1,6 @@
 import { startCreateTicketJob } from './create-ticket';
 import { insightsScheduler } from './insights/insights-scheduler';
+import { BotMetricsService } from '../services/botPerformance/metrics.service';
 
 export const startAllJobs = () => {
     console.log('🚀 Starting all scheduled jobs...');
@@ -10,10 +11,14 @@ export const startAllJobs = () => {
     // Start the insights scheduler
     insightsScheduler.start();
     
+    // Initialize bot metrics service and scheduling
+    BotMetricsService.initialize();
+    
     console.log('✅ All jobs initialized');
     
     return {
         createTicketJob,
-        insightsScheduler
+        insightsScheduler,
+        botMetricsService: 'initialized'
     };
 };

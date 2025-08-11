@@ -10,6 +10,7 @@ import { ActionThresholdModel } from './actionThreshold.schema';
 import { ActionLogModel } from './actionLog.schema';
 import { CustomerTierModel } from './customerTier.schema';
 import { WebhookModel } from './webhook.schema';
+import { BotPerformanceMetricModel } from './botPerformanceMetric.schema';
 
 export {
   UserModel,
@@ -24,4 +25,5 @@ export {
   ActionLogModel,
   CustomerTierModel,
   WebhookModel,
+  BotPerformanceMetricModel,
 };

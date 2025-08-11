@@ -23,6 +23,7 @@ import ticketsRoutesV1 from './routes/tickets/v1';
 import autonomousAIRoutesV1 from './routes/autonomousAI/v1';
 import insightsRoutesV1 from './routes/insights/v1';
 import newsRoutesV1 from './routes/news/v1';
+import botPerformanceRoutesV1 from './routes/botPerformance/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
 import seed from "./seeds";
 import QdrantService from "./qdrant/service";
@@ -30,6 +31,7 @@ import { googleFileCollectionConfig } from './qdrant/schemas/googleFile';
 import { startAllJobs } from './jobs';
 import searchRoutesV1 from './routes/search/v1';
 import migrationsRoutesV1 from './routes/migrations/v1';
+import { BotMetricsService } from './services/botPerformance/metrics.service';
 import { ensureIndexes } from './utils/ensureIndexes';
 import { ticketCollectionConfig } from './qdrant/schemas/ticket';
 
@@ -80,6 +82,7 @@ export default class Server{
       this.app.use('/api/v1/autonomous-ai', autonomousAIRoutesV1);
       this.app.use('/api/v1/insights', insightsRoutesV1);
       this.app.use('/api/v1/news', newsRoutesV1);
+      this.app.use('/api/v1/bot-performance', botPerformanceRoutesV1);
       this.app.use('/api/v1/train', modelTrainingRoutesV1);
       this.app.use('/api/v1/webhooks/zendesk', zendeskWebhookRoutesV1);
       this.app.use('/api/v1/webhooks', webhookRoutesV1);

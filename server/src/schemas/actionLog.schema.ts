@@ -24,6 +24,24 @@ export interface IActionLog {
     processingTimeMs: number;
     errorMessage?: string;
     externalSystemResponse?: any;
+    
+    // Customer Feedback and Business Impact
+    customerResponse?: 'positive' | 'negative' | 'neutral'; // Customer reaction
+    followUpRequired?: boolean;                              // Did action work?
+    rollbackReason?: string;                                // Why was it reverted?
+    businessImpact?: {                                      // Financial impact
+      estimatedSavings: number;
+      customerRetention: boolean;
+      escalationPrevented: boolean;
+      timeToResolution: number; // minutes
+    };
+    automationLevel?: 'fully_automated' | 'human_assisted' | 'manual_override';
+    
+    // Additional Performance Tracking
+    customerSatisfactionBefore?: number;  // 1-5 rating before action
+    customerSatisfactionAfter?: number;   // 1-5 rating after action
+    resolutionEffectiveness?: number;     // 0-1 score of how well action worked
+    subsequentActions?: string[];         // Any follow-up actions needed
   };
   createdAt: Date;
   updatedAt: Date;
@@ -105,7 +123,51 @@ const ActionLogSchema: Schema = new Schema<IActionLog>({
     },
     externalSystemResponse: { 
       type: Schema.Types.Mixed 
-    }
+    },
+    
+    // Customer Feedback and Business Impact
+    customerResponse: { 
+      type: String, 
+      enum: ['positive', 'negative', 'neutral'] 
+    },
+    followUpRequired: { 
+      type: Boolean, 
+      default: false 
+    },
+    rollbackReason: { 
+      type: String 
+    },
+    businessImpact: {
+      estimatedSavings: { type: Number, default: 0 },
+      customerRetention: { type: Boolean, default: false },
+      escalationPrevented: { type: Boolean, default: false },
+      timeToResolution: { type: Number, default: 0 } // minutes
+    },
+    automationLevel: { 
+      type: String, 
+      enum: ['fully_automated', 'human_assisted', 'manual_override'],
+      default: 'fully_automated'
+    },
+    
+    // Additional Performance Tracking
+    customerSatisfactionBefore: { 
+      type: Number, 
+      min: 1, 
+      max: 5 
+    },
+    customerSatisfactionAfter: { 
+      type: Number, 
+      min: 1, 
+      max: 5 
+    },
+    resolutionEffectiveness: { 
+      type: Number, 
+      min: 0, 
+      max: 1 
+    },
+    subsequentActions: [{ 
+      type: String 
+    }]
   }
 }, {
   timestamps: true,
