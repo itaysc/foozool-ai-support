@@ -4,9 +4,9 @@ import { AvatarMenu } from '../avatarMenu';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, MenuItem, ListItemIcon, ListItemText, Typography, Box, Chip } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+// Dashboard icon removed
 import SettingsIcon from '@mui/icons-material/Settings';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
+
 import { useState } from 'react';
 
 export const Navbar = observer(() => {
@@ -25,8 +25,6 @@ export const Navbar = observer(() => {
   };
 
   const navigationItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-    { path: '/insights', label: 'Insights', icon: AnalyticsIcon },
     { path: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
 

@@ -6,7 +6,7 @@ import { IUser } from "src/types";
 import { seedTokens } from "./tokens.seed";
 import { seedAutonomousAI } from "./autonomousAI.seed";
 import { seedWebhooks } from "./webhooks.seed";
-import { seedDashboardSettings } from "./dashboard-settings.seed";
+// Dashboard settings seed removed with insights functionality
 
 export default async function seed() {
     const organization = await seedOrganizations();
@@ -28,6 +28,5 @@ export default async function seed() {
     // Seed webhooks data
     await seedWebhooks();
     
-    // Seed dashboard settings
-    await seedDashboardSettings();
+    // Dashboard settings seeding removed with insights functionality
   }

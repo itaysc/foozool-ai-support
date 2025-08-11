@@ -68,12 +68,12 @@ const ActionThresholdsSettings: React.FC<ActionThresholdsSettingsProps> = ({ onS
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    actionType: 'auto_reply' as const,
+    actionType: 'auto_reply' as 'refund' | 'coupon' | 'auto_resolve' | 'escalate' | 'priority_change' | 'auto_reply',
     threshold: 0.5,
     isActive: true,
     priority: 0,
     maxDailyActions: 10,
-    conditions: [{ field: '', operator: 'equals' as const, value: '' }],
+    conditions: [{ field: '', operator: 'equals' as 'equals' | 'greater_than' | 'less_than' | 'contains' | 'in', value: '' }],
     actionConfig: {}
   });
 

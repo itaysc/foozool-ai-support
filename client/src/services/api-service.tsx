@@ -6,48 +6,7 @@ const getRoute = (endpoint: string) => {
 };
 
 const apiService = {
-  // Insights API
-  insights: {
-    async getAll(params?: { category?: string; severity?: string; status?: string; limit?: number; offset?: number }) {
-      const response = await axios.get(getRoute('insights'), { params });
-      return response.data;
-    },
 
-    async getById(id: string) {
-      const response = await axios.get(getRoute(`insights/${id}`));
-      return response.data;
-    },
-
-    async create(data: any) {
-      const response = await axios.post(getRoute('insights'), data);
-      return response.data;
-    },
-
-    async update(id: string, data: any) {
-      const response = await axios.patch(getRoute(`insights/${id}`), data);
-      return response.data;
-    },
-
-    async delete(id: string) {
-      const response = await axios.delete(getRoute(`insights/${id}`));
-      return response.data;
-    },
-
-    async updateStatus(id: string, status: string) {
-      const response = await axios.patch(getRoute(`insights/${id}/status`), { status });
-      return response.data;
-    },
-
-    async getSummary(params?: { days?: number }) {
-      const response = await axios.get(getRoute('insights/summary'), { params });
-      return response.data;
-    },
-
-    async getTrends(params?: { days?: number }) {
-      const response = await axios.get(getRoute('insights/trends'), { params });
-      return response.data;
-    }
-  },
 
   // Action Thresholds API
   actionThresholds: {
@@ -110,28 +69,7 @@ const apiService = {
     }
   },
 
-  // Dashboard Settings API
-  dashboardSettings: {
-    async get(organizationId: string) {
-      const response = await axios.get(getRoute(`organizations/${organizationId}/dashboard-settings`));
-      return response.data;
-    },
-
-    async update(organizationId: string, data: any) {
-      const response = await axios.put(getRoute(`organizations/${organizationId}/dashboard-settings`), data);
-      return response.data;
-    },
-
-    async reset(organizationId: string) {
-      const response = await axios.delete(getRoute(`organizations/${organizationId}/dashboard-settings`));
-      return response.data;
-    },
-
-    async getDefaults(organizationId: string) {
-      const response = await axios.get(getRoute(`organizations/${organizationId}/dashboard-settings/defaults`));
-      return response.data;
-    }
-  },
+  // All dashboard functionality removed
 
   // Action Logs API
   actionLogs: {

@@ -139,27 +139,12 @@ export class SimpleAutonomousAIService {
   private static async performAIAnalysis(context: any): Promise<any> {
     // Get user agent analytics for additional context
     let userAgentContext = '';
+    // User agent analytics service was removed with insights functionality
     try {
-      const { UserAgentAnalyticsService } = await import('../insights/userAgentAnalytics.service');
-      const userAgentService = new UserAgentAnalyticsService();
-      const userAgentAnalytics = await userAgentService.generateUserAgentAnalytics();
-      
-      if (userAgentAnalytics.totalTickets > 0) {
-        const topOS = userAgentAnalytics.osBreakdown[0];
-        const topBrowser = userAgentAnalytics.browserBreakdown[0];
-        const deviceBreakdown = userAgentAnalytics.deviceBreakdown;
-        
-        userAgentContext = `
-User Agent Context (Organization-wide):
-- Top OS: ${topOS?.os || 'Unknown'} (${topOS?.percentage || 0}%)
-- Top Browser: ${topBrowser?.browser || 'Unknown'} (${topBrowser?.percentage || 0}%)
-- Device Distribution: Mobile ${deviceBreakdown.mobile.percentage}%, Desktop ${deviceBreakdown.desktop.percentage}%, Tablet ${deviceBreakdown.tablet.percentage}%
-- Active Anomalies: ${userAgentAnalytics.anomalies.length}
-- Key Insights: ${userAgentAnalytics.insights.map(i => i.title).join(', ')}
-`;
-      }
+      // Placeholder - user agent analytics functionality disabled
+      userAgentContext = '';
     } catch (error) {
-      console.warn('Failed to get user agent context for AI analysis:', error);
+      console.warn('User agent analytics disabled:', error);
     }
 
     const prompt = `

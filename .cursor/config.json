@@ -1,6 +1,6 @@
 {
     "instructions": [
-      "You are working on an app for autonomous ai support agent.",
+      "You are working on an app for autonomous ai support agent. The server get tickets via webhook and store part of the tickets in qdrant.",
       "The server is written in node js with typescript and it make calls to a pyhton server for NLP processing.",
       "The python service code is in the python-ml-service folder and the node js code is in the server folder.",
       "The client side is written in react with typescript and it is in the client folder, and it make calls to the node js server.",

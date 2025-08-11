@@ -1,9 +1,7 @@
 import { Router } from 'express';
-import dashboardSettingsRoutes from './dashboard-settings';
 
 const router = Router();
 
-// Dashboard settings routes
-router.use('/', dashboardSettingsRoutes);
+// Dashboard settings functionality removed with insights
 
 export default router; 

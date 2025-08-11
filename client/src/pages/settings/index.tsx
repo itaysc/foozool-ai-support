@@ -9,10 +9,10 @@ import {
   Alert,
   Snackbar
 } from '@mui/material';
-import InsightsSettings from './components/InsightsSettings';
+
 import ActionThresholdsSettings from './components/ActionThresholdsSettings';
 import CustomerTiersSettings from './components/CustomerTiersSettings';
-import DashboardSettings from './components/DashboardSettings';
+// All dashboard functionality removed
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -90,27 +90,17 @@ const Settings = () => {
             variant="scrollable"
             scrollButtons="auto"
           >
-            <Tab label="Insights" {...a11yProps(0)} />
-            <Tab label="Action Thresholds" {...a11yProps(1)} />
-            <Tab label="Customer Tiers" {...a11yProps(2)} />
-            <Tab label="Dashboard Settings" {...a11yProps(3)} />
+            <Tab label="Action Thresholds" {...a11yProps(0)} />
+            <Tab label="Customer Tiers" {...a11yProps(1)} />
           </Tabs>
         </Box>
 
         <TabPanel value={tabValue} index={0}>
-          <InsightsSettings onShowSnackbar={showSnackbar} />
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={1}>
           <ActionThresholdsSettings onShowSnackbar={showSnackbar} />
         </TabPanel>
 
-        <TabPanel value={tabValue} index={2}>
+        <TabPanel value={tabValue} index={1}>
           <CustomerTiersSettings onShowSnackbar={showSnackbar} />
-        </TabPanel>
-
-        <TabPanel value={tabValue} index={3}>
-          <DashboardSettings onShowSnackbar={showSnackbar} />
         </TabPanel>
       </Paper>
 
