@@ -13,7 +13,7 @@ export * from './organization';
 export * from './product';
 export * from './response';
 export * from './webhook';
-// Insights types removed
+export * from './insight';
 export * from './LLMPrice';
 export * from './agentSuggestion';
 export * from './esTicket';

@@ -5,11 +5,15 @@ import Login from "@/pages/login";
 // Dashboard page removed
 
 import Settings from "@/pages/settings";
+import Insights from "@/pages/insights";
 import NotFound from "@/pages/notFound";
 import Layout from "./layouts/main.layout";
 import ProtectedRoute from "./ProtectRoute";
 
 export const supportedRoutes = [
+    '/insights',
+    '/insights/:organizationId',
+    '/settings',
     '/invoice',
     '/invoice/:id'
 ]
@@ -22,8 +26,10 @@ const Router = () => {
                 <Route path="/login" element={<Login />} />                
                 {/* Protected routes with layout */}
                 <Route path="/" element={<Layout />}>
-                    <Route index element={<Navigate to="/settings" replace />} />
+                    <Route index element={<Navigate to="/insights" replace />} />
 
+                    <Route path="insights" element={<ProtectedRoute element={<Insights />} />} />
+                    <Route path="insights/:organizationId" element={<ProtectedRoute element={<Insights />} />} />
                     <Route path="settings" element={<ProtectedRoute element={<Settings />} />} />
                 </Route>
                 

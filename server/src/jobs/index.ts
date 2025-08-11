@@ -1,4 +1,5 @@
 import { startCreateTicketJob } from './create-ticket';
+import { startInsightsGenerationJob } from './insights-scheduler';
 
 
 export const startAllJobs = () => {
@@ -7,11 +8,13 @@ export const startAllJobs = () => {
     // Start the create ticket job
     const createTicketJob = startCreateTicketJob();
     
-    // Insights functionality removed
+    // Start the insights generation job
+    const insightsJob = startInsightsGenerationJob();
     
     console.log('✅ All jobs initialized');
     
     return {
-        createTicketJob
+        createTicketJob,
+        insightsJob
     };
 };

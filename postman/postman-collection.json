@@ -1124,6 +1124,107 @@
       ]
     },
     {
+      "name": "🛠️ Jobs Management",
+      "item": [
+        {
+          "name": "List Available Jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs"]
+            },
+            "description": "Get a list of all available jobs that can be executed manually"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Job Information",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/insights-generation",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "insights-generation"]
+            },
+            "description": "Get detailed information about a specific job"
+          },
+          "response": []
+        },
+        {
+          "name": "Run Insights Generation Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/insights-generation/run",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "insights-generation", "run"]
+            },
+            "description": "Execute the AI insights generation job for the authenticated user's organization. This will analyze recent support tickets and generate AI-powered insights."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Create Ticket Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/create-ticket/run",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "create-ticket", "run"]
+            },
+            "description": "Execute the create demo ticket job to generate a test support ticket."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "🧠 ML Service",
       "item": [
         {

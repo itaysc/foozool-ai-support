@@ -156,6 +156,71 @@ class QdrantService {
             return [];
         }
     }
+
+    /**
+     * Get recent vectors filtered by organization and date
+     */
+    async getRecentVectors({ 
+        organizationId, 
+        createdAfter,
+        limit = 1000 
+    }: { 
+        organizationId: string; 
+        createdAfter: Date;
+        limit?: number;
+    }): Promise<Array<{ vector: number[]; payload: any }>> {
+        try {
+            // Create filter for organization and date range
+            const filter = {
+                must: [
+                    {
+                        key: 'organization',
+                        match: { value: organizationId }
+                    },
+                    {
+                        key: 'created_at',
+                        range: {
+                            gte: createdAfter.getTime()
+                        }
+                    }
+                ]
+            };
+
+            // Use scroll to get all vectors matching the filter
+            let offset = 0;
+            const batchSize = 100;
+            const allVectors: Array<{ vector: number[]; payload: any }> = [];
+
+            while (allVectors.length < limit) {
+                const searchResult = await this.client.scroll(ticketCollectionConfig.name, {
+                    filter,
+                    limit: Math.min(batchSize, limit - allVectors.length),
+                    offset,
+                    with_payload: true,
+                    with_vector: true,
+                });
+
+                if (!searchResult.points || searchResult.points.length === 0) {
+                    break;
+                }
+
+                for (const point of searchResult.points) {
+                    allVectors.push({
+                        vector: point.vector as number[],
+                        payload: point.payload
+                    });
+                }
+
+                offset += batchSize;
+            }
+
+            console.log(`Retrieved ${allVectors.length} recent vectors for organization ${organizationId}`);
+            return allVectors;
+        } catch (error: any) {
+            console.error(`Error getting recent vectors for organization ${organizationId}:`, error);
+            return [];
+        }
+    }
 }
 
 export default QdrantService; 

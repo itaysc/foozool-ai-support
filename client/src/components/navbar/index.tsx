@@ -4,7 +4,7 @@ import { AvatarMenu } from '../avatarMenu';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, MenuItem, ListItemIcon, ListItemText, Typography, Box, Chip } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
-// Dashboard icon removed
+import InsightsIcon from '@mui/icons-material/Insights';
 import SettingsIcon from '@mui/icons-material/Settings';
 
 import { useState } from 'react';
@@ -25,6 +25,7 @@ export const Navbar = observer(() => {
   };
 
   const navigationItems = [
+    { path: '/insights', label: 'AI Insights', icon: InsightsIcon },
     { path: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
 
