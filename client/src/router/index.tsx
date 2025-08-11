@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Test from "@/pages/test";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
-import BotPerformance from "@/pages/botPerformance";
+import Insights from "@/pages/insights";
 import Settings from "@/pages/settings";
 import NotFound from "@/pages/notFound";
 import Layout from "./layouts/main.layout";
@@ -24,9 +24,7 @@ const Router = () => {
                 <Route path="/" element={<Layout />}>
                     <Route index element={<Navigate to="/dashboard" replace />} />
                     <Route path="dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
-                    <Route path="bot-performance" element={<ProtectedRoute element={<BotPerformance />} />} />
-                    {/* Redirect old insights route to bot performance insights tab */}
-                    <Route path="insights" element={<Navigate to="/bot-performance?tab=2" replace />} />
+                    <Route path="insights" element={<ProtectedRoute element={<Insights />} />} />
                     <Route path="settings" element={<ProtectedRoute element={<Settings />} />} />
                 </Route>
                 

@@ -4,8 +4,5 @@ export { default as Page } from './page';
 export { default as FixedFooter } from './fixedFooter';
 export { default as BouncingDotsLoader } from './bouncingDotsLoader';
 export { default as OverlayLoader } from './overlayLoader';
-
-// Bot Performance Components
-export * from './botPerformance';
 export { default as YesNoModal } from './yesNoModal';
 export { default as NewsSection } from './news/NewsSection';

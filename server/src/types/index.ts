@@ -3,7 +3,7 @@ export { IResponse } from './response';
 export { IOrganization } from './organization';
 export { ILLMUsage } from './LLMUsage';
 export { ILLMPrices } from './LLMPrice';
-export { ITicket, IBotProcessingStep } from './ticket';
+export { ITicket } from './ticket';
 export { IESTicket } from './esTicket';
 export { IProduct } from './product';
 export { IToken } from './token';
