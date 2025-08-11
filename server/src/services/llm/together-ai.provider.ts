@@ -19,6 +19,7 @@ export class TogetherAIProvider implements LLMProviderInterface {
     temperature: number;
     topP: number;
   }>) {
+    console.log(`🔧 Together AI Provider: Initializing with API key length: ${config.TOGETHER_API_KEY?.length || 0}`);
     this.together = new Together({ apiKey: config.TOGETHER_API_KEY });
     this.config = {
       defaultModel: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
@@ -27,6 +28,7 @@ export class TogetherAIProvider implements LLMProviderInterface {
       topP: 0.8,
       ...providerConfig
     };
+    console.log(`🔧 Together AI Provider: Initialized successfully`);
   }
 
   private async getRemainingTokens(userId: string): Promise<{ remainingTokens: number, record: ILLMUsage | null }> {

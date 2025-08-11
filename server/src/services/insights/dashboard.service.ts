@@ -1,7 +1,5 @@
 import { QdrantAnalyticsService } from './qdrantAnalytics.service';
 import { UserAgentAnalyticsService } from './userAgentAnalytics.service';
-import { TicketEnrichmentService } from '../tickets/enrichment.service';
-import Config from '../../config';
 import { InsightModel } from '../../schemas/insight.schema';
 import { callLLM } from '../llm';
 import type { VolumeTrend, SatisfactionTrend, TicketAnalytics } from '../../types/insights';
@@ -72,63 +70,10 @@ interface DashboardInsights {
 export class DashboardService {
   private analyticsService: QdrantAnalyticsService;
   private userAgentAnalyticsService: UserAgentAnalyticsService;
-  private ticketEnrichmentService: TicketEnrichmentService;
 
   constructor() {
     this.analyticsService = new QdrantAnalyticsService();
     this.userAgentAnalyticsService = new UserAgentAnalyticsService();
-    this.ticketEnrichmentService = new TicketEnrichmentService();
-  }
-
-  /**
-   * Helper method to update cache with data
-   * Always updates cache regardless of useCache setting
-   */
-  private async updateCache<T>(cacheKey: string, data: T, ttl: number = 300): Promise<void> {
-    try {
-      const { getRedisClient } = await import('../redis/client');
-      const redisClient = await getRedisClient();
-      
-      await redisClient.setEx(cacheKey, ttl, JSON.stringify(data));
-      console.log(`💾 Cache updated for key: ${cacheKey} (TTL: ${ttl}s)`);
-    } catch (error) {
-      console.warn('⚠️ Failed to update cache:', error);
-    }
-  }
-
-  /**
-   * Helper method to generate cache key
-   */
-  private generateCacheKey(organizationId: string, dataType: string, timeRange?: { start: string; end: string }): string {
-    const timeRangeStr = timeRange ? `:${timeRange.start}:${timeRange.end}` : ':all';
-    return `dashboard:${organizationId}:${dataType}${timeRangeStr}`;
-  }
-
-  /**
-   * Get enriched tickets with Zendesk data
-   */
-  async getEnrichedTickets(
-    organizationId: string,
-    timeRange?: { start: string; end: string },
-    useCache: boolean = true,
-    limit?: number
-  ): Promise<any[]> {
-    try {
-      // Use config value if no limit is specified
-      const ticketLimit = limit || Config.DASHBOARD_TICKET_LIMIT;
-      
-      const tickets = await this.ticketEnrichmentService.getEnrichedTickets(organizationId, {
-        timeRange,
-        limit: ticketLimit,
-        enrichWithZendesk: true,
-        useCache
-      });
-      
-      return tickets;
-    } catch (error) {
-      console.error('❌ Error getting enriched tickets:', error);
-      return [];
-    }
   }
 
   /**
@@ -137,6 +82,7 @@ export class DashboardService {
   async getDashboardMetrics(organizationId: string, timeRange?: { start: string; end: string }): Promise<DashboardMetrics> {
     // Check if caching should be used based on user context
     const useCache = UserContextManager.getUseCache();
+    console.log(`🔄 Dashboard metrics caching: ${useCache ? 'enabled' : 'disabled'}`);
 
     // Use provided time range or fall back to organization settings
     let analyticsTimeRange: { start: string; end: string } | undefined = timeRange;
@@ -151,6 +97,8 @@ export class DashboardService {
       const calculatedTimeRange = dashboardSettingsService.calculateTimeRange(settings);
       analyticsTimeRange = calculatedTimeRange || undefined;
     }
+    
+    console.log(`🔍 Using analytics time range for org ${organizationId}:`, analyticsTimeRange ? `${analyticsTimeRange.start} to ${analyticsTimeRange.end}` : 'all time');
 
     // Get analytics based on time range - this is the main data source
     const analytics = await this.analyticsService.generateAnalytics(analyticsTimeRange || undefined);
@@ -170,7 +118,9 @@ export class DashboardService {
           start: sevenDaysAgo.toISOString(),
           end: new Date().toISOString()
         };
+        console.log(`📅 Calculating recent tickets for last 7 days: ${recentTimeRange.start} to ${recentTimeRange.end}`);
         recentAnalytics = await this.analyticsService.generateAnalytics(recentTimeRange);
+        console.log(`📊 Recent tickets (7 days): ${recentAnalytics.totalTickets}`);
       } else {
         // For short time ranges, use the same data
         recentAnalytics = analytics;
@@ -198,7 +148,7 @@ export class DashboardService {
         percentage: totalTickets > 0 ? ((count as number) / totalTickets) * 100 : 0
       }));
     
-
+    console.log(`🔍 Final topIntents array:`, topIntents);
 
     // Calculate top tags with percentages
     const totalTagUsage = Object.values(analytics.tagFrequency).reduce((sum, count) => sum + (count as number), 0);
@@ -215,6 +165,7 @@ export class DashboardService {
     let userAgentAnalytics: any = null;
     try {
       userAgentAnalytics = await this.userAgentAnalyticsService.generateUserAgentAnalytics(analyticsTimeRange);
+      console.log(`📱 User agent analytics: ${userAgentAnalytics.totalTickets} tickets with user agent data`);
     } catch (error) {
       console.warn('⚠️ Failed to generate user agent analytics:', error);
     }
@@ -250,10 +201,6 @@ export class DashboardService {
         }))
       } : undefined
     };
-
-    // Always update cache after fetching, regardless of useCache setting
-    const cacheKey = this.generateCacheKey(organizationId, 'metrics', timeRange);
-    await this.updateCache(cacheKey, metrics, 300); // 5 minutes TTL
 
     return metrics;
   }
@@ -438,10 +385,6 @@ Use: "Current data shows 45% of tickets are billing-related, with 60% negative s
       // No caching - always return fresh data
       console.log(`✅ Returning fresh dashboard insights with ${result.futurePredictions.length} future predictions`);
       
-      // Always update cache after fetching, regardless of useCache setting
-      const cacheKey = this.generateCacheKey(organizationId, 'insights', timeRange);
-      await this.updateCache(cacheKey, result, 600); // 10 minutes TTL for insights
-      
       return result;
     } catch (error) {
       console.error('Error parsing dashboard insights:', error);
@@ -586,11 +529,6 @@ Use: "Current data shows 45% of tickets are billing-related, with 60% negative s
 
     // No caching - always return fresh data
     console.log(`✅ Returning fresh dashboard alerts (no caching)`);
-    
-    // Always update cache after fetching, regardless of useCache setting
-    const cacheKey = this.generateCacheKey(organizationId, 'alerts', timeRange);
-    await this.updateCache(cacheKey, sortedAlerts, 300); // 5 minutes TTL for alerts
-    
     return sortedAlerts;
   }
 
@@ -700,11 +638,6 @@ Use: "Current data shows 45% of tickets are billing-related, with 60% negative s
     };
 
     console.log(`✅ Returning dashboard performance data (caching: ${useCache ? 'enabled' : 'disabled'})`);
-    
-    // Always update cache after fetching, regardless of useCache setting
-    const cacheKey = this.generateCacheKey(organizationId, 'performance', timeRange);
-    await this.updateCache(cacheKey, performanceData, 600); // 10 minutes TTL for performance data
-    
     return performanceData;
   }
 
@@ -723,10 +656,6 @@ Use: "Current data shows 45% of tickets are billing-related, with 60% negative s
       ];
       
       await Promise.all(keys.map(key => redis.del(key)));
-      
-      // Also clear enriched tickets cache
-      await this.ticketEnrichmentService.clearCache(organizationId);
-      
       console.log(`✅ Cleared dashboard cache for org ${organizationId}`);
     } catch (err) {
       console.error('❌ Failed to clear dashboard cache:', err);

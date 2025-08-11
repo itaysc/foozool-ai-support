@@ -17,90 +17,42 @@ const api = axios.create({
   headers,
 });
 
-// Type definitions
 type channel = 'email' | 'facebook' | 'web' | 'native_messaging' | 'api' | 'whatsapp';
 type stringOrUndefined = 'string' | undefined;
 type status = 'new' | 'open' | 'pending' | 'hold' | 'solved' | 'closed';
 
-// Rate limiting utility
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Retry with exponential backoff for rate limiting
-const retryWithBackoff = async <T>(
-  fn: () => Promise<T>,
-  maxRetries: number = Config.ZENDESK_MAX_RETRIES,
-  baseDelay: number = Config.ZENDESK_RETRY_BASE_DELAY_MS
-): Promise<T> => {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (error: any) {
-      if (error.response?.status === 429 && attempt < maxRetries) {
-        // Rate limited - wait with exponential backoff
-        const waitTime = baseDelay * Math.pow(2, attempt - 1);
-        console.log(`Rate limited (429). Waiting ${waitTime}ms before retry ${attempt}/${maxRetries}`);
-        await delay(waitTime);
-        continue;
-      }
-      throw error;
-    }
-  }
-  throw new Error(`Failed after ${maxRetries} retries`);
-};
-
-// Rate-limited API call with delay between requests
-const rateLimitedApiCall = async <T>(
-  apiCall: () => Promise<T>,
-  delayMs: number = Config.ZENDESK_RATE_LIMIT_DELAY_MS // Use configurable delay
-): Promise<T> => {
-  const result = await retryWithBackoff(apiCall);
-  // Add delay after successful call to respect rate limits
-  await delay(delayMs);
-  return result;
-};
 
 export async function fetchAvailableTags() : Promise<string[]> {
-  try {
-    const res = await api.get('/ticket_fields.json');
-    const fields = res.data.ticket_fields;
-    const tagsField = fields.find((field: any) => field.type === 'tagger' && field.title === 'Tags');
-    return tagsField ? tagsField.custom_field_options.map((option: any) => option.name) : [];
-  } catch (error) {
-    console.error('Error fetching available tags:', error);
-    return [];
-  }
+  const possibleTags = await api.get(`/tags`);
+  return possibleTags.data.tags.map((d) => d.name);
 }
 
 export async function fetchTicketsByExternalIds(
   ids: string[], 
   options: { fetchComments?: boolean } = {}
 ) : Promise<(ITicketSearchResult & { comments?: IZendeskTicketComment[] })[]> {
-  const results: (ITicketSearchResult & { comments?: IZendeskTicketComment[] })[] = [];
-  
-  // Process IDs sequentially with rate limiting instead of Promise.all
-  for (const id of ids) {
-    try {
-      const response = await rateLimitedApiCall(async () => 
-        api.get('/search.json', {
-          params: { query: `type:ticket external_id:${id}` },
-        })
-      );
-      
-      const t: ITicketSearchResult & { comments?: IZendeskTicketComment[] } = get(response, 'data.results[0]', null);
-      if(t) {
-        if (options.fetchComments) {
-          const comments = await rateLimitedApiCall(async () => 
-            getTicketComments(t.id.toString())
-          );
-          t.comments = comments;
+  const results = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const response = await api.get('/search.json',
+          {
+            params: { query: `type:ticket external_id:${id}` },
+          }
+        );
+        const t: ITicketSearchResult & { comments?: IZendeskTicketComment[] } = get(response, 'data.results[0]', null);
+        if(t) {
+          if (options.fetchComments) {
+            const comments = await getTicketComments(t.id.toString());
+            t.comments = comments;
+          }
         }
+        return t; // assuming one match per ID
+      } catch (error) {
+        console.error(`Error for external_id ${id}:`, error);
+        return null;
       }
-      results.push(t);
-    } catch (error) {
-      console.error(`Error for external_id ${id}:`, error);
-      // Continue with next ID instead of failing completely
-    }
-  }
+    })
+  );
 
   // Filter out any nulls (failed searches)
   return results.filter(ticket => ticket) as (ITicketSearchResult & { comments?: IZendeskTicketComment[] })[];

@@ -4,11 +4,8 @@ import { QdrantAnalyticsService } from '../../../services/insights/qdrantAnalyti
 import { InsightModel } from '../../../schemas/insight.schema';
 import dashboardSettingsService from '../../../services/organizations/dashboard-settings.service';
 import { setUserContext } from '../../../context/userContext';
-import TicketEnrichmentService from '../../../services/tickets/enrichment.service';
-import EnrichedAnalyticsService from '../../../services/insights/enrichedAnalytics.service';
 import dashboardRouter from './dashboard';
 import schedulerRouter from './scheduler';
-import Config from '../../../config';
 
 const router = express.Router();
 
@@ -140,16 +137,15 @@ router.patch('/:id', async (req: Request, res: Response): Promise<void> => {
 
 /**
  * @route GET /api/v1/insights/analytics
- * @desc Get comprehensive analytics for an organization using enriched tickets
+ * @desc Get comprehensive analytics for an organization
  * @access Private
  */
 router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = req.user!.organization;
-    const { startDate, endDate, useOrganizationSettings = 'true', useCache = 'true' } = req.query;
+    const { startDate, endDate, useOrganizationSettings = 'true' } = req.query;
 
     let timeRange: { start: string; end: string } | undefined;
-    const useCacheBool = useCache === 'true';
 
     // Use organization dashboard settings if requested
     if (useOrganizationSettings === 'true') {
@@ -168,32 +164,13 @@ router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
       } : undefined;
     }
 
-    // Get enriched tickets for better analytics context
-    const ticketEnrichmentService = new TicketEnrichmentService();
-    const enrichedTickets = await ticketEnrichmentService.getEnrichedTickets(
-      organizationId.toString(),
-      {
-        timeRange,
-        limit: Config.ANALYTICS_TICKET_LIMIT, // Use config value for better performance
-        enrichWithZendesk: true,
-        useCache: useCacheBool
-      }
-    );
-
-    // Use standard analytics service (enriched tickets will improve data quality in future)
     const analyticsService = new QdrantAnalyticsService();
     const analytics = await analyticsService.generateAnalytics(timeRange);
 
     res.status(200).json({
       success: true,
       data: analytics,
-      timeRange: timeRange || 'all_time',
-      useCache: useCacheBool,
-      enrichedTicketsCount: enrichedTickets.length,
-      metadata: {
-        hasZendeskData: enrichedTickets.some(ticket => ticket.zendeskData),
-        totalEnrichedTickets: enrichedTickets.length
-      }
+      timeRange: timeRange || 'all_time'
     });
 
   } catch (error) {
@@ -208,7 +185,7 @@ router.get('/analytics', async (req: Request, res: Response): Promise<void> => {
 
 /**
  * @route POST /api/v1/insights/generate
- * @desc Generate AI-powered insights for an organization using enriched tickets
+ * @desc Generate AI-powered insights for an organization
  * @access Private
  */
 router.post('/generate', async (req: Request, res: Response): Promise<void> => {
@@ -217,29 +194,10 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
       timeRange, 
       includeTrends = true, 
       includeAnomalies = true, 
-      includeFuturePredictions = true,
-      useCache = 'true'
+      includeFuturePredictions = true 
     } = req.body;
 
-    const organizationId = req.user!.organization;
-    const useCacheBool = useCache === 'true';
-
-    // Get enriched tickets for better insights context
-    const ticketEnrichmentService = new TicketEnrichmentService();
-    const enrichedTickets = await ticketEnrichmentService.getEnrichedTickets(
-      organizationId.toString(),
-      {
-        timeRange,
-        limit: Config.ANALYTICS_TICKET_LIMIT, // Use config value for better performance
-        enrichWithZendesk: true,
-        useCache: useCacheBool
-      }
-    );
-
-    // Use standard analytics service with enriched context
     const analyticsService = new QdrantAnalyticsService();
-    const analytics = await analyticsService.generateAnalytics(timeRange);
-    
     const result = await analyticsService.generateInsights({
       timeRange,
       includeTrends,
@@ -249,13 +207,7 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({
       success: true,
-      data: result,
-      useCache: useCacheBool,
-      enrichedTicketsCount: enrichedTickets.length,
-      metadata: {
-        hasZendeskData: enrichedTickets.some(ticket => ticket.zendeskData),
-        totalEnrichedTickets: enrichedTickets.length
-      }
+      data: result
     });
 
   } catch (error) {
@@ -263,68 +215,6 @@ router.post('/generate', async (req: Request, res: Response): Promise<void> => {
     res.status(500).json({ 
       success: false,
       error: 'Failed to generate insights',
-      message: (error as Error).message
-    });
-  }
-});
-
-/**
- * @route GET /api/v1/insights/enriched-analytics
- * @desc Get enhanced analytics using enriched tickets with Zendesk data
- * @access Private
- */
-router.get('/enriched-analytics', async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user) {
-      res.status(401).json({ success: false, error: 'User not authenticated' });
-      return;
-    }
-
-    const organizationId = req.user.organization;
-    const { startDate, endDate, useOrganizationSettings = 'true', useCache = 'true' } = req.query;
-
-    let timeRange: { start: string; end: string } | undefined;
-    const useCacheBool = useCache === 'true';
-
-    // Use organization dashboard settings if requested
-    if (useOrganizationSettings === 'true') {
-      const dashboardSettings = await dashboardSettingsService.getDashboardSettings(organizationId.toString());
-      const defaultSettings = dashboardSettingsService.getDefaultSettings();
-      const settings = dashboardSettings || defaultSettings;
-      
-      const calculatedTimeRange = dashboardSettingsService.calculateTimeRange(settings);
-      timeRange = calculatedTimeRange || undefined;
-      console.log(`🔍 Using organization settings for enriched analytics:`, timeRange ? `${timeRange.start} to ${timeRange.end}` : 'all time');
-    } else {
-      // Use query parameters if provided
-      timeRange = startDate && endDate ? {
-        start: startDate as string,
-        end: endDate as string
-      } : undefined;
-    }
-
-    // Generate enriched analytics using the service
-    const enrichedAnalyticsService = new EnrichedAnalyticsService();
-    const result = await enrichedAnalyticsService.generateEnrichedAnalytics(
-      organizationId.toString(),
-      {
-        timeRange,
-        useCache: useCacheBool
-      }
-    );
-
-    res.status(200).json({
-      success: true,
-      data: result.analytics,
-      useCache: useCacheBool,
-      metadata: result.metadata
-    });
-
-  } catch (error) {
-    console.error('Error generating enriched analytics:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to generate enriched analytics',
       message: (error as Error).message
     });
   }

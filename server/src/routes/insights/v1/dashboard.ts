@@ -3,7 +3,6 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { DashboardService } from '../../../services/insights/dashboard.service';
 import dashboardSettingsTestRouter from './dashboard-settings-test';
 import { OptimizedAnalyticsService } from '../../../services/insights/optimizedAnalytics.service';
-import Config from '../../../config';
 
 const router = express.Router();
 
@@ -159,50 +158,6 @@ router.get('/debug-qdrant', async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ 
       success: false,
       error: 'Failed to get debug Qdrant data',
-      message: (error as Error).message
-    });
-  }
-});
-
-/**
- * @route GET /api/v1/insights/dashboard/enriched-tickets
- * @desc Get enriched tickets with Zendesk data
- * @access Private
- */
-router.get('/enriched-tickets', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const organizationId = req.user!.organization.toString();
-    const { start, end, useCache = 'true', limit = '100' } = req.query; // Added limit parameter with default 100
-    
-    const dashboardService = new DashboardService();
-    
-    const timeRange = start && end ? { start: start as string, end: end as string } : undefined;
-    const useCacheBool = useCache === 'true';
-    const limitNumber = parseInt(limit as string, 10) || Config.DASHBOARD_TICKET_LIMIT; // Use config value as fallback
-    
-    const enrichedTickets = await dashboardService.getEnrichedTickets(
-      organizationId,
-      timeRange,
-      useCacheBool,
-      limitNumber
-    );
-
-    res.status(200).json({
-      success: true,
-      data: {
-        tickets: enrichedTickets,
-        total: enrichedTickets.length,
-        timeRange,
-        useCache: useCacheBool,
-        limit: limitNumber
-      }
-    });
-
-  } catch (error) {
-    console.error('Error getting enriched tickets:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Failed to get enriched tickets',
       message: (error as Error).message
     });
   }

@@ -157,7 +157,7 @@ const Dashboard = observer(() => {
     newSearchParams.set('label', newTimeRange.label);
     setSearchParams(newSearchParams);
     
-    // Clear existing data and reset first load flags to force fresh fetch
+    // Clear existing data to force fresh fetch and prevent caching issues
     dashboardStore.clearData();
     
     // Update dashboard data with new time range (using ISO strings for API)
@@ -733,12 +733,7 @@ const Dashboard = observer(() => {
 
       {/* User Agent Analytics Section */}
       {dashboardStore.metrics?.userAgentAnalytics && (
-        <Box mt={4} sx={{ 
-          mx: -3,
-          px: 3,
-          backgroundColor: 'background.paper',
-          borderRadius: 1
-        }}>
+        <Box mt={4}>
           <UserAgentAnalyticsComponent
             data={dashboardStore.metrics.userAgentAnalytics}
             loading={dashboardStore.isLoading}
