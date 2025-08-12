@@ -13,8 +13,119 @@ import { executeAutonomousActions } from '../autonomousAI';
 import { v5 as uuidv5 } from 'uuid';
 import { QDRANT_POINT_NAMESPACE } from '../../qdrant/utils';
 import { UserContextManager } from '../../context/userContext';
+import { PredictionModel } from '../../schemas/prediction.schema';
 
 const DEFAULT_CONFIDENCE_SCORE = 0.3;
+
+/**
+ * Generate real-time predictions for ticket escalation and CSAT risk
+ */
+async function generateTicketPredictions({
+  ticketId,
+  organizationId,
+  similarTickets,
+  sentimentScore,
+  embedding
+}: {
+  ticketId: string;
+  organizationId: string;
+  similarTickets: any[];
+  sentimentScore: number;
+  embedding: number[];
+}): Promise<void> {
+  console.log(`Generating predictions for ticket ${ticketId} based on ${similarTickets.length} similar tickets`);
+
+  // Analyze similar tickets for prediction patterns
+  let escalatedCount = 0;
+  let lowCsatCount = 0;
+  let highPriorityCount = 0;
+  let negativeSentimentCount = 0;
+
+  for (const similarTicket of similarTickets) {
+    // Predict escalation based on priority, status, and historical patterns
+    const hasEscalationSignals = 
+      similarTicket.priority === 'urgent' || 
+      similarTicket.priority === 'high' ||
+      similarTicket.status === 'open' ||
+      (similarTicket.tags && similarTicket.tags.some((tag: string) => 
+        ['escalated', 'urgent', 'complaint', 'angry'].includes(tag.toLowerCase())
+      ));
+    
+    if (hasEscalationSignals) {
+      escalatedCount++;
+    }
+
+    // Predict CSAT risk based on sentiment, priority, and ticket characteristics
+    const hasLowCsatSignals = 
+      (similarTicket.priority === 'urgent' || similarTicket.priority === 'high') ||
+      (similarTicket.tags && similarTicket.tags.some((tag: string) => 
+        ['complaint', 'bug', 'error', 'frustrated', 'angry', 'disappointed'].includes(tag.toLowerCase())
+      )) ||
+      similarTicket.similarity < 0.3; // Low similarity might indicate unique/complex issues
+
+    if (hasLowCsatSignals) {
+      lowCsatCount++;
+    }
+
+    if (similarTicket.priority === 'urgent' || similarTicket.priority === 'high') {
+      highPriorityCount++;
+    }
+  }
+
+  // Factor in current ticket's sentiment
+  if (sentimentScore < -0.2) {
+    negativeSentimentCount++;
+  }
+
+  const totalTickets = Math.max(similarTickets.length, 1); // Avoid division by zero
+  
+  // Calculate confidence scores
+  let escalationRiskConfidence = escalatedCount / totalTickets;
+  let csatRiskConfidence = lowCsatCount / totalTickets;
+
+  // Boost confidence based on current ticket sentiment
+  if (sentimentScore < -0.3) {
+    escalationRiskConfidence = Math.min(1, escalationRiskConfidence + 0.2);
+    csatRiskConfidence = Math.min(1, csatRiskConfidence + 0.3);
+  }
+
+  // Boost confidence if high priority patterns detected
+  if (highPriorityCount / totalTickets > 0.5) {
+    escalationRiskConfidence = Math.min(1, escalationRiskConfidence + 0.1);
+    csatRiskConfidence = Math.min(1, csatRiskConfidence + 0.1);
+  }
+
+  // Determine risk levels
+  const escalationRisk = escalationRiskConfidence > 0.7 ? 'High' : 
+                        (escalationRiskConfidence > 0.4 ? 'Medium' : 'Low');
+  
+  const csatRisk = csatRiskConfidence > 0.5 ? 'High' : 
+                  (csatRiskConfidence > 0.2 ? 'Medium' : 'Low');
+
+  // Create prediction object
+  const newPrediction = {
+    ticketId,
+    organizationId,
+    predictedEscalation: {
+      risk: escalationRisk,
+      confidence: Math.round(escalationRiskConfidence * 100) / 100,
+    },
+    predictedCSAT: {
+      risk: csatRisk,
+      confidence: Math.round(csatRiskConfidence * 100) / 100,
+    },
+    createdAt: new Date(),
+  };
+
+  // Save prediction to MongoDB with upsert to handle duplicate tickets
+  await PredictionModel.findOneAndUpdate(
+    { ticketId },
+    newPrediction,
+    { upsert: true, new: true }
+  );
+
+  console.log(`Prediction saved for ticket ${ticketId}: Escalation=${escalationRisk}(${escalationRiskConfidence}), CSAT=${csatRisk}(${csatRiskConfidence})`);
+}
 
 /**
  * Process intent classification for a ticket
@@ -194,6 +305,22 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promis
 
     // Extract and summarize comments from similar tickets
     await extractAndSummarizeTicketComments(similarTickets.payload);
+    
+    // -----------------------------------------------------------
+    // NEW LOGIC: Generate real-time predictions for escalation and CSAT risk
+    // -----------------------------------------------------------
+    try {
+      await generateTicketPredictions({
+        ticketId: ticket.ticket_id.toString(),
+        organizationId,
+        similarTickets: similarTickets.payload,
+        sentimentScore: sentimentResult.score,
+        embedding: sbertEmbedding
+      });
+    } catch (predictionError) {
+      console.error(`Failed to generate predictions for ticket ${ticket.ticket_id}:`, predictionError);
+      // Don't fail the entire webhook if predictions fail
+    }
     
     // TODO: extract product information from similar tickets
     // Generate or extract product information

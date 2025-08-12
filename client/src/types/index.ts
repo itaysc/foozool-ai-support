@@ -14,6 +14,7 @@ export * from './product';
 export * from './response';
 export * from './webhook';
 export * from './insight';
+export * from './prediction';
 export * from './LLMPrice';
 export * from './agentSuggestion';
 export * from './esTicket';

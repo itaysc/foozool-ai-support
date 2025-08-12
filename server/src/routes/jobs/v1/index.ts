@@ -68,6 +68,80 @@ router.get('/jobs', authenticateJWT, async (req, res) => {
 });
 
 /**
+ * POST /jobs/run/:jobId
+ * Execute a specific job by ID for the authenticated user's organization
+ */
+router.post('/jobs/run/:jobId', authenticateJWT, async (req, res) => {
+  try {
+    const { jobId } = req.params;
+    
+    // Get user context from the middleware
+    const userId = UserContextManager.getCurrentUserId();
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User context not available',
+        error: 'UNAUTHORIZED'
+      });
+    }
+
+    // Check if job exists (jobId is the same as jobName in our registry)
+    const job = availableJobs[jobId];
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: `Job with ID '${jobId}' not found`,
+        error: 'JOB_NOT_FOUND',
+        availableJobs: Object.keys(availableJobs)
+      });
+    }
+
+    // Check if job requires organization and user has one
+    if (job.requiresOrganization && !organizationId) {
+      return res.status(400).json({
+        success: false,
+        message: `Job '${jobId}' requires an organization context`,
+        error: 'ORGANIZATION_REQUIRED'
+      });
+    }
+
+    console.log(`🚀 Running job ID '${jobId}' for user ${userId}, organization: ${organizationId || 'N/A'}`);
+
+    // Execute the job
+    const startTime = Date.now();
+    const result = await job.execute(organizationId, userId);
+    const executionTime = Date.now() - startTime;
+
+    console.log(`✅ Job ID '${jobId}' completed in ${executionTime}ms`);
+
+    res.status(200).json({
+      success: true,
+      message: `Job '${job.name}' executed successfully`,
+      data: {
+        jobId,
+        jobName: job.name,
+        executionTimeMs: executionTime,
+        userId,
+        organizationId,
+        result
+      }
+    });
+
+  } catch (error) {
+    console.error(`❌ Error executing job ID '${req.params.jobId}':`, error);
+    
+    res.status(500).json({
+      success: false,
+      message: `Error executing job ID '${req.params.jobId}'`,
+      error: 'JOB_EXECUTION_FAILED',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * POST /jobs/:jobName/run
  * Execute a specific job by name for the authenticated user's organization
  */

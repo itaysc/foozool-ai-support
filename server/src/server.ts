@@ -23,6 +23,7 @@ import ticketsRoutesV1 from './routes/tickets/v1';
 import autonomousAIRoutesV1 from './routes/autonomousAI/v1';
 import insightsRoutesV1 from './routes/insights/v1';
 import jobsRoutesV1 from './routes/jobs/v1';
+import predictionsRoutesV1 from './routes/predictions/v1';
 
 import newsRoutesV1 from './routes/news/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
@@ -82,6 +83,7 @@ export default class Server{
           this.app.use('/api/v1/autonomous-ai', autonomousAIRoutesV1);
     this.app.use('/api/v1', insightsRoutesV1);
     this.app.use('/api/v1', jobsRoutesV1);
+    this.app.use('/api/v1', predictionsRoutesV1);
 
     this.app.use('/api/v1/news', newsRoutesV1);
       this.app.use('/api/v1/train', modelTrainingRoutesV1);

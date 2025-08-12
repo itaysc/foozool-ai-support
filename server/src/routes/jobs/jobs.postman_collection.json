@@ -100,6 +100,62 @@
         "description": "Execute the create demo ticket job to generate a test support ticket."
       },
       "response": []
+    },
+    {
+      "name": "Run Job by ID - Insights Generation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "{{nodejs_base_url}}/api/v1/jobs/run/insights-generation",
+          "host": ["{{nodejs_base_url}}"],
+          "path": ["api", "v1", "jobs", "run", "insights-generation"]
+        },
+        "description": "Execute a job by its ID (from the list jobs response). This example runs the insights-generation job using the job ID instead of the job name route."
+      },
+      "response": []
+    },
+    {
+      "name": "Run Job by ID - Create Ticket",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{auth_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": ""
+        },
+        "url": {
+          "raw": "{{nodejs_base_url}}/api/v1/jobs/run/create-ticket",
+          "host": ["{{nodejs_base_url}}"],
+          "path": ["api", "v1", "jobs", "run", "create-ticket"]
+        },
+        "description": "Execute a job by its ID (from the list jobs response). This example runs the create-ticket job using the job ID instead of the job name route."
+      },
+      "response": []
     }
   ],
   "auth": {

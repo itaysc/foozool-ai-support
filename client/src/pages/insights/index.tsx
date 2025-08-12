@@ -25,12 +25,15 @@ import {
   AutorenewOutlined
 } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
+import { Prediction, PredictionSummary } from '@/types/prediction';
 import { insightsService } from '@/services/insights-service';
 import { useAuth } from '@/context/auth.context';
 
 const InsightsPage: React.FC = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [summary, setSummary] = useState<InsightSummary | null>(null);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [predictionSummary, setPredictionSummary] = useState<PredictionSummary | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -49,9 +52,11 @@ const InsightsPage: React.FC = () => {
     const fetchInsights = async () => {
       try {
         setLoading(true);
-        const [insightsResponse, summaryResponse] = await Promise.all([
+        const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse] = await Promise.all([
           insightsService.getInsightsByOrganization(effectiveOrgId),
-          insightsService.getInsightsSummary(effectiveOrgId)
+          insightsService.getInsightsSummary(effectiveOrgId),
+          insightsService.getPredictions(20),
+          insightsService.getPredictionSummary().catch(() => ({ success: false, data: null }))
         ]);
         
         if (insightsResponse.success) {
@@ -62,6 +67,14 @@ const InsightsPage: React.FC = () => {
 
         if (summaryResponse.success) {
           setSummary(summaryResponse.data);
+        }
+
+        if (predictionsResponse.success) {
+          setPredictions(predictionsResponse.data);
+        }
+
+        if (predictionSummaryResponse.success) {
+          setPredictionSummary(predictionSummaryResponse.data);
         }
       } catch (error) {
         console.error('Failed to fetch insights:', error);
@@ -79,9 +92,11 @@ const InsightsPage: React.FC = () => {
     
     try {
       setLoading(true);
-      const [insightsResponse, summaryResponse] = await Promise.all([
+      const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse] = await Promise.all([
         insightsService.getInsightsByOrganization(effectiveOrgId),
-        insightsService.getInsightsSummary(effectiveOrgId)
+        insightsService.getInsightsSummary(effectiveOrgId),
+        insightsService.getPredictions(20),
+        insightsService.getPredictionSummary().catch(() => ({ success: false, data: null }))
       ]);
       
       if (insightsResponse.success) {
@@ -90,6 +105,14 @@ const InsightsPage: React.FC = () => {
 
       if (summaryResponse.success) {
         setSummary(summaryResponse.data);
+      }
+
+      if (predictionsResponse.success) {
+        setPredictions(predictionsResponse.data);
+      }
+
+      if (predictionSummaryResponse.success) {
+        setPredictionSummary(predictionSummaryResponse.data);
       }
     } catch (error) {
       console.error('Failed to refresh insights:', error);
@@ -118,6 +141,24 @@ const InsightsPage: React.FC = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const getRiskColor = (risk: 'Low' | 'Medium' | 'High') => {
+    switch (risk) {
+      case 'High': return 'error';
+      case 'Medium': return 'warning';
+      case 'Low': return 'success';
+      default: return 'default';
+    }
+  };
+
+  const getRiskIcon = (risk: 'Low' | 'Medium' | 'High') => {
+    switch (risk) {
+      case 'High': return '🔴';
+      case 'Medium': return '🟡';
+      case 'Low': return '🟢';
+      default: return '⚪';
+    }
   };
 
   if (loading) {
@@ -155,7 +196,7 @@ const InsightsPage: React.FC = () => {
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box>
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
               AI-Powered Support Insights 🤖
             </Typography>
             <Typography variant="subtitle1" color="text.secondary">
@@ -246,6 +287,120 @@ const InsightsPage: React.FC = () => {
         </Box>
       )}
 
+      {/* Prediction Summary Stats */}
+      {predictionSummary && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
+            🔮 Real-Time Risk Predictions
+          </Typography>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
+            gap: 3,
+            mb: 3 
+          }}>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
+                {predictionSummary.totalPredictions}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Predictions
+              </Typography>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h3" color="error.main" sx={{ fontWeight: 'bold' }}>
+                {predictionSummary.highEscalationRisk}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                High Escalation Risk
+              </Typography>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold' }}>
+                {predictionSummary.highCSATRisk}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                High CSAT Risk
+              </Typography>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
+                {Math.round(predictionSummary.avgEscalationConfidence * 100)}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Avg Confidence
+              </Typography>
+            </Paper>
+          </Box>
+        </Box>
+      )}
+
+      {/* Recent Predictions */}
+      {predictions.length > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+            📊 Recent Risk Predictions
+          </Typography>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: 2 
+          }}>
+            {predictions.slice(0, 6).map((prediction, index) => (
+              <Card key={prediction.ticketId} sx={{ 
+                border: `2px solid ${getRiskColor(prediction.predictedEscalation.risk) === 'error' || getRiskColor(prediction.predictedCSAT.risk) === 'error' ? '#f44336' : '#e0e0e0'}`,
+                '&:hover': { boxShadow: 6 }
+              }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                      Ticket #{prediction.ticketId}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDate(prediction.createdAt)}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Escalation Risk
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip 
+                          label={`${getRiskIcon(prediction.predictedEscalation.risk)} ${prediction.predictedEscalation.risk}`}
+                          color={getRiskColor(prediction.predictedEscalation.risk) as any}
+                          size="small"
+                        />
+                        <Typography variant="caption">
+                          {Math.round(prediction.predictedEscalation.confidence * 100)}%
+                        </Typography>
+                      </Box>
+                    </Box>
+                    
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        CSAT Risk
+                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Chip 
+                          label={`${getRiskIcon(prediction.predictedCSAT.risk)} ${prediction.predictedCSAT.risk}`}
+                          color={getRiskColor(prediction.predictedCSAT.risk) as any}
+                          size="small"
+                        />
+                        <Typography variant="caption">
+                          {Math.round(prediction.predictedCSAT.confidence * 100)}%
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </Box>
+      )}
+
       {/* Insights Cards */}
       {insights.length > 0 ? (
         <Box sx={{ 
@@ -323,11 +478,11 @@ const InsightsPage: React.FC = () => {
           <InfoOutlined sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
           <Typography variant="h5" gutterBottom color="text.secondary">
             No New Insights
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
+      </Typography>
+      <Typography variant="body1" color="text.secondary">
             No new insights have been detected for this organization yet. 
             Check back later as our AI analyzes more support tickets.
-          </Typography>
+      </Typography>
         </Paper>
       )}
     </Box>

@@ -1,6 +1,7 @@
 import axios from '@/services/axios';
 import config from '@/config';
 import { InsightsResponse, InsightSummaryResponse } from '@/types/insight';
+import { PredictionsResponse, PredictionSummaryResponse } from '@/types/prediction';
 
 const getRoute = (endpoint: string) => {
   return `${config.apiUrl}/${endpoint}`;
@@ -29,6 +30,31 @@ export const insightsService = {
   async getAllInsights(limit = 100, skip = 0): Promise<InsightsResponse> {
     const response = await axios.get(getRoute(`insights?limit=${limit}&skip=${skip}`));
     return response.data;
+  },
+
+  // Prediction-related methods
+  /**
+   * Get predictions for the authenticated user's organization
+   */
+  async getPredictions(limit = 20): Promise<PredictionsResponse> {
+    const response = await axios.get(getRoute(`predictions?limit=${limit}`));
+    return { success: true, data: response.data, count: response.data.length };
+  },
+
+  /**
+   * Get prediction summary for the authenticated user's organization
+   */
+  async getPredictionSummary(): Promise<PredictionSummaryResponse> {
+    const response = await axios.get(getRoute(`predictions/summary`));
+    return { success: true, data: response.data };
+  },
+
+  /**
+   * Get high-risk predictions for immediate attention
+   */
+  async getHighRiskPredictions(): Promise<PredictionsResponse> {
+    const response = await axios.get(getRoute(`predictions/high-risk`));
+    return { success: true, data: response.data, count: response.data.length };
   }
 };
 
