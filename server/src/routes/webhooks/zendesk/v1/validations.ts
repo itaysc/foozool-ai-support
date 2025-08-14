@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { EMAIL_REGEX } from '../../../../utils/regex';
 
 export const zendeskWebhookValidation = z.object({
+    event_type: z.string(),
     ticket_id: z.string(),
     subject: z.string(),
     status: z.string(),

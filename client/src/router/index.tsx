@@ -6,6 +6,7 @@ import Login from "@/pages/login";
 
 import Settings from "@/pages/settings";
 import Insights from "@/pages/insights";
+import Performance from "@/pages/performance";
 import NotFound from "@/pages/notFound";
 import Layout from "./layouts/main.layout";
 import ProtectedRoute from "./ProtectRoute";
@@ -13,6 +14,8 @@ import ProtectedRoute from "./ProtectRoute";
 export const supportedRoutes = [
     '/insights',
     '/insights/:organizationId',
+    '/performance',
+    '/performance/:organizationId',
     '/settings',
     '/invoice',
     '/invoice/:id'
@@ -30,6 +33,8 @@ const Router = () => {
 
                     <Route path="insights" element={<ProtectedRoute element={<Insights />} />} />
                     <Route path="insights/:organizationId" element={<ProtectedRoute element={<Insights />} />} />
+                    <Route path="performance" element={<ProtectedRoute element={<Performance />} />} />
+                    <Route path="performance/:organizationId" element={<ProtectedRoute element={<Performance />} />} />
                     <Route path="settings" element={<ProtectedRoute element={<Settings />} />} />
                 </Route>
                 

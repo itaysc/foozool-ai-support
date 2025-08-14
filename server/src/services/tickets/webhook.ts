@@ -14,6 +14,7 @@ import { v5 as uuidv5 } from 'uuid';
 import { QDRANT_POINT_NAMESPACE } from '../../qdrant/utils';
 import { UserContextManager } from '../../context/userContext';
 import { PredictionModel } from '../../schemas/prediction.schema';
+import { ticketCollectionConfig } from '../../qdrant/schemas/ticket';
 
 const DEFAULT_CONFIDENCE_SCORE = 0.3;
 
@@ -25,13 +26,17 @@ async function generateTicketPredictions({
   organizationId,
   similarTickets,
   sentimentScore,
-  embedding
+  embedding,
+  longResolutionPredicted = false,
+  predictionConfidence = 0
 }: {
   ticketId: string;
   organizationId: string;
   similarTickets: any[];
   sentimentScore: number;
   embedding: number[];
+  longResolutionPredicted?: boolean;
+  predictionConfidence?: number;
 }): Promise<void> {
   console.log(`Generating predictions for ticket ${ticketId} based on ${similarTickets.length} similar tickets`);
 
@@ -114,6 +119,8 @@ async function generateTicketPredictions({
       risk: csatRisk,
       confidence: Math.round(csatRiskConfidence * 100) / 100,
     },
+    longResolutionPredicted,
+    predictionConfidence,
     createdAt: new Date(),
   };
 
@@ -124,7 +131,7 @@ async function generateTicketPredictions({
     { upsert: true, new: true }
   );
 
-  console.log(`Prediction saved for ticket ${ticketId}: Escalation=${escalationRisk}(${escalationRiskConfidence}), CSAT=${csatRisk}(${csatRiskConfidence})`);
+  console.log(`Prediction saved for ticket ${ticketId}: Escalation=${escalationRisk}(${escalationRiskConfidence}), CSAT=${csatRisk}(${csatRiskConfidence}), LongResolution=${longResolutionPredicted}(${predictionConfidence})`);
 }
 
 /**
@@ -227,9 +234,165 @@ async function extractAndSummarizeTicketComments(similarTickets: any[]): Promise
 }
 
 /**
- * Main webhook handler for processing Zendesk tickets
+ * Analyze similar tickets and predict long resolution time
  */
-export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
+async function analyzeResolutionTimePrediction({
+  ticket,
+  similarTickets,
+  organizationId
+}: {
+  ticket: ZendeskTicketWebhookPayload;
+  similarTickets: any[];
+  organizationId: string;
+}): Promise<{
+  longResolutionPredicted: boolean;
+  predictionConfidence: number;
+}> {
+  let longResolutionPredicted = false;
+  let predictionConfidence = 0;
+  
+  if (similarTickets.length === 0) {
+    return { longResolutionPredicted, predictionConfidence };
+  }
+
+  // Get resolution time data from Qdrant for similar tickets
+  try {
+    const qdrantService = new QdrantService();
+    const similarTicketIds = similarTickets.map(t => t.externalId).filter(Boolean);
+    
+    // Get Qdrant points for similar tickets to check resolution times
+    const qdrantPoints = await Promise.all(
+      similarTicketIds.map(async (ticketId) => {
+        try {
+          const qdrantPointId = uuidv5(ticketId.toString(), QDRANT_POINT_NAMESPACE);
+          const result = await qdrantService.client.retrieve(ticketCollectionConfig.name, {
+            ids: [qdrantPointId],
+            with_payload: true,
+          });
+          
+          if (result && (result as any).points && (result as any).points.length > 0) {
+            const point = (result as any).points[0];
+            return {
+              ticketId,
+              resolution_time_ms: point.payload?.resolution_time_ms,
+              resolved_at: point.payload?.resolved_at,
+            };
+          }
+          return null;
+        } catch (error) {
+          console.error(`Error retrieving Qdrant point for ticket ${ticketId}:`, error);
+          return null;
+        }
+      })
+    );
+    
+    // Filter out null results and tickets with resolution data
+    const resolvedTickets = qdrantPoints.filter((p): p is NonNullable<typeof p> => p !== null && p.resolution_time_ms && p.resolution_time_ms > 0);
+    
+    if (resolvedTickets.length > 0) {
+      const avgResolutionTime = resolvedTickets.reduce((sum, t) => sum + (t.resolution_time_ms || 0), 0) / resolvedTickets.length;
+      const longResolutionThreshold = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+      
+      // Predict long resolution if average is above threshold
+      if (avgResolutionTime > longResolutionThreshold) {
+        longResolutionPredicted = true;
+        // Calculate confidence based on how many similar tickets had long resolution
+        const longResolutionCount = resolvedTickets.filter(t => (t.resolution_time_ms || 0) > longResolutionThreshold).length;
+        predictionConfidence = longResolutionCount / resolvedTickets.length;
+        
+        console.log(`Long resolution predicted for ticket ${ticket.ticket_id} with ${(predictionConfidence * 100).toFixed(1)}% confidence`);
+        
+        // Add comment to Zendesk ticket
+        try {
+          await addCommentToTicket(ticket.ticket_id.toString(), 
+            `⚠️ AI Prediction: This ticket may take longer than usual to resolve based on similar historical tickets. Average resolution time for similar tickets: ${Math.round(avgResolutionTime / (1000 * 60 * 60))} hours.`, 
+            false
+          );
+          console.log(`Added long resolution prediction comment to ticket ${ticket.ticket_id}`);
+        } catch (tagError: any) {
+          console.error(`Failed to add long resolution prediction to ticket ${ticket.ticket_id}:`, tagError.message);
+        }
+      }
+    }
+  } catch (qdrantError) {
+    console.error(`Error analyzing resolution times from Qdrant:`, qdrantError);
+  }
+
+  return { longResolutionPredicted, predictionConfidence };
+}
+
+/**
+ * Update Qdrant point with long resolution prediction information
+ */
+async function updateQdrantWithPrediction({
+  ticketId,
+  longResolutionPredicted,
+  predictionConfidence
+}: {
+  ticketId: string;
+  longResolutionPredicted: boolean;
+  predictionConfidence: number;
+}): Promise<void> {
+  if (!longResolutionPredicted) {
+    return;
+  }
+
+  try {
+    const qdrantService = new QdrantService();
+    const qdrantPointId = uuidv5(ticketId.toString(), QDRANT_POINT_NAMESPACE);
+    
+    const updateSuccess = await qdrantService.updateTicketPoint(qdrantPointId, {
+      long_resolution_predicted: true,
+      prediction_confidence: predictionConfidence,
+      prediction_added_at: Date.now(),
+    });
+
+    if (updateSuccess) {
+      console.log(`Successfully updated Qdrant point for ticket ${ticketId} with long resolution prediction`);
+    } else {
+      console.error(`Failed to update Qdrant point for ticket ${ticketId} with prediction`);
+    }
+  } catch (qdrantError) {
+    console.error(`Error updating Qdrant prediction for ticket ${ticketId}:`, qdrantError);
+  }
+}
+
+/**
+ * Update Qdrant point with resolution information
+ */
+async function updateQdrantWithResolution({
+  ticketId,
+  resolutionTimeMs,
+  resolvedAt
+}: {
+  ticketId: string;
+  resolutionTimeMs: number;
+  resolvedAt: number;
+}): Promise<void> {
+  try {
+    const qdrantService = new QdrantService();
+    const qdrantPointId = uuidv5(ticketId.toString(), QDRANT_POINT_NAMESPACE);
+    
+    const updateSuccess = await qdrantService.updateTicketPoint(qdrantPointId, {
+      resolution_time_ms: resolutionTimeMs,
+      resolved_at: resolvedAt,
+    });
+
+    if (updateSuccess) {
+      console.log(`Successfully updated Qdrant point for ticket ${ticketId} with resolution time`);
+    } else {
+      console.error(`Failed to update Qdrant point for ticket ${ticketId}`);
+    }
+  } catch (qdrantError) {
+    console.error(`Error updating Qdrant for ticket ${ticketId}:`, qdrantError);
+    // Continue processing even if Qdrant update fails
+  }
+}
+
+/**
+ * Handle new ticket creation webhook
+ */
+async function handleNewTicketWebhook(ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
   try {
     // Get user ID and organization ID from context
     const userId = UserContextManager.getCurrentUserId();
@@ -289,6 +452,22 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promis
       fetchComments: true,
     });
 
+    // Analyze similar tickets for resolution time prediction
+    const { longResolutionPredicted, predictionConfidence } = await analyzeResolutionTimePrediction({
+      ticket,
+      similarTickets: similarTickets.payload,
+      organizationId,
+    });
+
+    // Update Qdrant point with prediction information if applicable
+    if (longResolutionPredicted) {
+      await updateQdrantWithPrediction({
+        ticketId: ticket.ticket_id.toString(),
+        longResolutionPredicted,
+        predictionConfidence
+      });
+    }
+
     // Filter similar tickets to only include subject and description for summarization
     const ticketsForSummarization = similarTickets.payload.map(ticket => ({
       subject: ticket.subject || '',
@@ -315,7 +494,9 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promis
         organizationId,
         similarTickets: similarTickets.payload,
         sentimentScore: sentimentResult.score,
-        embedding: sbertEmbedding
+        embedding: sbertEmbedding,
+        longResolutionPredicted,
+        predictionConfidence
       });
     } catch (predictionError) {
       console.error(`Failed to generate predictions for ticket ${ticket.ticket_id}:`, predictionError);
@@ -403,6 +584,225 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promis
         message: error.message,
         ticketId: ticket?.ticket_id
       },
+    };
+  }
+}
+
+/**
+ * Handle status changed webhook to track prediction accuracy
+ */
+async function handleStatusChangedWebhook(ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
+  try {
+    console.log(`Processing status change webhook for ticket ${ticket.ticket_id}, new status: ${ticket.status}`);
+    
+    // Check if ticket is closed/solved to compare with initial prediction
+    const closedStatuses = ['closed', 'solved'];
+    if (!closedStatuses.includes(ticket.status.toLowerCase())) {
+      console.log(`Ticket ${ticket.ticket_id} status changed to ${ticket.status} but not closed yet`);
+      return {
+        status: 200,
+        payload: {
+          message: 'Status change recorded but ticket not closed yet',
+          ticketId: ticket.ticket_id,
+          newStatus: ticket.status
+        }
+      };
+    }
+
+    // Calculate resolution time
+    const createdAt = ticket.created_at ? new Date(ticket.created_at).getTime() : Date.now();
+    const resolvedAt = Date.now();
+    const resolutionTimeMs = resolvedAt - createdAt;
+
+    console.log(`Ticket ${ticket.ticket_id} resolved in ${resolutionTimeMs}ms (${Math.round(resolutionTimeMs / (1000 * 60 * 60))} hours)`);
+
+    // Update Qdrant point with resolution information
+    await updateQdrantWithResolution({
+      ticketId: ticket.ticket_id.toString(),
+      resolutionTimeMs,
+      resolvedAt
+    });
+
+    // Fetch the initial prediction for this ticket
+    const prediction = await PredictionModel.findOne({ ticketId: ticket.ticket_id.toString() });
+    
+    if (!prediction) {
+      console.log(`No prediction found for ticket ${ticket.ticket_id}`);
+      return {
+        status: 200,
+        payload: {
+          message: 'No prediction found for this ticket',
+          ticketId: ticket.ticket_id,
+          resolutionTimeMs,
+          resolvedAt
+        }
+      };
+    }
+
+    // Determine if ticket was actually escalated
+    // You can customize this logic based on your escalation criteria
+    const isEscalated = determineIfTicketWasEscalated(ticket);
+    
+    // Determine CSAT risk outcome (this would need actual CSAT data from Zendesk)
+    // For now, we'll use priority and tags as proxy indicators
+    const csatRiskOutcome = determineCsatRiskOutcome(ticket);
+    
+    // Compare predictions with actual outcomes
+    const escalationAccuracy = compareEscalationPrediction(prediction.predictedEscalation.risk, isEscalated);
+    const csatAccuracy = compareCsatPrediction(prediction.predictedCSAT.risk, csatRiskOutcome);
+
+    // Update the prediction with actual outcome
+    const updatedPrediction = await PredictionModel.findOneAndUpdate(
+      { ticketId: ticket.ticket_id.toString() },
+      {
+        $set: {
+          actualOutcome: {
+            finalStatus: ticket.status,
+            isEscalated,
+            resolvedAt: new Date(),
+            resolutionTimeMs,
+            accuracyEscalation: escalationAccuracy,
+            accuracyCSAT: csatAccuracy,
+            checkedAt: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    console.log(`Prediction accuracy updated for ticket ${ticket.ticket_id}: Escalation=${escalationAccuracy}, CSAT=${csatAccuracy}`);
+
+    return {
+      status: 200,
+      payload: {
+        message: 'Prediction accuracy updated successfully',
+        ticketId: ticket.ticket_id,
+        prediction: updatedPrediction,
+        resolutionTimeMs,
+        resolvedAt,
+        accuracy: {
+          escalation: escalationAccuracy,
+          csat: csatAccuracy
+        }
+      }
+    };
+
+  } catch (error: any) {
+    console.error('Error handling status change webhook:', {
+      ticketId: ticket?.ticket_id,
+      error: error.message,
+      stack: error.stack
+    });
+    return {
+      status: 500,
+      payload: { 
+        error: 'Internal server error',
+        message: error.message,
+        ticketId: ticket?.ticket_id
+      }
+    };
+  }
+}
+
+/**
+ * Determine if a ticket was escalated based on priority, tags, or other indicators
+ */
+function determineIfTicketWasEscalated(ticket: ZendeskTicketWebhookPayload): boolean {
+  // Check for escalation indicators
+  const escalationTags = ['escalated', 'urgent', 'complaint', 'angry', 'supervisor'];
+  const hasEscalationTags = Array.isArray(ticket.tags) 
+    ? ticket.tags.some(tag => escalationTags.includes(tag.toLowerCase()))
+    : typeof ticket.tags === 'string' 
+      ? ticket.tags.split(',').some(tag => escalationTags.includes(tag.trim().toLowerCase()))
+      : false;
+  
+  const isHighPriority = ticket.priority === 'urgent' || ticket.priority === 'high';
+  
+  return hasEscalationTags || isHighPriority;
+}
+
+/**
+ * Determine CSAT risk outcome based on available ticket data
+ */
+function determineCsatRiskOutcome(ticket: ZendeskTicketWebhookPayload): 'Low' | 'Medium' | 'High' {
+  // Since we don't have actual CSAT scores in the webhook, we use proxy indicators
+  const negativeTags = ['complaint', 'bug', 'error', 'frustrated', 'angry', 'disappointed'];
+  const hasNegativeTags = Array.isArray(ticket.tags) 
+    ? ticket.tags.some(tag => negativeTags.includes(tag.toLowerCase()))
+    : typeof ticket.tags === 'string' 
+      ? ticket.tags.split(',').some(tag => negativeTags.includes(tag.trim().toLowerCase()))
+      : false;
+  
+  const isHighPriority = ticket.priority === 'urgent' || ticket.priority === 'high';
+  
+  if (hasNegativeTags && isHighPriority) {
+    return 'High';
+  } else if (hasNegativeTags || isHighPriority) {
+    return 'Medium';
+  }
+  return 'Low';
+}
+
+/**
+ * Compare escalation prediction with actual outcome
+ */
+function compareEscalationPrediction(predictedRisk: 'Low' | 'Medium' | 'High', actualEscalated: boolean): boolean {
+  if (actualEscalated) {
+    // If ticket was escalated, high prediction is correct
+    return predictedRisk === 'High';
+  } else {
+    // If ticket was not escalated, low prediction is correct
+    return predictedRisk === 'Low';
+  }
+}
+
+/**
+ * Compare CSAT prediction with actual outcome
+ */
+function compareCsatPrediction(predictedRisk: 'Low' | 'Medium' | 'High', actualRisk: 'Low' | 'Medium' | 'High'): boolean {
+  return predictedRisk === actualRisk;
+}
+
+/**
+ * Main webhook handler that routes based on event_type
+ */
+export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
+  try {
+    console.log(`Processing webhook for ticket ${ticket.ticket_id} with event_type: ${ticket.event_type}`);
+    
+    switch (ticket.event_type) {
+      case 'ticket_created':
+        return await handleNewTicketWebhook(ticket);
+      
+      case 'status_changed':
+        return await handleStatusChangedWebhook(ticket);
+      
+      default:
+        console.warn(`Unknown event_type: ${ticket.event_type} for ticket ${ticket.ticket_id}`);
+        return {
+          status: 400,
+          payload: {
+            error: 'Unknown event type',
+            event_type: ticket.event_type,
+            ticketId: ticket.ticket_id
+          }
+        };
+    }
+  } catch (error: any) {
+    console.error('Error in main webhook handler:', {
+      ticketId: ticket?.ticket_id,
+      event_type: ticket?.event_type,
+      error: error.message,
+      stack: error.stack
+    });
+    return {
+      status: 500,
+      payload: { 
+        error: 'Internal server error',
+        message: error.message,
+        ticketId: ticket?.ticket_id,
+        event_type: ticket?.event_type
+      }
     };
   }
 } 

@@ -1,7 +1,7 @@
 import axios from '@/services/axios';
 import config from '@/config';
 import { InsightsResponse, InsightSummaryResponse } from '@/types/insight';
-import { PredictionsResponse, PredictionSummaryResponse } from '@/types/prediction';
+import { PredictionsResponse, PredictionSummaryResponse, AccuracyAnalysisResponse } from '@/types/prediction';
 
 const getRoute = (endpoint: string) => {
   return `${config.apiUrl}/${endpoint}`;
@@ -55,6 +55,14 @@ export const insightsService = {
   async getHighRiskPredictions(): Promise<PredictionsResponse> {
     const response = await axios.get(getRoute(`predictions/high-risk`));
     return { success: true, data: response.data, count: response.data.length };
+  },
+
+  /**
+   * Get prediction accuracy analysis for the authenticated user's organization
+   */
+  async getPredictionAccuracy(days = 30): Promise<AccuracyAnalysisResponse> {
+    const response = await axios.get(getRoute(`predictions/accuracy?days=${days}`));
+    return { success: true, data: response.data };
   }
 };
 

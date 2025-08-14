@@ -1,4 +1,7 @@
+type EventType = 'ticket_created' | 'status_changed';
+
 export interface ZendeskTicketWebhookPayload {
+    event_type: EventType;
     ticket_id: string;
     subject: string;
     status: string;

@@ -71,4 +71,29 @@ router.get('/predictions/high-risk', authenticateJWT, async (req, res) => {
   }
 });
 
+/**
+ * GET /predictions/accuracy
+ * Get prediction accuracy analysis for the authenticated user's organization
+ */
+router.get('/predictions/accuracy', authenticateJWT, async (req, res) => {
+  const { days = '30' } = req.query;
+  
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!organizationId) {
+      return res.status(400).json({ message: 'Organization ID not found in user context' });
+    }
+
+    const accuracy = await PredictionService.getAccuracyAnalysis(
+      organizationId,
+      parseInt(days as string)
+    );
+    res.status(200).json(accuracy);
+  } catch (error) {
+    console.error('Error fetching prediction accuracy:', error);
+    res.status(500).json({ message: 'Error fetching prediction accuracy', error });
+  }
+});
+
 export default router;

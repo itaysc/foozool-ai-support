@@ -21,6 +21,11 @@ export const ticketCollectionConfig = {
         tags: 'array', // array of strings
         intent: 'string',
         user_agent: 'string', // User agent string
+        resolution_time_ms: 'integer', // Time to resolution in milliseconds
+        resolved_at: 'integer', // Unix timestamp when ticket was resolved
+        long_resolution_predicted: 'boolean', // Flag indicating if long resolution was predicted
+        prediction_confidence: 'number', // Confidence score for the prediction
+        prediction_added_at: 'integer', // Unix timestamp when prediction was added
     } as const,
 };
 
@@ -38,6 +43,11 @@ export interface QdrantTicketPoint {
         tags?: string[];
         intent?: string;
         user_agent?: string; // User agent string
+        resolution_time_ms?: number; // Time to resolution in milliseconds
+        resolved_at?: number; // Unix timestamp when ticket was resolved
+        long_resolution_predicted?: boolean; // Flag indicating if long resolution was predicted
+        prediction_confidence?: number; // Confidence score for the prediction
+        prediction_added_at?: number; // Unix timestamp when prediction was added
     };
 }
 

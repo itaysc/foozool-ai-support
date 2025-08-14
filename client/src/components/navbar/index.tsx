@@ -6,6 +6,7 @@ import { Menu, MenuItem, ListItemIcon, ListItemText, Typography, Box, Chip } fro
 import CheckIcon from '@mui/icons-material/Check';
 import InsightsIcon from '@mui/icons-material/Insights';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 
 import { useState } from 'react';
 
@@ -26,6 +27,7 @@ export const Navbar = observer(() => {
 
   const navigationItems = [
     { path: '/insights', label: 'AI Insights', icon: InsightsIcon },
+    { path: '/performance', label: 'Performance', icon: AnalyticsIcon },
     { path: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
 

@@ -25,7 +25,7 @@ import {
   AutorenewOutlined
 } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
-import { Prediction, PredictionSummary } from '@/types/prediction';
+import { Prediction, PredictionSummary, AccuracyAnalysis } from '@/types/prediction';
 import { insightsService } from '@/services/insights-service';
 import { useAuth } from '@/context/auth.context';
 
@@ -34,6 +34,7 @@ const InsightsPage: React.FC = () => {
   const [summary, setSummary] = useState<InsightSummary | null>(null);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [predictionSummary, setPredictionSummary] = useState<PredictionSummary | null>(null);
+  const [accuracyAnalysis, setAccuracyAnalysis] = useState<AccuracyAnalysis | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -52,11 +53,12 @@ const InsightsPage: React.FC = () => {
     const fetchInsights = async () => {
       try {
         setLoading(true);
-        const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse] = await Promise.all([
+        const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse, accuracyResponse] = await Promise.all([
           insightsService.getInsightsByOrganization(effectiveOrgId),
           insightsService.getInsightsSummary(effectiveOrgId),
           insightsService.getPredictions(20),
-          insightsService.getPredictionSummary().catch(() => ({ success: false, data: null }))
+          insightsService.getPredictionSummary().catch(() => ({ success: false, data: null })),
+          insightsService.getPredictionAccuracy(30).catch(() => ({ success: false, data: null }))
         ]);
         
         if (insightsResponse.success) {
@@ -76,6 +78,10 @@ const InsightsPage: React.FC = () => {
         if (predictionSummaryResponse.success) {
           setPredictionSummary(predictionSummaryResponse.data);
         }
+
+        if (accuracyResponse.success) {
+          setAccuracyAnalysis(accuracyResponse.data);
+        }
       } catch (error) {
         console.error('Failed to fetch insights:', error);
         setError('Failed to load insights. Please try again later.');
@@ -92,11 +98,12 @@ const InsightsPage: React.FC = () => {
     
     try {
       setLoading(true);
-      const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse] = await Promise.all([
+      const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse, accuracyResponse] = await Promise.all([
         insightsService.getInsightsByOrganization(effectiveOrgId),
         insightsService.getInsightsSummary(effectiveOrgId),
         insightsService.getPredictions(20),
-        insightsService.getPredictionSummary().catch(() => ({ success: false, data: null }))
+        insightsService.getPredictionSummary().catch(() => ({ success: false, data: null })),
+        insightsService.getPredictionAccuracy(30).catch(() => ({ success: false, data: null }))
       ]);
       
       if (insightsResponse.success) {
@@ -113,6 +120,10 @@ const InsightsPage: React.FC = () => {
 
       if (predictionSummaryResponse.success) {
         setPredictionSummary(predictionSummaryResponse.data);
+      }
+
+      if (accuracyResponse.success) {
+        setAccuracyAnalysis(accuracyResponse.data);
       }
     } catch (error) {
       console.error('Failed to refresh insights:', error);
@@ -331,6 +342,138 @@ const InsightsPage: React.FC = () => {
                 Avg Confidence
               </Typography>
             </Paper>
+          </Box>
+        </Box>
+      )}
+
+      {/* Prediction Accuracy Analysis */}
+      {accuracyAnalysis && accuracyAnalysis.totalChecked > 0 && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
+            🎯 AI Prediction Accuracy
+          </Typography>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
+            gap: 3,
+            mb: 3 
+          }}>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
+                {accuracyAnalysis.totalChecked}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Tickets Evaluated
+              </Typography>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
+                {accuracyAnalysis.overallAccuracy.toFixed(1)}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Overall Accuracy
+              </Typography>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h3" color="info.main" sx={{ fontWeight: 'bold' }}>
+                {accuracyAnalysis.escalationAccuracy.percentage.toFixed(1)}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Escalation Accuracy
+              </Typography>
+            </Paper>
+            <Paper sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold' }}>
+                {accuracyAnalysis.csatAccuracy.percentage.toFixed(1)}%
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                CSAT Accuracy
+              </Typography>
+            </Paper>
+          </Box>
+
+          {/* Confidence Breakdown */}
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+              📊 Accuracy by Confidence Level
+            </Typography>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
+              gap: 2 
+            }}>
+              <Card sx={{ border: '2px solid #4caf50' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                      🔥 High Confidence (≥80%)
+                    </Typography>
+                  </Box>
+                  <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold' }}>
+                    {accuracyAnalysis.confidenceBreakdown.high.percentage.toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {accuracyAnalysis.confidenceBreakdown.high.correct} / {accuracyAnalysis.confidenceBreakdown.high.total} predictions correct
+                  </Typography>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ border: '2px solid #ff9800' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
+                      ⚡ Medium Confidence (50-79%)
+                    </Typography>
+                  </Box>
+                  <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold' }}>
+                    {accuracyAnalysis.confidenceBreakdown.medium.percentage.toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {accuracyAnalysis.confidenceBreakdown.medium.correct} / {accuracyAnalysis.confidenceBreakdown.medium.total} predictions correct
+                  </Typography>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ border: '2px solid #f44336' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'error.main' }}>
+                      🤔 Low Confidence (&lt;50%)
+                    </Typography>
+                  </Box>
+                  <Typography variant="h4" color="error.main" sx={{ fontWeight: 'bold' }}>
+                    {accuracyAnalysis.confidenceBreakdown.low.percentage.toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {accuracyAnalysis.confidenceBreakdown.low.correct} / {accuracyAnalysis.confidenceBreakdown.low.total} predictions correct
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
+          </Box>
+
+          {/* Insights about accuracy */}
+          <Box sx={{ mt: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e9ecef' }}>
+            <Typography variant="body1" sx={{ fontWeight: 'medium', mb: 1 }}>
+              💡 Key Insights:
+            </Typography>
+            <Box component="ul" sx={{ ml: 2, mb: 0 }}>
+              {accuracyAnalysis.confidenceBreakdown.high.total > 0 && (
+                <Typography component="li" variant="body2" color="text.secondary">
+                  High confidence predictions are correct {accuracyAnalysis.confidenceBreakdown.high.percentage.toFixed(1)}% of the time
+                </Typography>
+              )}
+              {accuracyAnalysis.escalationAccuracy.total > 0 && (
+                <Typography component="li" variant="body2" color="text.secondary">
+                  Successfully predicted escalation risk in {accuracyAnalysis.escalationAccuracy.correct} out of {accuracyAnalysis.escalationAccuracy.total} closed tickets
+                </Typography>
+              )}
+              {accuracyAnalysis.csatAccuracy.total > 0 && (
+                <Typography component="li" variant="body2" color="text.secondary">
+                  Correctly assessed CSAT risk in {accuracyAnalysis.csatAccuracy.correct} out of {accuracyAnalysis.csatAccuracy.total} closed tickets
+                </Typography>
+              )}
+            </Box>
           </Box>
         </Box>
       )}

@@ -122,6 +122,54 @@ class QdrantService {
     }
 
     /**
+     * Update an existing ticket point in the tickets collection
+     */
+    async updateTicketPoint(pointId: string | number, updates: Partial<QdrantTicketPoint['payload']>): Promise<boolean> {
+        try {
+            // First get the existing point to preserve the vector and other fields
+            const existingPoint = await this.client.retrieve(ticketCollectionConfig.name, {
+                ids: [pointId],
+                with_payload: true,
+                with_vector: true,
+            });
+
+            // The retrieve method returns an array of points, so we need to access the first one
+            const points = (existingPoint as any).points || [];
+            if (points.length === 0) {
+                console.error(`Ticket point ${pointId} not found in collection "${ticketCollectionConfig.name}"`);
+                return false;
+            }
+
+            const existing = points[0];
+            
+            // Merge existing payload with updates
+            const updatedPayload = {
+                ...existing.payload,
+                ...updates,
+            };
+
+            // Create updated point
+            const updatedPoint = {
+                id: pointId,
+                vector: existing.vector as number[],
+                payload: updatedPayload,
+            };
+
+            // Upsert the updated point
+            await this.client.upsert(ticketCollectionConfig.name, {
+                wait: true,
+                points: [updatedPoint],
+            });
+
+            console.log(`Successfully updated ticket ${pointId} in collection "${ticketCollectionConfig.name}".`);
+            return true;
+        } catch (error: any) {
+            console.error(`Error updating ticket ${pointId} in collection "${ticketCollectionConfig.name}":`, error);
+            return false;
+        }
+    }
+
+    /**
      * Perform KNN search on a collection
      */
     async knnSearch({ 

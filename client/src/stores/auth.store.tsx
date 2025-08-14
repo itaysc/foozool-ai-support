@@ -36,15 +36,23 @@ class AuthStore {
       if (resp.status === 200) {
         const intuitAuthUri = resp.intuitAuthUri;
         
-        // Get user info from the response
-        runInAction(() => {
-          this.user = resp.user;
-        });
-        
         if (useIntuitLogin && intuitAuthUri) {
           window.location.href = intuitAuthUri;
           return { redirecting: true };
         }
+        
+        // After successful login, get the complete user data from the JWT token
+        // This ensures we have all fields including organization
+        console.log('🔄 After login, calling checkAuthorization to get complete user data...');
+        const { isAuthorized, user } = await this.checkAuthorization();
+        console.log('🔄 checkAuthorization result:', { isAuthorized, user });
+        if (isAuthorized && user) {
+          runInAction(() => {
+            this.user = user;
+          });
+          console.log('✅ User data updated in store:', this.user);
+        }
+        
         return {
           redirecting: false,
           status: resp.status,
@@ -76,7 +84,7 @@ class AuthStore {
         this.user = user;
       })
     }
-    return { isAuthorized };
+    return { isAuthorized, user };
   }
 
 
