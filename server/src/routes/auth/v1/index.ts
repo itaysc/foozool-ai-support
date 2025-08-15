@@ -110,11 +110,11 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
       options: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Changed from 'strict' to 'none' for cross-domain
         maxAge: 15 * 60 * 1000, // 15 minutes
         path: '/',
-        // Don't set domain in development to allow cross-port cookies
-        domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+        // Don't set domain in production to allow cross-domain cookies
+        domain: undefined
       }
     });
     
@@ -125,15 +125,23 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
       options: { 
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Changed from 'strict' to 'none' for cross-domain
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         path: '/',
-        // Don't set domain in development to allow cross-port cookies
-        domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+        // Don't set domain in production to allow cross-domain cookies
+        domain: undefined
       } 
     });
 
     console.log('Tokens generated successfully for user:', email);
+    console.log('🍪 Cookie settings for production:', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 15 * 60 * 1000,
+      path: '/',
+      domain: undefined
+    });
     res.json({ 
       status: 'success',
       accessToken,
@@ -191,8 +199,8 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
       // Clear the old access token cookie first
       res.clearCookie('accessToken', {
         path: '/',
-        // Don't set domain in development to allow cross-port cookies
-        domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+        // Don't set domain in production to allow cross-domain cookies
+        domain: undefined
       });
       
       // Set new access token as secure httpOnly cookie
@@ -203,11 +211,11 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
         options: {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Changed from 'strict' to 'none' for cross-domain
           maxAge: 15 * 60 * 1000, // 15 minutes
           path: '/',
-          // Don't set domain in development to allow cross-port cookies
-          domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+          // Don't set domain in production to allow cross-domain cookies
+          domain: undefined
         }
       });
       
@@ -263,13 +271,13 @@ router.get('/signout', (req: Request, res: Response) => {
   // Clear both JWT cookies with same options as when they were set
   res.clearCookie('accessToken', {
     path: '/',
-    // Don't set domain in development to allow cross-port cookies
-    domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+    // Don't set domain in production to allow cross-domain cookies
+    domain: undefined
   });
   res.clearCookie('refreshToken', {
     path: '/',
-    // Don't set domain in development to allow cross-port cookies
-    domain: process.env.NODE_ENV === 'production' ? undefined : undefined
+    // Don't set domain in production to allow cross-domain cookies
+    domain: undefined
   });
   res.status(200).send({ message: 'ok' });
 });
