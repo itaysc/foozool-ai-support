@@ -1,4 +1,4 @@
-import { IOrganization } from '../types';
+import { IOrganization } from '../../types';
 import { findBySignature, create } from '../../dal/organization.dal';
 
 export const findOrganizationBySignature = async (signature: string): Promise<IOrganization | null> => {

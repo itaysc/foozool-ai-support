@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { authenticateJWT } from '../../../../middleware/authenticate';
-import { validateRequest } from '../../../../middleware/validateRequest';
+import { authenticateJWT } from '../../../middleware/authenticate';
+import { validateRequest } from '../../../middleware/validateRequest';
 import { searchGoogleDriveFilesSchema } from '../../google/v1/validations';
 import { ragSearch } from '../../../services/search';
 
