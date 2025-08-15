@@ -22,7 +22,7 @@
           "/usr/src/app/server/**/*.js"
         ]
       },
-      {
+            {
         "name": "Attach to Server",
         "type": "node",
         "request": "attach",
@@ -36,6 +36,37 @@
           "${workspaceFolder}/**",
           "!**/node_modules/**"
         ]
+      },
+      {
+        "name": "Run Database Migration",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/server/scripts/copy-local-to-prod.js",
+        "cwd": "${workspaceFolder}/server",
+        "console": "integratedTerminal",
+        "env": {
+          "NODE_ENV": "development"
+        },
+        "args": [],
+        "skipFiles": ["<node_internals>/**"],
+        "sourceMaps": false,
+        "restart": false
+      },
+      {
+        "name": "Run Database Migration (Dry Run)",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/server/scripts/copy-local-to-prod.js",
+        "cwd": "${workspaceFolder}/server",
+        "console": "integratedTerminal",
+        "env": {
+          "NODE_ENV": "development",
+          "DRY_RUN": "true"
+        },
+        "args": [],
+        "skipFiles": ["<node_internals>/**"],
+        "sourceMaps": false,
+        "restart": false
       }
     ]
-}
+  }
