@@ -64,36 +64,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (payload: any) => {
     try {
+      console.log('🔄 Starting login process...');
       const result = await authStore.login(payload);
       
       if (result.isAuthorized) {
+        console.log('✅ Login successful, setting auth state...');
         setIsAuthenticated(true);
         setUser(authStore.user);
+        console.log('✅ User data set in context:', authStore.user);
+        console.log('✅ Organization data:', authStore.user?.organization);
       }
       return result;
     } catch (error) {
+      console.error('❌ Login error:', error);
       throw error;
     }
   };
 
   const signOut = async () => {
     try {
+      console.log('🔄 Starting sign out process...');
+      
       // Call server signout endpoint to clear server-side cookies
       await authStore.signOut();
+      console.log('✅ Server signout completed');
       
       // Clear client-side cookies as backup
       clearAuthCookies();
+      console.log('✅ Client-side cookies cleared');
       
       // Clear local state
       setIsAuthenticated(false);
       setUser(null);
+      console.log('✅ Local auth state cleared');
       
-
+      // Force a page reload to ensure all cookies are cleared
+      // This is a fallback to handle any edge cases
+      console.log('🔄 Scheduling page reload in 100ms...');
+      setTimeout(() => {
+        console.log('🔄 Reloading page...');
+        window.location.reload();
+      }, 100);
+      
     } catch (error) {
+      console.error('❌ Error during sign out:', error);
+      
       // Still clear local state and cookies even if server call fails
       clearAuthCookies();
       setIsAuthenticated(false);
       setUser(null);
+      console.log('✅ Fallback cleanup completed');
+      
+      // Force reload even on error
+      console.log('🔄 Scheduling page reload on error in 100ms...');
+      setTimeout(() => {
+        console.log('🔄 Reloading page due to error...');
+        window.location.reload();
+      }, 100);
     }
   };
 

@@ -51,6 +51,15 @@ class AuthStore {
             this.user = user;
           });
           console.log('✅ User data updated in store:', this.user);
+          console.log('✅ Organization data in store:', this.user?.organization);
+          console.log('✅ Organization type:', typeof this.user?.organization);
+          if (this.user?.organization && typeof this.user.organization === 'object') {
+            console.log('✅ Organization object details:', {
+              _id: this.user.organization._id,
+              name: this.user.organization.name,
+              signature: this.user.organization.signature
+            });
+          }
         }
         
         return {
@@ -78,12 +87,21 @@ class AuthStore {
   }
 
   checkAuthorization = async () => {
+    console.log('🔄 Checking authorization...');
     const { isAuthorized, user } = await authService.checkAuthorization();
+    console.log('🔄 Authorization check result:', { isAuthorized, user });
+    
     if (isAuthorized) {
+      console.log('✅ User is authorized, updating store...');
       runInAction(() => {
         this.user = user;
-      })
+      });
+      console.log('✅ Store updated with user:', this.user);
+      console.log('✅ Organization in user:', this.user?.organization);
+    } else {
+      console.log('❌ User is not authorized');
     }
+    
     return { isAuthorized, user };
   }
 
@@ -116,6 +134,15 @@ class AuthStore {
       this.user = undefined;
     });
     clearAuthCookies();
+    
+    // Force clear any remaining cookies by setting them to expire immediately
+    // This is a backup to handle edge cases
+    const cookieNames = ['accessToken', 'refreshToken', 'foozool-jwt', 'jwt'];
+    cookieNames.forEach(name => {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/auth;`;
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/api;`;
+    });
   }
 
   // haveRole = (validRoles) => {

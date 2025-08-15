@@ -53,13 +53,27 @@ class AuthService{
     }
   }
   checkAuthorization = async () => {
+    console.log('🔄 Making authorization check request...');
     // Use the configured axios instance that automatically sends cookies
     const response = await configuredAxios.get(getRoute('isAuthorized'));
+    console.log('🔄 Authorization response:', response.data);
     
-    return {
+    const result = {
       isAuthorized: response.data.isAuthorized,
       user: response.data.user,
     };
+    
+    console.log('🔄 Returning authorization result:', result);
+    if (result.user?.organization) {
+      console.log('🔄 Organization in response:', {
+        type: typeof result.user.organization,
+        value: result.user.organization,
+        hasId: result.user.organization._id ? 'yes' : 'no',
+        hasName: result.user.organization.name ? 'yes' : 'no'
+      });
+    }
+    
+    return result;
   }
 }
 const authService = new AuthService();

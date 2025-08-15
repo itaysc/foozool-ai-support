@@ -40,15 +40,30 @@ const InsightsPage: React.FC = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
   const { user } = useAuth();
 
-  // Use organization ID from URL parameter, or from authenticated user, or fallback to demo
-  const effectiveOrgId = organizationId || (user?.organization as string) || 'demo-org-id';
+  // Use organization ID from URL parameter, or from authenticated user
+  const getOrganizationId = (org: any): string | null => {
+    if (typeof org === 'string') return org;
+    if (org && typeof org === 'object' && org._id) return org._id;
+    return null;
+  };
+  
+  const effectiveOrgId = organizationId || getOrganizationId(user?.organization);
 
   useEffect(() => {
     if (!effectiveOrgId) {
-      setError('Organization ID is required');
+      setError('No organization ID available. Please ensure you are properly authenticated and have access to an organization.');
       setLoading(false);
       return;
     }
+
+    // Additional validation to ensure the organization ID is valid
+    if (effectiveOrgId === 'null' || effectiveOrgId === 'undefined' || effectiveOrgId === '') {
+      setError('Invalid organization ID. Please contact your administrator.');
+      setLoading(false);
+      return;
+    }
+
+    console.log('🔄 Fetching insights for organization ID:', effectiveOrgId);
 
     const fetchInsights = async () => {
       try {
@@ -236,7 +251,7 @@ const InsightsPage: React.FC = () => {
             border: '1px solid #4caf50'
           }}>
             <Typography variant="body2" color="success.dark" sx={{ fontWeight: 'medium' }}>
-              🏢 Viewing insights for your organization (ID: {user.organization})
+              🏢 Viewing insights for your organization: {typeof user.organization === 'object' ? user.organization.name : user.organization}
             </Typography>
           </Box>
         )}
@@ -244,12 +259,12 @@ const InsightsPage: React.FC = () => {
           <Box sx={{ 
             mt: 2, 
             p: 2, 
-            backgroundColor: '#e3f2fd', 
+            backgroundColor: '#fff3e0', 
             borderRadius: 2,
-            border: '1px solid #2196f3'
+            border: '1px solid #ff9800'
           }}>
-            <Typography variant="body2" color="primary" sx={{ fontWeight: 'medium' }}>
-              📊 Viewing demo insights data. Connect an organization to see real insights.
+            <Typography variant="body2" color="warning.dark" sx={{ fontWeight: 'medium' }}>
+              ⚠️ No organization access available. Please ensure you are properly authenticated and have access to an organization.
             </Typography>
           </Box>
         )}

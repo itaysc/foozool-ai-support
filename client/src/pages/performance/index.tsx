@@ -31,14 +31,29 @@ const PerformancePage: React.FC = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
   const { user } = useAuth();
 
-  const effectiveOrgId = organizationId || (user?.organization as string) || 'demo-org-id';
+  const getOrganizationId = (org: any): string | null => {
+    if (typeof org === 'string') return org;
+    if (org && typeof org === 'object' && org._id) return org._id;
+    return null;
+  };
+  
+  const effectiveOrgId = organizationId || getOrganizationId(user?.organization);
 
   useEffect(() => {
     if (!effectiveOrgId) {
-      setError('Organization ID is required');
+      setError('No organization ID available. Please ensure you are properly authenticated and have access to an organization.');
       setLoading(false);
       return;
     }
+
+    // Additional validation to ensure the organization ID is valid
+    if (effectiveOrgId === 'null' || effectiveOrgId === 'undefined' || effectiveOrgId === '') {
+      setError('Invalid organization ID. Please contact your administrator.');
+      setLoading(false);
+      return;
+    }
+
+    console.log('🔄 Fetching performance data for organization ID:', effectiveOrgId);
 
     fetchPerformanceData();
   }, [effectiveOrgId, user]);

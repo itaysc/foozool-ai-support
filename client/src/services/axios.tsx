@@ -101,6 +101,14 @@ instance.interceptors.response.use(
           // Refresh failed, but only redirect if it's an invalid token error
           processQueue(error, null);
           if (result.message === 'Invalid refresh token') {
+            // Clear cookies before redirecting to login
+            try {
+              const { clearAuthCookies } = await import('@/utils/cookies');
+              clearAuthCookies();
+              console.log('✅ Cleared auth cookies before redirecting to login');
+            } catch (error) {
+              console.error('❌ Error clearing cookies:', error);
+            }
             window.location.href = '/login';
           }
           return Promise.reject(error);

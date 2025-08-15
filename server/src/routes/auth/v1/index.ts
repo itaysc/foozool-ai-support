@@ -265,28 +265,44 @@ router.get('/isAuthorized', async (req: Request, res: Response) => {
     
     jwt.verify(accessToken, config.JWT_SECRET, async (err, data) => {
       if (err) {
+        console.log('❌ JWT verification failed:', err.message);
         res.json({ isAuthorized: false });
         return;
       }
       
       try {
+        console.log('✅ JWT verified successfully');
+        console.log('🔄 JWT payload data:', JSON.stringify(data, null, 2));
+        
         // Get the user ID from the JWT payload
         const userId = (data as any).user._id || (data as any).user.id;
         
         if (!userId) {
+          console.log('❌ No user ID found in JWT payload');
           res.json({ isAuthorized: false });
           return;
         }
         
         // Fetch the complete user data with populated organization
+        console.log('🔄 Fetching user data from database for ID:', userId);
         const fullUser = await UserModel.findById(userId)
           .populate('organization', 'name signature country details')
           .lean();
         
         if (!fullUser) {
+          console.log('❌ User not found in database');
           res.json({ isAuthorized: false });
           return;
         }
+        
+        console.log('✅ User data fetched:', {
+          userId: fullUser._id,
+          email: fullUser.email,
+          organization: fullUser.organization,
+          organizationType: typeof fullUser.organization,
+          hasOrgId: typeof fullUser.organization === 'object' && (fullUser.organization as any)?._id ? 'yes' : 'no',
+          hasOrgName: typeof fullUser.organization === 'object' && (fullUser.organization as any)?.name ? 'yes' : 'no'
+        });
         
         res.json({ 
           isAuthorized: true, 
@@ -308,17 +324,40 @@ router.get('/isAuthorized', async (req: Request, res: Response) => {
 });
 
 router.get('/signout', (req: Request, res: Response) => {
-  // Clear both JWT cookies with same options as when they were set
+  // Clear both JWT cookies with EXACT same options as when they were set
   res.clearCookie('accessToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
-    // Don't set domain in production to allow cross-domain cookies
     domain: undefined
   });
   res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
-    // Don't set domain in production to allow cross-domain cookies
     domain: undefined
   });
+  
+  // Also clear any legacy cookies that might exist
+  res.clearCookie('foozool-jwt', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
+    domain: undefined
+  });
+  
+  // Clear the legacy 'jwt' cookie as well
+  res.clearCookie('jwt', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    path: '/',
+    domain: undefined
+  });
+  
   res.status(200).send({ message: 'ok' });
 });
 

@@ -34,9 +34,36 @@ const Login = () => {
   // Redirect to home page if user is already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
+      console.log('🔄 User already authenticated, redirecting to home...');
       navigate('/');
     }
   }, [isAuthenticated, isLoading, navigate]);
+
+  // Additional protection: if we somehow end up on login page with valid cookies,
+  // force a sign out to ensure clean state
+  useEffect(() => {
+    const checkForStaleCookies = async () => {
+      try {
+        // Check if there are any auth cookies in the document
+        const cookies = document.cookie.split(';');
+        const hasAuthCookies = cookies.some(cookie => {
+          const [name] = cookie.trim().split('=');
+          return ['accessToken', 'refreshToken', 'foozool-jwt', 'jwt'].includes(name);
+        });
+        
+        if (hasAuthCookies && !isAuthenticated && !isLoading) {
+          console.log('⚠️ Found stale auth cookies on login page, clearing them...');
+          // Import and use clearAuthCookies directly
+          const { clearAuthCookies } = await import('@/utils/cookies');
+          clearAuthCookies();
+        }
+      } catch (error) {
+        console.error('Error checking for stale cookies:', error);
+      }
+    };
+    
+    checkForStaleCookies();
+  }, [isAuthenticated, isLoading]);
 
   const formik = useFormik({
     initialValues: {
