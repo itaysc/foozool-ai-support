@@ -68,6 +68,10 @@ export const RightSide = styled.div`
   flex-shrink: 0;
   gap: 8px;
   position: relative;
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    gap: 4px;
+  }
 `;
 
 export const TabButton = styled.button<TabButtonProps>`
@@ -111,7 +115,7 @@ export const TabButton = styled.button<TabButtonProps>`
         ? 'rgba(255, 255, 255, 0.25)' 
         : 'rgba(255, 255, 255, 0.1)'
     };
-    color: ${theme.colors.primary.contrastText};
+    color: theme.colors.primary.contrastText;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     
@@ -133,5 +137,9 @@ export const TabButton = styled.button<TabButtonProps>`
   @media (max-width: ${theme.breakpoints.md}) {
     padding: 0 12px;
     font-size: 0.85rem;
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    display: none;
   }
 `;
