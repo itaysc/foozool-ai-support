@@ -7,14 +7,12 @@ WORKDIR /usr/src/app
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
 
 # Copy package files and install dependencies
-COPY package.json package-lock.json ./
+COPY package.json yarn.lock ./
 COPY tsconfig.json ./
 COPY src/ ./src/
 
-# Install dependencies with npm
-RUN npm ci --only=production=false
-
-RUN npm run build
+RUN yarn install --frozen-lockfile
+RUN yarn build
 
 # ---- Production Stage ----
 FROM node:20-slim
@@ -26,10 +24,9 @@ RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificat
 
 COPY --from=builder /usr/src/app/dist ./dist
 COPY --from=builder /usr/src/app/package.json ./
-COPY --from=builder /usr/src/app/package-lock.json ./
+COPY --from=builder /usr/src/app/yarn.lock ./
 
-# Install production dependencies with npm
-RUN npm ci --only=production
+RUN yarn install --production --frozen-lockfile
 
 ENV NODE_ENV=production
 
