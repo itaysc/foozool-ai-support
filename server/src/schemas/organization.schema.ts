@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import crypto from 'crypto';
-import { IOrganization } from 'src/types';
+import { IOrganization } from '../types';
 
 // Dashboard settings schema removed with insights functionality
 

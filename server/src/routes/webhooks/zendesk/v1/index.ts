@@ -1,13 +1,13 @@
 import express, { Request, Response } from 'express';
-import { authenticateWebhook } from 'src/middleware/authenticate';
-import { handleWebhook } from 'src/services/tickets';
-import { handleCRMWebhook } from 'src/services/tickets/crmWebhook';
-import { convertZendeskToCRMWebhook } from 'src/services/tickets/crmWebhook';
+import { authenticateWebhook } from '../../../../middleware/authenticate';
+import { handleWebhook } from '../../../../services/tickets';
+import { handleCRMWebhook } from '../../../../services/tickets/crmWebhook';
+import { convertZendeskToCRMWebhook } from '../../../../services/tickets/crmWebhook';
 import { zendeskWebhookValidation } from './validations';
-import { validateRequest } from 'src/middleware/validateRequest';
-import { OrganizationModel } from 'src/schemas/organization.schema';
-import { UserModel } from 'src/schemas/user.schema';
-import { CRMService } from 'src/services/crm';
+import { validateRequest } from '../../../../middleware/validateRequest';
+import { OrganizationModel } from '../../../../schemas/organization.schema';
+import { UserModel } from '../../../../schemas/user.schema';
+import { CRMService } from '../../../../services/crm';
 
 const router = express.Router();
 

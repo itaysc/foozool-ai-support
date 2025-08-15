@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { IToken } from "src/types";
+import { IToken } from "../types";
 
 const tokenSchema = new Schema<IToken>({
   token: { type: String, required: true, unique: true },

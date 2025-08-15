@@ -1,9 +1,9 @@
-import { IProduct } from 'src/types';
+import { IProduct } from '../../types';
 import { faker } from '@faker-js/faker';
-import { ProductModel } from 'src/schemas/product.schema';
+import { ProductModel } from '../../schemas/product.schema';
 import { callLLM } from '../llm';
 import { buildProductPromptFromTicket } from './prompts';
-import sanitizeJSON from 'src/utils/sanitizeJson';
+import sanitizeJSON from '../../utils/sanitizeJson';
 
 /**
  * Generate a mock product for demonstration purposes

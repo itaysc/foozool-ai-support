@@ -1,4 +1,4 @@
-import { IOrganization } from 'src/types';
+import { IOrganization } from '../types';
 import { OrganizationModel } from '../schemas/organization.schema';
 
 export const getDemoOrganization = async (): Promise<IOrganization | null> => {

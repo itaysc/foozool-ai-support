@@ -1,9 +1,9 @@
-import express from "express";
+import express, { Request, Response } from 'express';
 import { oauth2Client, SCOPES } from "../../../utils/google";
 import { handleGoogleCallback } from "../../../services/google/auth";
-import { authenticateJWT } from 'src/middleware/authenticate';
-import { validateRequest } from 'src/middleware/validateRequest';
-import { listDriveFiles } from "src/services/google/drive";
+import { authenticateJWT } from '../../../../middleware/authenticate';
+import { validateRequest } from '../../../../middleware/validateRequest';
+import { listDriveFiles } from '../../../../services/google/drive';
 import { processGoogleDriveFiles } from "../../../qdrant/service";
 import { processGoogleDriveFilesSchema, searchGoogleDriveFilesSchema } from './validations';
 import { getUnprocessedGoogleFileIds } from '../../../services/google/drive/process';

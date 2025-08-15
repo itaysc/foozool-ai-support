@@ -1,5 +1,5 @@
 // src/schemas/UniversalSchema.ts
-import { ITicket } from 'src/types';
+import { ITicket } from '../types';
 import mongoose, { Schema } from 'mongoose';
 
 const TicketSchema: Schema = new Schema<ITicket>({

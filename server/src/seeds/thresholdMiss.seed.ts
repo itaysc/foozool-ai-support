@@ -1,4 +1,4 @@
-import { ThresholdMissModel, SeedTrackModel, OrganizationModel } from 'src/schemas';
+import { ThresholdMissModel, SeedTrackModel, OrganizationModel } from '../schemas';
 import { Types } from 'mongoose';
 
 export async function seedThresholdMisses(): Promise<any[]> {

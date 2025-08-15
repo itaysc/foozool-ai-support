@@ -2,7 +2,7 @@
 import { Client as ESClient, ClientOptions } from '@elastic/elasticsearch';
 import Config from '../config'
 import { WriteResponseBase } from '@elastic/elasticsearch/lib/api/types';
-import { ITicket, IESTicket } from 'src/types';
+import { ITicket, IESTicket } from '../types';
 
 type CreateIndexStatus = 'created' | 'alreadyExist' | 'error';
 

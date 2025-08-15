@@ -1,5 +1,5 @@
-import { SeedTrackModel, TokenModel } from "src/schemas";
-import config from 'src/config';
+import { SeedTrackModel, TokenModel } from "../schemas";
+import config from '../config';
 
 export async function seedTokens(organizationId: string): Promise<void> {
     try {

@@ -1,4 +1,4 @@
-import { ITicket, IProduct } from "src/types";
+import { ITicket, IProduct } from "../../types";
 
 type ActionType = "refund" | "commentOnly" | "escalate" | "reship" | "noAction" | "coupon" | "auto_resolve" | "priority_change" | "auto_reply";
 

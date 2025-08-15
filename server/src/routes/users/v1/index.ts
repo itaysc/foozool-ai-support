@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { createUser } from '../../../services/users/v1';
-import { validateRequest } from 'src/middleware/validateRequest';
+import { validateRequest } from '../../../../middleware/validateRequest';
 import { createUserSchema } from './validations';
 
 const router = express.Router();

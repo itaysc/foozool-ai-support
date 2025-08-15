@@ -1,5 +1,6 @@
+import express, { Request, Response } from 'express';
 import { UserModel, OrganizationModel } from '../../../schemas';
-import { IUser, IResponse, IOrganization } from 'src/types';
+import { IUser, IResponse, IOrganization } from '../../../types';
 import ElasticsearchService from '../../../elasticsearch/service';
 import mongoose from 'mongoose';
 

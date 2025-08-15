@@ -2,7 +2,7 @@ import { LLMProvider, LLMRequest, LLMResponse, LLMProviderInterface } from './ty
 import Together from 'together-ai';
 import config from '../../config';
 import { LLMUsageModel } from '../../schemas';
-import { ILLMUsage } from 'src/types';
+import { ILLMUsage } from '../../types';
 
 export class TogetherAIProvider implements LLMProviderInterface {
   private together: Together;

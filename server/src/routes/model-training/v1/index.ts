@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { trainModel, loadStubData3 } from '../../../services/model-training';
-import { validateRequest } from 'src/middleware/validateRequest';
+import { validateRequest } from '../../../../middleware/validateRequest';
 import { trainModelSchema } from './validations';
 
 const router = express.Router();

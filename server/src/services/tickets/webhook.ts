@@ -1,12 +1,12 @@
-import { IResponse, IAgentSuggestion, ZendeskTicketWebhookPayload } from 'src/types';
-import { ICRMWebhookPayload } from 'src/types/crm';
+import { IResponse, IAgentSuggestion, ZendeskTicketWebhookPayload } from '../../types';
+import { ICRMWebhookPayload } from '../../types/crm';
 import { classifyIntent, getSBERTEmbedding, summarizeTickets } from '../call-python';
 import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
 import { buildAgentSuggestionPrompt, buildPrompt } from './prompts';
 import { callLLM } from '../llm';
 import { addCommentToTicket } from '../zendesk';
-import sanitizeText, { extractCustomerMessage } from 'src/utils/text-sanitize';
+import sanitizeText, { extractCustomerMessage } from '../../utils/text-sanitize';
 import QdrantService from '../../qdrant/service';
 import { QdrantTicketPoint } from '../../qdrant/schemas/ticket';
 import { analyzeSentiment } from '../nlp';

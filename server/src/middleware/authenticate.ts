@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
-import { IToken, IUser } from 'src/types';
-import { TokenModel, UserModel } from 'src/schemas';
+import { IToken, IUser } from '../types';
+import { TokenModel, UserModel } from '../schemas';
 import { UserContextManager } from '../context/userContext';
 
 declare global {

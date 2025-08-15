@@ -1,10 +1,10 @@
-import { IProduct, IResponse } from 'src/types';
+import { IProduct, IResponse } from '../../types';
 import { getSBERTEmbedding } from '../call-python';
 import keyBy from 'lodash/keyBy';
 import QdrantService from '../../qdrant/service';
 import { ticketCollectionConfig } from '../../qdrant/schemas/ticket';
-import { ITicket, IESTicket } from 'src/types';
-import { TicketModel } from 'src/schemas/ticket.schema';
+import { ITicket, IESTicket } from '../../types';
+import { TicketModel } from '../../schemas/ticket.schema';
 import { cosineSimilarity } from './utils';
 import { fetchTicketsByExternalIds, getTicketsByIds } from '../zendesk';
 

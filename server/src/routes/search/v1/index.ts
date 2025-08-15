@@ -1,6 +1,6 @@
-import express from "express";
-import { authenticateJWT } from 'src/middleware/authenticate';
-import { validateRequest } from 'src/middleware/validateRequest';
+import express, { Request, Response } from 'express';
+import { authenticateJWT } from '../../../../middleware/authenticate';
+import { validateRequest } from '../../../../middleware/validateRequest';
 import { searchGoogleDriveFilesSchema } from '../../google/v1/validations';
 import { ragSearch } from '../../../services/search';
 

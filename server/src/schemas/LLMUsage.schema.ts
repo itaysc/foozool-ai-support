@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { ILLMUsage } from 'src/types';
+import { ILLMUsage } from '../types';
 
 export const llmUsageSchema = new Schema<ILLMUsage>({
     user: {

@@ -6,10 +6,10 @@ import { getSBERTEmbedding } from '../call-python';
 import QdrantService from '../../qdrant/service';
 import { ticketCollectionConfig, QdrantTicketPoint } from '../../qdrant/schemas/ticket';
 import fetchTickets from '../zendesk';
-import { IResponse, ITicket } from 'src/types';
+import { IResponse, ITicket } from '../../types';
 import { analyzeSentiment } from '../nlp';
 import { getDemoOrganization } from '../../dal/organization.dal';
-import { TicketModel } from "src/schemas/ticket.schema";
+import { TicketModel } from "../../schemas/ticket.schema";
 import { createDemoZendeskTickets } from '../zendesk';
 import { ProcessedStubModel } from '../../schemas/processed-stub.schema';
 

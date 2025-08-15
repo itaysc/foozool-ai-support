@@ -1,5 +1,5 @@
-import { UserModel, SeedTrackModel } from "src/schemas";
-import { IUser } from "src/types";
+import { UserModel, SeedTrackModel } from "../schemas";
+import { IUser } from "../types";
 const usersSeed = [
   {
     firstName: 'Itay',

@@ -1,14 +1,14 @@
 import express, { Request, Response } from 'express';
-import { handleWebhook } from '../../../services/tickets';
-import { validateRequest } from 'src/middleware/validateRequest';
+import { validateRequest } from '../../../../middleware/validateRequest';
+import { createTicket } from '../../../services/tickets';
+import { authenticateJWT } from '../../../../middleware/authenticate';
 import { newTicket } from './validations';
-import { authenticateJWT } from 'src/middleware/authenticate';
 
 const router = express.Router();
 
 router.post('/webhook', authenticateJWT, validateRequest(newTicket), async (req: Request, res: Response): Promise<void> => {
   try {
-    const webhookRes = await handleWebhook(req.body);
+    const webhookRes = await createTicket(req.body);
     res.status(webhookRes.status).json(webhookRes.payload);
   } catch (err) {
     res.status(500).json({ message: 'Internal server error' });

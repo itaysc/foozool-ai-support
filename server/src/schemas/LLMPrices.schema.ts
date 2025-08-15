@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { ILLMPrices } from 'src/types';
+import { ILLMPrices } from '../types';
 
 export const llmPricesSchema = new Schema<ILLMPrices>({
     model: {

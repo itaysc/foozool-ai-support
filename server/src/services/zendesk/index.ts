@@ -5,7 +5,7 @@ import bluebird from 'bluebird';
 import { faker } from '@faker-js/faker';
 import Config from '../../config';
 import sanitizeText from '../../utils/text-sanitize';
-import { IResponse, ITicket, ICreateTicketPayload, IZendeskTicketComment, ITicketSearchResult } from 'src/types';
+import { IResponse, ITicket, ICreateTicketPayload, IZendeskTicketComment, ITicketSearchResult } from '../../types';
 import { getDemoOrganization } from '../../dal/organization.dal';
 import { OrganizationModel } from '../../schemas';
 

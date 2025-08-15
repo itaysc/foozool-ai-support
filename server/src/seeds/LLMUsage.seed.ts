@@ -1,5 +1,5 @@
-import { SeedTrackModel, LLMUsageModel } from "src/schemas";
-import { IUser } from "src/types";
+import { SeedTrackModel, LLMUsageModel } from "../schemas";
+import { IUser } from "../types";
 
 export async function seedLLMUsage(users: IUser[]): Promise<void> {
     try {
