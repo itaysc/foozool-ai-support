@@ -264,33 +264,53 @@ const InsightsPage: React.FC = () => {
           mb: 4 
         }}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
-              {summary.totalInsights}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
+                {summary.totalInsights}
+              </Typography>
+              <Tooltip title="Number of unique issue patterns or clusters that our AI has identified from analyzing support tickets. Each insight represents a recurring problem that affects multiple customers.">
+                <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+              </Tooltip>
+            </Box>
             <Typography variant="body2" color="text.secondary">
               Active Insights
             </Typography>
           </Paper>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h3" color="secondary" sx={{ fontWeight: 'bold' }}>
-              {summary.totalTicketVolume}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <Typography variant="h3" color="secondary" sx={{ fontWeight: 'bold' }}>
+                {summary.totalTicketVolume}
+              </Typography>
+              <Tooltip title="Total number of support tickets that have been analyzed and grouped into these insights. This represents the volume of customer issues that contribute to the identified patterns.">
+                <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+              </Tooltip>
+            </Box>
             <Typography variant="body2" color="text.secondary">
               Total Tickets
             </Typography>
           </Paper>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
-              {summary.avgGrowthRate.toFixed(1)}%
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
+                {summary.avgGrowthRate.toFixed(1)}%
+              </Typography>
+              <Tooltip title="Average percentage change in ticket volume across all insights. Positive values indicate increasing issue frequency, negative values suggest decreasing problems. This helps identify which issues are becoming more or less common over time.">
+                <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+              </Tooltip>
+            </Box>
             <Typography variant="body2" color="text.secondary">
               Avg Growth Rate
             </Typography>
           </Paper>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h3" color="error.main" sx={{ fontWeight: 'bold' }}>
-              {summary.maxGrowthRate.toFixed(1)}%
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+              <Typography variant="h3" color="error.main" sx={{ fontWeight: 'bold' }}>
+                {summary.maxGrowthRate.toFixed(1)}%
+              </Typography>
+              <Tooltip title="The highest growth rate among all insights, indicating which issue pattern is increasing most rapidly. High values suggest urgent problems that may require immediate attention and resources.">
+                <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+              </Tooltip>
+            </Box>
             <Typography variant="body2" color="text.secondary">
               Max Growth Rate
             </Typography>
@@ -311,33 +331,53 @@ const InsightsPage: React.FC = () => {
             mb: 3 
           }}>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
-                {predictionSummary.totalPredictions}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
+                  {predictionSummary.totalPredictions}
+                </Typography>
+                <Tooltip title="Total number of support tickets that our AI has analyzed and made risk predictions for. Each prediction includes escalation risk and customer satisfaction (CSAT) risk assessments based on ticket content and patterns.">
+                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Total Predictions
               </Typography>
             </Paper>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h3" color="error.main" sx={{ fontWeight: 'bold' }}>
-                {predictionSummary.highEscalationRisk}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                <Typography variant="h3" color="error.main" sx={{ fontWeight: 'bold' }}>
+                  {predictionSummary.highEscalationRisk}
+                </Typography>
+                <Tooltip title="Number of tickets predicted to have high escalation risk. These are tickets that our AI has identified as likely to be escalated to higher support tiers due to complexity, urgency, or customer dissatisfaction. High escalation risk suggests issues that may require senior support staff or management attention.">
+                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 High Escalation Risk
               </Typography>
             </Paper>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold' }}>
-                {predictionSummary.highCSATRisk}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold' }}>
+                  {predictionSummary.highCSATRisk}
+                </Typography>
+                <Tooltip title="Number of tickets predicted to have high Customer Satisfaction (CSAT) risk. These are tickets where our AI predicts customers are likely to give low satisfaction scores. High CSAT risk indicates potential customer experience issues that could impact brand reputation and customer retention.">
+                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 High CSAT Risk
               </Typography>
             </Paper>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
-                {Math.round(predictionSummary.avgEscalationConfidence * 100)}%
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
+                  {Math.round(predictionSummary.avgEscalationConfidence * 100)}%
+                </Typography>
+                <Tooltip title="Average confidence level of our AI's escalation risk predictions across all analyzed tickets. Higher confidence indicates more reliable predictions based on strong patterns in the data. This metric helps assess the reliability of our risk assessment system.">
+                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Avg Confidence
               </Typography>
@@ -359,33 +399,53 @@ const InsightsPage: React.FC = () => {
             mb: 3 
           }}>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
-                {accuracyAnalysis.totalChecked}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
+                  {accuracyAnalysis.totalChecked}
+                </Typography>
+                <Tooltip title="Total number of support tickets that have been completed and evaluated against our AI predictions. These tickets have actual outcomes (escalation status, CSAT scores) that we can compare to our predictions to measure accuracy.">
+                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Tickets Evaluated
               </Typography>
             </Paper>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
-                {accuracyAnalysis.overallAccuracy.toFixed(1)}%
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
+                  {accuracyAnalysis.overallAccuracy.toFixed(1)}%
+                </Typography>
+                <Tooltip title="Overall accuracy percentage combining both escalation and CSAT predictions. This metric shows how well our AI system performs across all types of risk assessments, giving you confidence in the reliability of our predictions.">
+                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Overall Accuracy
               </Typography>
             </Paper>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h3" color="info.main" sx={{ fontWeight: 'bold' }}>
-                {accuracyAnalysis.escalationAccuracy.percentage.toFixed(1)}%
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                <Typography variant="h3" color="info.main" sx={{ fontWeight: 'bold' }}>
+                  {accuracyAnalysis.escalationAccuracy.percentage.toFixed(1)}%
+                </Typography>
+                <Tooltip title="Accuracy percentage specifically for escalation risk predictions. This measures how often our AI correctly identifies which tickets will need escalation to higher support tiers. High accuracy helps with resource planning and staff allocation.">
+                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 Escalation Accuracy
               </Typography>
             </Paper>
             <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold' }}>
-                {accuracyAnalysis.csatAccuracy.percentage.toFixed(1)}%
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
+                <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold' }}>
+                  {accuracyAnalysis.csatAccuracy.percentage.toFixed(1)}%
+                </Typography>
+                <Tooltip title="Accuracy percentage for Customer Satisfaction (CSAT) risk predictions. This measures how well our AI predicts which tickets will result in low customer satisfaction scores. High accuracy helps identify and address customer experience issues proactively.">
+                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+                </Tooltip>
+              </Box>
               <Typography variant="body2" color="text.secondary">
                 CSAT Accuracy
               </Typography>
@@ -408,6 +468,9 @@ const InsightsPage: React.FC = () => {
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'success.main' }}>
                       🔥 High Confidence (≥80%)
                     </Typography>
+                    <Tooltip title="Predictions where our AI is 80% or more confident in the risk assessment. These predictions are based on strong patterns in the data and are most reliable for decision-making. High confidence predictions typically have the highest accuracy rates.">
+                      <InfoOutlined sx={{ ml: 1, fontSize: 18, color: 'text.secondary', cursor: 'help' }} />
+                    </Tooltip>
                   </Box>
                   <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold' }}>
                     {accuracyAnalysis.confidenceBreakdown.high.percentage.toFixed(1)}%
@@ -424,6 +487,9 @@ const InsightsPage: React.FC = () => {
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
                       ⚡ Medium Confidence (50-79%)
                     </Typography>
+                    <Tooltip title="Predictions where our AI has moderate confidence (50-79%) in the risk assessment. These predictions are based on some patterns but may have less clear indicators. Medium confidence predictions help identify potential issues but should be reviewed with additional context.">
+                      <InfoOutlined sx={{ ml: 1, fontSize: 18, color: 'text.secondary', cursor: 'help' }} />
+                    </Tooltip>
                   </Box>
                   <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold' }}>
                     {accuracyAnalysis.confidenceBreakdown.medium.percentage.toFixed(1)}%
@@ -440,6 +506,9 @@ const InsightsPage: React.FC = () => {
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'error.main' }}>
                       🤔 Low Confidence (&lt;50%)
                     </Typography>
+                    <Tooltip title="Predictions where our AI has low confidence (less than 50%) in the risk assessment. These predictions have weak or unclear patterns and should be treated with caution. Low confidence predictions may indicate edge cases or insufficient data for reliable assessment.">
+                      <InfoOutlined sx={{ ml: 1, fontSize: 18, color: 'text.secondary', cursor: 'help' }} />
+                    </Tooltip>
                   </Box>
                   <Typography variant="h4" color="error.main" sx={{ fontWeight: 'bold' }}>
                     {accuracyAnalysis.confidenceBreakdown.low.percentage.toFixed(1)}%
