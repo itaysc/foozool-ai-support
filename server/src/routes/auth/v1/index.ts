@@ -97,8 +97,24 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
     }
 
     console.log('Password valid, generating tokens');
-    // Generate access token (short-lived)
-    const accessToken = signJwt({ user: userRes.payload }, { expiresIn: '15m' });
+    
+    // Fetch the complete user data with populated organization
+    const fullUser = await UserModel.findById(userRes.payload._id)
+      .populate('organization', 'name signature country details')
+      .lean();
+    
+    if (!fullUser) {
+      console.log('Error: Full user data not found after password validation');
+      res.status(500).json({ 
+        status: 'error',
+        message: 'Error retrieving user data',
+        code: 'USER_DATA_ERROR'
+      });
+      return;
+    }
+    
+    // Generate access token (short-lived) with full user data
+    const accessToken = signJwt({ user: fullUser }, { expiresIn: '15m' });
     // Generate refresh token (long-lived, minimal info)
     const refreshToken = signJwt({ user: { id: userRes.payload._id } }, { expiresIn: '7d' });
 
@@ -145,12 +161,7 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
     res.json({ 
       status: 'success',
       accessToken,
-      user: {
-        id: userRes.payload._id,
-        email: userRes.payload.email,
-        firstName: userRes.payload.firstName,
-        lastName: userRes.payload.lastName
-      }
+      user: fullUser
     });
 
   } catch (error) {
@@ -185,7 +196,9 @@ router.post('/refresh-token', async (req: Request, res: Response): Promise<void>
       const { user } = data as any;
       
       // Fetch the full user data from DB to ensure we have the complete user object
-      const fullUser = await UserModel.findById(user.id).lean();
+      const fullUser = await UserModel.findById(user.id)
+        .populate('organization', 'name signature country details')
+        .lean();
       if (!fullUser) {
         return res.status(403).json({ 
           success: false, 
@@ -250,16 +263,43 @@ router.get('/isAuthorized', async (req: Request, res: Response) => {
       return res.json({ isAuthorized: false });
     }
     
-    jwt.verify(accessToken, config.JWT_SECRET, (err, data) => {
+    jwt.verify(accessToken, config.JWT_SECRET, async (err, data) => {
       if (err) {
         res.json({ isAuthorized: false });
         return;
       }
-      res.json({ 
-        isAuthorized: true, 
-        user: (data as any).user 
-      });
-      return;
+      
+      try {
+        // Get the user ID from the JWT payload
+        const userId = (data as any).user._id || (data as any).user.id;
+        
+        if (!userId) {
+          res.json({ isAuthorized: false });
+          return;
+        }
+        
+        // Fetch the complete user data with populated organization
+        const fullUser = await UserModel.findById(userId)
+          .populate('organization', 'name signature country details')
+          .lean();
+        
+        if (!fullUser) {
+          res.json({ isAuthorized: false });
+          return;
+        }
+        
+        res.json({ 
+          isAuthorized: true, 
+          user: fullUser 
+        });
+      } catch (populateError) {
+        console.error('Error populating user data:', populateError);
+        // Fallback to returning the user data from JWT if population fails
+        res.json({ 
+          isAuthorized: true, 
+          user: (data as any).user 
+        });
+      }
     });
   } catch (err) {
     res.json({ isAuthorized: false });

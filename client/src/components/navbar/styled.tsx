@@ -26,6 +26,14 @@ export const Container = styled.div<ContainerProps>`
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ${theme.transitions.easing.easeInOut};
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    padding: 0 16px;
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: 0 12px;
+  }
 `;
 
 export const LeftSide = styled.div`
@@ -41,6 +49,14 @@ export const LeftSide = styled.div`
     &:hover {
       transform: scale(1.05);
     }
+  }
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    gap: 1rem;
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    gap: 0.5rem;
   }
 `;
 

@@ -1,4 +1,5 @@
 import { ObjectId } from './index';
+import { IOrganization } from './organization';
 
 export interface IUser {
   _id: ObjectId;
@@ -16,7 +17,7 @@ export interface IUser {
   registered: {
     type: boolean;
   };
-  organization: string | ObjectId;
+  organization: IOrganization | ObjectId;
   department: {
     type: string;
   };

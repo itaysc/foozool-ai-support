@@ -6,6 +6,8 @@
  */
 
 // Load environment variables from .env file if it exists
+
+const useEnv = false;
 function loadEnvFile() {
   try {
     const fs = require('fs');
@@ -21,7 +23,7 @@ function loadEnvFile() {
     ];
     
     for (const envPath of possiblePaths) {
-      if (fs.existsSync(envPath)) {
+      if (useEnv && fs.existsSync(envPath)) {
         const envContent = fs.readFileSync(envPath, 'utf8');
         const lines = envContent.split('\n');
         
@@ -70,17 +72,23 @@ class DatabaseMigration {
         'users',
         'organizations',
         'llmusages',
+        'migrations',
+        'predictions',
+        'crmconfigs',
+        'insighs',
         'llmprices',
+        'bot_performance_metrics',
         'tickets',
         'seedtracks',
         'products',
         'tokens',
-        'actionthresholds',
-        'actionlogs',
-        'customertiers',
+        'action_thresholds',
+        'action_logs',
+        'customer_tiers',
+        'processedstubs',
         'webhooks',
         'crms',
-        'thresholdmisses'
+        'threshold_misses'
       ],
       batchSize: 1000,
       dryRun: process.env.DRY_RUN === 'true'
