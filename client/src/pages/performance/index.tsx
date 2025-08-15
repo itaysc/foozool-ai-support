@@ -20,6 +20,7 @@ import { Prediction, PredictionSummary, AccuracyAnalysis } from '@/types/predict
 import { insightsService } from '@/services/insights-service';
 import { useAuth } from '@/context/auth.context';
 import { MetricCard, AccuracyChart, PerformanceSummary } from '@/components';
+import ThresholdMissesSection from '@/components/performance/ThresholdMissesSection';
 
 const PerformancePage: React.FC = () => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
@@ -307,7 +308,8 @@ const PerformancePage: React.FC = () => {
         <Box sx={{ 
           display: 'grid', 
           gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-          gap: 3 
+          gap: 3,
+          mb: 4
         }}>
           <Box sx={{ 
             p: 3, 
@@ -345,6 +347,11 @@ const PerformancePage: React.FC = () => {
           </Box>
         </Box>
       )}
+
+      {/* Threshold Misses Analysis */}
+      <Box sx={{ mb: 4 }}>
+        <ThresholdMissesSection organizationId={effectiveOrgId} />
+      </Box>
     </Box>
   );
 };

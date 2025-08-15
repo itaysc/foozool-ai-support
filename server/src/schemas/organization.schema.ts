@@ -25,6 +25,8 @@ const OrganizationSchema: Schema = new Schema<IOrganization>({
     phone: String,
     notes: String,
   },
+  crmType: String, // The CRM type this organization uses
+  crmConfig: Schema.Types.Mixed, // CRM-specific configuration
   // dashboardSettings removed with insights functionality
 }, {
   timestamps: true,
@@ -35,6 +37,7 @@ OrganizationSchema.index({ createdAt: -1 }); // For chronological ordering
 OrganizationSchema.index({ updatedAt: -1 }); // For recent updates
 OrganizationSchema.index({ externalId: 1 }); // For external system lookups
 OrganizationSchema.index({ tags: 1 }); // For tag-based filtering
+OrganizationSchema.index({ crmType: 1 }); // For CRM-based filtering
 
 OrganizationSchema.pre('save', async function(next) {
   if (!this.signature) {

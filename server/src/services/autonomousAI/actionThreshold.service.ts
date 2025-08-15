@@ -107,6 +107,39 @@ export class ActionThresholdService {
   }
 
   /**
+   * Update threshold value specifically
+   */
+  static async updateThresholdValue(
+    thresholdId: string, 
+    newThreshold: number
+  ): Promise<IActionThreshold | null> {
+    try {
+      // Validate threshold value
+      if (typeof newThreshold !== 'number' || newThreshold < 0 || newThreshold > 1) {
+        throw new Error('Invalid threshold value. Must be a number between 0 and 1.');
+      }
+
+      const threshold = await ActionThresholdModel.findByIdAndUpdate(
+        thresholdId,
+        { 
+          threshold: newThreshold, 
+          updatedAt: new Date() 
+        },
+        { new: true }
+      ).lean();
+
+      if (!threshold) {
+        throw new Error('Threshold not found');
+      }
+
+      return threshold as unknown as IActionThreshold;
+    } catch (error) {
+      console.error('Error updating threshold value:', error);
+      throw new Error('Failed to update threshold value');
+    }
+  }
+
+  /**
    * Delete an action threshold
    */
   static async deleteThreshold(thresholdId: string): Promise<boolean> {

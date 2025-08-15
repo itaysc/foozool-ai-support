@@ -5,7 +5,10 @@ const tokenSchema = new Schema<IToken>({
   token: { type: String, required: true, unique: true },
   refreshToken: { type: String, required: false },
   organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true , index: true},
-  type: { type: String, required: true, enum: ['zendesk-webhook'] },
+  type: { 
+    type: String, 
+    required: true,
+  },
   description: String,
 }, { timestamps: true });
 

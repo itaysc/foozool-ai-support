@@ -1,4 +1,4 @@
-import { ActionThresholdModel, ActionLogModel } from '../../schemas';
+import { ActionThresholdModel, ActionLogModel, ThresholdMissModel } from '../../schemas';
 import { Types } from 'mongoose';
 import { addCommentToTicket } from '../zendesk';
 import { WebhookService } from '../webhook';
@@ -11,7 +11,13 @@ export async function executeAutonomousActions(
   organizationId: string,
   actionType: string,
   confidenceScore: number,
-  userId: string
+  userId: string,
+  ticketMetadata?: {
+    subject?: string;
+    status?: string;
+    priority?: string;
+    customerTier?: string;
+  }
 ): Promise<any[]> {
   try {
     console.log(`Checking action thresholds for ticket ${ticketId}, action: ${actionType}, confidence: ${confidenceScore}`);
@@ -21,6 +27,43 @@ export async function executeAutonomousActions(
       organization: new Types.ObjectId(organizationId),
     }).sort({ priority: -1 }).lean();
     
+    // Track threshold misses for thresholds that don't meet the confidence score
+    const thresholdMisses: any[] = [];
+    
+    for (const threshold of thresholds) {
+      if (threshold.actionType === actionType && threshold.isActive) {
+        if (threshold.threshold > confidenceScore) {
+          // Threshold not met - track this miss with enhanced metadata
+          thresholdMisses.push({
+            organization: new Types.ObjectId(organizationId),
+            ticketId: new Types.ObjectId(ticketId),
+            actionType: actionType as any,
+            thresholdId: threshold._id,
+            thresholdName: threshold.name,
+            thresholdValue: threshold.threshold,
+            confidenceScore,
+            missedBy: threshold.threshold - confidenceScore,
+            ticketSubject: ticketMetadata?.subject,
+            ticketStatus: ticketMetadata?.status,
+            ticketPriority: ticketMetadata?.priority,
+            customerTier: ticketMetadata?.customerTier,
+            occurredAt: new Date()
+          });
+        }
+      }
+    }
+    
+    // Save threshold misses to database
+    if (thresholdMisses.length > 0) {
+      try {
+        await ThresholdMissModel.insertMany(thresholdMisses);
+        console.log(`Tracked ${thresholdMisses.length} threshold misses for action ${actionType}`);
+      } catch (error) {
+        console.error('Failed to save threshold misses:', error);
+      }
+    }
+    
+    // Filter thresholds that meet the confidence score
     thresholds = thresholds.filter(threshold => (
         threshold.actionType === actionType &&
         threshold.isActive &&

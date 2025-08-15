@@ -19,3 +19,4 @@ export * from './LLMPrice';
 export * from './agentSuggestion';
 export * from './esTicket';
 export * from './region';
+export * from './thresholdMiss';

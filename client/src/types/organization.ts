@@ -21,6 +21,8 @@ export interface IOrganization {
   url?: string;
   contact?: OrganizationContact;
   domains?: string[];
+  crmType?: string; // The CRM type this organization uses
+  crmConfig?: Record<string, any>; // CRM-specific configuration
   createdAt?: Date;
   updatedAt?: Date;
 }

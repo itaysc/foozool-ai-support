@@ -1,32 +1,40 @@
-import { seedOrganizations } from "./organizations.seed";
-import { seedLLMUsage } from "./LLMUsage.seed";
-import { seedLLMPricings } from "./LLMPricing.seed";
-import { seedUsers } from "./users.seed";
-import { IUser } from "src/types";
-import { seedTokens } from "./tokens.seed";
-import { seedAutonomousAI } from "./autonomousAI.seed";
-import { seedWebhooks } from "./webhooks.seed";
-// Dashboard settings seed removed with insights functionality
+import { seedUsers } from './users.seed';
+import { seedOrganizations } from './organizations.seed';
+import { seedLLMUsage } from './LLMUsage.seed';
+import { seedLLMPricings } from './LLMPricing.seed';
+import { seedCRMs } from './crm.seed';
+import { seedThresholdMisses } from './thresholdMiss.seed';
 
-export default async function seed() {
+export async function seed() {
+  try {
+    console.log('Starting database seeding...');
+    
+    // Seed CRMs first
+    await seedCRMs();
+    
+    // Seed organizations
     const organization = await seedOrganizations();
+    
+    // Seed LLM pricing
     const recommendedLLMId = await seedLLMPricings();
-    let users: IUser[] | null = null;
+    
+    // Seed users
+    let users: any[] | null = null;
     if (organization && recommendedLLMId) {
       users = await seedUsers(organization._id!, recommendedLLMId);
     }
+    
+    // Seed LLM usage
     if (users) {
       await seedLLMUsage(users);
     }
-    if (organization) {
-      await seedTokens(organization._id!);
-    }
     
-    // Seed autonomous AI data
-    await seedAutonomousAI();
+    // Seed threshold misses for testing
+    await seedThresholdMisses();
     
-    // Seed webhooks data
-    await seedWebhooks();
-    
-    // Dashboard settings seeding removed with insights functionality
+    console.log('Database seeding completed successfully!');
+  } catch (error) {
+    console.error('Error during database seeding:', error);
+    throw error;
   }
+}

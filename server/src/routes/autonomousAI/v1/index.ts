@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { AutonomousAIControllerService } from '../../../services/autonomousAI/autonomousAIController.service';
 import zendeskAnalysisRouter from './zendesk-analysis';
+import thresholdMissesRouter from './threshold-misses';
 
 const router = Router();
 
@@ -10,6 +11,9 @@ router.use(authenticateJWT);
 
 // Include Zendesk analysis routes (these use webhook authentication)
 router.use('/', zendeskAnalysisRouter);
+
+// Include threshold miss routes
+router.use('/threshold-misses', thresholdMissesRouter);
 
 /**
  * @route GET /api/v1/autonomous-ai/analyze/:ticketId
@@ -136,6 +140,31 @@ router.patch('/thresholds/:id/toggle', async (req, res) => {
   } catch (error) {
     console.error('Error toggling threshold:', error);
     res.status(500).json({ error: 'Failed to toggle threshold', message: (error as Error).message });
+  }
+});
+
+/**
+ * @route PATCH /api/v1/autonomous-ai/thresholds/:id/threshold
+ * @desc Update threshold value
+ * @access Private
+ */
+router.patch('/thresholds/:id/threshold', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { threshold } = req.body;
+    
+    if (typeof threshold !== 'number' || threshold < 0 || threshold > 1) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid threshold value. Must be a number between 0 and 1.' 
+      });
+    }
+    
+    const updatedThreshold = await AutonomousAIControllerService.updateThresholdValue(id, threshold);
+    res.json({ success: true, data: updatedThreshold });
+  } catch (error) {
+    console.error('Error updating threshold value:', error);
+    res.status(500).json({ error: 'Failed to update threshold value', message: (error as Error).message });
   }
 });
 

@@ -10,6 +10,8 @@ import { ActionThresholdModel } from './actionThreshold.schema';
 import { ActionLogModel } from './actionLog.schema';
 import { CustomerTierModel } from './customerTier.schema';
 import { WebhookModel } from './webhook.schema';
+import { CRMModel } from './crm.schema';
+import { ThresholdMissModel } from './thresholdMiss.schema';
 
 export {
   UserModel,
@@ -24,4 +26,6 @@ export {
   ActionLogModel,
   CustomerTierModel,
   WebhookModel,
+  CRMModel,
+  ThresholdMissModel,
 };

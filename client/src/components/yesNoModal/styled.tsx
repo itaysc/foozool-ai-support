@@ -1,19 +1,11 @@
 // components/YesNoModal/YesNoModal.styles.ts
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
 import { Dialog } from '@mui/material';
 
-export const StyledDialog = styled(Dialog)`
-  .MuiDialog-paper {
-    border-radius: 16px;
-    padding: 16px;
-    min-width: 300px;
-  }
-
-  .MuiDialogTitle-root {
-    font-weight: 600;
-  }
-
-  .MuiDialogActions-root {
-    justify-content: space-between;
-  }
-`;
+export const StyledDialog = styled(Dialog)(({ theme }) => ({
+  '& .MuiDialog-paper': {
+    borderRadius: theme.spacing(2),
+    minWidth: 400,
+    maxWidth: 600,
+  },
+}));

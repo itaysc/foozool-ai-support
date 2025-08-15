@@ -38,6 +38,13 @@ const apiService = {
     async toggleStatus(id: string) {
       const response = await axios.patch(getRoute(`autonomous-ai/thresholds/${id}/toggle`));
       return response.data;
+    },
+
+    async updateThreshold(id: string, newThreshold: number) {
+      const response = await axios.patch(getRoute(`autonomous-ai/thresholds/${id}/threshold`), {
+        threshold: newThreshold
+      });
+      return response.data;
     }
   },
 
@@ -150,6 +157,24 @@ const apiService = {
 
     async getFullNewsData(organizationId: string) {
       const response = await axios.get(getRoute(`news/${organizationId}/full`));
+      return response.data;
+    }
+  },
+
+  // Threshold Misses API
+  thresholdMisses: {
+    async getSummary() {
+      const response = await axios.get(getRoute('autonomous-ai/threshold-misses/summary'));
+      return response.data;
+    },
+
+    async getStats(params: { startDate: string; endDate: string }) {
+      const response = await axios.get(getRoute('autonomous-ai/threshold-misses/stats'), { params });
+      return response.data;
+    },
+
+    async getDetails(params: { startDate: string; endDate: string; limit?: number; skip?: number }) {
+      const response = await axios.get(getRoute('autonomous-ai/threshold-misses/details'), { params });
       return response.data;
     }
   }

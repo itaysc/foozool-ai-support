@@ -16,6 +16,13 @@ const organizationsSeed: IOrganization[] = [
     tags: ['demo', 'demo organization'],
     notes: ['This is a demo organization'],
     externalId: 'demo-organization',
+    crmType: 'zendesk', // Default to Zendesk for demo
+    crmConfig: {
+      // Demo Zendesk configuration
+      url: process.env.ZENDESK_URL || 'https://demo.zendesk.com',
+      username: process.env.ZENDESK_USERNAME || 'demo@example.com',
+      token: process.env.ZENDESK_TOKEN || 'demo-token'
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
   },

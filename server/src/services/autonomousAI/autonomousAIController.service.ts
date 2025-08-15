@@ -160,6 +160,24 @@ export class AutonomousAIControllerService {
   }
 
   /**
+   * Update threshold value specifically
+   */
+  static async updateThresholdValue(thresholdId: string, newThreshold: number) {
+    // Validate threshold value
+    if (typeof newThreshold !== 'number' || newThreshold < 0 || newThreshold > 1) {
+      throw new Error('Invalid threshold value. Must be a number between 0 and 1.');
+    }
+
+    const threshold = await ActionThresholdService.updateThresholdValue(thresholdId, newThreshold);
+    
+    if (!threshold) {
+      throw new Error('Threshold not found');
+    }
+
+    return threshold;
+  }
+
+  /**
    * Get all customer tiers for organization
    */
   static async getCustomerTiers() {

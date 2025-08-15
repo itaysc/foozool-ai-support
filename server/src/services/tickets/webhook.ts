@@ -1,4 +1,5 @@
 import { IResponse, IAgentSuggestion, ZendeskTicketWebhookPayload } from 'src/types';
+import { ICRMWebhookPayload } from 'src/types/crm';
 import { classifyIntent, getSBERTEmbedding, summarizeTickets } from '../call-python';
 import { findZendeskSimilarTickets } from './search';
 import { generateMockProduct } from './product';
@@ -15,6 +16,7 @@ import { QDRANT_POINT_NAMESPACE } from '../../qdrant/utils';
 import { UserContextManager } from '../../context/userContext';
 import { PredictionModel } from '../../schemas/prediction.schema';
 import { ticketCollectionConfig } from '../../qdrant/schemas/ticket';
+import { CRMService } from '../crm';
 
 const DEFAULT_CONFIDENCE_SCORE = 0.3;
 
@@ -764,9 +766,82 @@ function compareCsatPrediction(predictedRisk: 'Low' | 'Medium' | 'High', actualR
 }
 
 /**
- * Main webhook handler that routes based on event_type
+ * Convert any webhook payload to Zendesk format for compatibility
  */
-export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
+function normalizeTicketFormat(payload: any): ZendeskTicketWebhookPayload {
+  // If it's already in Zendesk format, return as-is
+  if (payload.event_type && payload.ticket_id) {
+    return payload;
+  }
+  
+  // Convert CRM-agnostic format to Zendesk format
+  return {
+    event_type: payload.eventType || payload.event_type || 'ticket_created',
+    ticket_id: payload.ticketId || payload.ticket_id || payload.id || '',
+    subject: payload.subject || '',
+    status: payload.status || 'new',
+    description: payload.description || '',
+    priority: payload.priority,
+    tags: payload.tags || [],
+    created_at: payload.created_at || payload.createdAt || new Date().toISOString(),
+    external_id: payload.external_id || payload.externalId || payload.ticketId || payload.ticket_id || '',
+    requester: payload.requester || {},
+    via: payload.via || 'webhook'
+  };
+}
+
+/**
+ * Main webhook handler that determines CRM type from organization context
+ */
+export async function handleWebhook(ticket: any): Promise<IResponse> {
+  try {
+    // Get the organization's CRM type from context
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      throw new Error('Organization context not available');
+    }
+
+    // Get organization's CRM configuration
+    const crmData = await CRMService.getOrganizationCRM(organizationId);
+    if (!crmData) {
+      throw new Error(`No CRM configuration found for organization ${organizationId}`);
+    }
+
+    const { crm } = crmData;
+    console.log(`Processing webhook for ${crm.type} CRM, organization: ${organizationId}`);
+
+    // Normalize the payload to Zendesk format for compatibility
+    const normalizedTicket = normalizeTicketFormat(ticket);
+    
+    // Route based on CRM type - all currently use the existing Zendesk logic
+    switch (crm.type.toLowerCase()) {
+      case 'zendesk':
+      case 'salesforce':
+      default:
+        // For now, all CRM types use the existing Zendesk logic
+        // This can be extended later with CRM-specific handlers
+        return await handleWebhookLegacy(normalizedTicket);
+    }
+  } catch (error: any) {
+    console.error('Error in main webhook handler:', {
+      ticket: ticket,
+      error: error.message,
+      stack: error.stack
+    });
+    return {
+      status: 500,
+      payload: { 
+        error: 'Internal server error',
+        message: error.message
+      }
+    };
+  }
+}
+
+/**
+ * Legacy webhook handler that maintains existing functionality
+ */
+async function handleWebhookLegacy(ticket: ZendeskTicketWebhookPayload): Promise<IResponse> {
   try {
     console.log(`Processing webhook for ticket ${ticket.ticket_id} with event_type: ${ticket.event_type}`);
     
@@ -789,7 +864,7 @@ export async function handleWebhook(ticket: ZendeskTicketWebhookPayload): Promis
         };
     }
   } catch (error: any) {
-    console.error('Error in main webhook handler:', {
+    console.error('Error in legacy webhook handler:', {
       ticketId: ticket?.ticket_id,
       event_type: ticket?.event_type,
       error: error.message,

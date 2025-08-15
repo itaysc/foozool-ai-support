@@ -7,6 +7,7 @@ import Config from '../../config';
 import sanitizeText from '../../utils/text-sanitize';
 import { IResponse, ITicket, ICreateTicketPayload, IZendeskTicketComment, ITicketSearchResult } from 'src/types';
 import { getDemoOrganization } from '../../dal/organization.dal';
+import { OrganizationModel } from '../../schemas';
 
 const authString = Buffer.from(`${Config.ZENDESK_USERNAME}/token:${Config.ZENDESK_TOKEN}`).toString('base64');
 
@@ -192,6 +193,89 @@ export async function getTicketComments(ticketId: string) : Promise<IZendeskTick
   }
 }
 
+/**
+ * Fetch Zendesk tickets for a specific organization
+ */
+export async function fetchZendeskTickets(
+  organizationId: string,
+  options: { maxPages?: number; perPage?: number; fromPage?: number; fetchComments?: boolean } = {}
+): Promise<IResponse<ITicket[]>> {
+  try {
+    const { maxPages = 5, perPage = 100, fromPage = 1 } = options;
+    
+    // Get organization details
+    const org = await OrganizationModel.findById(organizationId).lean();
+    if (!org) {
+      throw new Error(`Organization ${organizationId} not found`);
+    }
+
+    let pagesFetched = 0;
+    let nextPageUrl = `${Config.ZENDESK_URL}/tickets.json?page[size]=${perPage}&sort_by=created_at&sort_order=desc`; // per_page max 100
+    let allTickets: ITicket[] = [];
+    let hasMore = true;
+    
+    while (hasMore && pagesFetched < maxPages) {
+      console.log('Fetching zendesk tickets page ', pagesFetched + 1, ' of ', maxPages, ' at ', nextPageUrl);
+      const response = await api.get(nextPageUrl);
+      pagesFetched++;
+      const { tickets, links: {next}, meta } = response.data;
+      if (pagesFetched < fromPage) {
+        nextPageUrl = next;
+        continue;
+      }
+      hasMore = meta.has_more;
+      nextPageUrl = next;
+
+      const ticketsData: ITicket[] = tickets.map((ticket: any) => {
+        const { id, tags, via, created_at, raw_subject, description, requester_id } = ticket;
+        const status: status = ticket.status;
+        const channel: channel = via?.channel;
+        const createdAt: stringOrUndefined = created_at;
+
+        const t: ITicket = {
+          _id: id,
+          subject: sanitizeText(raw_subject),
+          description: sanitizeText(description),
+          status,
+          createdAt: createdAt || '',
+          tags,
+          channel,
+          priority: ticket.priority,
+          customerId: requester_id || '',
+          satisfactionRating: 0,
+          organization: org._id!,
+          externalId: id,
+          updatedAt: createdAt || '',
+          comments: [],
+          chatHistory: [],
+        };
+        return t;
+      });
+
+      allTickets = allTickets.concat(ticketsData);
+      nextPageUrl = next;
+    }
+
+    console.log(`Successfully fetched ${allTickets.length} Zendesk tickets for organization ${organizationId}`);
+
+    return {
+      status: 200,
+      payload: allTickets
+    };
+
+  } catch (error: any) {
+    console.error(`Error fetching Zendesk tickets for organization ${organizationId}:`, error);
+    return {
+      status: 500,
+      payload: []
+    };
+  }
+}
+
+/**
+ * Legacy fetchTickets function for backward compatibility
+ * @deprecated Use fetchZendeskTickets with organizationId instead
+ */
 async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { maxPages?: number, perPage?: number, fromPage?: number, fetchComments?: boolean } = {}): Promise<IResponse<ITicket[]>> {
   try {
     let pagesFetched = 0;
@@ -238,7 +322,7 @@ async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { max
       });
 
       allTickets = allTickets.concat(ticketsData);
-      nextPageUrl = next; // use cursor pagination link directly
+      nextPageUrl = next;
     }
 
     return {
@@ -253,6 +337,5 @@ async function fetchTickets({ maxPages = 5, perPage = 100, fromPage = 1 }: { max
     };
   }
 }
-
 
 export default fetchTickets;
