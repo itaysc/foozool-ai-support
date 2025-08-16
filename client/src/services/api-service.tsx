@@ -78,6 +78,28 @@ const apiService = {
 
   // All dashboard functionality removed
 
+  // Google Drive API
+  google: {
+    async connect() {
+      const response = await axios.get(getRoute('google/connect'));
+      return response.data;
+    },
+
+    async listFiles(params?: { path?: string; recursive?: boolean }) {
+      const response = await axios.get(getRoute('google/drive/files'), { params });
+      return response.data;
+    },
+
+    async processFiles(data: { 
+      fileIds?: string[]; 
+      path?: string; 
+      recursive?: boolean 
+    }) {
+      const response = await axios.post(getRoute('google/drive/process'), data);
+      return response.data;
+    }
+  },
+
   // Action Logs API
   actionLogs: {
     async getAll(params?: { limit?: number; offset?: number }) {

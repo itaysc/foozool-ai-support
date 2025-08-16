@@ -19,12 +19,9 @@ import {
   IconButton,
   Divider,
   Avatar,
-  ListItemAvatar,
   CircularProgress
 } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
 import InsightsIcon from '@mui/icons-material/Insights';
-import SettingsIcon from '@mui/icons-material/Settings';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import BusinessIcon from '@mui/icons-material/Business';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -32,6 +29,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoIcon from '@mui/icons-material/Info';
 import LogoutIcon from '@mui/icons-material/Logout';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useState } from 'react';
 import { useAuth } from '@/context/auth.context';
 import config from '@/config';
@@ -93,6 +91,7 @@ export const Navbar = observer(() => {
   const navigationItems = [
     { path: '/insights', label: 'AI Insights', icon: InsightsIcon },
     { path: '/performance', label: 'Performance', icon: AnalyticsIcon },
+    { path: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   const isActive = (path: string) => {

@@ -12,6 +12,7 @@ import {
 
 import ActionThresholdsSettings from './components/ActionThresholdsSettings';
 import CustomerTiersSettings from './components/CustomerTiersSettings';
+import GoogleSettings from './components/GoogleSettings';
 // All dashboard functionality removed
 
 interface TabPanelProps {
@@ -92,6 +93,7 @@ const Settings = () => {
           >
             <Tab label="Action Thresholds" {...a11yProps(0)} />
             <Tab label="Customer Tiers" {...a11yProps(1)} />
+            <Tab label="Google Drive" {...a11yProps(2)} />
           </Tabs>
         </Box>
 
@@ -101,6 +103,10 @@ const Settings = () => {
 
         <TabPanel value={tabValue} index={1}>
           <CustomerTiersSettings onShowSnackbar={showSnackbar} />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={2}>
+          <GoogleSettings onShowSnackbar={showSnackbar} />
         </TabPanel>
       </Paper>
 

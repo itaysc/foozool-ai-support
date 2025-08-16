@@ -25,7 +25,12 @@ router.get("/connect", authenticateJWT, (req, res) => {
     state: organizationId.toString(), // Pass organizationId for multi-tenant
   });
 
-  res.status(302).redirect(url);
+  // Return the URL instead of redirecting to avoid CORS issues
+  res.json({ 
+    success: true, 
+    redirectUrl: url,
+    message: "Google OAuth URL generated successfully"
+  });
 });
 
 // Step 2: Google redirects back here after consent

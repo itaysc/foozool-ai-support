@@ -1579,18 +1579,24 @@
     },
     {
       "name": "Google Integration",
+      "description": "Google OAuth v2 integration for Google Drive access. The OAuth flow works as follows:\n1. Call /connect endpoint with JWT token to get Google OAuth URL\n2. User completes OAuth consent in browser\n3. Google redirects to /callback endpoint\n4. After successful callback, you can use other Google Drive endpoints",
       "item": [
         {
           "name": "Connect to Google Drive",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
             "url": {
               "raw": "{{nodejs_base_url}}/api/v1/google/connect",
               "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "google", "connect"]
             },
-            "description": "Initiate OAuth connection to Google Drive."
+            "description": "Initiate OAuth connection to Google Drive. Requires JWT authentication. This will redirect to Google's OAuth consent screen."
           },
           "response": []
         },
@@ -1598,13 +1604,18 @@
           "name": "List Google Drive Files",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
             "url": {
               "raw": "{{nodejs_base_url}}/api/v1/google/drive/files",
               "host": ["{{nodejs_base_url}}"],
               "path": ["api", "v1", "google", "drive", "files"]
             },
-            "description": "List files from Google Drive using the service account."
+            "description": "List files from Google Drive using the service account. Requires JWT authentication."
           },
           "response": []
         },
