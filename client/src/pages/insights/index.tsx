@@ -11,7 +11,14 @@ import {
   Paper,
   Divider,
   IconButton,
-  Tooltip
+  Tooltip,
+  Tabs,
+  Tab,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Grid,
+  Stack
 } from '@mui/material';
 import { 
   TrendingUp, 
@@ -22,12 +29,43 @@ import {
   BugReport,
   Speed,
   Refresh,
-  AutorenewOutlined
+  AutorenewOutlined,
+  ExpandMore,
+  Dashboard,
+  Analytics,
+  Assessment,
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
 import { Prediction, PredictionSummary, AccuracyAnalysis } from '@/types/prediction';
 import { insightsService } from '@/services/insights-service';
 import { useAuth } from '@/context/auth.context';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`insights-tabpanel-${index}`}
+      aria-labelledby={`insights-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ pt: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
+}
 
 const InsightsPage: React.FC = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -37,6 +75,7 @@ const InsightsPage: React.FC = () => {
   const [accuracyAnalysis, setAccuracyAnalysis] = useState<AccuracyAnalysis | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [tabValue, setTabValue] = useState(0);
   const { organizationId } = useParams<{ organizationId: string }>();
   const { user } = useAuth();
 
@@ -187,6 +226,10 @@ const InsightsPage: React.FC = () => {
     }
   };
 
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
   if (loading) {
     return (
       <Box sx={{ 
@@ -212,20 +255,24 @@ const InsightsPage: React.FC = () => {
     <Box sx={{ 
       p: 3, 
       minHeight: '100vh', 
-      backgroundColor: '#f5f5f5',
+      backgroundColor: '#f8f9fa',
       '& @keyframes spin': {
         '0%': { transform: 'rotate(0deg)' },
         '100%': { transform: 'rotate(360deg)' }
       }
     }}>
-      {/* Header */}
+      {/* Header Section */}
       <Box sx={{ mb: 4 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
           <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+            <Typography variant="h3" gutterBottom sx={{ 
+              fontWeight: 'bold', 
+              color: '#1976d2',
+              fontSize: { xs: '1.75rem', md: '2.125rem' }
+            }}>
               AI-Powered Support Insights 🤖
             </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
+            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400 }}>
               Real-time analysis of support ticket patterns and emerging issues
             </Typography>
           </Box>
@@ -234,484 +281,434 @@ const InsightsPage: React.FC = () => {
               onClick={refreshInsights} 
               disabled={loading}
               sx={{ 
-                backgroundColor: '#f5f5f5',
-                '&:hover': { backgroundColor: '#e0e0e0' }
+                backgroundColor: '#ffffff',
+                boxShadow: 2,
+                '&:hover': { backgroundColor: '#f5f5f5' }
               }}
             >
               {loading ? <AutorenewOutlined sx={{ animation: 'spin 1s linear infinite' }} /> : <Refresh />}
             </IconButton>
           </Tooltip>
         </Box>
+        
+        {/* Organization Info */}
         {!organizationId && user?.organization && (
-          <Box sx={{ 
-            mt: 2, 
+          <Paper sx={{ 
             p: 2, 
             backgroundColor: '#e8f5e8', 
             borderRadius: 2,
-            border: '1px solid #4caf50'
+            border: '1px solid #4caf50',
+            boxShadow: 1
           }}>
-            <Typography variant="body2" color="success.dark" sx={{ fontWeight: 'medium' }}>
+            <Typography variant="body1" color="success.dark" sx={{ fontWeight: 500 }}>
               🏢 Viewing insights for your organization: {typeof user.organization === 'object' ? user.organization.name : user.organization}
             </Typography>
-          </Box>
+          </Paper>
         )}
         {!organizationId && !user?.organization && (
-          <Box sx={{ 
-            mt: 2, 
+          <Paper sx={{ 
             p: 2, 
             backgroundColor: '#fff3e0', 
             borderRadius: 2,
-            border: '1px solid #ff9800'
+            border: '1px solid #ff9800',
+            boxShadow: 1
           }}>
-            <Typography variant="body2" color="warning.dark" sx={{ fontWeight: 'medium' }}>
+            <Typography variant="body1" color="warning.dark" sx={{ fontWeight: 500 }}>
               ⚠️ No organization access available. Please ensure you are properly authenticated and have access to an organization.
             </Typography>
-          </Box>
+          </Paper>
         )}
       </Box>
 
-      {/* Summary Stats */}
+      {/* Quick Overview Cards */}
       {summary && (
-        <Box sx={{ 
-          display: 'grid', 
-          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
-          gap: 3,
-          mb: 4 
-        }}>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-              <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h5" gutterBottom sx={{ 
+            fontWeight: 'bold', 
+            color: '#1976d2', 
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
+          }}>
+            <Dashboard sx={{ fontSize: 28 }} />
+            Quick Overview
+          </Typography>
+          <Box sx={{ 
+            display: 'grid', 
+            gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
+            gap: 3 
+          }}>
+            <Paper sx={{ 
+              p: 3, 
+              textAlign: 'center',
+              height: '100%',
+              boxShadow: 2,
+              '&:hover': { boxShadow: 4 }
+            }}>
+              <Typography variant="h2" color="primary" sx={{ fontWeight: 'bold', mb: 1 }}>
                 {summary.totalInsights}
               </Typography>
-              <Tooltip title="Number of unique issue patterns or clusters that our AI has identified from analyzing support tickets. Each insight represents a recurring problem that affects multiple customers.">
-                <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Active Insights
+              </Typography>
+              <Tooltip title="Number of unique issue patterns identified by AI">
+                <InfoOutlined sx={{ mt: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
               </Tooltip>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Active Insights
-            </Typography>
-          </Paper>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-              <Typography variant="h3" color="secondary" sx={{ fontWeight: 'bold' }}>
+            </Paper>
+            <Paper sx={{ 
+              p: 3, 
+              textAlign: 'center',
+              height: '100%',
+              boxShadow: 2,
+              '&:hover': { boxShadow: 4 }
+            }}>
+              <Typography variant="h2" color="secondary" sx={{ fontWeight: 'bold', mb: 1 }}>
                 {summary.totalTicketVolume}
               </Typography>
-              <Tooltip title="Total number of support tickets that have been analyzed and grouped into these insights. This represents the volume of customer issues that contribute to the identified patterns.">
-                <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Total Tickets
+              </Typography>
+              <Tooltip title="Total tickets analyzed for insights">
+                <InfoOutlined sx={{ mt: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
               </Tooltip>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Total Tickets
-            </Typography>
-          </Paper>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-              <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
+            </Paper>
+            <Paper sx={{ 
+              p: 3, 
+              textAlign: 'center',
+              height: '100%',
+              boxShadow: 2,
+              '&:hover': { boxShadow: 4 }
+            }}>
+              <Typography variant="h2" color="success.main" sx={{ fontWeight: 'bold', mb: 1 }}>
                 {summary.avgGrowthRate.toFixed(1)}%
               </Typography>
-              <Tooltip title="Average percentage change in ticket volume across all insights. Positive values indicate increasing issue frequency, negative values suggest decreasing problems. This helps identify which issues are becoming more or less common over time.">
-                <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Avg Growth Rate
+              </Typography>
+              <Tooltip title="Average change in ticket volume across insights">
+                <InfoOutlined sx={{ mt: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
               </Tooltip>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Avg Growth Rate
-            </Typography>
-          </Paper>
-          <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-              <Typography variant="h3" color="error.main" sx={{ fontWeight: 'bold' }}>
+            </Paper>
+            <Paper sx={{ 
+              p: 3, 
+              textAlign: 'center',
+              height: '100%',
+              boxShadow: 2,
+              '&:hover': { boxShadow: 4 }
+            }}>
+              <Typography variant="h2" color="error.main" sx={{ fontWeight: 'bold', mb: 1 }}>
                 {summary.maxGrowthRate.toFixed(1)}%
               </Typography>
-              <Tooltip title="The highest growth rate among all insights, indicating which issue pattern is increasing most rapidly. High values suggest urgent problems that may require immediate attention and resources.">
-                <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
+              <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+                Max Growth Rate
+              </Typography>
+              <Tooltip title="Highest growth rate among all insights">
+                <InfoOutlined sx={{ mt: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
               </Tooltip>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Max Growth Rate
-            </Typography>
-          </Paper>
-        </Box>
-      )}
-
-      {/* Prediction Summary Stats */}
-      {predictionSummary && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
-            🔮 Real-Time Risk Predictions
-          </Typography>
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
-            gap: 3,
-            mb: 3 
-          }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
-                  {predictionSummary.totalPredictions}
-                </Typography>
-                <Tooltip title="Total number of support tickets that our AI has analyzed and made risk predictions for. Each prediction includes escalation risk and customer satisfaction (CSAT) risk assessments based on ticket content and patterns.">
-                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
-                </Tooltip>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Total Predictions
-              </Typography>
-            </Paper>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                <Typography variant="h3" color="error.main" sx={{ fontWeight: 'bold' }}>
-                  {predictionSummary.highEscalationRisk}
-                </Typography>
-                <Tooltip title="Number of tickets predicted to have high escalation risk. These are tickets that our AI has identified as likely to be escalated to higher support tiers due to complexity, urgency, or customer dissatisfaction. High escalation risk suggests issues that may require senior support staff or management attention.">
-                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
-                </Tooltip>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                High Escalation Risk
-              </Typography>
-            </Paper>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold' }}>
-                  {predictionSummary.highCSATRisk}
-                </Typography>
-                <Tooltip title="Number of tickets predicted to have high Customer Satisfaction (CSAT) risk. These are tickets where our AI predicts customers are likely to give low satisfaction scores. High CSAT risk indicates potential customer experience issues that could impact brand reputation and customer retention.">
-                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
-                </Tooltip>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                High CSAT Risk
-              </Typography>
-            </Paper>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
-                  {Math.round(predictionSummary.avgEscalationConfidence * 100)}%
-                </Typography>
-                <Tooltip title="Average confidence level of our AI's escalation risk predictions across all analyzed tickets. Higher confidence indicates more reliable predictions based on strong patterns in the data. This metric helps assess the reliability of our risk assessment system.">
-                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
-                </Tooltip>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Avg Confidence
-              </Typography>
             </Paper>
           </Box>
         </Box>
       )}
 
-      {/* Prediction Accuracy Analysis */}
-      {accuracyAnalysis && accuracyAnalysis.totalChecked > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', color: '#1976d2', mb: 2 }}>
-            🎯 AI Prediction Accuracy
-          </Typography>
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' },
-            gap: 3,
-            mb: 3 
-          }}>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
-                  {accuracyAnalysis.totalChecked}
-                </Typography>
-                <Tooltip title="Total number of support tickets that have been completed and evaluated against our AI predictions. These tickets have actual outcomes (escalation status, CSAT scores) that we can compare to our predictions to measure accuracy.">
-                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
-                </Tooltip>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Tickets Evaluated
-              </Typography>
-            </Paper>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
-                  {accuracyAnalysis.overallAccuracy.toFixed(1)}%
-                </Typography>
-                <Tooltip title="Overall accuracy percentage combining both escalation and CSAT predictions. This metric shows how well our AI system performs across all types of risk assessments, giving you confidence in the reliability of our predictions.">
-                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
-                </Tooltip>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Overall Accuracy
-              </Typography>
-            </Paper>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                <Typography variant="h3" color="info.main" sx={{ fontWeight: 'bold' }}>
-                  {accuracyAnalysis.escalationAccuracy.percentage.toFixed(1)}%
-                </Typography>
-                <Tooltip title="Accuracy percentage specifically for escalation risk predictions. This measures how often our AI correctly identifies which tickets will need escalation to higher support tiers. High accuracy helps with resource planning and staff allocation.">
-                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
-                </Tooltip>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Escalation Accuracy
-              </Typography>
-            </Paper>
-            <Paper sx={{ p: 2, textAlign: 'center' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 1 }}>
-                <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold' }}>
-                  {accuracyAnalysis.csatAccuracy.percentage.toFixed(1)}%
-                </Typography>
-                <Tooltip title="Accuracy percentage for Customer Satisfaction (CSAT) risk predictions. This measures how well our AI predicts which tickets will result in low customer satisfaction scores. High accuracy helps identify and address customer experience issues proactively.">
-                  <InfoOutlined sx={{ ml: 1, fontSize: 20, color: 'text.secondary', cursor: 'help' }} />
-                </Tooltip>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                CSAT Accuracy
-              </Typography>
-            </Paper>
-          </Box>
+      {/* Main Content Tabs */}
+      <Box sx={{ width: '100%' }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs 
+            value={tabValue} 
+            onChange={handleTabChange} 
+            aria-label="insights tabs"
+            sx={{
+              '& .MuiTab-root': {
+                minHeight: 64,
+                fontSize: '1rem',
+                fontWeight: 500,
+                textTransform: 'none'
+              }
+            }}
+          >
+            <Tab 
+              icon={<TrendingUpIcon />} 
+              label="Issue Insights" 
+              iconPosition="start"
+              sx={{ minWidth: 140 }}
+            />
+            <Tab 
+              icon={<Analytics />} 
+              label="Predictions" 
+              iconPosition="start"
+              sx={{ minWidth: 140 }}
+            />
 
-          {/* Confidence Breakdown */}
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-              📊 Accuracy by Confidence Level
-            </Typography>
-            <Box sx={{ 
-              display: 'grid', 
-              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr' },
-              gap: 2 
+          </Tabs>
+        </Box>
+
+        {/* Tab 1: Issue Insights */}
+        <TabPanel value={tabValue} index={0}>
+          <Box>
+            <Typography variant="h5" gutterBottom sx={{ 
+              fontWeight: 'bold', 
+              color: '#1976d2', 
+              mb: 3,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
             }}>
-              <Card sx={{ border: '2px solid #4caf50' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'success.main' }}>
-                      🔥 High Confidence (≥80%)
-                    </Typography>
-                    <Tooltip title="Predictions where our AI is 80% or more confident in the risk assessment. These predictions are based on strong patterns in the data and are most reliable for decision-making. High confidence predictions typically have the highest accuracy rates.">
-                      <InfoOutlined sx={{ ml: 1, fontSize: 18, color: 'text.secondary', cursor: 'help' }} />
-                    </Tooltip>
-                  </Box>
-                  <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold' }}>
-                    {accuracyAnalysis.confidenceBreakdown.high.percentage.toFixed(1)}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {accuracyAnalysis.confidenceBreakdown.high.correct} / {accuracyAnalysis.confidenceBreakdown.high.total} predictions correct
-                  </Typography>
-                </CardContent>
-              </Card>
-
-              <Card sx={{ border: '2px solid #ff9800' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
-                      ⚡ Medium Confidence (50-79%)
-                    </Typography>
-                    <Tooltip title="Predictions where our AI has moderate confidence (50-79%) in the risk assessment. These predictions are based on some patterns but may have less clear indicators. Medium confidence predictions help identify potential issues but should be reviewed with additional context.">
-                      <InfoOutlined sx={{ ml: 1, fontSize: 18, color: 'text.secondary', cursor: 'help' }} />
-                    </Tooltip>
-                  </Box>
-                  <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold' }}>
-                    {accuracyAnalysis.confidenceBreakdown.medium.percentage.toFixed(1)}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {accuracyAnalysis.confidenceBreakdown.medium.correct} / {accuracyAnalysis.confidenceBreakdown.medium.total} predictions correct
-                  </Typography>
-                </CardContent>
-              </Card>
-
-              <Card sx={{ border: '2px solid #f44336' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'error.main' }}>
-                      🤔 Low Confidence (&lt;50%)
-                    </Typography>
-                    <Tooltip title="Predictions where our AI has low confidence (less than 50%) in the risk assessment. These predictions have weak or unclear patterns and should be treated with caution. Low confidence predictions may indicate edge cases or insufficient data for reliable assessment.">
-                      <InfoOutlined sx={{ ml: 1, fontSize: 18, color: 'text.secondary', cursor: 'help' }} />
-                    </Tooltip>
-                  </Box>
-                  <Typography variant="h4" color="error.main" sx={{ fontWeight: 'bold' }}>
-                    {accuracyAnalysis.confidenceBreakdown.low.percentage.toFixed(1)}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {accuracyAnalysis.confidenceBreakdown.low.correct} / {accuracyAnalysis.confidenceBreakdown.low.total} predictions correct
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Box>
-          </Box>
-
-          {/* Insights about accuracy */}
-          <Box sx={{ mt: 3, p: 2, backgroundColor: '#f8f9fa', borderRadius: 2, border: '1px solid #e9ecef' }}>
-            <Typography variant="body1" sx={{ fontWeight: 'medium', mb: 1 }}>
-              💡 Key Insights:
+              <BugReport sx={{ fontSize: 28 }} />
+              Issue Pattern Analysis
             </Typography>
-            <Box component="ul" sx={{ ml: 2, mb: 0 }}>
-              {accuracyAnalysis.confidenceBreakdown.high.total > 0 && (
-                <Typography component="li" variant="body2" color="text.secondary">
-                  High confidence predictions are correct {accuracyAnalysis.confidenceBreakdown.high.percentage.toFixed(1)}% of the time
-                </Typography>
-              )}
-              {accuracyAnalysis.escalationAccuracy.total > 0 && (
-                <Typography component="li" variant="body2" color="text.secondary">
-                  Successfully predicted escalation risk in {accuracyAnalysis.escalationAccuracy.correct} out of {accuracyAnalysis.escalationAccuracy.total} closed tickets
-                </Typography>
-              )}
-              {accuracyAnalysis.csatAccuracy.total > 0 && (
-                <Typography component="li" variant="body2" color="text.secondary">
-                  Correctly assessed CSAT risk in {accuracyAnalysis.csatAccuracy.correct} out of {accuracyAnalysis.csatAccuracy.total} closed tickets
-                </Typography>
-              )}
-            </Box>
-          </Box>
-        </Box>
-      )}
-
-      {/* Recent Predictions */}
-      {predictions.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
-            📊 Recent Risk Predictions
-          </Typography>
-          <Box sx={{ 
-            display: 'grid', 
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
-            gap: 2 
-          }}>
-            {predictions.slice(0, 6).map((prediction, index) => (
-              <Card key={prediction.ticketId} sx={{ 
-                border: `2px solid ${getRiskColor(prediction.predictedEscalation.risk) === 'error' || getRiskColor(prediction.predictedCSAT.risk) === 'error' ? '#f44336' : '#e0e0e0'}`,
-                '&:hover': { boxShadow: 6 }
+            
+            {insights.length > 0 ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexWrap: 'wrap', 
+                gap: 3 
               }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                      Ticket #{prediction.ticketId}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {formatDate(prediction.createdAt)}
-                    </Typography>
+                {insights.map((insight) => (
+                  <Box key={insight.clusterId} sx={{ 
+                    flex: '1 1 300px',
+                    minWidth: { xs: '100%', md: '400px', lg: '350px' },
+                    maxWidth: { lg: '400px' }
+                  }}>
+                    <Card sx={{ 
+                      height: '100%',
+                      boxShadow: 3,
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: 6
+                      }
+                    }}>
+                      <CardContent sx={{ p: 3 }}>
+                        {/* Header */}
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                          <BugReport color="primary" sx={{ mr: 1.5, mt: 0.5, fontSize: 24 }} />
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="h6" sx={{ 
+                              fontWeight: 'bold',
+                              lineHeight: 1.3,
+                              mb: 1
+                            }}>
+                              {insight.issueDescription}
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        <Divider sx={{ mb: 2 }} />
+
+                        {/* Stats Row */}
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Timeline sx={{ mr: 1, fontSize: 20, color: 'text.secondary' }} />
+                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                              {insight.ticketVolume} tickets
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label={`${insight.growthRate > 0 ? '+' : ''}${insight.growthRate.toFixed(1)}%`}
+                            color={getTrendColor(insight.growthRate)}
+                            size="medium"
+                            icon={<Speed />}
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                        </Stack>
+
+                        {/* Trend Indicator */}
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                          <Tooltip title={`Growth Rate: ${insight.growthRate.toFixed(1)}%`}>
+                            <IconButton size="large" sx={{ color: getTrendColor(insight.growthRate) }}>
+                              {getTrendIcon(insight.growthRate)}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+
+                        {/* Dates */}
+                        <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1 }}>
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                            <strong>First Detected:</strong> {formatDate(insight.firstDetectedAt)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            <strong>Last Updated:</strong> {formatDate(insight.lastUpdatedAt)}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
                   </Box>
-                  
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        Escalation Risk
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip 
-                          label={`${getRiskIcon(prediction.predictedEscalation.risk)} ${prediction.predictedEscalation.risk}`}
-                          color={getRiskColor(prediction.predictedEscalation.risk) as any}
-                          size="small"
-                        />
-                        <Typography variant="caption">
-                          {Math.round(prediction.predictedEscalation.confidence * 100)}%
-                        </Typography>
-                      </Box>
-                    </Box>
-                    
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        CSAT Risk
-                      </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Chip 
-                          label={`${getRiskIcon(prediction.predictedCSAT.risk)} ${prediction.predictedCSAT.risk}`}
-                          color={getRiskColor(prediction.predictedCSAT.risk) as any}
-                          size="small"
-                        />
-                        <Typography variant="caption">
-                          {Math.round(prediction.predictedCSAT.confidence * 100)}%
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            ))}
+                ))}
+              </Box>
+            ) : (
+              <Paper sx={{ p: 6, textAlign: 'center', backgroundColor: '#ffffff' }}>
+                <InfoOutlined sx={{ fontSize: 80, color: 'text.secondary', mb: 3 }} />
+                <Typography variant="h5" gutterBottom color="text.secondary" sx={{ fontWeight: 500 }}>
+                  No New Insights
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  No new insights have been detected for this organization yet. 
+                  Check back later as our AI analyzes more support tickets.
+                </Typography>
+              </Paper>
+            )}
           </Box>
-        </Box>
-      )}
+        </TabPanel>
 
-      {/* Insights Cards */}
-      {insights.length > 0 ? (
-        <Box sx={{ 
-          display: 'grid', 
-          gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', lg: '1fr 1fr 1fr' },
-          gap: 3 
-        }}>
-          {insights.map((insight) => (
-            <Box key={insight.clusterId}>
-              <Card 
-                sx={{ 
-                  height: '100%',
-                  boxShadow: 3,
-                  transition: 'transform 0.2s ease-in-out',
-                  '&:hover': {
-                    transform: 'translateY(-4px)',
-                    boxShadow: 6
-                  }
-                }}
-              >
-                <CardContent>
-                  {/* Header with trend indicator */}
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                    <BugReport color="primary" sx={{ mr: 1, mt: 0.5 }} />
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="h6" sx={{ 
-                        fontWeight: 'bold',
-                        lineHeight: 1.3,
-                        mb: 1
+        {/* Tab 2: Predictions */}
+        <TabPanel value={tabValue} index={1}>
+          <Box>
+            <Typography variant="h5" gutterBottom sx={{ 
+              fontWeight: 'bold', 
+              color: '#1976d2', 
+              mb: 3,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Analytics sx={{ fontSize: 28 }} />
+              Risk Predictions
+            </Typography>
+
+            {/* Prediction Summary */}
+            {predictionSummary && (
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                  📊 Prediction Overview
+                </Typography>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: 3 
+                }}>
+                  <Box sx={{ 
+                    flex: '1 1 200px',
+                    minWidth: { xs: '100%', sm: '200px' }
+                  }}>
+                    <Paper sx={{ p: 2.5, textAlign: 'center', height: '100%', boxShadow: 2 }}>
+                      <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {predictionSummary.totalPredictions}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Total Predictions
+                      </Typography>
+                    </Paper>
+                  </Box>
+                  <Box sx={{ 
+                    flex: '1 1 200px',
+                    minWidth: { xs: '100%', sm: '200px' }
+                  }}>
+                    <Paper sx={{ p: 2.5, textAlign: 'center', height: '100%', boxShadow: 2 }}>
+                      <Typography variant="h3" color="error.main" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {predictionSummary.highEscalationRisk}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        High Escalation Risk
+                      </Typography>
+                    </Paper>
+                  </Box>
+                  <Box sx={{ 
+                    flex: '1 1 200px',
+                    minWidth: { xs: '100%', sm: '200px' }
+                  }}>
+                    <Paper sx={{ p: 2.5, textAlign: 'center', height: '100%', boxShadow: 2 }}>
+                      <Typography variant="h3" color="warning.main" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {predictionSummary.highCSATRisk}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        High CSAT Risk
+                      </Typography>
+                    </Paper>
+                  </Box>
+                  <Box sx={{ 
+                    flex: '1 1 200px',
+                    minWidth: { xs: '100%', sm: '200px' }
+                  }}>
+                    <Paper sx={{ p: 2.5, textAlign: 'center', height: '100%', boxShadow: 2 }}>
+                      <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {Math.round(predictionSummary.avgEscalationConfidence * 100)}%
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Avg Confidence
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+
+            {/* Recent Predictions */}
+            {predictions.length > 0 && (
+              <Box>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                  🔮 Recent Risk Predictions
+                </Typography>
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexWrap: 'wrap', 
+                  gap: 2 
+                }}>
+                  {predictions.slice(0, 6).map((prediction) => (
+                    <Box key={prediction.ticketId} sx={{ 
+                      flex: '1 1 300px',
+                      minWidth: { xs: '100%', md: '400px' }
+                    }}>
+                      <Card sx={{ 
+                        border: `2px solid ${getRiskColor(prediction.predictedEscalation.risk) === 'error' || getRiskColor(prediction.predictedCSAT.risk) === 'error' ? '#f44336' : '#e0e0e0'}`,
+                        '&:hover': { boxShadow: 4 }
                       }}>
-                        {insight.issueDescription}
-                      </Typography>
+                        <CardContent sx={{ p: 2.5 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                              Ticket #{prediction.ticketId}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDate(prediction.createdAt)}
+                            </Typography>
+                          </Box>
+                          
+                          <Box sx={{ 
+                            display: 'flex', 
+                            gap: 2 
+                          }}>
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Escalation Risk
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Chip 
+                                  label={`${getRiskIcon(prediction.predictedEscalation.risk)} ${prediction.predictedEscalation.risk}`}
+                                  color={getRiskColor(prediction.predictedEscalation.risk) as any}
+                                  size="small"
+                                />
+                                <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                                  {Math.round(prediction.predictedEscalation.confidence * 100)}%
+                                </Typography>
+                              </Box>
+                            </Box>
+                            
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                CSAT Risk
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Chip 
+                                  label={`${getRiskIcon(prediction.predictedCSAT.risk)} ${prediction.predictedCSAT.risk}`}
+                                  color={getRiskColor(prediction.predictedCSAT.risk) as any}
+                                  size="small"
+                                />
+                                <Typography variant="caption" sx={{ fontWeight: 500 }}>
+                                  {Math.round(prediction.predictedCSAT.confidence * 100)}%
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </Box>
+                        </CardContent>
+                      </Card>
                     </Box>
-                    <Tooltip title={`Growth Rate: ${insight.growthRate.toFixed(1)}%`}>
-                      <IconButton size="small">
-                        {getTrendIcon(insight.growthRate)}
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
-
-                  <Divider sx={{ mb: 2 }} />
-
-                  {/* Stats */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                      <Timeline sx={{ mr: 1, fontSize: 20, color: 'text.secondary' }} />
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>{insight.ticketVolume}</strong> tickets
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={`${insight.growthRate > 0 ? '+' : ''}${insight.growthRate.toFixed(1)}%`}
-                      color={getTrendColor(insight.growthRate)}
-                      size="small"
-                      icon={<Speed />}
-                    />
-                  </Box>
-
-                  {/* Dates */}
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      <strong>First Detected:</strong> {formatDate(insight.firstDetectedAt)}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">
-                      <strong>Last Updated:</strong> {formatDate(insight.lastUpdatedAt)}
-                    </Typography>
-                  </Box>
-                </CardContent>
-              </Card>
-            </Box>
-          ))}
-        </Box>
-      ) : (
-        <Paper sx={{ p: 4, textAlign: 'center' }}>
-          <InfoOutlined sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-          <Typography variant="h5" gutterBottom color="text.secondary">
-            No New Insights
-      </Typography>
-      <Typography variant="body1" color="text.secondary">
-            No new insights have been detected for this organization yet. 
-            Check back later as our AI analyzes more support tickets.
-      </Typography>
-        </Paper>
-      )}
+                  ))}
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </TabPanel>
+      </Box>
     </Box>
   );
 };
