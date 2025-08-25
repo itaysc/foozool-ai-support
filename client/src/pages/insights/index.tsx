@@ -270,7 +270,7 @@ const InsightsPage: React.FC = () => {
               color: '#1976d2',
               fontSize: { xs: '1.75rem', md: '2.125rem' }
             }}>
-              AI-Powered Support Insights 🤖
+              Insights 🤖
             </Typography>
             <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400 }}>
               Real-time analysis of support ticket patterns and emerging issues
@@ -462,16 +462,20 @@ const InsightsPage: React.FC = () => {
               <Box sx={{ 
                 display: 'flex', 
                 flexWrap: 'wrap', 
-                gap: 3 
+                gap: 3,
+                alignItems: 'stretch' // Ensure all cards stretch to same height
               }}>
                 {insights.map((insight) => (
                   <Box key={insight.clusterId} sx={{ 
                     flex: '1 1 300px',
                     minWidth: { xs: '100%', md: '400px', lg: '350px' },
-                    maxWidth: { lg: '400px' }
+                    maxWidth: { lg: '400px' },
+                    display: 'flex' // Make the box a flex container
                   }}>
                     <Card sx={{ 
+                      width: '100%',
                       height: '100%',
+                      minHeight: '400px', // Ensure consistent card height
                       boxShadow: 3,
                       transition: 'all 0.2s ease-in-out',
                       '&:hover': {
@@ -481,8 +485,13 @@ const InsightsPage: React.FC = () => {
                     }}>
                       <CardContent sx={{ p: 3 }}>
                         {/* Header */}
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                          <BugReport color="primary" sx={{ mr: 1.5, mt: 0.5, fontSize: 24 }} />
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          mb: 2,
+                          minHeight: '80px' // Fixed height for consistent alignment
+                        }}>
+                          <BugReport color="primary" sx={{ mr: 1.5, fontSize: 24 }} />
                           <Box sx={{ flexGrow: 1 }}>
                             <Typography variant="h6" sx={{ 
                               fontWeight: 'bold',

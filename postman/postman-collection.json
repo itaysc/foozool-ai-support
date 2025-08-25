@@ -35,6 +35,12 @@
       "key": "organization_id",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "anomaly_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of an anomaly to test with (get from Get All Anomalies response)"
     }
   ],
   "auth": {
@@ -533,7 +539,7 @@
             "description": "Get default dashboard settings"
           },
           "response": []
-        }
+
       ]
     },
     {
@@ -819,10 +825,211 @@
             "description": "Generate insights for an organization"
           },
           "response": []
+            },
+    {
+      "name": "🚨 Anomaly Detection",
+      "item": [
+        {
+          "name": "Get All Anomalies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/anomalies?status=active&limit=50&offset=0&hours=24",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "anomalies"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Filter by status: active, acknowledged, resolved, false_positive, or 'all'"
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "Filter by type: volume, sentiment, or leave empty for all"
+                },
+                {
+                  "key": "severity",
+                  "value": "",
+                  "description": "Filter by severity: low, medium, high, critical, or leave empty for all"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Number of anomalies to return (max 100)"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of anomalies to skip for pagination"
+                },
+                {
+                  "key": "hours",
+                  "value": "24",
+                  "description": "Time window in hours (e.g., 24, 48, 168) or 'all' for no time filter"
+                }
+              ]
+            },
+            "description": "Get all anomalies for the authenticated user's organization with filtering and pagination"
+          },
+          "response": []
         },
         {
-          "name": "Dashboard",
-          "item": [
+          "name": "Get Anomaly Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/anomalies/stats?hours=24",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "anomalies", "stats"],
+              "query": [
+                {
+                  "key": "hours",
+                  "value": "24",
+                  "description": "Time window in hours for statistics (default: 24)"
+                }
+              ]
+            },
+            "description": "Get anomaly statistics including total active, by severity, by type, and recent activity"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Anomaly by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/anomalies/{{anomaly_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "anomalies", "{{anomaly_id}}"]
+            },
+            "description": "Get a specific anomaly by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Acknowledge Anomaly",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Investigating this anomaly\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/anomalies/{{anomaly_id}}/acknowledge",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "anomalies", "{{anomaly_id}}", "acknowledge"]
+            },
+            "description": "Acknowledge an anomaly and optionally add notes"
+          },
+          "response": []
+        },
+        {
+          "name": "Resolve Anomaly",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Issue has been resolved\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/anomalies/{{anomaly_id}}/resolve",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "anomalies", "{{anomaly_id}}", "resolve"]
+            },
+            "description": "Mark an anomaly as resolved and optionally add resolution notes"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Anomaly as False Positive",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"This was a false positive - no action needed\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/anomalies/{{anomaly_id}}/false-positive",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "anomalies", "{{anomaly_id}}", "false-positive"]
+            },
+            "description": "Mark an anomaly as a false positive and optionally add notes"
+          },
+          "response": []
+        },
+        {
+          "name": "Trigger Anomaly Detection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/anomalies/detect",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "anomalies", "detect"]
+            },
+            "description": "Manually trigger anomaly detection for the authenticated user's organization"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
             {
               "name": "Get Dashboard Metrics",
               "request": {

@@ -57,6 +57,9 @@ This repository contains a comprehensive Postman collection for testing the Fooz
 - **Update Dashboard Settings**: Update dashboard configuration
 - **Reset Dashboard Settings**: Reset to default settings
 - **Get Default Dashboard Settings**: Get default configuration
+- **Get Anomaly Detection Settings**: Retrieve organization anomaly detection settings
+- **Update Anomaly Detection Settings**: Update anomaly detection configuration
+- **Reset Anomaly Detection Settings**: Reset anomaly detection to defaults
 
 ### 🏥 Health Checks
 - **Node.js Health**: Multiple health check endpoints
@@ -86,6 +89,101 @@ This repository contains a comprehensive Postman collection for testing the Fooz
 
 ### 🔧 Model Training
 - **Train Zendesk Model**: Train models with Zendesk data
+
+### 🚨 Anomaly Detection
+- **Get All Anomalies**: Retrieve anomalies with filtering and pagination
+- **Get Anomaly Statistics**: Get anomaly statistics and metrics
+- **Get Anomaly by ID**: Retrieve a specific anomaly
+- **Acknowledge Anomaly**: Mark an anomaly as acknowledged
+- **Resolve Anomaly**: Mark an anomaly as resolved
+- **Mark as False Positive**: Mark an anomaly as false positive
+- **Trigger Detection**: Manually trigger anomaly detection
+
+## 🚨 Anomaly Detection Details
+
+The anomaly detection system automatically identifies unusual patterns in ticket volume and customer sentiment. It uses statistical methods and machine learning to detect anomalies in real-time.
+
+### Get All Anomalies
+- **Endpoint**: `GET /api/v1/anomalies`
+- **Description**: Retrieve anomalies with filtering and pagination
+- **Query Parameters**:
+  - `status`: Filter by status (active, acknowledged, resolved, false_positive, all)
+  - `type`: Filter by type (volume, sentiment)
+  - `severity`: Filter by severity (low, medium, high, critical)
+  - `limit`: Number of results (max 100)
+  - `offset`: Pagination offset
+  - `hours`: Time window in hours (24, 48, 168) or 'all'
+- **Response**: Paginated list of anomalies with metadata
+
+### Get Anomaly Statistics
+- **Endpoint**: `GET /api/v1/anomalies/stats`
+- **Description**: Get anomaly statistics and metrics
+- **Query Parameters**:
+  - `hours`: Time window for statistics (default: 24)
+- **Response**: Statistics including total active, by severity, by type, and recent activity
+
+### Get Anomaly by ID
+- **Endpoint**: `GET /api/v1/anomalies/:id`
+- **Description**: Retrieve a specific anomaly by ID
+- **Path Parameters**:
+  - `id`: Anomaly ID
+- **Response**: Detailed anomaly information
+
+### Acknowledge Anomaly
+- **Endpoint**: `POST /api/v1/anomalies/:id/acknowledge`
+- **Description**: Mark an anomaly as acknowledged
+- **Path Parameters**:
+  - `id`: Anomaly ID
+- **Body**: Optional notes about acknowledgment
+- **Response**: Updated anomaly with acknowledgment details
+
+### Resolve Anomaly
+- **Endpoint**: `POST /api/v1/anomalies/:id/resolve`
+- **Description**: Mark an anomaly as resolved
+- **Path Parameters**:
+  - `id`: Anomaly ID
+- **Body**: Optional resolution notes
+- **Response**: Updated anomaly with resolution details
+
+### Mark as False Positive
+- **Endpoint**: `POST /api/v1/anomalies/:id/false-positive`
+- **Description**: Mark an anomaly as false positive
+- **Path Parameters**:
+  - `id`: Anomaly ID
+- **Body**: Optional notes explaining why it's a false positive
+- **Response**: Updated anomaly marked as false positive
+
+### Trigger Detection
+- **Endpoint**: `POST /api/v1/anomalies/detect`
+- **Description**: Manually trigger anomaly detection for the organization
+- **Response**: Confirmation that detection has started
+- **Note**: Detection runs in the background; check logs for progress
+
+### Anomaly Types
+
+#### Volume Anomalies
+- **Detection**: Statistical analysis of ticket volume patterns
+- **Metrics**: Current vs. expected volume, Z-score, confidence
+- **Triggers**: Unusual spikes or drops in ticket creation
+
+#### Sentiment Anomalies
+- **Detection**: Analysis of customer sentiment trends
+- **Metrics**: Sentiment shifts, volatility changes, baseline comparisons
+- **Triggers**: Significant changes in customer satisfaction or sentiment patterns
+
+### Anomaly Lifecycle
+1. **Active**: Newly detected anomaly requiring attention
+2. **Acknowledged**: Anomaly has been reviewed and is being investigated
+3. **Resolved**: Issue has been fixed or anomaly is no longer relevant
+4. **False Positive**: Anomaly was incorrectly flagged and no action is needed
+
+### Testing Workflow
+1. Use **Get All Anomalies** to see existing anomalies
+2. Copy an anomaly ID from the response
+3. Set the `anomaly_id` environment variable
+4. Test acknowledgment, resolution, and false positive marking
+5. Use **Trigger Detection** to manually run anomaly detection
+6. Check **Get Anomaly Statistics** to see the impact of your actions
 
 ### 🔗 Webhooks
 - **Zendesk Webhook**: Handle Zendesk webhook events
@@ -125,6 +223,7 @@ The collection uses the following environment variables:
 | `python_base_url` | Python ML service base URL | `https://ml-service.up.railway.app` |
 | `auth_token` | JWT authentication token | `eyJhbGciOiJIUzI1NiIs...` |
 | `organization_id` | Organization ID for dashboard settings | `507f1f77bcf86cd799439011` |
+| `anomaly_id` | Anomaly ID for testing anomaly endpoints | `507f1f77bcf86cd799439012` |
 | `environment` | Current environment name | `production` |
 
 ### Authentication
@@ -218,6 +317,60 @@ POST /api/v1/autonomous-ai/execute-action
 }
 ```
 
+## ⚙️ Anomaly Detection Settings
+
+The anomaly detection system can be customized per organization through dedicated settings endpoints. These settings control the sensitivity and behavior of the anomaly detection algorithms.
+
+### Get Anomaly Detection Settings
+```json
+GET /api/v1/organizations/{organizationId}/anomaly-settings
+```
+**Response**: Current anomaly detection configuration for the organization
+
+### Update Anomaly Detection Settings
+```json
+PUT /api/v1/organizations/{organizationId}/anomaly-settings
+{
+  "volumeThreshold": 2.0,
+  "sentimentThreshold": 0.2,
+  "timeWindows": {
+    "short": 3600000,    // 1 hour in milliseconds
+    "medium": 21600000,  // 6 hours in milliseconds
+    "long": 86400000     // 24 hours in milliseconds
+  },
+  "minDataPoints": 5,
+  "enabled": true
+}
+```
+
+**Parameters**:
+- `volumeThreshold`: Standard deviations for volume anomalies (0.5 - 10.0)
+- `sentimentThreshold`: Threshold for sentiment shifts (0.1 - 2.0)
+- `timeWindows`: Time windows for analysis in milliseconds
+- `minDataPoints`: Minimum data points required for analysis (3 - 50)
+- `enabled`: Whether anomaly detection is active
+
+### Reset Anomaly Detection Settings
+```json
+POST /api/v1/organizations/{organizationId}/anomaly-settings/reset
+```
+**Response**: Settings reset to default values
+
+### Default Settings
+```json
+{
+  "volumeThreshold": 2.5,
+  "sentimentThreshold": 0.3,
+  "timeWindows": {
+    "short": 3600000,    // 1 hour
+    "medium": 21600000,  // 6 hours
+    "long": 86400000     // 24 hours
+  },
+  "minDataPoints": 10,
+  "enabled": true
+}
+```
+
 ## 🧪 Testing Workflow
 
 ### 1. Health Check
@@ -233,6 +386,7 @@ Get an authentication token to access protected endpoints.
 - Test autonomous AI features
 - Configure dashboard settings
 - Test analytics with organization settings
+- Configure anomaly detection settings (via organization endpoints)
 
 ### 4. Test Advanced Features
 - Model training

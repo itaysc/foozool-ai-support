@@ -1,6 +1,6 @@
 export { IUser } from './user';
 export { IResponse } from './response';
-export { IOrganization } from './organization';
+export { IOrganization, AnomalyDetectionSettings } from './organization';
 export { ILLMUsage } from './LLMUsage';
 export { ILLMPrices } from './LLMPrice';
 export { ITicket } from './ticket';

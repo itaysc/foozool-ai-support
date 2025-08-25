@@ -20,3 +20,4 @@ export * from './agentSuggestion';
 export * from './esTicket';
 export * from './region';
 export * from './thresholdMiss';
+export * from './anomaly';

@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import { IOrganization } from '../types';
 
 // Dashboard settings schema removed with insights functionality
@@ -27,6 +27,17 @@ const OrganizationSchema: Schema = new Schema<IOrganization>({
   },
   crmType: String, // The CRM type this organization uses
   crmConfig: Schema.Types.Mixed, // CRM-specific configuration
+  anomalySettings: {
+    volumeThreshold: { type: Number, default: 2.5 },
+    sentimentThreshold: { type: Number, default: 0.3 },
+    timeWindows: {
+      short: { type: Number, default: 60 * 60 * 1000 }, // 1 hour
+      medium: { type: Number, default: 6 * 60 * 60 * 1000 }, // 6 hours
+      long: { type: Number, default: 24 * 60 * 60 * 1000 }, // 24 hours
+    },
+    minDataPoints: { type: Number, default: 10 },
+    enabled: { type: Boolean, default: true },
+  },
   // dashboardSettings removed with insights functionality
 }, {
   timestamps: true,

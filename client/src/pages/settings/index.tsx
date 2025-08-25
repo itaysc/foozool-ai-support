@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Box,
   Tabs,
@@ -13,6 +14,7 @@ import {
 import ActionThresholdsSettings from './components/ActionThresholdsSettings';
 import CustomerTiersSettings from './components/CustomerTiersSettings';
 import GoogleSettings from './components/GoogleSettings';
+import AnomalySettings from './components/AnomalySettings';
 // All dashboard functionality removed
 
 interface TabPanelProps {
@@ -49,6 +51,7 @@ function a11yProps(index: number) {
 }
 
 const Settings = () => {
+  const [searchParams] = useSearchParams();
   const [tabValue, setTabValue] = useState(0);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -59,6 +62,14 @@ const Settings = () => {
     message: '',
     severity: 'info'
   });
+
+  // Handle URL parameter for tab selection
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'anomalies') {
+      setTabValue(3); // Anomaly Detection tab
+    }
+  }, [searchParams]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -94,6 +105,7 @@ const Settings = () => {
             <Tab label="Action Thresholds" {...a11yProps(0)} />
             <Tab label="Customer Tiers" {...a11yProps(1)} />
             <Tab label="Google Drive" {...a11yProps(2)} />
+            <Tab label="Anomaly Detection" {...a11yProps(3)} />
           </Tabs>
         </Box>
 
@@ -107,6 +119,10 @@ const Settings = () => {
 
         <TabPanel value={tabValue} index={2}>
           <GoogleSettings onShowSnackbar={showSnackbar} />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={3}>
+          <AnomalySettings onShowSnackbar={showSnackbar} />
         </TabPanel>
       </Paper>
 

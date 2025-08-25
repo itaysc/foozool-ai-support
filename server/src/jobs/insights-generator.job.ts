@@ -3,6 +3,8 @@ import QdrantService from '../qdrant/service';
 import { getSummaryFromVector, calculateGrowthRate } from '../services/insights/summary.service';
 import { InsightModel } from '../schemas/insights.schema';
 import { OrganizationModel } from '../schemas/organization.schema';
+import AnomalyDetectionService from '../services/anomaly-detection';
+import AnomalyService from '../services/anomaly-detection/anomaly.service';
 import mongoose from 'mongoose';
 
 /**
@@ -29,6 +31,8 @@ export const generateInsightsJob = async (targetOrganizationId?: string, userId?
     }
 
     const qdrantService = new QdrantService();
+    const anomalyDetectionService = new AnomalyDetectionService();
+    const anomalyService = new AnomalyService();
     
     for (const organization of organizations) {
       const organizationId = organization._id;
@@ -38,7 +42,7 @@ export const generateInsightsJob = async (targetOrganizationId?: string, userId?
         // 1. Fetch recent vectors for the specific organization (last 24 hours)
         const recentVectors = await qdrantService.getRecentVectors({
           organizationId: organizationId.toString(),
-          createdAfter: new Date(Date.now() - 24000000 * 60 * 60 * 1000), // Last 24 hours
+          createdAfter: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
           limit: 500 // Limit to avoid processing too many vectors
         });
 
@@ -120,11 +124,33 @@ export const generateInsightsJob = async (targetOrganizationId?: string, userId?
           }
         }
 
-        // 5. Clean up old insights (older than 30 days)
+        // 5. Run anomaly detection for this organization
+        console.log(`🔍 Running anomaly detection for organization ${organization.name}...`);
+        
+        try {
+          // Detect volume anomalies
+          const volumeAnomalies = await anomalyDetectionService.detectVolumeAnomalies(organizationId.toString());
+          
+          // Detect sentiment anomalies
+          const sentimentAnomalies = await anomalyDetectionService.detectSentimentAnomalies(organizationId.toString());
+          
+          // Store detected anomalies using the service
+          const allAnomalies = [...volumeAnomalies, ...sentimentAnomalies];
+          const newAnomaliesStored = await anomalyService.storeAnomalies(allAnomalies, organizationId.toString());
+
+          console.log(`✅ Anomaly detection completed for organization ${organization.name}. Stored ${newAnomaliesStored} new anomalies.`);
+        } catch (anomalyError) {
+          console.error(`Error in anomaly detection for organization ${organization.name}:`, anomalyError);
+        }
+
+        // 6. Clean up old insights (older than 30 days)
         await InsightModel.deleteMany({
           organizationId,
           firstDetectedAt: { $lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
         });
+
+        // 7. Clean up old anomalies (older than 7 days)
+        await anomalyService.cleanupOldAnomalies(7);
 
       } catch (orgError) {
         console.error(`Error processing organization ${organization.name}:`, orgError);
