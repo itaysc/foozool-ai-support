@@ -94,6 +94,15 @@ export const anomaliesService = {
   async triggerAnomalyDetection(): Promise<{ status: number; payload: { message: string; note: string } }> {
     const response = await axios.post(getRoute('anomalies/detect'));
     return response.data;
+  },
+
+  /**
+   * Manually trigger anomaly detection from the beginning of time
+   * This is useful for development/testing to find historical anomalies
+   */
+  async triggerAnomalyDetectionFromBeginning(): Promise<{ status: number; payload: { message: string; note: string } }> {
+    const response = await axios.post(getRoute('anomalies/detect-from-beginning'));
+    return response.data;
   }
 };
 

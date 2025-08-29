@@ -4,6 +4,7 @@ import {
   AnomalySettingsResponse, 
   UpdateAnomalySettingsRequest 
 } from '../types/anomaly';
+import { timeStringToMs, msToTimeString } from '@/utils/time-format';
 
 
 
@@ -86,54 +87,13 @@ export const anomalySettingsService = {
    * Convert milliseconds to human-readable time format
    */
   formatTimeWindow(milliseconds: number): string {
-    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
-    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours > 0) {
-      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-    } else {
-      return `${minutes}m`;
-    }
+    return msToTimeString(milliseconds);
   },
 
   /**
    * Convert human-readable time format to milliseconds
    */
   parseTimeWindow(timeString: string): number {
-    if (!timeString || typeof timeString !== 'string') {
-      return 0;
-    }
-    
-    // Remove extra spaces and normalize
-    const normalized = timeString.trim().toLowerCase();
-    
-    // Handle different formats: "1h 30m", "90m", "1.5h", "90", etc.
-    let hours = 0;
-    let minutes = 0;
-    
-    // Extract hours (supports decimal: 1.5h = 1 hour 30 minutes)
-    const hoursMatch = normalized.match(/(\d+(?:\.\d+)?)h/);
-    if (hoursMatch) {
-      const hourValue = parseFloat(hoursMatch[1]);
-      hours = Math.floor(hourValue);
-      minutes = Math.round((hourValue - hours) * 60);
-    }
-    
-    // Extract minutes
-    const minutesMatch = normalized.match(/(\d+)m/);
-    if (minutesMatch) {
-      minutes += parseInt(minutesMatch[1]);
-    }
-    
-    // Handle pure number input (assume minutes)
-    if (!hoursMatch && !minutesMatch && /^\d+$/.test(normalized)) {
-      minutes = parseInt(normalized);
-    }
-    
-    // Convert to milliseconds
-    const totalMs = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000);
-    
-    // Ensure minimum value (1 minute)
-    return Math.max(totalMs, 60 * 1000);
+    return timeStringToMs(timeString);
   }
 };

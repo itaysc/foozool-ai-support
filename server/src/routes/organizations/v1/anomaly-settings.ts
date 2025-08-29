@@ -13,9 +13,9 @@ const updateAnomalySettingsSchema = z.object({
   volumeThreshold: z.number().min(0.5).max(10).optional(),
   sentimentThreshold: z.number().min(0.1).max(2.0).optional(),
   timeWindows: z.object({
-    short: z.number().min(15 * 60 * 1000).max(2 * 60 * 60 * 1000).optional(), // 15 min to 2 hours
-    medium: z.number().min(2 * 60 * 60 * 1000).max(12 * 60 * 60 * 1000).optional(), // 2 to 12 hours
-    long: z.number().min(12 * 60 * 60 * 1000).max(72 * 60 * 60 * 1000).optional(), // 12 to 72 hours
+    short: z.number().min(15 * 60 * 1000).max(4 * 60 * 60 * 1000).optional(), // 15 min to 4 hours
+    medium: z.number().min(2 * 60 * 60 * 1000).max(24 * 60 * 60 * 1000).optional(), // 2 to 24 hours
+    long: z.number().min(12 * 60 * 60 * 1000).max(14 * 24 * 60 * 60 * 1000).optional(), // 12 hours to 14 days
   }).optional(),
   minDataPoints: z.number().min(3).max(50).optional(),
   enabled: z.boolean().optional(),

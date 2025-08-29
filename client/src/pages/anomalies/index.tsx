@@ -42,11 +42,13 @@ import {
   Info,
   Schedule,
   Speed,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  History
 } from '@mui/icons-material';
 import { Anomaly, AnomalyFilter, AnomalyStats } from '@/types/anomaly';
 import { anomaliesService } from '@/services/anomalies-service';
 import { useAuth } from '@/context/auth.context';
+import config from '@/config';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -229,6 +231,36 @@ const AnomaliesPage: React.FC = () => {
     }
   };
 
+  const triggerDetectionFromBeginning = async () => {
+    try {
+      setSnackbar({
+        open: true,
+        message: 'Starting anomaly detection from beginning of time...',
+        severity: 'info'
+      });
+      
+      await anomaliesService.triggerAnomalyDetectionFromBeginning();
+      
+      setSnackbar({
+        open: true,
+        message: 'Anomaly detection from beginning started successfully. This may take a while...',
+        severity: 'success'
+      });
+      
+      // Reload data after a longer delay since this is a more intensive operation
+      setTimeout(() => {
+        loadAnomalies();
+        loadStats();
+      }, 10000);
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err.message || 'Failed to trigger detection from beginning',
+        severity: 'error'
+      });
+    }
+  };
+
   const handleAction = async () => {
     if (!actionDialog.anomaly || !actionDialog.type) return;
 
@@ -342,6 +374,18 @@ const AnomaliesPage: React.FC = () => {
           >
             Trigger Detection
           </Button>
+          {/* Only show this button in non-production environments */}
+          {config.environment !== 'production' && (
+            <Button
+              variant="contained"
+              startIcon={<History />}
+              onClick={triggerDetectionFromBeginning}
+              sx={{ bgcolor: 'warning.main' }}
+              title="Trigger anomaly detection from the beginning of time (development only)"
+            >
+              Detect from Beginning
+            </Button>
+          )}
         </Box>
       </Box>
 

@@ -154,6 +154,78 @@ export class AnomalyDetectionService {
   }
 
   /**
+   * Detect volume anomalies from the beginning of time for a specific organization
+   * This is useful for finding historical anomalies or testing the system
+   */
+  async detectVolumeAnomaliesFromBeginning(organizationId: string): Promise<VolumeAnomaly[]> {
+    try {
+      console.log(`🔍 Detecting volume anomalies from beginning of time for organization ${organizationId}`);
+
+      // Check if anomaly detection is enabled for this organization
+      const settings = await this.getOrganizationSettings(organizationId);
+      if (!settings.enabled) {
+        console.log(`⚠️ Anomaly detection is disabled for organization ${organizationId}`);
+        return [];
+      }
+
+      const anomalies: VolumeAnomaly[] = [];
+
+      // Check different time windows but start from the beginning of time
+      for (const [windowName, windowMs] of Object.entries(settings.timeWindows)) {
+        const windowAnomalies = await this.detectVolumeAnomaliesForWindowFromBeginning(
+          organizationId,
+          windowMs as number,
+          windowName,
+          settings
+        );
+        anomalies.push(...windowAnomalies);
+      }
+
+      console.log(`✅ Detected ${anomalies.length} volume anomalies from beginning of time for organization ${organizationId}`);
+      return anomalies;
+    } catch (error) {
+      console.error(`❌ Error detecting volume anomalies from beginning of time for organization ${organizationId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Detect sentiment anomalies from the beginning of time for a specific organization
+   * This is useful for finding historical anomalies or testing the system
+   */
+  async detectSentimentAnomaliesFromBeginning(organizationId: string): Promise<SentimentAnomaly[]> {
+    try {
+      console.log(`🔍 Detecting sentiment anomalies from beginning of time for organization ${organizationId}`);
+
+      // Check if anomaly detection is enabled for this organization
+      const settings = await this.getOrganizationSettings(organizationId);
+      if (!settings.enabled) {
+        console.log(`⚠️ Anomaly detection is disabled for organization ${organizationId}`);
+        return [];
+      }
+
+      const anomalies: SentimentAnomaly[] = [];
+
+      // Check different time windows but start from the beginning of time
+      for (const [windowName, windowMs] of Object.entries(settings.timeWindows)) {
+        const windowAnomalies = await this.detectSentimentAnomaliesForWindowFromBeginning(
+          organizationId,
+          windowMs as number,
+          windowName,
+          settings
+        );
+        anomalies.push(...windowAnomalies);
+      }
+
+      console.log(`✅ Detected ${anomalies.length} sentiment anomalies from beginning of time for organization ${organizationId}`);
+      return anomalies;
+    } catch (error) {
+      console.error(`❌ Error detecting sentiment anomalies from beginning of time for organization ${organizationId}:`, error);
+      return [];
+    }
+  }
+
+  /**
    * Comprehensive anomaly detection for all organizations
    */
   async detectAllAnomalies(): Promise<{
@@ -386,6 +458,214 @@ export class AnomalyDetectionService {
       return sentimentData;
     } catch (error) {
       console.error('Error getting sentiment data:', error);
+      return [];
+    }
+  }
+
+  private async detectVolumeAnomaliesForWindowFromBeginning(
+    organizationId: string,
+    windowMs: number,
+    windowName: string,
+    settings: AnomalyDetectionSettings
+  ): Promise<VolumeAnomaly[]> {
+    try {
+      const now = new Date();
+      // Start from year 2000 to get all historical data
+      const windowStart = new Date('2000-01-01T00:00:00.000Z');
+      
+      // Get ticket volume data from the beginning of time
+      const volumeData = await this.getTicketVolumeDataFromBeginning(organizationId, windowStart, now);
+      
+      if (volumeData.length < settings.minDataPoints) {
+        console.log(`⚠️ Not enough data points (${volumeData.length}) for ${windowName} window analysis. Need at least ${settings.minDataPoints}.`);
+        return []; // Not enough data for analysis
+      }
+
+      const anomalies: VolumeAnomaly[] = [];
+      const volumes = volumeData.map(d => d.volume);
+      
+      // Calculate statistical measures
+      const mean = volumes.reduce((sum, v) => sum + v, 0) / volumes.length;
+      const stdDev = Math.sqrt(
+        volumes.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / volumes.length
+      );
+
+      if (stdDev === 0) {
+        console.log(`⚠️ No variation in volume data for ${windowName} window.`);
+        return []; // No variation in data
+      }
+
+      // Check for anomalies in all data points (not just recent ones)
+      for (const dataPoint of volumeData) {
+        const zScore = this.calculateZScore(dataPoint.volume, mean, stdDev);
+        
+        if (Math.abs(zScore) > settings.volumeThreshold) {
+          const anomaly: VolumeAnomaly = {
+            type: zScore > 0 ? 'spike' : 'drop',
+            severity: this.getSeverityLevel(Math.abs(zScore)),
+            timestamp: dataPoint.timestamp,
+            currentValue: dataPoint.volume,
+            expectedValue: Math.round(mean),
+            zScore: Math.round(zScore * 100) / 100,
+            confidence: Math.min(Math.abs(zScore) / settings.volumeThreshold, 1),
+            organizationId,
+            description: this.generateVolumeAnomalyDescription(dataPoint.volume, mean, zScore, windowName)
+          };
+          
+          anomalies.push(anomaly);
+        }
+      }
+
+      console.log(`📊 ${windowName} window: Analyzed ${volumeData.length} data points, found ${anomalies.length} anomalies`);
+      return anomalies;
+    } catch (error) {
+      console.error(`Error detecting volume anomalies from beginning for window ${windowName}:`, error);
+      return [];
+    }
+  }
+
+  private async detectSentimentAnomaliesForWindowFromBeginning(
+    organizationId: string,
+    windowMs: number,
+    windowName: string,
+    settings: AnomalyDetectionSettings
+  ): Promise<SentimentAnomaly[]> {
+    try {
+      const now = new Date();
+      // Start from year 2000 to get all historical data
+      const windowStart = new Date('2000-01-01T00:00:00.000Z');
+      
+      // Get sentiment data from the beginning of time
+      const sentimentData = await this.getSentimentDataFromBeginning(organizationId, windowStart, now);
+      
+      if (sentimentData.length < settings.minDataPoints) {
+        console.log(`⚠️ Not enough data points (${sentimentData.length}) for ${windowName} window sentiment analysis. Need at least ${settings.minDataPoints}.`);
+        return []; // Not enough data for analysis
+      }
+
+      const anomalies: SentimentAnomaly[] = [];
+      const sentiments = sentimentData.map(d => d.sentiment);
+      
+      // Calculate baseline sentiment (using all data)
+      const baselineSentiment = sentiments.reduce((sum, s) => sum + s, 0) / sentiments.length;
+
+      // Check for sentiment shifts in all data points
+      for (const dataPoint of sentimentData) {
+        const shiftMagnitude = Math.abs(dataPoint.sentiment - baselineSentiment);
+        
+        if (shiftMagnitude > settings.sentimentThreshold) {
+          const anomaly: SentimentAnomaly = {
+            type: 'shift',
+            severity: this.getSeverityLevel(shiftMagnitude / settings.sentimentThreshold),
+            timestamp: dataPoint.timestamp,
+            currentSentiment: Math.round(dataPoint.sentiment * 100) / 100,
+            baselineSentiment: Math.round(baselineSentiment * 100) / 100,
+            shiftMagnitude: Math.round(shiftMagnitude * 100) / 100,
+            confidence: Math.min(shiftMagnitude / settings.sentimentThreshold, 1),
+            organizationId,
+            description: this.generateSentimentAnomalyDescription(
+              dataPoint.sentiment, 
+              baselineSentiment, 
+              shiftMagnitude, 
+              windowName
+            )
+          };
+          
+          anomalies.push(anomaly);
+        }
+      }
+
+      console.log(`📊 ${windowName} window: Analyzed ${sentimentData.length} sentiment data points, found ${anomalies.length} anomalies`);
+      return anomalies;
+    } catch (error) {
+      console.error(`Error detecting sentiment anomalies from beginning for window ${windowName}:`, error);
+      return [];
+    }
+  }
+
+  private async getTicketVolumeDataFromBeginning(
+    organizationId: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<Array<{ timestamp: Date; volume: number }>> {
+    try {
+      console.log(`🔍 Getting volume data from ${startTime.toISOString()} to ${endTime.toISOString()}`);
+      
+      // Get tickets from Qdrant from the beginning of time
+      const tickets = await this.qdrantService.getRecentVectors({
+        organizationId,
+        createdAfter: startTime,
+        limit: 10000 // Increased limit to get more historical data
+      });
+
+      console.log(`📊 Retrieved ${tickets.length} tickets from Qdrant`);
+
+      // Group by hour and count tickets
+      const hourlyVolumes = new Map<string, number>();
+      
+      for (const ticket of tickets) {
+        const ticketTime = new Date(ticket.payload.created_at);
+        const hourKey = ticketTime.toISOString().slice(0, 13) + ':00:00.000Z';
+        hourlyVolumes.set(hourKey, (hourlyVolumes.get(hourKey) || 0) + 1);
+      }
+
+      // Convert to array and sort by timestamp
+      const volumeData = Array.from(hourlyVolumes.entries())
+        .map(([timestamp, volume]) => ({
+          timestamp: new Date(timestamp),
+          volume
+        }))
+        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+      console.log(`📊 Grouped into ${volumeData.length} hourly buckets with total volume: ${volumeData.reduce((sum, d) => sum + d.volume, 0)}`);
+      return volumeData;
+    } catch (error) {
+      console.error('Error getting ticket volume data from beginning:', error);
+      return [];
+    }
+  }
+
+  private async getSentimentDataFromBeginning(
+    organizationId: string,
+    startTime: Date,
+    endTime: Date
+  ): Promise<Array<{ timestamp: Date; sentiment: number }>> {
+    try {
+      console.log(`🔍 Getting sentiment data from ${startTime.toISOString()} to ${endTime.toISOString()}`);
+      
+      // Get tickets from Qdrant from the beginning of time
+      const tickets = await this.qdrantService.getRecentVectors({
+        organizationId,
+        createdAfter: startTime,
+        limit: 10000 // Increased limit to get more historical data
+      });
+
+      console.log(`📊 Retrieved ${tickets.length} tickets from Qdrant for sentiment analysis`);
+
+      // Group by hour and calculate average sentiment
+      const hourlySentiments = new Map<string, { sum: number; count: number }>();
+      
+      for (const ticket of tickets) {
+        const ticketTime = new Date(ticket.payload.created_at);
+        const hourKey = ticketTime.toISOString().slice(0, 13) + ':00:00.000Z';
+        const current = hourlySentiments.get(hourKey) || { sum: 0, count: 0 };
+        current.sum += ticket.payload.sentiment_score || 0;
+        current.count += 1;
+        hourlySentiments.set(hourKey, current);
+      }
+
+      // Convert to array and sort by timestamp
+      const sentimentData = Array.from(hourlySentiments.entries())
+        .map(([timestamp, data]) => ({
+          timestamp: new Date(timestamp),
+          sentiment: data.sum / data.count
+        }))
+        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+      console.log(`📊 Grouped into ${sentimentData.length} hourly buckets for sentiment analysis`);
+      return sentimentData;
+    } catch (error) {
+      console.error('Error getting sentiment data from beginning:', error);
       return [];
     }
   }

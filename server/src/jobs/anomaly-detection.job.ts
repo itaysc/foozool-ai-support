@@ -80,6 +80,69 @@ export const runAnomalyDetectionForOrganization = async (organizationId: string)
 };
 
 /**
+ * Run anomaly detection from the beginning of time for all organizations
+ * This is useful for finding historical anomalies or testing the system
+ */
+export const runAnomalyDetectionFromBeginning = async (targetOrganizationId?: string): Promise<void> => {
+  console.log('🔍 Starting anomaly detection from beginning of time...');
+  
+  try {
+    let organizations;
+    
+    if (targetOrganizationId) {
+      // Process only the specified organization
+      const org = await OrganizationModel.findById(targetOrganizationId);
+      if (!org) {
+        throw new Error(`Organization with ID ${targetOrganizationId} not found`);
+      }
+      organizations = [org];
+      console.log(`Running anomaly detection from beginning for specific organization: ${org.name} (${targetOrganizationId})`);
+    } else {
+      // Process all organizations
+      organizations = await OrganizationModel.find({});
+      console.log(`Running anomaly detection from beginning for ${organizations.length} organizations`);
+    }
+
+    const anomalyDetectionService = new AnomalyDetectionService();
+    const anomalyService = new AnomalyService();
+    let totalAnomaliesDetected = 0;
+    
+    for (const organization of organizations) {
+      const organizationId = organization._id.toString();
+      console.log(`🔍 Detecting anomalies from beginning for organization: ${organization.name} (${organizationId})`);
+
+      try {
+        // Run anomaly detection from beginning for this organization
+        const [volumeAnomalies, sentimentAnomalies] = await Promise.all([
+          anomalyDetectionService.detectVolumeAnomaliesFromBeginning(organizationId),
+          anomalyDetectionService.detectSentimentAnomaliesFromBeginning(organizationId)
+        ]);
+
+        const allAnomalies = [...volumeAnomalies, ...sentimentAnomalies];
+        console.log(`Found ${allAnomalies.length} anomalies from beginning for organization ${organization.name}`);
+
+        // Store anomalies using the service
+        const newAnomaliesStored = await anomalyService.storeAnomalies(allAnomalies, organizationId, true); // true = isHistorical
+
+        totalAnomaliesDetected += newAnomaliesStored;
+        console.log(`✅ Anomaly detection from beginning completed for organization ${organization.name}. Stored ${newAnomaliesStored} new anomalies.`);
+
+      } catch (orgError) {
+        console.error(`Error in anomaly detection from beginning for organization ${organization.name}:`, orgError);
+      }
+    }
+
+    // Clean up old anomalies using the service
+    const cleanupResult = await anomalyService.cleanupOldAnomalies(7);
+
+    console.log(`✅ Anomaly detection from beginning completed successfully. Total new anomalies detected: ${totalAnomaliesDetected}. Cleaned up ${cleanupResult} old anomalies.`);
+  } catch (error) {
+    console.error('❌ Error in anomaly detection from beginning job:', error);
+    throw error;
+  }
+};
+
+/**
  * Get anomaly statistics for monitoring
  */
 export const getAnomalyStats = async (): Promise<{

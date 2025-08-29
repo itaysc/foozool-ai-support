@@ -3,7 +3,7 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { validateRequest } from '../../../middleware/validateRequest';
 import { UserContextManager } from '../../../context/userContext';
 import AnomalyService from '../../../services/anomaly-detection/anomaly.service';
-import { runAnomalyDetectionForOrganization } from '../../../jobs/anomaly-detection.job';
+import { runAnomalyDetectionForOrganization, runAnomalyDetectionFromBeginning } from '../../../jobs/anomaly-detection.job';
 import { z } from 'zod';
 
 const router = express.Router();
@@ -74,7 +74,14 @@ router.get('/stats', authenticateJWT, async (req: Request, res: Response): Promi
     }
 
     const { hours = 24 } = req.query;
-    const hoursNum = parseInt(hours as string);
+    let hoursNum: number | string = 24;
+    
+    // Handle 'all' case properly
+    if (hours === 'all') {
+      hoursNum = 'all';
+    } else {
+      hoursNum = parseInt(hours as string) || 24;
+    }
 
     const stats = await anomalyService.getAnomalyStats(organizationId, hoursNum);
 
@@ -251,6 +258,39 @@ router.post('/detect', authenticateJWT, async (req: Request, res: Response): Pro
       status: 200,
       payload: { 
         message: 'Anomaly detection started successfully',
+        note: 'Detection is running in the background. Check the logs for progress.'
+      }
+    });
+  } catch (error: any) {
+    console.error('Error starting anomaly detection:', error);
+    res.status(500).json({ 
+      status: 500,
+      payload: { error: 'Internal server error', message: error.message } 
+    });
+  }
+});
+
+/**
+ * POST /api/v1/anomalies/detect-from-beginning
+ * Manually trigger anomaly detection for the authenticated user's organization from the beginning of time
+ */
+router.post('/detect-from-beginning', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      res.status(400).json({ error: 'Organization ID not found in user context' });
+      return;
+    }
+
+    // Run anomaly detection in background
+    runAnomalyDetectionFromBeginning(organizationId).catch(error => {
+      console.error('Background anomaly detection failed:', error);
+    });
+
+    res.status(200).json({
+      status: 200,
+      payload: { 
+        message: 'Anomaly detection started successfully from the beginning',
         note: 'Detection is running in the background. Check the logs for progress.'
       }
     });
