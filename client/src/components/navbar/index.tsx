@@ -25,6 +25,7 @@ import InsightsIcon from '@mui/icons-material/Insights';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import BusinessIcon from '@mui/icons-material/Business';
 import WarningIcon from '@mui/icons-material/Warning';
+import PeopleIcon from '@mui/icons-material/People';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -93,6 +94,7 @@ export const Navbar = observer(() => {
     { path: '/insights', label: 'AI Insights', icon: InsightsIcon },
     { path: '/performance', label: 'Performance', icon: AnalyticsIcon },
     { path: '/anomalies', label: 'Anomalies', icon: WarningIcon },
+    { path: '/customers', label: 'Customers', icon: PeopleIcon },
     { path: '/settings', label: 'Settings', icon: SettingsIcon },
   ];
 

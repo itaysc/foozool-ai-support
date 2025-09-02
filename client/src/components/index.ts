@@ -6,4 +6,6 @@ export { default as BouncingDotsLoader } from './bouncingDotsLoader';
 export { default as OverlayLoader } from './overlayLoader';
 export { default as YesNoModal } from './yesNoModal';
 export { default as NewsSection } from './news/NewsSection';
+export { default as CustomerForm } from './customer/CustomerForm';
+export { default as IndustrySelect } from './customer/IndustrySelect';
 export * from './performance';

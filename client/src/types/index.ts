@@ -21,3 +21,4 @@ export * from './esTicket';
 export * from './region';
 export * from './thresholdMiss';
 export * from './anomaly';
+export * from './customer';

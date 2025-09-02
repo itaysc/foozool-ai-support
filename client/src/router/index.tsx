@@ -8,6 +8,9 @@ import Settings from "@/pages/settings";
 import Insights from "@/pages/insights";
 import Performance from "@/pages/performance";
 import Anomalies from "@/pages/anomalies";
+import Customers from "@/pages/customers";
+import NewCustomer from "@/pages/customers/new";
+import EditCustomer from "@/pages/customers/edit";
 import NotFound from "@/pages/notFound";
 import Layout from "./layouts/main.layout";
 import ProtectedRoute from "./ProtectRoute";
@@ -19,6 +22,9 @@ export const supportedRoutes = [
     '/performance/:organizationId',
     '/anomalies',
     '/anomalies/:organizationId',
+    '/customers',
+    '/customers/new',
+    '/customers/edit/:customerId',
     '/settings',
     '/invoice',
     '/invoice/:id'
@@ -40,6 +46,9 @@ const Router = () => {
                     <Route path="performance/:organizationId" element={<ProtectedRoute element={<Performance />} />} />
                     <Route path="anomalies" element={<ProtectedRoute element={<Anomalies />} />} />
                     <Route path="anomalies/:organizationId" element={<ProtectedRoute element={<Anomalies />} />} />
+                    <Route path="customers" element={<ProtectedRoute element={<Customers />} />} />
+                    <Route path="customers/new" element={<ProtectedRoute element={<NewCustomer />} />} />
+                    <Route path="customers/edit/:customerId" element={<ProtectedRoute element={<EditCustomer />} />} />
                     <Route path="settings" element={<ProtectedRoute element={<Settings />} />} />
                 </Route>
                 

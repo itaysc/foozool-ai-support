@@ -13,6 +13,7 @@ export { ICreateTicketPayload } from './zendesk/createTicketPayload';
 export { IZendeskTicketComment } from './zendesk/zendeskTicketComment';
 export { ITicketSearchResult } from './zendesk/ticketSearchResult';
 export { Region } from './region';
+export { ICustomer, CreateCustomerRequest, UpdateCustomerRequest } from './customer';
 
 // Autonomous AI Types
 export * from './autonomousAI';

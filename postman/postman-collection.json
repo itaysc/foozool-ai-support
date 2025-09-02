@@ -53,6 +53,12 @@
       "value": "",
       "type": "string",
       "description": "Webhook token for testing NPS webhook endpoints"
+    },
+    {
+      "key": "customer_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a customer to test with (get from Create Customer or Get All Customers response)"
     }
   ],
   "auth": {
@@ -549,6 +555,199 @@
               "path": ["api", "v1", "organizations", "{{organization_id}}", "dashboard-settings", "defaults"]
             },
             "description": "Get default dashboard settings"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "👥 Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"industry\": \"Technology\",\n  \"companySize\": \"51-200\",\n  \"contractValue\": 50000,\n  \"startDate\": \"2024-01-15T00:00:00.000Z\",\n  \"accountManager\": \"John Doe\",\n  \"healthScore\": 8,\n  \"notes\": \"High-value customer with great potential for expansion\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers"]
+            },
+            "description": "Create a new customer for the organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers?page=1&limit=10&sortBy=createdAt&sortOrder=desc",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number for pagination"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of customers per page"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field (name, healthScore, contractValue, startDate, createdAt, updatedAt)"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "Sort order (asc or desc)"
+                }
+              ]
+            },
+            "description": "Get all customers with pagination and sorting"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/stats",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "stats"]
+            },
+            "description": "Get customer statistics and analytics"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}"]
+            },
+            "description": "Get a specific customer by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"healthScore\": 9,\n  \"notes\": \"Customer showing excellent engagement and growth potential\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}"]
+            },
+            "description": "Update a customer's information"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}"]
+            },
+            "description": "Delete a customer"
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Customers by Industry",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers?industry=Technology&companySize=51-200&healthScoreMin=7",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers"],
+              "query": [
+                {
+                  "key": "industry",
+                  "value": "Technology",
+                  "description": "Filter by industry"
+                },
+                {
+                  "key": "companySize",
+                  "value": "51-200",
+                  "description": "Filter by company size"
+                },
+                {
+                  "key": "healthScoreMin",
+                  "value": "7",
+                  "description": "Minimum health score"
+                }
+              ]
+            },
+            "description": "Filter customers by various criteria"
           },
           "response": []
         }
