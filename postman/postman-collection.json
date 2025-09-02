@@ -41,6 +41,18 @@
       "value": "",
       "type": "string",
       "description": "ID of an anomaly to test with (get from Get All Anomalies response)"
+    },
+    {
+      "key": "upload_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of an NPS upload to test with (get from upload responses)"
+    },
+    {
+      "key": "webhook_token",
+      "value": "",
+      "type": "string",
+      "description": "Webhook token for testing NPS webhook endpoints"
     }
   ],
   "auth": {
@@ -539,7 +551,7 @@
             "description": "Get default dashboard settings"
           },
           "response": []
-
+        }
       ]
     },
     {
@@ -1327,6 +1339,247 @@
               "response": []
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "📊 NPS (Net Promoter Score)",
+      "item": [
+        {
+          "name": "Upload CSV File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/csv",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "upload", "csv"]
+            },
+            "description": "Upload NPS data via CSV file"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload JSON Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"surveys\": [\n    {\n      \"id\": \"survey1\",\n      \"name\": \"Customer Satisfaction Survey\",\n      \"questions\": [\n        {\n          \"id\": \"q1\",\n          \"type\": \"nps\",\n          \"text\": \"How likely are you to recommend our service?\",\n          \"required\": true\n        },\n        {\n          \"id\": \"q2\",\n          \"type\": \"open\",\n          \"text\": \"What can we improve?\",\n          \"required\": false\n        }\n      ],\n      \"responses\": [\n        {\n          \"id\": \"r1\",\n          \"timestamp\": \"2024-01-15T10:00:00Z\",\n          \"answers\": [\n            {\n              \"questionId\": \"q1\",\n              \"value\": 9\n            },\n            {\n              \"questionId\": \"q2\",\n              \"value\": \"Great service!\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/json",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "upload", "json"]
+            },
+            "description": "Upload NPS data via JSON payload"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Generic Data (AI Mapping)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"metadata\": {\n    \"feedback_data\": [\n      {\n        \"nps_rating\": 9,\n        \"submission_time\": \"2024-01-15T10:00:00Z\",\n        \"customer_email\": \"customer1@example.com\",\n        \"feedback_text\": \"Great service! Very satisfied with the product.\",\n        \"question\": \"How likely are you to recommend our service?\"\n      },\n      {\n        \"nps_rating\": 7,\n        \"submission_time\": \"2024-01-15T11:00:00Z\",\n        \"customer_email\": \"customer2@example.com\",\n        \"feedback_text\": \"Good but could improve customer support.\",\n        \"question\": \"How likely are you to recommend our service?\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/generic",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "upload", "generic"]
+            },
+            "description": "Upload NPS data in any format - uses AI mapping to detect structure and transform data automatically"
+          },
+          "response": []
+        },
+        {
+          "name": "Webhook Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-organization-id",
+                "value": "{{organization_id}}"
+              },
+              {
+                "key": "x-user-id",
+                "value": "your_user_id_here"
+              },
+              {
+                "key": "x-token-type",
+                "value": "nps-webhook"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{webhook_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"surveyId\": \"survey1\",\n  \"response\": {\n    \"id\": \"r2\",\n    \"timestamp\": \"2024-01-15T11:00:00Z\",\n    \"answers\": [\n      {\n        \"questionId\": \"q1\",\n        \"value\": 7\n      },\n        {\n        \"questionId\": \"q2\",\n        \"value\": \"Could be better\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/webhook",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "upload", "webhook"]
+            },
+            "description": "Receive NPS data via webhook"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Upload Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/status/{{upload_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "upload", "status", "{{upload_id}}"]
+            },
+            "description": "Get status of a specific upload"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Upload History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/history",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "upload", "history"]
+            },
+            "description": "Get history of all uploads"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/{{upload_id}}/cancel",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "upload", "{{upload_id}}", "cancel"]
+            },
+            "description": "Cancel an ongoing upload"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Upload",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/{{upload_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "upload", "{{upload_id}}"]
+            },
+            "description": "Delete an upload and its data"
+          },
+          "response": []
+        },
+        {
+          "name": "Get NPS Insights",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/insights",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "insights"]
+            },
+            "description": "Get NPS insights and analytics"
+          },
+          "response": []
+        },
+        {
+          "name": "Get NPS Insights History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/nps/insights/history",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "nps", "insights", "history"]
+            },
+            "description": "Get history of NPS insights"
+          },
+          "response": []
         }
       ]
     },

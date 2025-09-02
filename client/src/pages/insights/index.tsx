@@ -38,7 +38,9 @@ import {
 } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
 import { Prediction, PredictionSummary, AccuracyAnalysis } from '@/types/prediction';
+import { NPSInsights } from '@/types/nps';
 import { insightsService } from '@/services/insights-service';
+import { npsService } from '@/services/nps-service';
 import { useAuth } from '@/context/auth.context';
 
 interface TabPanelProps {
@@ -73,6 +75,7 @@ const InsightsPage: React.FC = () => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [predictionSummary, setPredictionSummary] = useState<PredictionSummary | null>(null);
   const [accuracyAnalysis, setAccuracyAnalysis] = useState<AccuracyAnalysis | null>(null);
+  const [npsInsights, setNpsInsights] = useState<NPSInsights | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
@@ -107,12 +110,13 @@ const InsightsPage: React.FC = () => {
     const fetchInsights = async () => {
       try {
         setLoading(true);
-        const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse, accuracyResponse] = await Promise.all([
+        const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse, accuracyResponse, npsResponse] = await Promise.all([
           insightsService.getInsightsByOrganization(effectiveOrgId),
           insightsService.getInsightsSummary(effectiveOrgId),
           insightsService.getPredictions(20),
           insightsService.getPredictionSummary().catch(() => ({ success: false, data: null })),
-          insightsService.getPredictionAccuracy(30).catch(() => ({ success: false, data: null }))
+          insightsService.getPredictionAccuracy(30).catch(() => ({ success: false, data: null })),
+          npsService.getNPSInsights().catch(() => null) // NPS is optional, don't fail if it's not available
         ]);
         
         if (insightsResponse.success) {
@@ -133,9 +137,18 @@ const InsightsPage: React.FC = () => {
           setPredictionSummary(predictionSummaryResponse.data);
         }
 
-        if (accuracyResponse.success) {
-          setAccuracyAnalysis(accuracyResponse.data);
-        }
+                    if (accuracyResponse.success) {
+        setAccuracyAnalysis(accuracyResponse.data);
+      }
+
+      // Set NPS insights if available
+      console.log('📊 NPS Response received:', npsResponse);
+      if (npsResponse) {
+        console.log('✅ Setting NPS insights:', npsResponse);
+        setNpsInsights(npsResponse);
+      } else {
+        console.log('ℹ️ No NPS insights available');
+      }
       } catch (error) {
         console.error('Failed to fetch insights:', error);
         setError('Failed to load insights. Please try again later.');
@@ -152,12 +165,13 @@ const InsightsPage: React.FC = () => {
     
     try {
       setLoading(true);
-      const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse, accuracyResponse] = await Promise.all([
+      const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse, accuracyResponse, npsResponse] = await Promise.all([
         insightsService.getInsightsByOrganization(effectiveOrgId),
         insightsService.getInsightsSummary(effectiveOrgId),
         insightsService.getPredictions(20),
         insightsService.getPredictionSummary().catch(() => ({ success: false, data: null })),
-        insightsService.getPredictionAccuracy(30).catch(() => ({ success: false, data: null }))
+        insightsService.getPredictionAccuracy(30).catch(() => ({ success: false, data: null })),
+        npsService.getNPSInsights().catch(() => null)
       ]);
       
       if (insightsResponse.success) {
@@ -439,6 +453,12 @@ const InsightsPage: React.FC = () => {
               iconPosition="start"
               sx={{ minWidth: 140 }}
             />
+            <Tab 
+              icon={<Assessment />} 
+              label="NPS Insights" 
+              iconPosition="start"
+              sx={{ minWidth: 140 }}
+            />
 
           </Tabs>
         </Box>
@@ -714,6 +734,232 @@ const InsightsPage: React.FC = () => {
                   ))}
                 </Box>
               </Box>
+            )}
+          </Box>
+        </TabPanel>
+
+        {/* Tab 3: NPS Insights */}
+        <TabPanel value={tabValue} index={2}>
+          <Box>
+            <Typography variant="h5" gutterBottom sx={{ 
+              fontWeight: 'bold', 
+              color: '#1976d2', 
+              mb: 3,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Assessment sx={{ fontSize: 28 }} />
+              NPS Customer Insights
+            </Typography>
+
+            {console.log('🔍 Rendering NPS tab, npsInsights:', npsInsights)}
+            {npsInsights ? (
+              <Box>
+                {/* NPS Score Overview */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                    📊 NPS Overview
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 3 
+                  }}>
+                    <Box sx={{ 
+                      flex: '1 1 200px',
+                      minWidth: { xs: '100%', sm: '200px' }
+                    }}>
+                      <Paper sx={{ p: 2.5, textAlign: 'center', height: '100%', boxShadow: 2 }}>
+                        <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          {npsInsights.currentNPS}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Current NPS Score
+                        </Typography>
+                      </Paper>
+                    </Box>
+                    <Box sx={{ 
+                      flex: '1 1 200px',
+                      minWidth: { xs: '100%', sm: '200px' }
+                    }}>
+                      <Paper sx={{ p: 2.5, textAlign: 'center', height: '100%', boxShadow: 2 }}>
+                        <Typography variant="h3" color={npsInsights.npsChange >= 0 ? 'success.main' : 'error.main'} sx={{ fontWeight: 'bold', mb: 1 }}>
+                          {npsInsights.npsChange >= 0 ? '+' : ''}{npsInsights.npsChange}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          NPS Change
+                        </Typography>
+                      </Paper>
+                    </Box>
+                    <Box sx={{ 
+                      flex: '1 1 200px',
+                      minWidth: { xs: '100%', sm: '200px' }
+                    }}>
+                      <Paper sx={{ p: 2.5, textAlign: 'center', height: '100%', boxShadow: 2 }}>
+                        <Typography variant="h3" color="info.main" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          {npsInsights.totalResponses}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                          Total Responses
+                        </Typography>
+                      </Paper>
+                    </Box>
+                  </Box>
+                </Box>
+
+                {/* Segment Breakdown */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                    🎯 Customer Segments
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 2 
+                  }}>
+                    <Paper sx={{ p: 2, flex: '1 1 150px', textAlign: 'center', boxShadow: 2 }}>
+                      <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {npsInsights.segmentBreakdown.promoters}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Promoters (9-10)
+                      </Typography>
+                    </Paper>
+                    <Paper sx={{ p: 2, flex: '1 1 150px', textAlign: 'center', boxShadow: 2 }}>
+                      <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {npsInsights.segmentBreakdown.passives}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Passives (7-8)
+                      </Typography>
+                    </Paper>
+                    <Paper sx={{ p: 2, flex: '1 1 150px', textAlign: 'center', boxShadow: 2 }}>
+                      <Typography variant="h4" color="error.main" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        {npsInsights.segmentBreakdown.detractors}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                        Detractors (0-6)
+                      </Typography>
+                    </Paper>
+                  </Box>
+                </Box>
+
+                {/* Response Clustering */}
+                {npsInsights.responseClustering && npsInsights.responseClustering.clusters.length > 0 && (
+                  <Box sx={{ mb: 4 }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                      🔍 Response Clustering Analysis
+                    </Typography>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Clustering Quality: <strong>{npsInsights.responseClustering.clusteringQuality}</strong>
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {npsInsights.responseClustering.totalClusters} clusters found from {npsInsights.responseClustering.totalClusteredResponses} responses
+                      </Typography>
+                    </Box>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexWrap: 'wrap', 
+                      gap: 3 
+                    }}>
+                      {npsInsights.responseClustering.clusters.map((cluster) => (
+                        <Box key={cluster.id} sx={{ 
+                          flex: '1 1 400px',
+                          minWidth: { xs: '100%', md: '400px' }
+                        }}>
+                          <Card sx={{ 
+                            width: '100%',
+                            boxShadow: 3,
+                            border: `2px solid ${
+                              cluster.priority === 'high' ? '#f44336' : 
+                              cluster.priority === 'medium' ? '#ff9800' : '#4caf50'
+                            }`
+                          }}>
+                            <CardContent sx={{ p: 3 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', flex: 1 }}>
+                                  {cluster.questionText}
+                                </Typography>
+                                <Chip 
+                                  label={`${cluster.count} responses`}
+                                  color={cluster.priority === 'high' ? 'error' : cluster.priority === 'medium' ? 'warning' : 'success'}
+                                  size="small"
+                                  sx={{ fontWeight: 'bold' }}
+                                />
+                              </Box>
+                              
+                              <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontStyle: 'italic' }}>
+                                "{cluster.representativeResponse}"
+                              </Typography>
+
+                              <Box sx={{ mt: 2 }}>
+                                {cluster.insights.map((insight, index) => (
+                                  <Typography key={index} variant="body2" sx={{ mb: 1 }}>
+                                    {insight}
+                                  </Typography>
+                                ))}
+                              </Box>
+                            </CardContent>
+                          </Card>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
+                {/* General Insights */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                    💡 Key Insights
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 2 
+                  }}>
+                    {npsInsights.insights.map((insight, index) => (
+                      <Paper key={index} sx={{ p: 2, flex: '1 1 300px', boxShadow: 2 }}>
+                        <Typography variant="body1">
+                          {insight}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Box>
+                </Box>
+
+                {/* Recommendations */}
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', mb: 2 }}>
+                    🎯 Recommendations
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexWrap: 'wrap', 
+                    gap: 2 
+                  }}>
+                    {npsInsights.recommendations.map((recommendation, index) => (
+                      <Paper key={index} sx={{ p: 2, flex: '1 1 300px', boxShadow: 2 }}>
+                        <Typography variant="body1">
+                          {recommendation}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Box>
+                </Box>
+              </Box>
+            ) : (
+              <Paper sx={{ p: 6, textAlign: 'center', backgroundColor: '#ffffff' }}>
+                <Assessment sx={{ fontSize: 80, color: 'text.secondary', mb: 3 }} />
+                <Typography variant="h5" gutterBottom color="text.secondary" sx={{ fontWeight: 500 }}>
+                  No NPS Data Available
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  No NPS insights have been generated for this organization yet. 
+                  Upload NPS data to start generating customer insights and response clustering analysis.
+                </Typography>
+              </Paper>
             )}
           </Box>
         </TabPanel>
