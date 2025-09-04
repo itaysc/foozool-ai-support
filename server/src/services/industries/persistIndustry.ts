@@ -1,4 +1,4 @@
-import { IndustryModel } from '@/schemas/industry.schema';
+import { IndustryModel } from '../../schemas/industry.schema';
 
 /**
  * Ensures an industry with the provided name exists either globally or for the given organization.

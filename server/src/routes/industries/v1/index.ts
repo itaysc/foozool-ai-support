@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
-import authenticateJWT from '@/middleware/authenticate';
-import { IndustryModel } from '@/schemas/industry.schema';
-import { getUserContext } from '@/context/userContext';
+import { authenticateJWT } from '../../../middleware/authenticate';
+import { IndustryModel } from '../../../schemas/industry.schema';
+import { UserContextManager } from '../../../context/userContext';
 
 const router = Router();
 
@@ -11,8 +11,7 @@ router.use(authenticateJWT);
 // Returns global industries (organizationId: null) + org-specific industries
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const userCtx = getUserContext(req);
-    const organizationId = userCtx?.organization?._id;
+    const organizationId = UserContextManager.getCurrentOrganizationId();
 
     const query = organizationId
       ? { $or: [{ organizationId: null }, { organizationId }] }
