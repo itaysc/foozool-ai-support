@@ -13,6 +13,7 @@ import { WebhookModel } from './webhook.schema';
 import { CRMModel } from './crm.schema';
 import { ThresholdMissModel } from './thresholdMiss.schema';
 import { CustomerModel } from './customer.schema';
+import { IndustryModel } from './industry.schema';
 
 export {
   UserModel,
@@ -30,4 +31,5 @@ export {
   CRMModel,
   ThresholdMissModel,
   CustomerModel,
+  IndustryModel,
 };

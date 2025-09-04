@@ -29,6 +29,7 @@ import crmRoutesV1 from './routes/crm/v1';
 import anomaliesRoutesV1 from './routes/anomalies/v1';
 import npsRoutesV1 from './routes/nps/v1';
 import customersRoutesV1 from './routes/customers/v1';
+import industriesRoutesV1 from './routes/industries/v1';
 
 import newsRoutesV1 from './routes/news/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
@@ -93,6 +94,7 @@ export default class Server{
       this.app.use('/api/v1/anomalies', anomaliesRoutesV1);
       this.app.use('/api/v1/nps', npsRoutesV1);
       this.app.use('/api/v1/customers', customersRoutesV1);
+      this.app.use('/api/v1/industries', industriesRoutesV1);
 
       this.app.use('/api/v1/news', newsRoutesV1);
       this.app.use('/api/v1/train', modelTrainingRoutesV1);

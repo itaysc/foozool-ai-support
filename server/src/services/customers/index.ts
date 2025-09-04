@@ -1,7 +1,13 @@
 import { ICustomer, CreateCustomerRequest, UpdateCustomerRequest } from '../../types';
 import { CustomerModel } from '../../schemas';
+import { persistIndustry } from '../industries/persistIndustry';
 
 export const createCustomer = async (organizationId: string, customerData: CreateCustomerRequest): Promise<ICustomer> => {
+  // If an industry string was provided, ensure it exists (global or for this org). If not, create it for org.
+  if (customerData.industry && customerData.industry.trim()) {
+    await persistIndustry(organizationId, customerData.industry);
+  }
+
   const customer = new CustomerModel({
     organizationId,
     ...customerData,

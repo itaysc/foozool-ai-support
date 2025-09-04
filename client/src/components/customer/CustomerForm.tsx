@@ -153,11 +153,17 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
       return;
     }
 
+    // Normalize payload for server (ISO datetime for startDate)
+    const payload: CreateCustomerRequest = {
+      ...formData,
+      startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
+    };
+
     try {
       if (mode === 'create') {
-        await customersStore.createCustomer(formData);
+        await customersStore.createCustomer(payload);
       } else if (customerId) {
-        await customersStore.updateCustomer(customerId, formData);
+        await customersStore.updateCustomer(customerId, payload);
       }
       
       navigate('/customers');

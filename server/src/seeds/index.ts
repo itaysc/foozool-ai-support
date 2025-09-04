@@ -4,6 +4,7 @@ import { seedLLMUsage } from './LLMUsage.seed';
 import { seedLLMPricings } from './LLMPricing.seed';
 import { seedCRMs } from './crm.seed';
 import { seedThresholdMisses } from './thresholdMiss.seed';
+import AddIndustriesSeed from './AddIndustries.seed';
 
 export async function seed() {
   try {
@@ -31,6 +32,8 @@ export async function seed() {
     
     // Seed threshold misses for testing
     await seedThresholdMisses();
+    // Seed global industries (idempotent)
+    await AddIndustriesSeed();
     
     console.log('Database seeding completed successfully!');
   } catch (error) {

@@ -46,6 +46,8 @@ import {
 } from '@mui/icons-material';
 import { ICustomer, CustomerFilters, CustomerStats } from '@/types';
 import customersStore from '@/stores/customers.store';
+import IndustrySelect from '@/components/customer/IndustrySelect';
+import industriesStore from '@/stores/industries.store';
 
 const companySizeOptions = [
   { value: '1-10', label: '1-10 employees' },
@@ -87,6 +89,19 @@ const CustomersPage: React.FC = () => {
   const [companySizeFilter, setCompanySizeFilter] = useState('');
   const [healthScoreMinFilter, setHealthScoreMinFilter] = useState<number | ''>('');
   const [healthScoreMaxFilter, setHealthScoreMaxFilter] = useState<number | ''>('');
+
+  const healthScoreOptions = [
+    { value: 1, label: '1 - Critical' },
+    { value: 2, label: '2 - Poor' },
+    { value: 3, label: '3 - Fair' },
+    { value: 4, label: '4 - Below Average' },
+    { value: 5, label: '5 - Average' },
+    { value: 6, label: '6 - Above Average' },
+    { value: 7, label: '7 - Good' },
+    { value: 8, label: '8 - Very Good' },
+    { value: 9, label: '9 - Excellent' },
+    { value: 10, label: '10 - Outstanding' },
+  ];
   
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -95,6 +110,7 @@ const CustomersPage: React.FC = () => {
   useEffect(() => {
     customersStore.fetchCustomers();
     customersStore.fetchStats();
+    industriesStore.ensureLoaded();
   }, []);
 
   const handlePageChange = (event: unknown, newPage: number) => {
@@ -282,13 +298,13 @@ const CustomersPage: React.FC = () => {
             sx={{ height: 40 }}
           />
           
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Industry"
+          <IndustrySelect
             value={industryFilter}
-            onChange={(e) => setIndustryFilter(e.target.value)}
-            sx={{ height: 40 }}
+            onChange={(v) => setIndustryFilter(v)}
+            size="small"
+            fullWidth
+            label="Industry"
+            placeholder="Industry"
           />
           
           <FormControl fullWidth size="small" sx={{ minWidth: 140 }}>
@@ -308,25 +324,35 @@ const CustomersPage: React.FC = () => {
             </Select>
           </FormControl>
           
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Min Health Score"
-            type="number"
-            value={healthScoreMinFilter}
-            onChange={(e) => setHealthScoreMinFilter(e.target.value === '' ? '' : Number(e.target.value))}
-            sx={{ height: 40 }}
-          />
+          <FormControl fullWidth size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>Min Health Score</InputLabel>
+            <Select
+              value={healthScoreMinFilter === '' ? '' : String(healthScoreMinFilter)}
+              label="Min Health Score"
+              onChange={(e) => setHealthScoreMinFilter(e.target.value === '' ? '' : Number(e.target.value))}
+              sx={{ height: 40 }}
+            >
+              <MenuItem value="">Any</MenuItem>
+              {healthScoreOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Max Health Score"
-            type="number"
-            value={healthScoreMaxFilter}
-            onChange={(e) => setHealthScoreMaxFilter(e.target.value === '' ? '' : Number(e.target.value))}
-            sx={{ height: 40 }}
-          />
+          <FormControl fullWidth size="small" sx={{ minWidth: 160 }}>
+            <InputLabel>Max Health Score</InputLabel>
+            <Select
+              value={healthScoreMaxFilter === '' ? '' : String(healthScoreMaxFilter)}
+              label="Max Health Score"
+              onChange={(e) => setHealthScoreMaxFilter(e.target.value === '' ? '' : Number(e.target.value))}
+              sx={{ height: 40 }}
+            >
+              <MenuItem value="">Any</MenuItem>
+              {healthScoreOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           
           <Button
             variant="contained"
@@ -442,19 +468,19 @@ const CustomersPage: React.FC = () => {
                       <Box display="flex" gap={1}>
                         <Tooltip title="Edit Customer">
                           <IconButton
-                            size="small"
+                            size="medium"
                             onClick={() => navigate(`/customers/edit/${customer._id}`)}
                           >
-                            <Edit />
+                            <Edit sx={{ fontSize: 22 }} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Delete Customer">
                           <IconButton
-                            size="small"
+                            size="medium"
                             color="error"
                             onClick={() => openDeleteDialog(customer)}
                           >
-                            <Delete />
+                            <Delete sx={{ fontSize: 22 }} />
                           </IconButton>
                         </Tooltip>
                       </Box>

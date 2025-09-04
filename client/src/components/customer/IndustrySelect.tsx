@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FormControl,
   InputLabel,
@@ -12,7 +12,8 @@ import {
   OutlinedInput
 } from '@mui/material';
 import { Close, Search } from '@mui/icons-material';
-import { INDUSTRIES } from '@/constants/industries';
+import industriesStore from '@/stores/industries.store';
+import { INDUSTRIES as FALLBACK_INDUSTRIES } from '@/constants/industries';
 
 interface IndustrySelectProps {
   value: string;
@@ -73,27 +74,34 @@ const IndustrySelect: React.FC<IndustrySelectProps> = ({
     setSearchTerm('');
   };
 
-  const filteredIndustries = INDUSTRIES.filter(industry =>
+  const sourceIndustries = industriesStore.industries.length ? industriesStore.industries : (FALLBACK_INDUSTRIES as unknown as string[]);
+  const filteredIndustries = sourceIndustries.filter(industry =>
     industry.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const orderedFilteredIndustries = useMemo(() => {
+    const others = filteredIndustries.filter(i => i === 'Other');
+    const rest = filteredIndustries.filter(i => i !== 'Other');
+    return [...others, ...rest];
+  }, [filteredIndustries]);
+
   if (showOtherInput) {
     return (
-      <Box sx={{ width: fullWidth ? '100%' : 'auto' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+      <Box sx={{ width: fullWidth ? '100%' : 'auto', position: 'relative' }}>
+        <Box sx={{ position: 'absolute', top: -30, left: 0, display: 'flex', alignItems: 'center', pointerEvents: 'auto' }}>
           <Chip
             label="Other"
             size="small"
             color="primary"
             variant="outlined"
-            sx={{ mr: 1 }}
+            sx={{ mr: 1, height: 20 }}
           />
           <IconButton
             size="small"
             onClick={handleCloseOther}
-            sx={{ p: 0.5 }}
+            sx={{ p: 0.25 }}
           >
-            <Close fontSize="small" />
+            <Close fontSize="inherit" />
           </IconButton>
         </Box>
         <TextField
@@ -127,6 +135,9 @@ const IndustrySelect: React.FC<IndustrySelectProps> = ({
             style: {
               maxHeight: 300
             }
+          },
+          MenuListProps: {
+            autoFocusItem: false
           }
         }}
       >
@@ -151,20 +162,18 @@ const IndustrySelect: React.FC<IndustrySelectProps> = ({
               }
             }}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            autoFocus
           />
         </Box>
         
-        <MenuItem value="">
-          <em>{placeholder}</em>
-        </MenuItem>
-        
-        {filteredIndustries.map((industry) => (
+        {orderedFilteredIndustries.map((industry) => (
           <MenuItem key={industry} value={industry}>
             {industry}
           </MenuItem>
         ))}
         
-        {filteredIndustries.length === 0 && (
+        {orderedFilteredIndustries.length === 0 && (
           <MenuItem disabled>
             No industries found
           </MenuItem>
