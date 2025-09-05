@@ -11,7 +11,7 @@ import {
   FormHelperText,
   OutlinedInput
 } from '@mui/material';
-import { Close, Search } from '@mui/icons-material';
+import { Close, Search, ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 import industriesStore from '@/stores/industries.store';
 import { INDUSTRIES as FALLBACK_INDUSTRIES } from '@/constants/industries';
 
@@ -24,6 +24,8 @@ interface IndustrySelectProps {
   fullWidth?: boolean;
   label?: string;
   placeholder?: string;
+  clearableIcon?: boolean;
+  onClear?: () => void;
 }
 
 const IndustrySelect: React.FC<IndustrySelectProps> = ({
@@ -34,7 +36,9 @@ const IndustrySelect: React.FC<IndustrySelectProps> = ({
   size = 'small',
   fullWidth = true,
   label = 'Industry',
-  placeholder = 'Select industry'
+  placeholder = 'Select industry',
+  clearableIcon = false,
+  onClear,
 }) => {
   const [showOtherInput, setShowOtherInput] = useState(false);
   const [otherValue, setOtherValue] = useState('');
@@ -44,7 +48,8 @@ const IndustrySelect: React.FC<IndustrySelectProps> = ({
   const handleSelectChange = (selectedValue: string) => {
     if (selectedValue === 'Other') {
       setShowOtherInput(true);
-      setOtherValue(value && !(INDUSTRIES as readonly string[]).includes(value) ? value : '');
+      const baseList = industriesStore.industries.length ? industriesStore.industries : (FALLBACK_INDUSTRIES as unknown as string[]);
+      setOtherValue(value && !baseList.includes(value) ? value : '');
       onChange(selectedValue);
     } else {
       setShowOtherInput(false);
@@ -75,7 +80,9 @@ const IndustrySelect: React.FC<IndustrySelectProps> = ({
   };
 
   const sourceIndustries = industriesStore.industries.length ? industriesStore.industries : (FALLBACK_INDUSTRIES as unknown as string[]);
-  const filteredIndustries = sourceIndustries.filter(industry =>
+  // Ensure "Other" is always present in the dropdown options
+  const withOther = Array.from(new Set([ 'Other', ...sourceIndustries ]));
+  const filteredIndustries = withOther.filter(industry =>
     industry.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -120,16 +127,23 @@ const IndustrySelect: React.FC<IndustrySelectProps> = ({
   }
 
   return (
-    <FormControl fullWidth={fullWidth} size={size} error={error}>
+    <FormControl fullWidth={fullWidth} size={size} error={error} sx={{ position: 'relative' }}>
       <InputLabel>{label}</InputLabel>
+      {/* Replace chevron with clear icon when value present and clearableIcon is true */}
       <Select
         value={value}
         onChange={(e) => handleSelectChange(e.target.value)}
         label={label}
-        sx={{ height: 40 }}
+        sx={{
+          height: 40,
+          '& .MuiSelect-icon': {
+            display: clearableIcon && value ? 'none' : 'block'
+          }
+        }}
         open={isOpen}
         onOpen={handleOpen}
         onClose={handleClose}
+        IconComponent={ArrowDropDownIcon}
         MenuProps={{
           PaperProps: {
             style: {
@@ -179,6 +193,15 @@ const IndustrySelect: React.FC<IndustrySelectProps> = ({
           </MenuItem>
         )}
       </Select>
+      {clearableIcon && value && (
+        <Box
+          sx={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+          onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(''); onClear?.(); }}
+        >
+          <Close fontSize="small" />
+        </Box>
+      )}
       {helperText && <FormHelperText>{helperText}</FormHelperText>}
     </FormControl>
   );

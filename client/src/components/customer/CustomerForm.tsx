@@ -14,13 +14,7 @@ import {
   FormHelperText,
   CircularProgress,
   Alert,
-  Chip,
   Stack,
-  Divider,
-  Card,
-  CardContent,
-  CardHeader,
-  Avatar,
   IconButton,
   Tooltip
 } from '@mui/material';
@@ -28,19 +22,13 @@ import {
   ArrowBack,
   Save,
   Cancel,
-  Business,
-  Person,
-  Assessment,
-  AttachMoney,
-  CalendarToday,
-  Notes,
-  Edit,
   Help
 } from '@mui/icons-material';
 import { observer } from 'mobx-react';
 import { ICustomer, CreateCustomerRequest, UpdateCustomerRequest } from '@/types';
 import customersStore from '@/stores/customers.store';
-import IndustrySelect from './IndustrySelect';
+import SelectBase from '@/components/base/Select';
+import industriesStore from '@/stores/industries.store';
 
 interface CustomerFormProps {
   mode: 'create' | 'edit';
@@ -231,13 +219,17 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
                   placeholder="Enter customer company name"
                   sx={{ '& .MuiInputBase-root': { height: 40 } }}
                 />
-                <IndustrySelect
+                <SelectBase
                   value={formData.industry}
-                  onChange={(value) => handleInputChange('industry', value)}
+                  onChange={(value) => handleInputChange('industry', value as string)}
                   size="small"
                   fullWidth
                   label="Industry"
                   placeholder="Select industry"
+                  allowOther
+                  allowClear
+                  searchable
+                  options={industriesStore.industries.length ? industriesStore.industries : []}
                 />
               </Box>
             </Box>

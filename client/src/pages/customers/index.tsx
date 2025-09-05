@@ -42,11 +42,13 @@ import {
   TrendingUp,
   Business,
   People,
-  Assessment
+  Assessment,
+  ClearAll
 } from '@mui/icons-material';
+import CloseIcon from '@mui/icons-material/Close';
 import { ICustomer, CustomerFilters, CustomerStats } from '@/types';
 import customersStore from '@/stores/customers.store';
-import IndustrySelect from '@/components/customer/IndustrySelect';
+import SelectBase from '@/components/base/Select';
 import industriesStore from '@/stores/industries.store';
 
 const companySizeOptions = [
@@ -128,7 +130,7 @@ const CustomersPage: React.FC = () => {
     customersStore.setSort(field, newSortOrder);
   };
 
-  const handleFilter = () => {
+  const applyFilters = () => {
     const newFilters: Partial<CustomerFilters> = {
       page: 1,
       industry: industryFilter || undefined,
@@ -137,6 +139,23 @@ const CustomersPage: React.FC = () => {
       healthScoreMax: healthScoreMaxFilter !== '' ? healthScoreMaxFilter : undefined,
     };
     customersStore.updateFilters(newFilters);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setIndustryFilter('');
+    setCompanySizeFilter('');
+    setHealthScoreMinFilter('');
+    setHealthScoreMaxFilter('');
+
+    customersStore.updateFilters({
+      page: 1,
+      industry: undefined,
+      companySize: undefined,
+      healthScoreMin: undefined,
+      healthScoreMax: undefined,
+    });
+    customersStore.fetchCustomers();
   };
 
   const handleDelete = async () => {
@@ -291,76 +310,78 @@ const CustomersPage: React.FC = () => {
             size="small"
             placeholder="Search by name, industry, account manager..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); }}
             InputProps={{
               startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+              endAdornment: searchTerm ? (
+                <IconButton size="small" onClick={() => { setSearchTerm(''); }}>
+                  <CloseIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              ) : undefined,
             }}
             sx={{ height: 40 }}
+            onBlur={applyFilters}
+            onKeyUp={applyFilters}
           />
           
-          <IndustrySelect
-            value={industryFilter}
-            onChange={(v) => setIndustryFilter(v)}
+          <Box sx={{ position: 'relative' }}>
+            <SelectBase
+              value={industryFilter}
+              onChange={(v) => { setIndustryFilter(v as string); applyFilters(); }}
+              size="small"
+              fullWidth
+              label="Industry"
+              placeholder="Industry"
+              allowOther={false}
+              allowClear
+              options={industriesStore.industries.length ? industriesStore.industries : []}
+            />
+          </Box>
+          
+          <SelectBase
+            value={companySizeFilter}
+            onChange={(v) => { setCompanySizeFilter(v as string); applyFilters(); }}
             size="small"
             fullWidth
-            label="Industry"
-            placeholder="Industry"
+            label="Company Size"
+            placeholder="All"
+            allowClear
+            allowOther={false}
+            options={companySizeOptions.map(o => ({ value: o.value, label: o.label }))}
           />
           
-          <FormControl fullWidth size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Company Size</InputLabel>
-            <Select
-              value={companySizeFilter}
-              label="Company Size"
-              onChange={(e) => setCompanySizeFilter(e.target.value)}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="">All</MenuItem>
-              {companySizeOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SelectBase
+            value={healthScoreMinFilter === '' ? '' : healthScoreMinFilter}
+            onChange={(v) => { setHealthScoreMinFilter(v === '' ? '' : Number(v)); applyFilters(); }}
+            size="small"
+            fullWidth
+            label="Min Health Score"
+            placeholder="Any"
+            allowClear
+            allowOther={false}
+            options={healthScoreOptions.map(o => ({ value: o.value, label: o.label }))}
+          />
           
-          <FormControl fullWidth size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Min Health Score</InputLabel>
-            <Select
-              value={healthScoreMinFilter === '' ? '' : String(healthScoreMinFilter)}
-              label="Min Health Score"
-              onChange={(e) => setHealthScoreMinFilter(e.target.value === '' ? '' : Number(e.target.value))}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="">Any</MenuItem>
-              {healthScoreOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          
-          <FormControl fullWidth size="small" sx={{ minWidth: 160 }}>
-            <InputLabel>Max Health Score</InputLabel>
-            <Select
-              value={healthScoreMaxFilter === '' ? '' : String(healthScoreMaxFilter)}
-              label="Max Health Score"
-              onChange={(e) => setHealthScoreMaxFilter(e.target.value === '' ? '' : Number(e.target.value))}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="">Any</MenuItem>
-              {healthScoreOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <SelectBase
+            value={healthScoreMaxFilter === '' ? '' : healthScoreMaxFilter}
+            onChange={(v) => { setHealthScoreMaxFilter(v === '' ? '' : Number(v)); applyFilters(); }}
+            size="small"
+            fullWidth
+            label="Max Health Score"
+            placeholder="Any"
+            allowClear
+            allowOther={false}
+            options={healthScoreOptions.map(o => ({ value: o.value, label: o.label }))}
+          />
           
           <Button
-            variant="contained"
-            startIcon={<FilterList />}
-            onClick={handleFilter}
+            variant="outlined"
+            color="secondary"
+            startIcon={<ClearAll />}
+            onClick={handleClearFilters}
             sx={{ height: 40, minWidth: 100 }}
           >
-            FILTER
+            CLEAR
           </Button>
         </Box>
       </Paper>
