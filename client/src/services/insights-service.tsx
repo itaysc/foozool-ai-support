@@ -63,6 +63,14 @@ export const insightsService = {
   async getPredictionAccuracy(days = 30): Promise<AccuracyAnalysisResponse> {
     const response = await axios.get(getRoute(`predictions/accuracy?days=${days}`));
     return { success: true, data: response.data };
+  },
+
+  /**
+   * Get Customer Success risk insights for a specific customer (authenticated)
+   */
+  async getCustomerSuccessInsights(customerId: string): Promise<{ success: boolean; data: any[] }>{
+    const response = await axios.get(getRoute(`insights/v1/insights/customer-success/${customerId}`));
+    return { success: true, data: response.data.payload };
   }
 };
 

@@ -1,14 +1,66 @@
 import express from 'express';
 import { InsightModel } from '../../../schemas/insights.schema';
 import mongoose from 'mongoose';
+import { authenticateJWT } from '../../../middleware/authenticate';
+import { UserContextManager } from '../../../context/userContext';
+import { generateCustomerSuccessInsights } from '../../../services/insights/customerSuccess.service';
+import { CustomerModel } from '../../../schemas';
 
 const router = express.Router();
+
+/**
+ * GET /insights/customer-success/:customerId
+ * Generate Customer Success risk insights for a specific customer (authenticated, org-scoped)
+ * Place BEFORE dynamic /insights/:organizationId to avoid route conflicts.
+ */
+router.get('/customer-success/:customerId', authenticateJWT, async (req, res) => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    const { customerId } = req.params;
+    if (!organizationId) {
+      return res.status(400).json({ status: 400, error: 'Organization ID not found in user context' });
+    }
+    const insights = await generateCustomerSuccessInsights(customerId);
+    return res.status(200).json({ status: 200, payload: insights });
+  } catch (err) {
+    console.error('Error generating CS insights:', err);
+    return res.status(500).json({ status: 500, error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /insights/customer-success
+ * Generate Customer Success risk insights for ALL customers in the current organization (authenticated, org-scoped)
+ */
+router.get('/customer-success', authenticateJWT, async (req, res) => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      return res.status(400).json({ status: 400, error: 'Organization ID not found in user context' });
+    }
+
+    const customers = await CustomerModel.find({ organizationId })
+      .select({ _id: 1, name: 1 })
+      .lean();
+
+    const results: Array<{ customerId: string; customerName?: string; insights: any[] }> = [];
+    for (const c of customers) {
+      const insights = await generateCustomerSuccessInsights(String(c._id));
+      results.push({ customerId: String(c._id), customerName: c.name, insights });
+    }
+
+    return res.status(200).json({ status: 200, count: results.length, payload: results });
+  } catch (err) {
+    console.error('Error generating CS insights for all customers:', err);
+    return res.status(500).json({ status: 500, error: 'Internal server error' });
+  }
+});
 
 /**
  * GET /insights/:organizationId
  * Get insights for a specific organization
  */
-router.get('/insights/:organizationId', async (req, res) => {
+router.get('/:organizationId', async (req, res) => {
   const { organizationId } = req.params;
   
   // Validate organization ID format
@@ -59,7 +111,7 @@ router.get('/insights/:organizationId', async (req, res) => {
  * GET /insights/:organizationId/summary
  * Get summary statistics for insights of a specific organization
  */
-router.get('/insights/:organizationId/summary', async (req, res) => {
+router.get('/:organizationId/summary', async (req, res) => {
   const { organizationId } = req.params;
   
   if (!mongoose.Types.ObjectId.isValid(organizationId)) {
@@ -117,7 +169,7 @@ router.get('/insights/:organizationId/summary', async (req, res) => {
  * GET /insights
  * Get insights for all organizations (admin endpoint)
  */
-router.get('/insights', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { limit = 100, skip = 0 } = req.query;
     

@@ -16,7 +16,14 @@ import {
   Alert,
   Stack,
   IconButton,
-  Tooltip
+  Tooltip,
+  Tabs,
+  Tab,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell
 } from '@mui/material';
 import {
   ArrowBack,
@@ -26,9 +33,12 @@ import {
 } from '@mui/icons-material';
 import { observer } from 'mobx-react';
 import { ICustomer, CreateCustomerRequest, UpdateCustomerRequest } from '@/types';
+import botsStore from '@/stores/bots.store';
 import customersStore from '@/stores/customers.store';
 import SelectBase from '@/components/base/Select';
+import Modal from '@/components/Modal';
 import industriesStore from '@/stores/industries.store';
+import featuresStore from '@/stores/features.store';
 
 interface CustomerFormProps {
   mode: 'create' | 'edit';
@@ -71,6 +81,11 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
   const { customerId } = useParams<{ customerId: string }>();
   
   const [customer, setCustomer] = useState<ICustomer | null>(null);
+  const [tab, setTab] = useState<'general' | 'features' | 'bots'>('general');
+  const [addUsageOpen, setAddUsageOpen] = useState(false);
+  const [newUsage, setNewUsage] = useState<{ featureName: string; activeUsers?: number; utilization?: number; usageDate?: string }>({ featureName: '' });
+  const [addBotOpen, setAddBotOpen] = useState(false);
+  const [newBot, setNewBot] = useState<{ name: string; type: 'customer_success' }>({ name: '', type: 'customer_success' });
   
   const [formData, setFormData] = useState<CreateCustomerRequest>({
     name: '',
@@ -81,6 +96,9 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
     accountManager: '',
     healthScore: undefined,
     notes: '',
+    // Ensure optional fields are present so UI can bind properly
+    segment: undefined as any,
+    usageData: undefined,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -89,6 +107,11 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
     if (mode === 'edit' && customerId) {
       fetchCustomer();
     }
+    featuresStore.ensureLoaded();
+    if (customerId) {
+      featuresStore.loadUsageForCustomer(customerId);
+    }
+    botsStore.load();
   }, [mode, customerId]);
 
   const fetchCustomer = async () => {
@@ -108,6 +131,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
           accountManager: customerData.accountManager || '',
           healthScore: customerData.healthScore,
           notes: customerData.notes || '',
+          segment: (customerData as any).segment,
+          usageData: customerData.usageData ? {
+            activeUsersCount: customerData.usageData.activeUsersCount,
+            seatsPurchased: customerData.usageData.seatsPurchased,
+            seatsUsed: customerData.usageData.seatsUsed,
+          } : undefined,
         });
       }
     } catch (err) {
@@ -177,7 +206,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
   }
 
     return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
+    <Box sx={{ maxWidth: 900, mx: 'auto', p: 3 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Button
@@ -199,7 +228,14 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         </Alert>
       )}
 
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+        <Tab label="General" value="general" />
+        <Tab label="Feature Usage" value="features" />
+        {mode === 'edit' && <Tab label="Bots" value="bots" />}
+      </Tabs>
+
       <form onSubmit={handleSubmit}>
+        {tab === 'general' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Customer Information Section */}
             <Box>
@@ -230,6 +266,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
                   allowClear
                   searchable
                   options={industriesStore.industries.length ? industriesStore.industries : []}
+                />
+                <SelectBase
+                  value={(formData as any).segment || ''}
+                  onChange={(v) => handleInputChange('segment' as any, v as any)}
+                  size="small"
+                  fullWidth
+                  label="Customer Segment"
+                  placeholder="Select segment"
+                  allowClear
+                  options={[ 'SMB', 'Mid-Market', 'Enterprise', 'Other' ]}
                 />
               </Box>
             </Box>
@@ -355,6 +401,42 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
               </Box>
             </Box>
 
+            {/* Usage Section */}
+            <Box>
+              <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: 'text.primary', fontSize: '1rem' }}>
+                Usage
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Active Users Count"
+                  type="number"
+                  value={(formData as any).usageData?.activeUsersCount || ''}
+                  onChange={(e) => handleInputChange('usageData' as any, { ...(formData as any).usageData, activeUsersCount: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  sx={{ '& .MuiInputBase-root': { height: 40 } }}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Seats Purchased"
+                  type="number"
+                  value={(formData as any).usageData?.seatsPurchased || ''}
+                  onChange={(e) => handleInputChange('usageData' as any, { ...(formData as any).usageData, seatsPurchased: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  sx={{ '& .MuiInputBase-root': { height: 40 } }}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Seats Used"
+                  type="number"
+                  value={(formData as any).usageData?.seatsUsed || ''}
+                  onChange={(e) => handleInputChange('usageData' as any, { ...(formData as any).usageData, seatsUsed: e.target.value === '' ? undefined : Number(e.target.value) })}
+                  sx={{ '& .MuiInputBase-root': { height: 40 } }}
+                />
+              </Box>
+            </Box>
+
             {/* Notes Section */}
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -404,7 +486,183 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
               </Stack>
             </Box>
           </Box>
+        )}
+
+        {tab === 'features' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Usage History</Typography>
+              <Button variant="text" onClick={() => setAddUsageOpen(true)}>+ Add Usage</Button>
+            </Box>
+            {mode === 'edit' && customerId ? (
+              <>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Feature</TableCell>
+                      <TableCell align="right">Active Users</TableCell>
+                      <TableCell align="right">Utilization %</TableCell>
+                      <TableCell>Usage Date</TableCell>
+                      <TableCell>Created</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {(featuresStore.usageByCustomer[customerId] || []).map((u) => (
+                      <TableRow key={u._id}>
+                        <TableCell>{u.featureName}</TableCell>
+                        <TableCell align="right">{u.activeUsersCount ?? '-'}</TableCell>
+                        <TableCell align="right">{u.utilizationPercent ?? '-'}</TableCell>
+                        <TableCell>{u.usageDate ? new Date(u.usageDate).toISOString().split('T')[0] : (u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : '-')}</TableCell>
+                        <TableCell>{new Date(u.createdAt).toISOString().split('T')[0]}</TableCell>
+                      </TableRow>
+                    ))}
+                    {(!featuresStore.usageByCustomer[customerId] || featuresStore.usageByCustomer[customerId].length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center">No usage entries yet</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </>
+            ) : (
+              <Alert severity="info">Save the customer first to manage feature usage.</Alert>
+            )}
+          </Box>
+        )}
+
+        {tab === 'bots' && mode === 'edit' && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Configure AI Bots</Typography>
+              <Button variant="text" onClick={() => setAddBotOpen(true)}>+ Add Bot</Button>
+            </Box>
+            {/* Removed explanatory text here; moved into modal */}
+
+            <Box>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>Existing Bots</Typography>
+              {botsStore.isLoading ? (
+                <CircularProgress size={24} />
+              ) : botsStore.items.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">No bots yet.</Typography>
+              ) : (
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>Created</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {botsStore.items.map((b) => (
+                      <TableRow key={b._id}>
+                        <TableCell>{b.name}</TableCell>
+                        <TableCell sx={{ textTransform: 'capitalize' }}>{b.type.replace('_', ' ')}</TableCell>
+                        <TableCell>{new Date(b.createdAt).toISOString().split('T')[0]}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Box>
+          </Box>
+        )}
         </form>
+
+        <Modal open={addUsageOpen} onClose={() => setAddUsageOpen(false)} title="Add Feature Usage" maxWidth="sm" contentTopGap={5}
+          actions={
+            <>
+              <Button onClick={() => setAddUsageOpen(false)}>Cancel</Button>
+              <Button variant="contained" onClick={async () => {
+                if (!customerId) return;
+                const featureName = newUsage.featureName?.trim();
+                if (!featureName) return;
+                await featuresStore.addUsage({
+                  featureName,
+                  customerId,
+                  activeUsersCount: newUsage.activeUsers,
+                  utilizationPercent: newUsage.utilization,
+                  usageDate: newUsage.usageDate ? new Date(newUsage.usageDate).toISOString() : undefined 
+                });
+                setAddUsageOpen(false);
+                setNewUsage({ featureName: '' });
+              }}>Add Usage</Button>
+            </>
+          }
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <SelectBase
+              value={newUsage.featureName}
+              onChange={(v) => setNewUsage(prev => ({ ...prev, featureName: String(v) }))}
+              label="Feature (name)"
+              placeholder="Select or Other"
+              allowOther
+              allowClear
+              options={featuresStore.features.map(f => f.name)}
+            />
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <TextField fullWidth size="small" label="Active Users" type="number" InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} value={newUsage.activeUsers ?? ''} onChange={(e) => setNewUsage(prev => ({ ...prev, activeUsers: e.target.value === '' ? undefined : Number(e.target.value) }))} />
+              <TextField fullWidth size="small" label="Utilization %" type="number" InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} value={newUsage.utilization ?? ''} onChange={(e) => setNewUsage(prev => ({ ...prev, utilization: e.target.value === '' ? undefined : Number(e.target.value) }))} />
+              <TextField fullWidth size="small" label="Usage Date" type="date" InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} value={newUsage.usageDate ?? ''} onChange={(e) => setNewUsage(prev => ({ ...prev, usageDate: e.target.value }))} />
+            </Box>
+          </Box>
+        </Modal>
+
+        {/* Add Bot Modal */}
+        <Modal
+          open={addBotOpen}
+          onClose={() => setAddBotOpen(false)}
+          title="Add Bot"
+          maxWidth="sm"
+          contentTopGap={3}
+          actions={
+            <>
+              <Button onClick={() => setAddBotOpen(false)}>Cancel</Button>
+              <Button
+                variant="contained"
+                onClick={async () => {
+                  if (!newBot.name.trim()) return;
+                  await botsStore.create({ name: newBot.name.trim(), type: newBot.type });
+                  setAddBotOpen(false);
+                  setNewBot({ name: '', type: 'customer_success' });
+                }}
+                disabled={botsStore.isSaving}
+              >
+                {botsStore.isSaving ? 'Creating...' : 'Create'}
+              </Button>
+            </>
+          }
+        >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Create bots that generate specific insights.
+            </Typography>
+            <TextField
+              fullWidth
+              size="small"
+              label="Bot Name"
+              value={newBot.name}
+              onChange={(e) => setNewBot(prev => ({ ...prev, name: e.target.value }))}
+              sx={{ '& .MuiInputBase-root': { height: 40 } }}
+            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Bot Type</InputLabel>
+              <Select
+                label="Bot Type"
+                value={newBot.type}
+                onChange={(e) => setNewBot(prev => ({ ...prev, type: e.target.value as any }))}
+                sx={{ height: 40 }}
+              >
+                <MenuItem value="customer_success">Customer Success Insights</MenuItem>
+                <MenuItem value="issue_insights">Issue Insights</MenuItem>
+                <MenuItem value="predictions">Predictions</MenuItem>
+                <MenuItem value="nps">NPS Insights</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </Modal>
+        
+        
     </Box>
   );
 };

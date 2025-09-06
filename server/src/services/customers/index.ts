@@ -24,6 +24,7 @@ export const getCustomers = async (organizationId: string, options: {
   filter?: {
     industry?: string;
     companySize?: string;
+    segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
     accountManager?: string;
     healthScore?: { min?: number; max?: number };
   };
@@ -35,6 +36,7 @@ export const getCustomers = async (organizationId: string, options: {
   // Apply filters
   if (filter.industry) query.industry = filter.industry;
   if (filter.companySize) query.companySize = filter.companySize;
+  if (filter.segment) query.segment = filter.segment;
   if (filter.accountManager) query.accountManager = filter.accountManager;
   if (filter.healthScore) {
     if (filter.healthScore.min !== undefined || filter.healthScore.max !== undefined) {
@@ -67,14 +69,33 @@ export const getCustomerById = async (organizationId: string, customerId: string
 };
 
 export const updateCustomer = async (organizationId: string, customerId: string, updateData: UpdateCustomerRequest): Promise<ICustomer | null> => {
-  const update: any = { ...updateData };
-  if (updateData.startDate) {
-    update.startDate = new Date(updateData.startDate);
+  // Persist industry string to industries collection if provided
+  if (updateData.industry && updateData.industry.trim()) {
+    await persistIndustry(organizationId, updateData.industry);
   }
-  
+
+  // Build a $set update to avoid wiping nested objects accidentally
+  const set: Record<string, any> = {};
+
+  if (updateData.name !== undefined) set.name = updateData.name;
+  if (updateData.industry !== undefined) set.industry = updateData.industry;
+  if (updateData.companySize !== undefined) set.companySize = updateData.companySize;
+  if (updateData.segment !== undefined) set.segment = updateData.segment as any;
+  if (updateData.contractValue !== undefined) set.contractValue = updateData.contractValue;
+  if (updateData.accountManager !== undefined) set.accountManager = updateData.accountManager;
+  if (updateData.healthScore !== undefined) set.healthScore = updateData.healthScore;
+  if (updateData.notes !== undefined) set.notes = updateData.notes;
+  if (updateData.startDate !== undefined) set.startDate = updateData.startDate ? new Date(updateData.startDate) : undefined;
+
+  if (updateData.usageData) {
+    if (updateData.usageData.activeUsersCount !== undefined) set['usageData.activeUsersCount'] = updateData.usageData.activeUsersCount;
+    if (updateData.usageData.seatsPurchased !== undefined) set['usageData.seatsPurchased'] = updateData.usageData.seatsPurchased;
+    if (updateData.usageData.seatsUsed !== undefined) set['usageData.seatsUsed'] = updateData.usageData.seatsUsed;
+  }
+
   return await CustomerModel.findOneAndUpdate(
     { _id: customerId, organizationId },
-    update,
+    { $set: set },
     { new: true, runValidators: true }
   ).lean();
 };

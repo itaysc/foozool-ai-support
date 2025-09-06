@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { FormControl, InputLabel, Select as MuiSelect, MenuItem, Box, FormHelperText, TextField, Chip, IconButton } from '@mui/material';
 import { Close, Search, ArrowDropDown as ArrowDropDownIcon } from '@mui/icons-material';
 
@@ -43,6 +43,7 @@ const Select: React.FC<Props> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [otherMode, setOtherMode] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const ordered = useMemo(() => {
     let base = options;
@@ -109,7 +110,13 @@ const Select: React.FC<Props> = ({
         label={label}
         onChange={(e) => handleSelectChange(e.target.value as any)}
         open={isOpen}
-        onOpen={() => setIsOpen(true)}
+        onOpen={() => {
+          setIsOpen(true);
+          // Focus search input after menu opens
+          setTimeout(() => {
+            if (searchable) searchInputRef.current?.focus();
+          }, 0);
+        }}
         onClose={() => setIsOpen(false)}
         sx={{
           height: 40,
@@ -132,6 +139,8 @@ const Select: React.FC<Props> = ({
               InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }}
               sx={{ '& .MuiInputBase-root': { height: 28, fontSize: '0.875rem' }, '& .MuiOutlinedInput-notchedOutline': { border: 'none' } }}
               onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              inputRef={searchInputRef}
             />
           </Box>
         )}

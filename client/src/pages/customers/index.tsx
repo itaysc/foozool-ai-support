@@ -43,7 +43,6 @@ import {
   Business,
   People,
   Assessment,
-  ClearAll
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import { ICustomer, CustomerFilters, CustomerStats } from '@/types';
@@ -89,6 +88,7 @@ const CustomersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [industryFilter, setIndustryFilter] = useState('');
   const [companySizeFilter, setCompanySizeFilter] = useState('');
+  const [segmentFilter, setSegmentFilter] = useState('');
   const [healthScoreMinFilter, setHealthScoreMinFilter] = useState<number | ''>('');
   const [healthScoreMaxFilter, setHealthScoreMaxFilter] = useState<number | ''>('');
 
@@ -131,10 +131,11 @@ const CustomersPage: React.FC = () => {
   };
 
   const applyFilters = () => {
-    const newFilters: Partial<CustomerFilters> = {
+    const newFilters = {
       page: 1,
       industry: industryFilter || undefined,
       companySize: companySizeFilter || undefined,
+      segment: segmentFilter || undefined,
       healthScoreMin: healthScoreMinFilter !== '' ? healthScoreMinFilter : undefined,
       healthScoreMax: healthScoreMaxFilter !== '' ? healthScoreMaxFilter : undefined,
     };
@@ -145,6 +146,7 @@ const CustomersPage: React.FC = () => {
     setSearchTerm('');
     setIndustryFilter('');
     setCompanySizeFilter('');
+    setSegmentFilter('');
     setHealthScoreMinFilter('');
     setHealthScoreMaxFilter('');
 
@@ -152,9 +154,10 @@ const CustomersPage: React.FC = () => {
       page: 1,
       industry: undefined,
       companySize: undefined,
+      segment: undefined,
       healthScoreMin: undefined,
       healthScoreMax: undefined,
-    });
+    } as any);
     customersStore.fetchCustomers();
   };
 
@@ -298,6 +301,15 @@ const CustomersPage: React.FC = () => {
 
       {/* Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{ color: 'primary.main', cursor: 'pointer', fontWeight: 500 }}
+            onClick={handleClearFilters}
+          >
+            Clear All
+          </Typography>
+        </Box>
         <Box sx={{ 
           display: 'flex', 
           flexWrap: 'wrap', 
@@ -349,6 +361,18 @@ const CustomersPage: React.FC = () => {
             allowOther={false}
             options={companySizeOptions.map(o => ({ value: o.value, label: o.label }))}
           />
+
+          <SelectBase
+            value={segmentFilter}
+            onChange={(v) => { setSegmentFilter(v as string); applyFilters(); }}
+            size="small"
+            fullWidth
+            label="Customer Segment"
+            placeholder="All"
+            allowClear
+            allowOther={false}
+            options={[ 'SMB', 'Mid-Market', 'Enterprise', 'Other' ]}
+          />
           
           <SelectBase
             value={healthScoreMinFilter === '' ? '' : healthScoreMinFilter}
@@ -374,15 +398,6 @@ const CustomersPage: React.FC = () => {
             options={healthScoreOptions.map(o => ({ value: o.value, label: o.label }))}
           />
           
-          <Button
-            variant="outlined"
-            color="secondary"
-            startIcon={<ClearAll />}
-            onClick={handleClearFilters}
-            sx={{ height: 40, minWidth: 100 }}
-          >
-            CLEAR
-          </Button>
         </Box>
       </Paper>
 

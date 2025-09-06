@@ -42,6 +42,9 @@ import { NPSInsights } from '@/types/nps';
 import { insightsService } from '@/services/insights-service';
 import { npsService } from '@/services/nps-service';
 import { useAuth } from '@/context/auth.context';
+import customersStore from '@/stores/customers.store';
+import SelectBase from '@/components/base/Select';
+import botsService from '@/services/bots-service';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -76,7 +79,10 @@ const InsightsPage: React.FC = () => {
   const [predictionSummary, setPredictionSummary] = useState<PredictionSummary | null>(null);
   const [accuracyAnalysis, setAccuracyAnalysis] = useState<AccuracyAnalysis | null>(null);
   const [npsInsights, setNpsInsights] = useState<NPSInsights | null>(null);
+  const [bots, setBots] = useState<Array<{ _id: string; type: 'customer_success' | 'issue_insights' | 'predictions' | 'nps' }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [csInsights, setCsInsights] = useState<any[] | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -110,13 +116,14 @@ const InsightsPage: React.FC = () => {
     const fetchInsights = async () => {
       try {
         setLoading(true);
-        const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse, accuracyResponse, npsResponse] = await Promise.all([
+        const [insightsResponse, summaryResponse, predictionsResponse, predictionSummaryResponse, accuracyResponse, npsResponse, botsResponse] = await Promise.all([
           insightsService.getInsightsByOrganization(effectiveOrgId),
           insightsService.getInsightsSummary(effectiveOrgId),
           insightsService.getPredictions(20),
           insightsService.getPredictionSummary().catch(() => ({ success: false, data: null })),
           insightsService.getPredictionAccuracy(30).catch(() => ({ success: false, data: null })),
-          npsService.getNPSInsights().catch(() => null) // NPS is optional, don't fail if it's not available
+          npsService.getNPSInsights().catch(() => null), // NPS is optional, don't fail if it's not available
+          botsService.list().catch(() => [])
         ]);
         
         if (insightsResponse.success) {
@@ -142,13 +149,10 @@ const InsightsPage: React.FC = () => {
       }
 
       // Set NPS insights if available
-      console.log('📊 NPS Response received:', npsResponse);
       if (npsResponse) {
-        console.log('✅ Setting NPS insights:', npsResponse);
         setNpsInsights(npsResponse);
-      } else {
-        console.log('ℹ️ No NPS insights available');
       }
+      setBots(Array.isArray(botsResponse) ? botsResponse as any : []);
       } catch (error) {
         console.error('Failed to fetch insights:', error);
         setError('Failed to load insights. Please try again later.');
@@ -159,6 +163,23 @@ const InsightsPage: React.FC = () => {
 
     fetchInsights();
   }, [effectiveOrgId, user]);
+
+  // Ensure customers are loaded for the CS tab selector
+  useEffect(() => {
+    if (customersStore.customers.length === 0) {
+      customersStore.fetchCustomers();
+    }
+  }, []);
+
+  const fetchCustomerSuccessInsights = async (customerId: string) => {
+    if (!customerId) return;
+    try {
+      const res = await insightsService.getCustomerSuccessInsights(customerId);
+      if (res.success) setCsInsights(res.data);
+    } catch (e) {
+      setCsInsights([]);
+    }
+  };
 
   const refreshInsights = async () => {
     if (!effectiveOrgId) return;
@@ -264,6 +285,16 @@ const InsightsPage: React.FC = () => {
       </Box>
     );
   }
+
+  // Determine visible tabs based on data or configured bots
+  const visibleTabKeys: Array<'issue' | 'pred' | 'nps' | 'cs'> = [];
+  if (bots.some(b => b.type === 'issue_insights') || insights.length > 0) visibleTabKeys.push('issue');
+  if (bots.some(b => b.type === 'predictions') || predictions.length > 0) visibleTabKeys.push('pred');
+  if (bots.some(b => b.type === 'nps') || !!npsInsights) visibleTabKeys.push('nps');
+  if (bots.some(b => b.type === 'customer_success') || (csInsights && csInsights.length > 0)) visibleTabKeys.push('cs');
+
+  // Clamp selected tab index to visible range
+  const safeTabValue = Math.min(tabValue, Math.max(visibleTabKeys.length - 1, 0));
 
   return (
     <Box sx={{ 
@@ -429,7 +460,7 @@ const InsightsPage: React.FC = () => {
       <Box sx={{ width: '100%' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs 
-            value={tabValue} 
+            value={safeTabValue} 
             onChange={handleTabChange} 
             aria-label="insights tabs"
             sx={{
@@ -441,30 +472,25 @@ const InsightsPage: React.FC = () => {
               }
             }}
           >
-            <Tab 
-              icon={<TrendingUpIcon />} 
-              label="Issue Insights" 
-              iconPosition="start"
-              sx={{ minWidth: 140 }}
-            />
-            <Tab 
-              icon={<Analytics />} 
-              label="Predictions" 
-              iconPosition="start"
-              sx={{ minWidth: 140 }}
-            />
-            <Tab 
-              icon={<Assessment />} 
-              label="NPS Insights" 
-              iconPosition="start"
-              sx={{ minWidth: 140 }}
-            />
+            {(visibleTabKeys.includes('issue')) && (
+              <Tab icon={<TrendingUpIcon />} label="Issue Insights" iconPosition="start" sx={{ minWidth: 140 }} />
+            )}
+            {(visibleTabKeys.includes('pred')) && (
+              <Tab icon={<Analytics />} label="Predictions" iconPosition="start" sx={{ minWidth: 140 }} />
+            )}
+            {(visibleTabKeys.includes('nps')) && (
+              <Tab icon={<Assessment />} label="NPS Insights" iconPosition="start" sx={{ minWidth: 140 }} />
+            )}
+            {(visibleTabKeys.includes('cs')) && (
+              <Tab icon={<Dashboard />} label="Customer Success" iconPosition="start" sx={{ minWidth: 180 }} />
+            )}
 
           </Tabs>
         </Box>
 
         {/* Tab 1: Issue Insights */}
-        <TabPanel value={tabValue} index={0}>
+        {visibleTabKeys.includes('issue') && (
+        <TabPanel value={safeTabValue} index={visibleTabKeys.indexOf('issue')}>
           <Box>
             <Typography variant="h5" gutterBottom sx={{ 
               fontWeight: 'bold', 
@@ -579,9 +605,11 @@ const InsightsPage: React.FC = () => {
             )}
           </Box>
         </TabPanel>
+        )}
 
         {/* Tab 2: Predictions */}
-        <TabPanel value={tabValue} index={1}>
+        {visibleTabKeys.includes('pred') && (
+        <TabPanel value={safeTabValue} index={visibleTabKeys.indexOf('pred')}>
           <Box>
             <Typography variant="h5" gutterBottom sx={{ 
               fontWeight: 'bold', 
@@ -737,9 +765,11 @@ const InsightsPage: React.FC = () => {
             )}
           </Box>
         </TabPanel>
+        )}
 
         {/* Tab 3: NPS Insights */}
-        <TabPanel value={tabValue} index={2}>
+        {visibleTabKeys.includes('nps') && (
+        <TabPanel value={safeTabValue} index={visibleTabKeys.indexOf('nps')}>
           <Box>
             <Typography variant="h5" gutterBottom sx={{ 
               fontWeight: 'bold', 
@@ -753,7 +783,6 @@ const InsightsPage: React.FC = () => {
               NPS Customer Insights
             </Typography>
 
-            {console.log('🔍 Rendering NPS tab, npsInsights:', npsInsights)}
             {npsInsights ? (
               <Box>
                 {/* NPS Score Overview */}
@@ -963,6 +992,86 @@ const InsightsPage: React.FC = () => {
             )}
           </Box>
         </TabPanel>
+        )}
+        {/* Tab 4: Customer Success Insights */}
+        {visibleTabKeys.includes('cs') && (
+        <TabPanel value={safeTabValue} index={visibleTabKeys.indexOf('cs')}>
+          <Box>
+            <Typography variant="h5" gutterBottom sx={{ 
+              fontWeight: 'bold', 
+              color: '#1976d2', 
+              mb: 3,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1
+            }}>
+              <Dashboard sx={{ fontSize: 28 }} />
+              Customer Success Insights
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, maxWidth: 420 }}>
+              <SelectBase
+                value={selectedCustomerId}
+                onChange={(v) => {
+                  const val = (v ?? '') as string;
+                  setSelectedCustomerId(val);
+                  fetchCustomerSuccessInsights(val);
+                }}
+                size="small"
+                fullWidth
+                label="Select Customer"
+                placeholder="Search or select customer"
+                searchable
+                allowClear
+                options={customersStore.customers.map(c => ({ value: c._id, label: c.name }))}
+              />
+            </Box>
+
+            {csInsights && csInsights.length > 0 ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+                {csInsights.map((insight, idx) => (
+                  <Box key={idx} sx={{ flex: '1 1 320px', minWidth: { xs: '100%', md: '360px' } }}>
+                    <Card sx={{ width: '100%', height: '100%', boxShadow: 3 }}>
+                      <CardContent sx={{ p: 3 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Chip 
+                            label={insight.type.replace(/_/g, ' ')} 
+                            color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'default'}
+                            size="small"
+                            sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
+                          />
+                        </Box>
+                        <Typography variant="body1" sx={{ fontWeight: 600, mb: 1.5 }}>
+                          {insight.message}
+                        </Typography>
+                        {insight.meta && (
+                          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, backgroundColor: '#f5f7fb' }}>
+                            {Object.entries(insight.meta).map(([k, v]) => (
+                              <Typography key={k} variant="caption" color="text.secondary" display="block">
+                                <strong>{k}:</strong> {String(v)}
+                              </Typography>
+                            ))}
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Paper sx={{ p: 6, textAlign: 'center', backgroundColor: '#ffffff' }}>
+                <InfoOutlined sx={{ fontSize: 80, color: 'text.secondary', mb: 3 }} />
+                <Typography variant="h5" gutterBottom color="text.secondary" sx={{ fontWeight: 500 }}>
+                  No Customer Success Insights Yet
+                </Typography>
+                <Typography variant="body1" color="text.secondary">
+                  Once you select a customer and generate usage, risk insights will appear here.
+                </Typography>
+              </Paper>
+            )}
+          </Box>
+        </TabPanel>
+        )}
       </Box>
     </Box>
   );

@@ -754,6 +754,103 @@
       ]
     },
     {
+      "name": "🤖 Bots",
+      "item": [
+        {
+          "name": "List Bots",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/bots",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","bots"]
+            },
+            "description": "List AI bots configured for the organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Bot",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Customer Success Bot\",\n  \"type\": \"customer_success\"\n}" },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/bots",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","bots"]
+            },
+            "description": "Create a new AI bot (one insights group per bot). Currently supported: customer_success"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🧩 Features",
+      "item": [
+        {
+          "name": "Upsert Feature",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Automation\"\n}" },
+            "url": { "raw": "{{nodejs_base_url}}/api/v1/features", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","features"] },
+            "description": "Create or fetch a feature by name for the current organization"
+          },
+          "response": []
+        },
+        {
+          "name": "List Features",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{auth_token}}" } ],
+            "url": { "raw": "{{nodejs_base_url}}/api/v1/features", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","features"] },
+            "description": "List all features for the organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Feature Usage",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"featureName\": \"Automation\",\n  \"customerId\": \"{{customer_id}}\",\n  \"activeUsersCount\": 43,\n  \"utilizationPercent\": 86\n}" },
+            "url": { "raw": "{{nodejs_base_url}}/api/v1/features/usage", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","features","usage"] },
+            "description": "Record feature usage for a customer (creates feature if name is new)"
+          },
+          "response": []
+        },
+        {
+          "name": "List Feature Usage (by Customer)",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{auth_token}}" } ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/features/usage?customerId={{customer_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","features","usage"],
+              "query": [ { "key": "customerId", "value": "{{customer_id}}" } ]
+            },
+            "description": "List feature usage entries for a specific customer"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "📰 News & Market Intelligence",
       "item": [
         {
@@ -971,6 +1068,59 @@
               ]
             },
             "description": "Get trend analysis for insights over time"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer Success Insights (by Customer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-success/{{customer_id}}",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-success",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "Generate Customer Success risk insights for a specific customer"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer Success Insights (ALL customers)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-success",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-success"
+              ]
+            },
+            "description": "Generate Customer Success risk insights for ALL customers in the current organization, sequentially"
           },
           "response": []
         },

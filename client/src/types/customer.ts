@@ -4,11 +4,17 @@ export interface ICustomer {
   name: string;
   industry?: string;
   companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
+  segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
   contractValue?: number;
   startDate?: string;
   accountManager?: string;
   healthScore?: number;
   notes?: string;
+  usageData?: {
+    activeUsersCount?: number;
+    seatsPurchased?: number;
+    seatsUsed?: number;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -17,22 +23,34 @@ export interface CreateCustomerRequest {
   name: string;
   industry?: string;
   companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
+  segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
   contractValue?: number;
   startDate?: string;
   accountManager?: string;
   healthScore?: number;
   notes?: string;
+  usageData?: {
+    activeUsersCount?: number;
+    seatsPurchased?: number;
+    seatsUsed?: number;
+  };
 }
 
 export interface UpdateCustomerRequest {
   name?: string;
   industry?: string;
   companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
+  segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
   contractValue?: number;
   startDate?: string;
   accountManager?: string;
   healthScore?: number;
   notes?: string;
+  usageData?: {
+    activeUsersCount?: number;
+    seatsPurchased?: number;
+    seatsUsed?: number;
+  };
 }
 
 export interface CustomerListResponse {
@@ -57,6 +75,7 @@ export interface CustomerFilters {
   sortOrder?: 'asc' | 'desc';
   industry?: string;
   companySize?: string;
+  segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
   accountManager?: string;
   healthScoreMin?: number;
   healthScoreMax?: number;
