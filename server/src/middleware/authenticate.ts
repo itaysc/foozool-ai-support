@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { IToken, IUser } from '../types';
 import { TokenModel, UserModel } from '../schemas';
+import { RoleModel } from '../schemas/role.schema';
 import { UserContextManager } from '../context/userContext';
 
 declare global {
@@ -9,9 +10,21 @@ declare global {
     interface Request {
       user?: IUser;
       permissions: string[];
+      roleNames: string[];
       token?: IToken;
     }
   }
+}
+
+async function deriveRolesAndPermissions(user: any): Promise<{ roleNames: string[]; effectivePermissions: string[] }> {
+  const roles = Array.isArray(user.roles) && user.roles.length
+    ? await RoleModel.find({ _id: { $in: user.roles as any } }).lean()
+    : [];
+  const roleNames = roles.map((r: any) => r.name);
+  const rolePermissions = roles.flatMap((r: any) => r.permissions || []);
+  const userPermissions = Array.isArray(user.permissions) ? user.permissions : [];
+  const effectivePermissions = Array.from(new Set([ ...userPermissions, ...rolePermissions ]));
+  return { roleNames, effectivePermissions };
 }
 
 export const authenticateWebhook = async (req: Request, res: Response, next: NextFunction) : Promise<void> => {
@@ -37,7 +50,10 @@ export const authenticateWebhook = async (req: Request, res: Response, next: Nex
   }
 
   req.token = validToken;
-  req.user = user;
+  req.user = user as any;
+  const { roleNames, effectivePermissions } = await deriveRolesAndPermissions(user);
+  req.permissions = effectivePermissions;
+  req.roleNames = roleNames;
   
   // Set user context
   UserContextManager.setContext(req);
@@ -53,7 +69,10 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized.' });
     }
-    req.user = user;
+    req.user = user as any;
+    const { roleNames, effectivePermissions } = await deriveRolesAndPermissions(user);
+    req.permissions = effectivePermissions;
+    req.roleNames = roleNames;
     
     // Set user context
     UserContextManager.setContext(req);
@@ -70,7 +89,10 @@ export const authenticateSplitJWT = (req: Request, res: Response, next: NextFunc
     if (!user) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    req.user = user;
+    req.user = user as any;
+    const { roleNames, effectivePermissions } = await deriveRolesAndPermissions(user);
+    req.permissions = effectivePermissions;
+    req.roleNames = roleNames;
     
     // Set user context
     UserContextManager.setContext(req);

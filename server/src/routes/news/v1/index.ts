@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { newsService } from '../../../services/news';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = Router();
 
@@ -11,6 +12,7 @@ const router = Router();
 router.get(
   '/:organizationId',
   authenticateJWT,
+  hasPermission('news:read'),
   async (req, res) => {
     try {
       const { organizationId } = req.params;
@@ -45,6 +47,7 @@ router.get(
 router.get(
   '/:organizationId/action-items',
   authenticateJWT,
+  hasPermission('news:read'),
   async (req, res) => {
     try {
       const { organizationId } = req.params;
@@ -81,6 +84,7 @@ router.get(
 router.get(
   '/:organizationId/summary',
   authenticateJWT,
+  hasPermission('news:read'),
   async (req, res) => {
     try {
       const { organizationId } = req.params;
@@ -120,6 +124,7 @@ router.get(
 router.get(
   '/:organizationId/full',
   authenticateJWT,
+  hasPermission('news:read'),
   async (req, res) => {
     try {
       const { organizationId } = req.params;

@@ -7,12 +7,15 @@ import { useAuth } from '@/context/auth.context';
 
 interface ProtectedRouteProps {
   element: React.ReactElement;
+  requiredPermissions?: string[]; // all required
+  anyPermissions?: string[]; // at least one
+  requiredRoles?: string[]; // at least one role name
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, requiredPermissions, anyPermissions, requiredRoles }) => {
   const location = useLocation();
   const { setRequestedUrl } = useMainLayoutContext();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
   // Store the requested URL for redirect after login
@@ -36,6 +39,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element }) => {
 
   // Show protected content if authenticated
   if (isAuthenticated) {
+    // Check role/permission gates if provided
+    const userPermissions: string[] = Array.isArray(user?.permissions) ? user!.permissions : [];
+    const userRoles: string[] = Array.isArray((user as any)?.roleNames) ? (user as any).roleNames : [];
+
+    const hasAllRequired = (requiredPermissions || []).every(p => userPermissions.includes(p));
+    const hasAny = (anyPermissions || []).length === 0 || (anyPermissions || []).some(p => userPermissions.includes(p));
+    const hasRole = (requiredRoles || []).length === 0 || (requiredRoles || []).some(r => userRoles.includes(r));
+
+    if ((requiredPermissions && requiredPermissions.length > 0 && !hasAllRequired) || !hasAny || !hasRole) {
+      return <LoadingPage />; // or a 403 component if you have one
+    }
     return element;
   }
 

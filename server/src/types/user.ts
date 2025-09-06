@@ -23,8 +23,8 @@ export interface IUser {
   group?: {
     type: string;
   };
-  roles: string[];
-  scopes: string[];
+  roles: (string | mongoose.Types.ObjectId)[];
+  permissions: string[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;

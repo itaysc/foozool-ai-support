@@ -3,6 +3,7 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { UserContextManager } from '../../../context/userContext';
 import { z } from 'zod';
 import { createBot, getBots } from '../../../services/bots';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = Router();
 router.use(authenticateJWT);
@@ -12,7 +13,7 @@ const createSchema = z.object({
   type: z.enum(['customer_success', 'issue_insights', 'predictions', 'nps']),
 });
 
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', hasPermission('bots:read'), async (req: Request, res: Response) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) return res.status(400).json({ status: 400, error: 'Organization ID not found in user context' });
@@ -24,7 +25,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', hasPermission('bots:create'), async (req: Request, res: Response) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     const userId = UserContextManager.getCurrentUserId();

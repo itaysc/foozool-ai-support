@@ -9,6 +9,8 @@ interface UserContext {
   userId: string;
   organizationId: string;
   useCache?: boolean;
+  permissions?: string[];
+  roles?: string[]; // role names
 }
 
 const userContextStorage = new AsyncLocalStorage<UserContext>();
@@ -30,7 +32,9 @@ export class UserContextManager {
       user: req.user,
       userId: req.user._id.toString(),
       organizationId: req.user.organization.toString(),
-      useCache
+      useCache,
+      permissions: (req as any).permissions || [],
+      roles: (req as any).roleNames || [],
     };
 
     userContextStorage.enterWith(context);
@@ -73,6 +77,18 @@ export class UserContextManager {
   static getUseCache(): boolean {
     const context = this.getContext();
     return context?.useCache ?? true; // Default to true if not set
+  }
+
+  /** Get current permissions */
+  static getPermissions(): string[] {
+    const context = this.getContext();
+    return context?.permissions ?? [];
+  }
+
+  /** Get current role names */
+  static getRoleNames(): string[] {
+    const context = this.getContext();
+    return context?.roles ?? [];
   }
 
   /**

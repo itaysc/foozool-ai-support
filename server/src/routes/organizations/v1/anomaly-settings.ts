@@ -4,6 +4,7 @@ import { UserContextManager } from '../../../context/userContext';
 import { AnomalyDetectionSettings } from '../../../types';
 import { validateRequest } from '../../../middleware/validateRequest';
 import { authenticateJWT } from '../../../middleware/authenticate';
+import { hasPermission } from '../../../middleware/permissions';
 import { z } from 'zod';
 
 const router = Router();
@@ -25,7 +26,7 @@ const updateAnomalySettingsSchema = z.object({
  * GET /api/v1/organizations/:organizationId/anomaly-settings
  * Get anomaly detection settings for an organization
  */
-router.get('/:organizationId/anomaly-settings', authenticateJWT, async (req: Request, res: Response) => {
+router.get('/:organizationId/anomaly-settings', authenticateJWT, hasPermission('organizations:read'), async (req: Request, res: Response) => {
   try {
     const { organizationId } = req.params;
     const currentOrgId = UserContextManager.getCurrentOrganizationId();
@@ -94,6 +95,7 @@ router.get('/:organizationId/anomaly-settings', authenticateJWT, async (req: Req
  */
 router.put('/:organizationId/anomaly-settings', 
   authenticateJWT,
+  hasPermission('organizations:update'),
   validateRequest(updateAnomalySettingsSchema),
   async (req: Request, res: Response) => {
     try {
@@ -181,7 +183,7 @@ router.put('/:organizationId/anomaly-settings',
  * POST /api/v1/organizations/:organizationId/anomaly-settings/reset
  * Reset anomaly detection settings to defaults
  */
-router.post('/:organizationId/anomaly-settings/reset', authenticateJWT, async (req: Request, res: Response) => {
+router.post('/:organizationId/anomaly-settings/reset', authenticateJWT, hasPermission('organizations:update'), async (req: Request, res: Response) => {
   try {
     const { organizationId } = req.params;
     const currentOrgId = UserContextManager.getCurrentOrganizationId();

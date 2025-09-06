@@ -101,6 +101,81 @@
       ]
     },
     {
+      "name": "🔑 Roles & Permissions",
+      "item": [
+        {
+          "name": "Create Permission",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"key\": \"reports:read\",\n  \"name\": \"Reports Read\",\n  \"description\": \"Read access to reports\",\n  \"roles\": [\"manager\", \"analyst\"]\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/permissions",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","permissions"]
+            },
+            "description": "Admin-only. Create a new permission and optionally assign it to roles by name."
+          },
+          "response": []
+        },
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{auth_token}}" } ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/permissions",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","permissions"]
+            },
+            "description": "Admin-only. Get all permissions."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{auth_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"report_viewer\",\n  \"description\": \"Can view reports\",\n  \"permissions\": [\"reports:read\"]\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/permissions/roles",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","permissions","roles"]
+            },
+            "description": "Admin-only. Create a new role with assigned permission keys."
+          },
+          "response": []
+        },
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{auth_token}}" } ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/permissions/roles",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","permissions","roles"]
+            },
+            "description": "Admin-only. Get all roles."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "🏥 Health Checks",
       "item": [
         {
@@ -2625,6 +2700,38 @@
               "path": ["api", "v1", "migrations", "check-created-at"]
             },
             "description": "Check if created_at migration is needed by sampling Qdrant data."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🧰 Utils",
+      "item": [
+        {
+          "name": "List Routes Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/utils/routes/permissions",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "utils",
+                "routes",
+                "permissions"
+              ]
+            },
+            "description": "Recursively scans server routes and lists each route with its required hasPermission() permission. Requires admin-level permission (roles:read)."
           },
           "response": []
         }

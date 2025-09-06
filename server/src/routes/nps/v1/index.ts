@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import { authenticateJWT, authenticateWebhook } from '../../../middleware/authenticate';
+import { hasPermission } from '../../../middleware/permissions';
 import { validateRequest } from '../../../middleware/validateRequest';
 import { UserContextManager } from '../../../context/userContext';
 import { 
@@ -34,7 +35,7 @@ const upload = multer({
  * Upload NPS data via CSV file
  */
 router.post('/upload/csv', 
-  authenticateJWT, 
+  authenticateJWT, hasPermission('nps:update'), 
   upload.single('file'),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -84,7 +85,7 @@ router.post('/upload/csv',
  * Upload NPS data via JSON payload
  */
 router.post('/upload/json', 
-  authenticateJWT, 
+  authenticateJWT, hasPermission('nps:update'), 
   validateRequest(bulkNPSImportSchema),
   async (req: Request, res: Response): Promise<void> => {
     try {
@@ -127,7 +128,7 @@ router.post('/upload/json',
  * Upload NPS data in any format - uses AI mapping to detect structure
  */
 router.post('/upload/generic', 
-  authenticateJWT, 
+  authenticateJWT, hasPermission('nps:update'), 
   async (req: Request, res: Response): Promise<void> => {
     try {
       console.log('🔄 Processing generic NPS data upload...');
@@ -211,7 +212,7 @@ router.post('/upload/webhook',
  * Get status of a file upload or bulk import
  */
 router.get('/upload/status/:uploadId', 
-  authenticateJWT, 
+  authenticateJWT, hasPermission('nps:read'), 
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = UserContextManager.getCurrentOrganizationId();
@@ -250,7 +251,7 @@ router.get('/upload/status/:uploadId',
  * Get upload history for the organization
  */
 router.get('/upload/history', 
-  authenticateJWT, 
+  authenticateJWT, hasPermission('nps:read'), 
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = UserContextManager.getCurrentOrganizationId();
@@ -292,7 +293,7 @@ router.get('/upload/history',
  * Delete/cancel an upload
  */
 router.delete('/upload/:uploadId',
-  authenticateJWT,
+  authenticateJWT, hasPermission('nps:update'),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = UserContextManager.getCurrentOrganizationId();
@@ -331,7 +332,7 @@ router.delete('/upload/:uploadId',
  * Cancel an in-progress upload
  */
 router.post('/upload/:uploadId/cancel',
-  authenticateJWT,
+  authenticateJWT, hasPermission('nps:update'),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = UserContextManager.getCurrentOrganizationId();
@@ -370,7 +371,7 @@ router.post('/upload/:uploadId/cancel',
  * Get current NPS insights for the organization
  */
 router.get('/insights',
-  authenticateJWT,
+  authenticateJWT, hasPermission('nps:read'),
   async (req: Request, res: Response): Promise<void> => {
     try {
       console.log('🔄 Getting NPS insights...');
@@ -433,7 +434,7 @@ router.get('/insights',
  * Get NPS insights history for the organization
  */
 router.get('/insights/history',
-  authenticateJWT,
+  authenticateJWT, hasPermission('nps:read'),
   async (req: Request, res: Response): Promise<void> => {
     try {
       const organizationId = UserContextManager.getCurrentOrganizationId();

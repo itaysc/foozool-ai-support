@@ -8,6 +8,7 @@ import { getToken } from './validations';
 import { isTokenAboutToExpire, signJwt, setJwtCookie } from './utils';
 import { getUserByEmail } from '../../../services/users/v1';
 import { UserModel } from '../../../schemas/user.schema';
+import { RoleModel } from '../../../schemas/role.schema';
 const router = express.Router();
 
 
@@ -113,8 +114,17 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
       return;
     }
     
-    // Generate access token (short-lived) with full user data
-    const accessToken = signJwt({ user: fullUser }, { expiresIn: '15m' });
+    // Compute effective permissions and role names
+    const roles = Array.isArray(fullUser.roles) && fullUser.roles.length
+      ? await RoleModel.find({ _id: { $in: fullUser.roles as any } }).lean()
+      : [];
+    const roleNames = roles.map((r: any) => r.name);
+    const rolePermissions = roles.flatMap((r: any) => r.permissions || []);
+    const userPermissions = Array.isArray((fullUser as any).permissions) ? (fullUser as any).permissions : [];
+    const effectivePermissions = Array.from(new Set([ ...userPermissions, ...rolePermissions ]));
+
+    // Generate access token (short-lived) with full user data plus computed permissions/roles
+    const accessToken = signJwt({ user: { ...fullUser, permissions: effectivePermissions, roleNames } }, { expiresIn: '15m' });
     // Generate refresh token (long-lived, minimal info)
     const refreshToken = signJwt({ user: { id: userRes.payload._id } }, { expiresIn: '7d' });
 
@@ -161,7 +171,7 @@ router.post('/token', validateRequest(getToken), async (req: Request, res: Respo
     res.json({ 
       status: 'success',
       accessToken,
-      user: fullUser
+      user: { ...fullUser, permissions: effectivePermissions, roleNames }
     });
 
   } catch (error) {

@@ -3,6 +3,7 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { CRMService } from '../../../services/crm';
 import { validateRequest } from '../../../middleware/validateRequest';
 import { crmValidation, crmUpdateValidation, crmConfigValidation } from './validations';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const router = express.Router();
  * @desc Get all supported CRMs
  * @access Private
  */
-router.get('/', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.get('/', authenticateJWT, hasPermission('crm:read'), async (req: Request, res: Response): Promise<void> => {
   try {
     const crms = await CRMService.getAllCRMs();
     res.status(200).json({
@@ -33,7 +34,7 @@ router.get('/', authenticateJWT, async (req: Request, res: Response): Promise<vo
  * @desc Get CRM by ID
  * @access Private
  */
-router.get('/:id', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.get('/:id', authenticateJWT, hasPermission('crm:read'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const crm = await CRMService.getCRMById(id);
@@ -65,7 +66,7 @@ router.get('/:id', authenticateJWT, async (req: Request, res: Response): Promise
  * @desc Create a new CRM
  * @access Private
  */
-router.post('/', authenticateJWT, validateRequest(crmValidation), async (req: Request, res: Response): Promise<void> => {
+router.post('/', authenticateJWT, hasPermission('crm:update'), validateRequest(crmValidation), async (req: Request, res: Response): Promise<void> => {
   try {
     const crm = await CRMService.createCRM(req.body);
     res.status(201).json({
@@ -87,7 +88,7 @@ router.post('/', authenticateJWT, validateRequest(crmValidation), async (req: Re
  * @desc Update CRM
  * @access Private
  */
-router.put('/:id', authenticateJWT, validateRequest(crmUpdateValidation), async (req: Request, res: Response): Promise<void> => {
+router.put('/:id', authenticateJWT, hasPermission('crm:update'), validateRequest(crmUpdateValidation), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const crm = await CRMService.updateCRM(id, req.body);
@@ -119,7 +120,7 @@ router.put('/:id', authenticateJWT, validateRequest(crmUpdateValidation), async 
  * @desc Delete CRM
  * @access Private
  */
-router.delete('/:id', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.delete('/:id', authenticateJWT, hasPermission('crm:update'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const deleted = await CRMService.deleteCRM(id);
@@ -151,7 +152,7 @@ router.delete('/:id', authenticateJWT, async (req: Request, res: Response): Prom
  * @desc Get organization's CRM configuration
  * @access Private
  */
-router.get('/organization/:organizationId', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.get('/organization/:organizationId', authenticateJWT, hasPermission('crm:read'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { organizationId } = req.params;
     const crmData = await CRMService.getOrganizationCRM(organizationId);
@@ -183,7 +184,7 @@ router.get('/organization/:organizationId', authenticateJWT, async (req: Request
  * @desc Set organization's CRM configuration
  * @access Private
  */
-router.post('/organization/:organizationId', authenticateJWT, validateRequest(crmConfigValidation), async (req: Request, res: Response): Promise<void> => {
+router.post('/organization/:organizationId', authenticateJWT, hasPermission('crm:update'), validateRequest(crmConfigValidation), async (req: Request, res: Response): Promise<void> => {
   try {
     const { organizationId } = req.params;
     const { crmType, config } = req.body;

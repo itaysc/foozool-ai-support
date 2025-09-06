@@ -2,6 +2,7 @@ import express from 'express';
 import { InsightModel } from '../../../schemas/insights.schema';
 import mongoose from 'mongoose';
 import { authenticateJWT } from '../../../middleware/authenticate';
+import { hasPermission } from '../../../middleware/permissions';
 import { UserContextManager } from '../../../context/userContext';
 import { generateCustomerSuccessInsights } from '../../../services/insights/customerSuccess.service';
 import { CustomerModel } from '../../../schemas';
@@ -13,7 +14,7 @@ const router = express.Router();
  * Generate Customer Success risk insights for a specific customer (authenticated, org-scoped)
  * Place BEFORE dynamic /insights/:organizationId to avoid route conflicts.
  */
-router.get('/customer-success/:customerId', authenticateJWT, async (req, res) => {
+router.get('/customer-success/:customerId', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     const { customerId } = req.params;
@@ -32,7 +33,7 @@ router.get('/customer-success/:customerId', authenticateJWT, async (req, res) =>
  * GET /insights/customer-success
  * Generate Customer Success risk insights for ALL customers in the current organization (authenticated, org-scoped)
  */
-router.get('/customer-success', authenticateJWT, async (req, res) => {
+router.get('/customer-success', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
@@ -60,7 +61,7 @@ router.get('/customer-success', authenticateJWT, async (req, res) => {
  * GET /insights/:organizationId
  * Get insights for a specific organization
  */
-router.get('/:organizationId', async (req, res) => {
+router.get('/:organizationId', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   const { organizationId } = req.params;
   
   // Validate organization ID format
@@ -111,7 +112,7 @@ router.get('/:organizationId', async (req, res) => {
  * GET /insights/:organizationId/summary
  * Get summary statistics for insights of a specific organization
  */
-router.get('/:organizationId/summary', async (req, res) => {
+router.get('/:organizationId/summary', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   const { organizationId } = req.params;
   
   if (!mongoose.Types.ObjectId.isValid(organizationId)) {
@@ -169,7 +170,7 @@ router.get('/:organizationId/summary', async (req, res) => {
  * GET /insights
  * Get insights for all organizations (admin endpoint)
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   try {
     const { limit = 100, skip = 0 } = req.query;
     

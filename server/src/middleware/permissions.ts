@@ -14,25 +14,50 @@ const check = ({ userPermissions, some, all }: {userPermissions: string[], some?
 // This middleware can be applied only after applying the authenticateJWT middleware that sets the permissions on the request
 export const permissions = ({ some, all }: { some?: string[], all?: string[] }) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Admin bypass: admins are always allowed
+    const roleNames = (req as any).roleNames || [];
+    if (Array.isArray(roleNames) && roleNames.includes('admin')) {
+      return next();
+    }
     const hasPermissions = check({
       userPermissions: req.permissions,
       some,
       all,
     });
     if (!hasPermissions) {
-      return res.status(400).send('You don\'t have enough permissions to view this resource');
+      return res.status(403).send('Forbidden');
     }
     return next();
   };
 };
-export const hasPermission = (permission: string) => {
+export const hasPermissionHelper = (permission: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Admin bypass: admins are always allowed
+    const roleNames = (req as any).roleNames || [];
+    if (Array.isArray(roleNames) && roleNames.includes('admin')) {
+      return next();
+    }
     const hasPermissions = check({
       userPermissions: req.permissions,
       all: [permission],
     });
     if (!hasPermissions) {
-      return res.status(400).send('You don\'t have enough permissions to view this resource');
+      return res.status(403).send('Forbidden');
+    }
+    return next();
+  };
+};
+
+export const hasPermission = (permission: string) => hasPermissionHelper(permission);
+export const hasRole = (role: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const roleNames = (req as any).roleNames || [];
+    if (Array.isArray(roleNames) && roleNames.includes('admin')) {
+      return next();
+    }
+    const ok = Array.isArray(roleNames) && roleNames.includes(role);
+    if (!ok) {
+      return res.status(403).send('Forbidden');
     }
     return next();
   };

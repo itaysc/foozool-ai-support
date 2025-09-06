@@ -23,7 +23,8 @@
       "when you implement calls to llm in the server, use the model which is used in other places in the code",
       "After each change check there are'nt typescript/lint errors",
       "Don't use MUI Grid component",
-      "UI code should support responsive design"
+      "UI code should support responsive design",
+      "If you add new routes to the server, make sure to update the permissions and roled if neded, also their seeds."
     ]
   }
   

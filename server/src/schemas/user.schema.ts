@@ -39,11 +39,13 @@ export const userSchema = new Schema({
     group: {
         type: String,
     },
-    roles: {
+    roles: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Role',
+    }],
+    permissions: {
         type: [String],
-    },
-    scopes: {
-        type: [String],
+        default: [],
     },
 }, {
     timestamps: true

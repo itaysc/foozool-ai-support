@@ -5,6 +5,7 @@ import { seedLLMPricings } from './LLMPricing.seed';
 import { seedCRMs } from './crm.seed';
 import { seedThresholdMisses } from './thresholdMiss.seed';
 import AddIndustriesSeed from './AddIndustries.seed';
+import { seedRoles } from './roles.seed';
 
 export async function seed() {
   try {
@@ -13,6 +14,9 @@ export async function seed() {
     // Seed CRMs first
     await seedCRMs();
     
+    // Seed roles and permissions (idempotent)
+    await seedRoles();
+
     // Seed organizations
     const organization = await seedOrganizations();
     

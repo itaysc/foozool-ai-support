@@ -24,8 +24,9 @@ export interface IUser {
   group?: {
     type: string;
   };
-  roles: string[];
-  scopes: string[];
+  roles: (string | ObjectId)[];
+  permissions: string[];
+  roleNames?: string[];
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;

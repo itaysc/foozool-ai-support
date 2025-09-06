@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { validateRequest } from '../../../middleware/validateRequest';
+import { hasPermission } from '../../../middleware/permissions';
 import { UserContextManager } from '../../../context/userContext';
 import {
   createCustomer,
@@ -22,7 +23,7 @@ const router = Router();
  * POST /api/v1/customers
  * Create a new customer
  */
-router.post('/', authenticateJWT, validateRequest(createCustomerSchema), async (req: Request, res: Response) => {
+router.post('/', authenticateJWT, hasPermission('customers:create'), validateRequest(createCustomerSchema), async (req: Request, res: Response) => {
   try {
     const currentOrgId = UserContextManager.getCurrentOrganizationId();
     if (!currentOrgId) {
@@ -51,7 +52,7 @@ router.post('/', authenticateJWT, validateRequest(createCustomerSchema), async (
  * GET /api/v1/customers
  * Get all customers with pagination and filtering
  */
-router.get('/', authenticateJWT, async (req: Request, res: Response) => {
+router.get('/', authenticateJWT, hasPermission('customers:read'), async (req: Request, res: Response) => {
   try {
     const currentOrgId = UserContextManager.getCurrentOrganizationId();
     if (!currentOrgId) {
@@ -107,7 +108,7 @@ router.get('/', authenticateJWT, async (req: Request, res: Response) => {
  * GET /api/v1/customers/stats
  * Get customer statistics
  */
-router.get('/stats', authenticateJWT, async (req: Request, res: Response) => {
+router.get('/stats', authenticateJWT, hasPermission('customers:read'), async (req: Request, res: Response) => {
   try {
     const currentOrgId = UserContextManager.getCurrentOrganizationId();
     if (!currentOrgId) {
@@ -136,7 +137,7 @@ router.get('/stats', authenticateJWT, async (req: Request, res: Response) => {
  * GET /api/v1/customers/:customerId
  * Get a specific customer by ID
  */
-router.get('/:customerId', authenticateJWT, async (req: Request, res: Response) => {
+router.get('/:customerId', authenticateJWT, hasPermission('customers:read'), async (req: Request, res: Response) => {
   try {
     const { customerId } = req.params;
     const currentOrgId = UserContextManager.getCurrentOrganizationId();
@@ -173,7 +174,7 @@ router.get('/:customerId', authenticateJWT, async (req: Request, res: Response) 
  * PUT /api/v1/customers/:customerId
  * Update a customer
  */
-router.put('/:customerId', authenticateJWT, validateRequest(updateCustomerSchema), async (req: Request, res: Response) => {
+router.put('/:customerId', authenticateJWT, hasPermission('customers:update'), validateRequest(updateCustomerSchema), async (req: Request, res: Response) => {
   try {
     const { customerId } = req.params;
     const currentOrgId = UserContextManager.getCurrentOrganizationId();
@@ -210,7 +211,7 @@ router.put('/:customerId', authenticateJWT, validateRequest(updateCustomerSchema
  * DELETE /api/v1/customers/:customerId
  * Delete a customer
  */
-router.delete('/:customerId', authenticateJWT, async (req: Request, res: Response) => {
+router.delete('/:customerId', authenticateJWT, hasPermission('customers:delete'), async (req: Request, res: Response) => {
   try {
     const { customerId } = req.params;
     const currentOrgId = UserContextManager.getCurrentOrganizationId();

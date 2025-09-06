@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { MigrationService } from '../../../migrations/MigrationService';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = express.Router();
 const migrationService = new MigrationService();
@@ -13,7 +14,7 @@ router.use(authenticateJWT);
  * @desc Run all available migrations for the organization
  * @access Private
  */
-router.post('/run-all', async (req: Request, res: Response): Promise<void> => {
+router.post('/run-all', hasPermission('migrations:run'), async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -67,7 +68,7 @@ router.post('/run-all', async (req: Request, res: Response): Promise<void> => {
  * @desc Run a specific migration by name
  * @access Private
  */
-router.post('/run/:migrationName', async (req: Request, res: Response): Promise<void> => {
+router.post('/run/:migrationName', hasPermission('migrations:run'), async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -127,7 +128,7 @@ router.post('/run/:migrationName', async (req: Request, res: Response): Promise<
  * @desc Get migration status and available migrations
  * @access Private
  */
-router.get('/status', async (req: Request, res: Response): Promise<void> => {
+router.get('/status', hasPermission('migrations:run'), async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -176,7 +177,7 @@ router.get('/status', async (req: Request, res: Response): Promise<void> => {
  * @desc Get detailed migration history for the organization
  * @access Private
  */
-router.get('/history', async (req: Request, res: Response): Promise<void> => {
+router.get('/history', hasPermission('migrations:run'), async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -218,7 +219,7 @@ router.get('/history', async (req: Request, res: Response): Promise<void> => {
  * @desc Reset migrations that are stuck in running status
  * @access Private
  */
-router.post('/reset-stuck', async (req: Request, res: Response): Promise<void> => {
+router.post('/reset-stuck', hasPermission('migrations:run'), async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {
@@ -262,7 +263,7 @@ router.post('/reset-stuck', async (req: Request, res: Response): Promise<void> =
  * @desc Check if created_at migration is needed by sampling Qdrant data
  * @access Private
  */
-router.get('/check-created-at', async (req: Request, res: Response): Promise<void> => {
+router.get('/check-created-at', hasPermission('migrations:run'), async (req: Request, res: Response): Promise<void> => {
   try {
     const user = req.user;
     if (!user) {

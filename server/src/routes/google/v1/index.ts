@@ -7,11 +7,12 @@ import { listDriveFiles } from '../../../services/google/drive';
 import { processGoogleDriveFiles } from "../../../qdrant/service";
 import { processGoogleDriveFilesSchema, searchGoogleDriveFilesSchema } from './validations';
 import { getUnprocessedGoogleFileIds } from '../../../services/google/drive/process';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = express.Router();
 
 // Step 1: Redirect user/org admin to Google Consent Screen
-router.get("/connect", authenticateJWT, (req, res) => {
+router.get("/connect", authenticateJWT, hasPermission('google:connect'), (req, res) => {
   const organizationId = req.user!.organization;
 
   if (!organizationId) {
@@ -50,7 +51,7 @@ router.get("/callback", async (req, res) => {
   }
 });
 
-router.get("/drive/files", authenticateJWT, async (req, res) => {
+router.get("/drive/files", authenticateJWT, hasPermission('google:connect'), async (req, res) => {
     const organizationId = req.user!.organization;
     const { path, recursive } = req.query;
 
@@ -71,7 +72,7 @@ router.get("/drive/files", authenticateJWT, async (req, res) => {
   });
 
 // Process Google Drive files and store in Qdrant
-router.post("/drive/process", authenticateJWT, validateRequest(processGoogleDriveFilesSchema), async (req, res) => {
+router.post("/drive/process", authenticateJWT, hasPermission('google:connect'), validateRequest(processGoogleDriveFilesSchema), async (req, res) => {
     const organizationId = req.user!.organization;
     const { fileIds } = req.body;
     const { path, recursive } = req.query;

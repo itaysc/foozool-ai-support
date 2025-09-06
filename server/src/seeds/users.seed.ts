@@ -1,4 +1,5 @@
 import { UserModel, SeedTrackModel } from "../schemas";
+import { RoleModel } from "../schemas/role.schema";
 import { IUser } from "../types";
 const usersSeed = [
   {
@@ -9,8 +10,7 @@ const usersSeed = [
     registered: true,
     department: 'IT',
     group: 'admin',
-    roles: ['admin'],
-    scopes: ['admin'],
+    permissions: ['roles:read', 'permissions:assign'],
   },
 ];
 
@@ -21,9 +21,18 @@ export async function seedUsers(organizationId: string, recommendedLLMId: string
         return null;
       }
       const users: IUser[] = [];
-      const usersSeedWithOrganization = usersSeed.map(user => ({ ...user, organization: organizationId }));
+      // Lookup admin role id (if seeded)
+      const adminRole = await RoleModel.findOne({ name: 'admin' }).lean();
+      const usersSeedWithOrganization = usersSeed.map(user => ({ 
+        ...user, 
+        organization: organizationId,
+        roles: adminRole ? [adminRole._id] : [],
+      }));
       for (const user of usersSeedWithOrganization) {
-        const toAdd = new UserModel({...user, llmModel: recommendedLLMId});
+        const toAdd = new UserModel({
+          ...user,
+          llmModel: recommendedLLMId,
+        });
         const addedUser: any = await toAdd.save();
         users.push(addedUser);
       }

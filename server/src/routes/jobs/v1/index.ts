@@ -3,6 +3,7 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { UserContextManager } from '../../../context/userContext';
 import { generateInsightsJob } from '../../../jobs/insights-generator.job';
 import { createTicket } from '../../../services/faker/create-ticket';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = express.Router();
 
@@ -43,7 +44,7 @@ const availableJobs = {
  * GET /jobs
  * List all available jobs
  */
-router.get('/jobs', authenticateJWT, async (req, res) => {
+router.get('/jobs', authenticateJWT, hasPermission('jobs:trigger'), async (req, res) => {
   try {
     const jobsList = Object.entries(availableJobs).map(([key, job]) => ({
       id: key,
@@ -71,7 +72,7 @@ router.get('/jobs', authenticateJWT, async (req, res) => {
  * POST /jobs/run/:jobId
  * Execute a specific job by ID for the authenticated user's organization
  */
-router.post('/jobs/run/:jobId', authenticateJWT, async (req, res) => {
+router.post('/jobs/run/:jobId', authenticateJWT, hasPermission('jobs:trigger'), async (req, res) => {
   try {
     const { jobId } = req.params;
     
@@ -145,7 +146,7 @@ router.post('/jobs/run/:jobId', authenticateJWT, async (req, res) => {
  * POST /jobs/:jobName/run
  * Execute a specific job by name for the authenticated user's organization
  */
-router.post('/jobs/:jobName/run', authenticateJWT, async (req, res) => {
+router.post('/jobs/:jobName/run', authenticateJWT, hasPermission('jobs:trigger'), async (req, res) => {
   try {
     const { jobName } = req.params;
     
@@ -219,7 +220,7 @@ router.post('/jobs/:jobName/run', authenticateJWT, async (req, res) => {
  * GET /jobs/:jobName
  * Get information about a specific job
  */
-router.get('/jobs/:jobName', authenticateJWT, async (req, res) => {
+router.get('/jobs/:jobName', authenticateJWT, hasPermission('jobs:trigger'), async (req, res) => {
   try {
     const { jobName } = req.params;
     

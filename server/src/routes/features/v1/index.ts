@@ -3,13 +3,14 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { UserContextManager } from '../../../context/userContext';
 import { FeatureModel } from '../../../schemas/feature.schema';
 import { FeatureUsageModel } from '../../../schemas/featureUsage.schema';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = Router();
 
 router.use(authenticateJWT);
 
 // Create or get feature
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', hasPermission('features:create'), async (req: Request, res: Response) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) return res.status(401).json({ error: 'No organization context' });
@@ -26,7 +27,7 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', hasPermission('features:read'), async (req: Request, res: Response) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) return res.status(401).json({ error: 'No organization context' });
@@ -38,7 +39,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Feature usage: create or update for a customer
-router.post('/usage', async (req: Request, res: Response) => {
+router.post('/usage', hasPermission('features:update'), async (req: Request, res: Response) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) return res.status(401).json({ error: 'No organization context' });
@@ -69,7 +70,7 @@ router.post('/usage', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/usage', async (req: Request, res: Response) => {
+router.get('/usage', hasPermission('features:read'), async (req: Request, res: Response) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) return res.status(401).json({ error: 'No organization context' });

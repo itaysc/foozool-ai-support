@@ -5,6 +5,7 @@ import { UserContextManager } from '../../../context/userContext';
 import AnomalyService from '../../../services/anomaly-detection/anomaly.service';
 import { runAnomalyDetectionForOrganization, runAnomalyDetectionFromBeginning } from '../../../jobs/anomaly-detection.job';
 import { z } from 'zod';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = express.Router();
 const anomalyService = new AnomalyService();
@@ -26,7 +27,7 @@ const markFalsePositiveSchema = z.object({
  * GET /api/v1/anomalies
  * Get all anomalies for the authenticated user's organization
  */
-router.get('/', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.get('/', authenticateJWT, hasPermission('anomalies:read'), async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
@@ -65,7 +66,7 @@ router.get('/', authenticateJWT, async (req: Request, res: Response): Promise<vo
  * GET /api/v1/anomalies/stats
  * Get anomaly statistics for the authenticated user's organization
  */
-router.get('/stats', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.get('/stats', authenticateJWT, hasPermission('anomalies:read'), async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
@@ -102,7 +103,7 @@ router.get('/stats', authenticateJWT, async (req: Request, res: Response): Promi
  * GET /api/v1/anomalies/:id
  * Get a specific anomaly by ID
  */
-router.get('/:id', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.get('/:id', authenticateJWT, hasPermission('anomalies:read'), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const organizationId = UserContextManager.getCurrentOrganizationId();
@@ -139,7 +140,7 @@ router.get('/:id', authenticateJWT, async (req: Request, res: Response): Promise
  * POST /api/v1/anomalies/:id/acknowledge
  * Acknowledge an anomaly
  */
-router.post('/:id/acknowledge', authenticateJWT, validateRequest(acknowledgeAnomalySchema), async (req: Request, res: Response): Promise<void> => {
+router.post('/:id/acknowledge', authenticateJWT, hasPermission('anomalies:recompute'), validateRequest(acknowledgeAnomalySchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
@@ -173,7 +174,7 @@ router.post('/:id/acknowledge', authenticateJWT, validateRequest(acknowledgeAnom
  * POST /api/v1/anomalies/:id/resolve
  * Resolve an anomaly
  */
-router.post('/:id/resolve', authenticateJWT, validateRequest(resolveAnomalySchema), async (req: Request, res: Response): Promise<void> => {
+router.post('/:id/resolve', authenticateJWT, hasPermission('anomalies:recompute'), validateRequest(resolveAnomalySchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
@@ -207,7 +208,7 @@ router.post('/:id/resolve', authenticateJWT, validateRequest(resolveAnomalySchem
  * POST /api/v1/anomalies/:id/false-positive
  * Mark an anomaly as false positive
  */
-router.post('/:id/false-positive', authenticateJWT, validateRequest(markFalsePositiveSchema), async (req: Request, res: Response): Promise<void> => {
+router.post('/:id/false-positive', authenticateJWT, hasPermission('anomalies:recompute'), validateRequest(markFalsePositiveSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { notes } = req.body;
@@ -241,7 +242,7 @@ router.post('/:id/false-positive', authenticateJWT, validateRequest(markFalsePos
  * POST /api/v1/anomalies/detect
  * Manually trigger anomaly detection for the authenticated user's organization
  */
-router.post('/detect', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.post('/detect', authenticateJWT, hasPermission('anomalies:recompute'), async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {
@@ -274,7 +275,7 @@ router.post('/detect', authenticateJWT, async (req: Request, res: Response): Pro
  * POST /api/v1/anomalies/detect-from-beginning
  * Manually trigger anomaly detection for the authenticated user's organization from the beginning of time
  */
-router.post('/detect-from-beginning', authenticateJWT, async (req: Request, res: Response): Promise<void> => {
+router.post('/detect-from-beginning', authenticateJWT, hasPermission('anomalies:recompute'), async (req: Request, res: Response): Promise<void> => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     if (!organizationId) {

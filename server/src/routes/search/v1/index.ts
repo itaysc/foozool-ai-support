@@ -1,13 +1,14 @@
 import express, { Request, Response } from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { validateRequest } from '../../../middleware/validateRequest';
+import { hasPermission } from '../../../middleware/permissions';
 import { searchGoogleDriveFilesSchema } from '../../google/v1/validations';
 import { ragSearch } from '../../../services/search';
 
 const router = express.Router();
 
 // /api/v1/search
-router.post("/", authenticateJWT, validateRequest(searchGoogleDriveFilesSchema), async (req, res) => {
+router.post("/", authenticateJWT, hasPermission('search:read'), validateRequest(searchGoogleDriveFilesSchema), async (req, res) => {
     const { query, limit = 10, minQualityScore = 0.5 } = req.body;
 
     try {

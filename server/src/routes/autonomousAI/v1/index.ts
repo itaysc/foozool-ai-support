@@ -3,6 +3,7 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { AutonomousAIControllerService } from '../../../services/autonomousAI/autonomousAIController.service';
 import zendeskAnalysisRouter from './zendesk-analysis';
 import thresholdMissesRouter from './threshold-misses';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ router.use('/threshold-misses', thresholdMissesRouter);
  * @desc Analyze a ticket and get AI recommendations
  * @access Private
  */
-router.get('/analyze/:ticketId', async (req, res) => {
+router.get('/analyze/:ticketId', hasPermission('ai:thresholds:read'), async (req, res) => {
   try {
     const { ticketId } = req.params;
 
@@ -40,7 +41,7 @@ router.get('/analyze/:ticketId', async (req, res) => {
  * @desc Execute a recommended action
  * @access Private
  */
-router.post('/execute-action', async (req, res) => {
+router.post('/execute-action', hasPermission('ai:actions:execute'), async (req, res) => {
   try {
     const { ticketId, actionType, thresholdId, confidenceScore, parameters } = req.body;
 
@@ -65,7 +66,7 @@ router.post('/execute-action', async (req, res) => {
  * @desc Get all action thresholds for organization
  * @access Private
  */
-router.get('/thresholds', async (req, res) => {
+router.get('/thresholds', hasPermission('ai:thresholds:read'), async (req, res) => {
   try {
     const thresholds = await AutonomousAIControllerService.getThresholds();
     res.json({ success: true, data: thresholds });
@@ -80,7 +81,7 @@ router.get('/thresholds', async (req, res) => {
  * @desc Create a new action threshold
  * @access Private
  */
-router.post('/thresholds', async (req, res) => {
+router.post('/thresholds', hasPermission('ai:thresholds:create'), async (req, res) => {
   try {
     const threshold = await AutonomousAIControllerService.createThreshold({
       thresholdData: req.body
@@ -97,7 +98,7 @@ router.post('/thresholds', async (req, res) => {
  * @desc Update an action threshold
  * @access Private
  */
-router.put('/thresholds/:id', async (req, res) => {
+router.put('/thresholds/:id', hasPermission('ai:thresholds:update'), async (req, res) => {
   try {
     const { id } = req.params;
     const threshold = await AutonomousAIControllerService.updateThreshold({
@@ -116,7 +117,7 @@ router.put('/thresholds/:id', async (req, res) => {
  * @desc Delete an action threshold
  * @access Private
  */
-router.delete('/thresholds/:id', async (req, res) => {
+router.delete('/thresholds/:id', hasPermission('ai:thresholds:delete'), async (req, res) => {
   try {
     const { id } = req.params;
     const result = await AutonomousAIControllerService.deleteThreshold(id);
@@ -132,7 +133,7 @@ router.delete('/thresholds/:id', async (req, res) => {
  * @desc Toggle threshold active status
  * @access Private
  */
-router.patch('/thresholds/:id/toggle', async (req, res) => {
+router.patch('/thresholds/:id/toggle', hasPermission('ai:thresholds:update'), async (req, res) => {
   try {
     const { id } = req.params;
     const threshold = await AutonomousAIControllerService.toggleThresholdStatus(id);
@@ -148,7 +149,7 @@ router.patch('/thresholds/:id/toggle', async (req, res) => {
  * @desc Update threshold value
  * @access Private
  */
-router.patch('/thresholds/:id/threshold', async (req, res) => {
+router.patch('/thresholds/:id/threshold', hasPermission('ai:thresholds:update'), async (req, res) => {
   try {
     const { id } = req.params;
     const { threshold } = req.body;
@@ -174,7 +175,7 @@ router.patch('/thresholds/:id/threshold', async (req, res) => {
  * @desc Get all customer tiers for organization
  * @access Private
  */
-router.get('/customer-tiers', async (req, res) => {
+router.get('/customer-tiers', hasPermission('ai:customer-tiers:read'), async (req, res) => {
   try {
     const tiers = await AutonomousAIControllerService.getCustomerTiers();
     res.json({ success: true, data: tiers });
@@ -189,7 +190,7 @@ router.get('/customer-tiers', async (req, res) => {
  * @desc Create a new customer tier
  * @access Private
  */
-router.post('/customer-tiers', async (req, res) => {
+router.post('/customer-tiers', hasPermission('ai:customer-tiers:create'), async (req, res) => {
   try {
     const tier = await AutonomousAIControllerService.createCustomerTier({
       tierData: req.body
@@ -206,7 +207,7 @@ router.post('/customer-tiers', async (req, res) => {
  * @desc Update a customer tier
  * @access Private
  */
-router.put('/customer-tiers/:id', async (req, res) => {
+router.put('/customer-tiers/:id', hasPermission('ai:customer-tiers:update'), async (req, res) => {
   try {
     const { id } = req.params;
     const tier = await AutonomousAIControllerService.updateCustomerTier({
@@ -225,7 +226,7 @@ router.put('/customer-tiers/:id', async (req, res) => {
  * @desc Delete a customer tier
  * @access Private
  */
-router.delete('/customer-tiers/:id', async (req, res) => {
+router.delete('/customer-tiers/:id', hasPermission('ai:customer-tiers:update'), async (req, res) => {
   try {
     const { id } = req.params;
     const result = await AutonomousAIControllerService.deleteCustomerTier(id);
@@ -241,7 +242,7 @@ router.delete('/customer-tiers/:id', async (req, res) => {
  * @desc Get customer tier by ID
  * @access Private
  */
-router.get('/customer-tiers/:id', async (req, res) => {
+router.get('/customer-tiers/:id', hasPermission('ai:customer-tiers:read'), async (req, res) => {
   try {
     const { id } = req.params;
     const tier = await AutonomousAIControllerService.getCustomerTierById(id);
@@ -258,7 +259,7 @@ router.get('/customer-tiers/:id', async (req, res) => {
  * @desc Get action logs for organization
  * @access Private
  */
-router.get('/action-logs', async (req, res) => {
+router.get('/action-logs', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { limit = 50, offset = 0 } = req.query;
     const logs = await AutonomousAIControllerService.getActionLogs(
@@ -277,7 +278,7 @@ router.get('/action-logs', async (req, res) => {
  * @desc Get action logs for a specific ticket
  * @access Private
  */
-router.get('/action-logs/ticket/:ticketId', async (req, res) => {
+router.get('/action-logs/ticket/:ticketId', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { ticketId } = req.params;
     const { limit = 20 } = req.query;
@@ -294,7 +295,7 @@ router.get('/action-logs/ticket/:ticketId', async (req, res) => {
  * @desc Get action logs by action type
  * @access Private
  */
-router.get('/action-logs/type/:actionType', async (req, res) => {
+router.get('/action-logs/type/:actionType', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { actionType } = req.params;
     const { limit = 50 } = req.query;
@@ -314,7 +315,7 @@ router.get('/action-logs/type/:actionType', async (req, res) => {
  * @desc Get action logs by status
  * @access Private
  */
-router.get('/action-logs/status/:status', async (req, res) => {
+router.get('/action-logs/status/:status', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { status } = req.params;
     const { limit = 50 } = req.query;
@@ -334,7 +335,7 @@ router.get('/action-logs/status/:status', async (req, res) => {
  * @desc Get failed actions for review
  * @access Private
  */
-router.get('/action-logs/failed', async (req, res) => {
+router.get('/action-logs/failed', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { limit = 20 } = req.query;
     const logs = await AutonomousAIControllerService.getFailedActions(Number(limit));
@@ -350,7 +351,7 @@ router.get('/action-logs/failed', async (req, res) => {
  * @desc Get high-confidence actions
  * @access Private
  */
-router.get('/action-logs/high-confidence', async (req, res) => {
+router.get('/action-logs/high-confidence', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { confidenceThreshold = 0.8, limit = 20 } = req.query;
     const logs = await AutonomousAIControllerService.getHighConfidenceActions(
@@ -369,7 +370,7 @@ router.get('/action-logs/high-confidence', async (req, res) => {
  * @desc Get daily action statistics
  * @access Private
  */
-router.get('/action-logs/stats/daily', async (req, res) => {
+router.get('/action-logs/stats/daily', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { date } = req.query;
     const stats = await AutonomousAIControllerService.getDailyStats(
@@ -387,7 +388,7 @@ router.get('/action-logs/stats/daily', async (req, res) => {
  * @desc Get action success rate
  * @access Private
  */
-router.get('/action-logs/stats/success-rate', async (req, res) => {
+router.get('/action-logs/stats/success-rate', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     const stats = await AutonomousAIControllerService.getSuccessRate(
@@ -406,7 +407,7 @@ router.get('/action-logs/stats/success-rate', async (req, res) => {
  * @desc Get action performance metrics
  * @access Private
  */
-router.get('/action-logs/stats/performance', async (req, res) => {
+router.get('/action-logs/stats/performance', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { days = 30 } = req.query;
     const metrics = await AutonomousAIControllerService.getPerformanceMetrics(
@@ -424,7 +425,7 @@ router.get('/action-logs/stats/performance', async (req, res) => {
  * @desc Clean old action logs
  * @access Private
  */
-router.post('/action-logs/clean', async (req, res) => {
+router.post('/action-logs/clean', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { daysToKeep = 90 } = req.body;
     const deletedCount = await AutonomousAIControllerService.cleanOldLogs(daysToKeep);
@@ -440,7 +441,7 @@ router.post('/action-logs/clean', async (req, res) => {
  * @desc Export action logs for analysis
  * @access Private
  */
-router.post('/action-logs/export', async (req, res) => {
+router.post('/action-logs/export', hasPermission('ai:logs:read'), async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
     const logs = await AutonomousAIControllerService.exportLogs(

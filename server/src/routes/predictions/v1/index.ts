@@ -2,6 +2,7 @@ import express from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { UserContextManager } from '../../../context/userContext';
 import { PredictionService } from '../../../services/predictions';
+import { hasPermission } from '../../../middleware/permissions';
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const router = express.Router();
  * GET /predictions
  * Fetch recent predictions for the authenticated user's organization
  */
-router.get('/predictions', authenticateJWT, async (req, res) => {
+router.get('/predictions', authenticateJWT, hasPermission('predictions:read'), async (req, res) => {
   const { limit = '20' } = req.query;
   
   try {
@@ -35,7 +36,7 @@ router.get('/predictions', authenticateJWT, async (req, res) => {
  * GET /predictions/summary
  * Get prediction analytics summary for the authenticated user's organization
  */
-router.get('/predictions/summary', authenticateJWT, async (req, res) => {
+router.get('/predictions/summary', authenticateJWT, hasPermission('predictions:read'), async (req, res) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     
@@ -55,7 +56,7 @@ router.get('/predictions/summary', authenticateJWT, async (req, res) => {
  * GET /predictions/high-risk
  * Get only high-risk predictions for immediate attention for the authenticated user's organization
  */
-router.get('/predictions/high-risk', authenticateJWT, async (req, res) => {
+router.get('/predictions/high-risk', authenticateJWT, hasPermission('predictions:read'), async (req, res) => {
   try {
     const organizationId = UserContextManager.getCurrentOrganizationId();
     
@@ -75,7 +76,7 @@ router.get('/predictions/high-risk', authenticateJWT, async (req, res) => {
  * GET /predictions/accuracy
  * Get prediction accuracy analysis for the authenticated user's organization
  */
-router.get('/predictions/accuracy', authenticateJWT, async (req, res) => {
+router.get('/predictions/accuracy', authenticateJWT, hasPermission('predictions:read'), async (req, res) => {
   const { days = '30' } = req.query;
   
   try {
