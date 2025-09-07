@@ -48,6 +48,38 @@ const CustomerSchema: Schema = new Schema<ICustomer>({
   notes: {
     type: String,
   },
+  // Media enrichment fields
+  website: { type: String },
+  domains: [{ type: String }],
+  hq: {
+    country: { type: String, index: true },
+    region: { type: String, index: true },
+    state: { type: String },
+    city: { type: String },
+    lat: { type: Number },
+    lon: { type: Number },
+  },
+  operatingRegions: [{ type: String, index: true }],
+  countriesServed: [{ type: String, index: true }],
+  languages: [{ type: String }],
+  publicListing: {
+    isPublic: { type: Boolean, default: false },
+    ticker: { type: String, index: true },
+    exchange: { type: String },
+  },
+  newsKeywords: [{ type: String }],
+  excludedKeywords: [{ type: String }],
+  competitorNames: [{ type: String }],
+  productLines: [{ type: String }],
+  contentSources: [{
+    type: {
+      type: String,
+      enum: ['rss', 'twitter', 'news', 'custom']
+    },
+    handleOrUrl: { type: String },
+    note: { type: String }
+  }],
+  mediaLookbackDaysDefault: { type: Number, min: 1 },
   usageData: {
     activeUsersCount: { type: Number, min: 0, index: true },
     seatsPurchased: { type: Number, min: 0 },

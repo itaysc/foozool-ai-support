@@ -4,7 +4,7 @@ import { CustomerModel } from '../../schemas';
 import { FeatureUsageModel } from '../../schemas/featureUsage.schema';
 
 export interface CustomerSuccessInsight {
-  type: 'declining_usage' | 'dormant_feature' | 'low_adoption' | 'one_user_dependency' | 'feature_churn';
+  type: 'declining_usage' | 'dormant_feature' | 'low_adoption' | 'one_user_dependency' | 'feature_churn' | 'inactive_customer';
   message: string;
   severity: 'red' | 'yellow' | 'info';
   meta?: Record<string, any>;
@@ -137,6 +137,23 @@ export async function generateCustomerSuccessInsights(customerId: string): Promi
       meta: { featureId: f._id, featureName: f.featureName, customerName },
     });
   }
+
+  // 6) Inactive customer: no feature usage across all features in the last 60 days
+  try {
+    const recentUsageCount = await FeatureUsageModel.countDocuments({
+      organizationId: orgObjId ?? organizationId,
+      customerId: custObjId ?? customerId,
+      usageDate: { $gte: last60Start }
+    });
+    if (recentUsageCount === 0) {
+      insights.push({
+        type: 'inactive_customer',
+        message: `No feature activity detected in the past 60 days. Consider outreach to re‑engage stakeholders and review adoption blockers.`,
+        severity: 'red',
+        meta: { customerName, windowDays: 60 }
+      });
+    }
+  } catch {}
 
   // Logging summary of generated insights
   try {

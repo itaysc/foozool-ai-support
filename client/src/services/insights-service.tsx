@@ -80,6 +80,14 @@ export const insightsService = {
     const response = await axios.get(getRoute(`insights/customer-success`));
     return { success: true, data: response.data.payload };
   }
+  ,
+  /**
+   * Get top active users in the organization (last 30 days, limit 10)
+   */
+  async getTopActiveUsers(limit = 10, days = 30): Promise<{ success: boolean; data: Array<{ userId: string; name: string; email?: string; score: number; events: number }> }>{
+    const response = await axios.get(getRoute(`analytics/top-users?limit=${limit}&days=${days}`));
+    return { success: true, data: response.data.data };
+  }
 };
 
 export default insightsService;

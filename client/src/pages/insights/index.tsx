@@ -82,8 +82,9 @@ const InsightsPage: React.FC = () => {
   const [bots, setBots] = useState<Array<{ _id: string; type: 'customer_success' | 'issue_insights' | 'predictions' | 'nps' }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [csInsights, setCsInsights] = useState<any[] | null>(null);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('__ALL__');
   const [allCsInsights, setAllCsInsights] = useState<Array<{ customerId: string; customerName?: string; insights: any[] }> | null>(null);
+  const [topUsers, setTopUsers] = useState<Array<{ userId: string; name: string; email?: string; score: number; events: number }> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -186,10 +187,20 @@ const InsightsPage: React.FC = () => {
     try {
       const res = await insightsService.getAllCustomerSuccessInsights();
       if (res.success) setAllCsInsights(res.data);
+      // Fetch top users alongside
+      const top = await insightsService.getTopActiveUsers(10, 30);
+      if (top.success) setTopUsers(top.data);
     } catch (e) {
       setAllCsInsights([]);
     }
   };
+
+  // Load default view for CS insights (All customers)
+  useEffect(() => {
+    if (selectedCustomerId === '__ALL__') {
+      fetchAllCustomerSuccessInsights();
+    }
+  }, [selectedCustomerId]);
 
   const refreshInsights = async () => {
     if (!effectiveOrgId) return;
@@ -515,9 +526,17 @@ const InsightsPage: React.FC = () => {
             </Typography>
             
             {insights.length > 0 ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ 
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: 'repeat(auto-fill, minmax(300px, 300px))',
+                  md: 'repeat(auto-fill, minmax(320px, 320px))'
+                },
+                justifyContent: 'flex-start',
+                gap: 2
+              }}>
                 {insights.map((insight) => (
-                  <Box key={insight.clusterId} sx={{ flex: '1 1 260px', minWidth: { xs: '100%', md: '320px' } }}>
+                  <Box key={insight.clusterId} sx={{ width: { xs: '300px', md: '320px' } }}>
                     <Card sx={{ width: '100%', height: '100%', boxShadow: 1, borderRadius: 1 }}>
                       <CardContent sx={{ p: 2 }}>
                         {/* Stats Row (moved above divider) */}
@@ -1010,9 +1029,17 @@ const InsightsPage: React.FC = () => {
             </Box>
 
             {(csInsights && csInsights.length > 0) ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: 'repeat(auto-fill, minmax(300px, 300px))',
+                  md: 'repeat(auto-fill, minmax(320px, 320px))'
+                },
+                justifyContent: 'flex-start',
+                gap: 2
+              }}>
                 {csInsights.map((insight, idx) => (
-                  <Box key={idx} sx={{ flex: '1 1 240px', minWidth: { xs: '100%', md: '260px' } }}>
+                  <Box key={idx} sx={{ width: { xs: '300px', md: '320px' } }}>
                     <Card sx={{ width: '100%', height: '100%', boxShadow: 1, borderRadius: 1 }}>
                       <CardContent sx={{ p: 1 }}>
                         {/* Customer name header */}
@@ -1052,9 +1079,17 @@ const InsightsPage: React.FC = () => {
                 ))}
               </Box>
             ) : (allCsInsights && allCsInsights.length > 0) ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: 'repeat(auto-fill, minmax(300px, 300px))',
+                  md: 'repeat(auto-fill, minmax(320px, 320px))'
+                },
+                justifyContent: 'flex-start',
+                gap: 2
+              }}>
                 {allCsInsights.flatMap(group => group.insights.map((insight, idx) => (
-                  <Box key={`${group.customerId}-${idx}`} sx={{ flex: '1 1 240px', minWidth: { xs: '100%', md: '260px' } }}>
+                  <Box key={`${group.customerId}-${idx}`} sx={{ width: { xs: '300px', md: '320px' } }}>
                     <Card sx={{ width: '100%', height: '100%', boxShadow: 1, borderRadius: 1 }}>
                       <CardContent sx={{ p: 1 }}>
                         {/* Customer name header */}
@@ -1099,6 +1134,29 @@ const InsightsPage: React.FC = () => {
                   Once you select a customer and generate usage, risk insights will appear here.
                 </Typography>
               </Paper>
+            )}
+
+            {/* Top Active Users metric */}
+            {topUsers && topUsers.length > 0 && (
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 1.5 }}>
+                  Top Active Users (30 days)
+                </Typography>
+                <Paper sx={{ p: 2 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1 }}>
+                    {topUsers.slice(0, 10).map((u, idx) => (
+                      <Box key={u.userId} sx={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', py: 0.5 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {idx + 1}. {u.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          score {u.score} · {u.events} events
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Paper>
+              </Box>
             )}
           </Box>
         </TabPanel>

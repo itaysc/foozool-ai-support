@@ -10,6 +10,19 @@ export interface ICustomer {
   accountManager?: string;
   healthScore?: number;
   notes?: string;
+  website?: string;
+  domains?: string[];
+  hq?: { country: string; region?: string; state?: string; city?: string; lat?: number; lon?: number };
+  operatingRegions?: string[];
+  countriesServed?: string[];
+  languages?: string[];
+  publicListing?: { isPublic: boolean; ticker?: string; exchange?: string };
+  newsKeywords?: string[];
+  excludedKeywords?: string[];
+  competitorNames?: string[];
+  productLines?: string[];
+  contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
+  mediaLookbackDaysDefault?: number;
   usageData?: {
     activeUsersCount?: number;
     seatsPurchased?: number;
@@ -29,6 +42,19 @@ export interface CreateCustomerRequest {
   accountManager?: string;
   healthScore?: number;
   notes?: string;
+  website?: string;
+  domains?: string[];
+  hq?: { country: string; region?: string; state?: string; city?: string; lat?: number; lon?: number };
+  operatingRegions?: string[];
+  countriesServed?: string[];
+  languages?: string[];
+  publicListing?: { isPublic: boolean; ticker?: string; exchange?: string };
+  newsKeywords?: string[];
+  excludedKeywords?: string[];
+  competitorNames?: string[];
+  productLines?: string[];
+  contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
+  mediaLookbackDaysDefault?: number;
   usageData?: {
     activeUsersCount?: number;
     seatsPurchased?: number;
@@ -46,6 +72,19 @@ export interface UpdateCustomerRequest {
   accountManager?: string;
   healthScore?: number;
   notes?: string;
+  website?: string;
+  domains?: string[];
+  hq?: { country: string; region?: string; state?: string; city?: string; lat?: number; lon?: number };
+  operatingRegions?: string[];
+  countriesServed?: string[];
+  languages?: string[];
+  publicListing?: { isPublic: boolean; ticker?: string; exchange?: string };
+  newsKeywords?: string[];
+  excludedKeywords?: string[];
+  competitorNames?: string[];
+  productLines?: string[];
+  contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
+  mediaLookbackDaysDefault?: number;
   usageData?: {
     activeUsersCount?: number;
     seatsPurchased?: number;

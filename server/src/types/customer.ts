@@ -20,6 +20,20 @@ export interface ICustomer {
     activeUsersCount?: number;
     utilizationPercent?: number;
   }>;
+  // Media/insights enrichment fields
+  website?: string;
+  domains?: string[];
+  hq?: { country: string; region?: string; state?: string; city?: string; lat?: number; lon?: number };
+  operatingRegions?: string[]; // e.g., ["US", "EU", "APAC"]
+  countriesServed?: string[];
+  languages?: string[]; // preferred content languages
+  publicListing?: { isPublic: boolean; ticker?: string; exchange?: string };
+  newsKeywords?: string[];
+  excludedKeywords?: string[];
+  competitorNames?: string[];
+  productLines?: string[];
+  contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
+  mediaLookbackDaysDefault?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -44,6 +58,19 @@ export interface CreateCustomerRequest {
     activeUsersCount?: number;
     utilizationPercent?: number;
   }>;
+  website?: string;
+  domains?: string[];
+  hq?: { country: string; region?: string; state?: string; city?: string; lat?: number; lon?: number };
+  operatingRegions?: string[];
+  countriesServed?: string[];
+  languages?: string[];
+  publicListing?: { isPublic: boolean; ticker?: string; exchange?: string };
+  newsKeywords?: string[];
+  excludedKeywords?: string[];
+  competitorNames?: string[];
+  productLines?: string[];
+  contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
+  mediaLookbackDaysDefault?: number;
 }
 
 export interface UpdateCustomerRequest {
@@ -66,4 +93,17 @@ export interface UpdateCustomerRequest {
     activeUsersCount?: number;
     utilizationPercent?: number;
   }>;
+  website?: string;
+  domains?: string[];
+  hq?: { country: string; region?: string; state?: string; city?: string; lat?: number; lon?: number };
+  operatingRegions?: string[];
+  countriesServed?: string[];
+  languages?: string[];
+  publicListing?: { isPublic: boolean; ticker?: string; exchange?: string };
+  newsKeywords?: string[];
+  excludedKeywords?: string[];
+  competitorNames?: string[];
+  productLines?: string[];
+  contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
+  mediaLookbackDaysDefault?: number;
 }
