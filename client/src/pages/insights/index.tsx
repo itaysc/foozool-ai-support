@@ -83,6 +83,7 @@ const InsightsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [csInsights, setCsInsights] = useState<any[] | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  const [allCsInsights, setAllCsInsights] = useState<Array<{ customerId: string; customerName?: string; insights: any[] }> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -178,6 +179,15 @@ const InsightsPage: React.FC = () => {
       if (res.success) setCsInsights(res.data);
     } catch (e) {
       setCsInsights([]);
+    }
+  };
+
+  const fetchAllCustomerSuccessInsights = async () => {
+    try {
+      const res = await insightsService.getAllCustomerSuccessInsights();
+      if (res.success) setAllCsInsights(res.data);
+    } catch (e) {
+      setAllCsInsights([]);
     }
   };
 
@@ -505,84 +515,47 @@ const InsightsPage: React.FC = () => {
             </Typography>
             
             {insights.length > 0 ? (
-              <Box sx={{ 
-                display: 'flex', 
-                flexWrap: 'wrap', 
-                gap: 3,
-                alignItems: 'stretch' // Ensure all cards stretch to same height
-              }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                 {insights.map((insight) => (
-                  <Box key={insight.clusterId} sx={{ 
-                    flex: '1 1 300px',
-                    minWidth: { xs: '100%', md: '400px', lg: '350px' },
-                    maxWidth: { lg: '400px' },
-                    display: 'flex' // Make the box a flex container
-                  }}>
-                    <Card sx={{ 
-                      width: '100%',
-                      height: '100%',
-                      minHeight: '400px', // Ensure consistent card height
-                      boxShadow: 3,
-                      transition: 'all 0.2s ease-in-out',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: 6
-                      }
-                    }}>
-                      <CardContent sx={{ p: 3 }}>
-                        {/* Header */}
-                        <Box sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          mb: 2,
-                          minHeight: '80px' // Fixed height for consistent alignment
-                        }}>
-                          <BugReport color="primary" sx={{ mr: 1.5, fontSize: 24 }} />
-                          <Box sx={{ flexGrow: 1 }}>
-                            <Typography variant="h6" sx={{ 
-                              fontWeight: 'bold',
-                              lineHeight: 1.3,
-                              mb: 1
-                            }}>
-                              {insight.issueDescription}
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        <Divider sx={{ mb: 2 }} />
-
-                        {/* Stats Row */}
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Box key={insight.clusterId} sx={{ flex: '1 1 260px', minWidth: { xs: '100%', md: '320px' } }}>
+                    <Card sx={{ width: '100%', height: '100%', boxShadow: 1, borderRadius: 1 }}>
+                      <CardContent sx={{ p: 2 }}>
+                        {/* Stats Row (moved above divider) */}
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Timeline sx={{ mr: 1, fontSize: 20, color: 'text.secondary' }} />
-                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                            <Timeline sx={{ mr: 0.75, fontSize: 16, color: 'text.secondary' }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
                               {insight.ticketVolume} tickets
                             </Typography>
                           </Box>
                           <Chip
+                            variant="outlined"
                             label={`${insight.growthRate > 0 ? '+' : ''}${insight.growthRate.toFixed(1)}%`}
                             color={getTrendColor(insight.growthRate)}
-                            size="medium"
-                            icon={<Speed />}
-                            sx={{ fontWeight: 'bold' }}
+                            size="small"
+                            icon={<Speed sx={{ fontSize: 16 }} />}
+                            sx={{ '& .MuiChip-label': { fontSize: '0.75rem', fontWeight: 700 } }}
                           />
                         </Stack>
 
-                        {/* Trend Indicator */}
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                          <Tooltip title={`Growth Rate: ${insight.growthRate.toFixed(1)}%`}>
-                            <IconButton size="large" sx={{ color: getTrendColor(insight.growthRate) }}>
-                              {getTrendIcon(insight.growthRate)}
-                            </IconButton>
-                          </Tooltip>
+                        <Divider sx={{ mb: 1 }} />
+
+                        {/* Header (moved below divider) */}
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                          <BugReport color="primary" sx={{ mr: 1, fontSize: 18 }} />
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.3 }}>
+                              {insight.issueDescription || 'No description available'}
+                            </Typography>
+                          </Box>
                         </Box>
 
-                        {/* Dates */}
-                        <Box sx={{ mt: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1 }}>
-                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                        {/* Dates (smaller typography) */}
+                        <Box sx={{ mt: 0.5, p: 1, backgroundColor: '#f6f8fb', borderRadius: 1 }}>
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.25, fontSize: '0.72rem' }}>
                             <strong>First Detected:</strong> {formatDate(insight.firstDetectedAt)}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" display="block">
+                          <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.72rem' }}>
                             <strong>Last Updated:</strong> {formatDate(insight.lastUpdatedAt)}
                           </Typography>
                         </Box>
@@ -1009,54 +982,112 @@ const InsightsPage: React.FC = () => {
               Customer Success Insights
             </Typography>
 
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, maxWidth: 420 }}>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2, maxWidth: 560 }}>
               <SelectBase
                 value={selectedCustomerId}
                 onChange={(v) => {
                   const val = (v ?? '') as string;
                   setSelectedCustomerId(val);
-                  fetchCustomerSuccessInsights(val);
+                  if (val === '__ALL__') {
+                    fetchAllCustomerSuccessInsights();
+                    setCsInsights(null);
+                  } else if (val) {
+                    fetchCustomerSuccessInsights(val);
+                    setAllCsInsights(null);
+                  } else {
+                    setCsInsights(null);
+                    setAllCsInsights(null);
+                  }
                 }}
                 size="small"
                 fullWidth
-                label="Select Customer"
-                placeholder="Search or select customer"
+                label="Customer Scope"
+                placeholder="All customers or select one"
                 searchable
                 allowClear
-                options={customersStore.customers.map(c => ({ value: c._id, label: c.name }))}
+                options={[{ value: '__ALL__', label: 'All customers' }, ...customersStore.customers.map(c => ({ value: c._id, label: c.name }))]}
               />
             </Box>
 
-            {csInsights && csInsights.length > 0 ? (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+            {(csInsights && csInsights.length > 0) ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                 {csInsights.map((insight, idx) => (
-                  <Box key={idx} sx={{ flex: '1 1 320px', minWidth: { xs: '100%', md: '360px' } }}>
-                    <Card sx={{ width: '100%', height: '100%', boxShadow: 3 }}>
-                      <CardContent sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                  <Box key={idx} sx={{ flex: '1 1 240px', minWidth: { xs: '100%', md: '260px' } }}>
+                    <Card sx={{ width: '100%', height: '100%', boxShadow: 1, borderRadius: 1 }}>
+                      <CardContent sx={{ p: 1 }}>
+                        {/* Customer name header */}
+                        {insight.meta?.customerName && (
+                          <>
+                            <Typography variant="overline" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: 0.4, fontSize: '0.7rem' }}>
+                              {insight.meta.customerName}
+                            </Typography>
+                            <Divider sx={{ mb: 0.5 }} />
+                          </>
+                        )}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
                           <Chip 
                             label={insight.type.replace(/_/g, ' ')} 
                             color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'default'}
                             size="small"
-                            sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
+                            sx={{ textTransform: 'capitalize', fontWeight: 'bold', '& .MuiChip-label': { fontSize: '0.7rem' } }}
                           />
                         </Box>
-                        <Typography variant="body1" sx={{ fontWeight: 600, mb: 1.5 }}>
+                        <Typography variant="caption" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3, fontSize: '0.78rem' }}>
                           {insight.message}
                         </Typography>
                         {insight.meta && (
-                          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 1, backgroundColor: '#f5f7fb' }}>
-                            {Object.entries(insight.meta).map(([k, v]) => (
-                              <Typography key={k} variant="caption" color="text.secondary" display="block">
-                                <strong>{k}:</strong> {String(v)}
-                              </Typography>
-                            ))}
+                          <Box sx={{ mt: 0.5, p: 0.5, borderRadius: 1, backgroundColor: '#f5f7fb' }}>
+                            {Object.entries(insight.meta)
+                              .filter(([k]) => k !== 'customerName' && k !== 'featureId' && k !== '_id')
+                              .map(([k, v]) => (
+                                <Typography key={k} variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.72rem' }}>
+                                  <strong>{k}:</strong> {String(v)}
+                                </Typography>
+                              ))}
                           </Box>
                         )}
                       </CardContent>
                     </Card>
                   </Box>
                 ))}
+              </Box>
+            ) : (allCsInsights && allCsInsights.length > 0) ? (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {allCsInsights.flatMap(group => group.insights.map((insight, idx) => (
+                  <Box key={`${group.customerId}-${idx}`} sx={{ flex: '1 1 240px', minWidth: { xs: '100%', md: '260px' } }}>
+                    <Card sx={{ width: '100%', height: '100%', boxShadow: 1, borderRadius: 1 }}>
+                      <CardContent sx={{ p: 1 }}>
+                        {/* Customer name header */}
+                        <Typography variant="overline" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: 0.4, fontSize: '0.7rem' }}>
+                          {insight.meta?.customerName || group.customerName}
+                        </Typography>
+                        <Divider sx={{ mb: 0.5 }} />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
+                          <Chip 
+                            label={insight.type.replace(/_/g, ' ')} 
+                            color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'default'}
+                            size="small"
+                            sx={{ textTransform: 'capitalize', fontWeight: 'bold', '& .MuiChip-label': { fontSize: '0.7rem' } }}
+                          />
+                        </Box>
+                        <Typography variant="caption" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3, fontSize: '0.78rem' }}>
+                          {insight.message}
+                        </Typography>
+                        {insight.meta && (
+                          <Box sx={{ mt: 0.5, p: 0.5, borderRadius: 1, backgroundColor: '#f5f7fb' }}>
+                            {Object.entries(insight.meta)
+                              .filter(([k]) => k !== 'customerName' && k !== 'featureId' && k !== '_id')
+                              .map(([k, v]) => (
+                                <Typography key={k} variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.72rem' }}>
+                                  <strong>{k}:</strong> {String(v)}
+                                </Typography>
+                              ))}
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Box>
+                )))}
               </Box>
             ) : (
               <Paper sx={{ p: 6, textAlign: 'center', backgroundColor: '#ffffff' }}>

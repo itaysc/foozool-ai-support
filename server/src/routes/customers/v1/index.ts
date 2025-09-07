@@ -81,6 +81,7 @@ router.get('/', authenticateJWT, hasPermission('customers:read'), async (req: Re
       filter: {
         industry: validatedQuery.industry,
         companySize: validatedQuery.companySize,
+        segment: validatedQuery.segment,
         accountManager: validatedQuery.accountManager,
         healthScore: {
           min: validatedQuery.healthScoreMin,

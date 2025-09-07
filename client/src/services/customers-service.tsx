@@ -24,6 +24,7 @@ const customersService = {
     if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
     if (filters.industry) params.append('industry', filters.industry);
     if (filters.companySize) params.append('companySize', filters.companySize);
+    if (filters.segment) params.append('segment', filters.segment);
     if (filters.accountManager) params.append('accountManager', filters.accountManager);
     if (filters.healthScoreMin) params.append('healthScoreMin', filters.healthScoreMin.toString());
     if (filters.healthScoreMax) params.append('healthScoreMax', filters.healthScoreMax.toString());

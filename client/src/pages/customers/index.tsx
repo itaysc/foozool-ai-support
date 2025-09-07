@@ -20,7 +20,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid,
+  
   Card,
   CardContent,
   Alert,
@@ -130,14 +130,20 @@ const CustomersPage: React.FC = () => {
     customersStore.setSort(field, newSortOrder);
   };
 
-  const applyFilters = () => {
-    const newFilters = {
+  const allowedSegments = ['SMB', 'Mid-Market', 'Enterprise', 'Other'] as const;
+  type AllowedSegment = typeof allowedSegments[number];
+
+  const applyFilters = (overrides: Partial<CustomerFilters> = {}) => {
+    const newFilters: Partial<CustomerFilters> = {
       page: 1,
       industry: industryFilter || undefined,
       companySize: companySizeFilter || undefined,
-      segment: segmentFilter || undefined,
+      segment: (allowedSegments as readonly string[]).includes(segmentFilter)
+        ? (segmentFilter as AllowedSegment)
+        : undefined,
       healthScoreMin: healthScoreMinFilter !== '' ? healthScoreMinFilter : undefined,
       healthScoreMax: healthScoreMaxFilter !== '' ? healthScoreMaxFilter : undefined,
+      ...overrides,
     };
     customersStore.updateFilters(newFilters);
   };
@@ -332,14 +338,13 @@ const CustomersPage: React.FC = () => {
               ) : undefined,
             }}
             sx={{ height: 40 }}
-            onBlur={applyFilters}
-            onKeyUp={applyFilters}
+            
           />
           
           <Box sx={{ position: 'relative' }}>
             <SelectBase
               value={industryFilter}
-              onChange={(v) => { setIndustryFilter(v as string); applyFilters(); }}
+              onChange={(v) => { const val = v as string; setIndustryFilter(val); applyFilters({ industry: val || undefined }); }}
               size="small"
               fullWidth
               label="Industry"
@@ -352,7 +357,7 @@ const CustomersPage: React.FC = () => {
           
           <SelectBase
             value={companySizeFilter}
-            onChange={(v) => { setCompanySizeFilter(v as string); applyFilters(); }}
+            onChange={(v) => { const val = v as string; setCompanySizeFilter(val); applyFilters({ companySize: val || undefined }); }}
             size="small"
             fullWidth
             label="Company Size"
@@ -364,7 +369,12 @@ const CustomersPage: React.FC = () => {
 
           <SelectBase
             value={segmentFilter}
-            onChange={(v) => { setSegmentFilter(v as string); applyFilters(); }}
+            onChange={(v) => { 
+              const val = v as string; 
+              setSegmentFilter(val); 
+              const nextSegment = (allowedSegments as readonly string[]).includes(val) ? (val as AllowedSegment) : undefined;
+              applyFilters({ segment: nextSegment }); 
+            }}
             size="small"
             fullWidth
             label="Customer Segment"
@@ -376,7 +386,7 @@ const CustomersPage: React.FC = () => {
           
           <SelectBase
             value={healthScoreMinFilter === '' ? '' : healthScoreMinFilter}
-            onChange={(v) => { setHealthScoreMinFilter(v === '' ? '' : Number(v)); applyFilters(); }}
+            onChange={(v) => { const num = v === '' ? '' : Number(v); setHealthScoreMinFilter(num); applyFilters({ healthScoreMin: num === '' ? undefined : Number(num) }); }}
             size="small"
             fullWidth
             label="Min Health Score"
@@ -388,7 +398,7 @@ const CustomersPage: React.FC = () => {
           
           <SelectBase
             value={healthScoreMaxFilter === '' ? '' : healthScoreMaxFilter}
-            onChange={(v) => { setHealthScoreMaxFilter(v === '' ? '' : Number(v)); applyFilters(); }}
+            onChange={(v) => { const num = v === '' ? '' : Number(v); setHealthScoreMaxFilter(num); applyFilters({ healthScoreMax: num === '' ? undefined : Number(num) }); }}
             size="small"
             fullWidth
             label="Max Health Score"

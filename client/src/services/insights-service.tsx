@@ -69,7 +69,15 @@ export const insightsService = {
    * Get Customer Success risk insights for a specific customer (authenticated)
    */
   async getCustomerSuccessInsights(customerId: string): Promise<{ success: boolean; data: any[] }>{
-    const response = await axios.get(getRoute(`insights/v1/insights/customer-success/${customerId}`));
+    const response = await axios.get(getRoute(`insights/customer-success/${customerId}`));
+    return { success: true, data: response.data.payload };
+  }
+  ,
+  /**
+   * Get Customer Success insights for all customers in the org (authenticated)
+   */
+  async getAllCustomerSuccessInsights(): Promise<{ success: boolean; data: Array<{ customerId: string; customerName?: string; insights: any[] }> }>{
+    const response = await axios.get(getRoute(`insights/customer-success`));
     return { success: true, data: response.data.payload };
   }
 };
