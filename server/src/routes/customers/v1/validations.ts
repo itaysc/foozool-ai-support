@@ -16,6 +16,35 @@ export const createCustomerSchema = z.object({
     seatsPurchased: z.coerce.number().min(0).optional(),
     seatsUsed: z.coerce.number().min(0).optional(),
   }).optional(),
+  // Geo / Media fields
+  website: z.string().optional(),
+  domains: z.array(z.string()).optional(),
+  hq: z.object({
+    country: z.string(),
+    region: z.string().optional(),
+    state: z.string().optional(),
+    city: z.string().optional(),
+    lat: z.number().optional(),
+    lon: z.number().optional(),
+  }).partial().optional(),
+  operatingRegions: z.array(z.string()).optional(),
+  countriesServed: z.array(z.string()).optional(),
+  languages: z.array(z.string()).optional(),
+  publicListing: z.object({
+    isPublic: z.boolean(),
+    ticker: z.string().optional(),
+    exchange: z.string().optional(),
+  }).partial().optional(),
+  newsKeywords: z.array(z.string()).optional(),
+  excludedKeywords: z.array(z.string()).optional(),
+  competitorNames: z.array(z.string()).optional(),
+  productLines: z.array(z.string()).optional(),
+  contentSources: z.array(z.object({
+    type: z.enum(['rss', 'twitter', 'news', 'custom']).optional(),
+    handleOrUrl: z.string(),
+    note: z.string().optional(),
+  })).optional(),
+  mediaLookbackDaysDefault: z.coerce.number().min(1).optional(),
 });
 
 export const updateCustomerSchema = z.object({
@@ -33,6 +62,34 @@ export const updateCustomerSchema = z.object({
     seatsPurchased: z.coerce.number().min(0).optional(),
     seatsUsed: z.coerce.number().min(0).optional(),
   }).optional(),
+  website: z.string().optional(),
+  domains: z.array(z.string()).optional(),
+  hq: z.object({
+    country: z.string(),
+    region: z.string().optional(),
+    state: z.string().optional(),
+    city: z.string().optional(),
+    lat: z.number().optional(),
+    lon: z.number().optional(),
+  }).partial().optional(),
+  operatingRegions: z.array(z.string()).optional(),
+  countriesServed: z.array(z.string()).optional(),
+  languages: z.array(z.string()).optional(),
+  publicListing: z.object({
+    isPublic: z.boolean().optional(),
+    ticker: z.string().optional(),
+    exchange: z.string().optional(),
+  }).optional(),
+  newsKeywords: z.array(z.string()).optional(),
+  excludedKeywords: z.array(z.string()).optional(),
+  competitorNames: z.array(z.string()).optional(),
+  productLines: z.array(z.string()).optional(),
+  contentSources: z.array(z.object({
+    type: z.enum(['rss', 'twitter', 'news', 'custom']).optional(),
+    handleOrUrl: z.string(),
+    note: z.string().optional(),
+  })).optional(),
+  mediaLookbackDaysDefault: z.coerce.number().min(1).optional(),
 });
 
 export const getCustomersQuerySchema = z.object({

@@ -12,8 +12,8 @@ function optionValue(opt: Option): string | number {
 }
 
 interface Props {
-  value: string | number | '';
-  onChange: (value: string | number | '') => void;
+  value: string | number | '' | (string | number)[];
+  onChange: (value: string | number | '' | (string | number)[]) => void;
   label: string;
   options: Option[];
   size?: 'small' | 'medium';
@@ -24,6 +24,7 @@ interface Props {
   allowClear?: boolean;
   allowOther?: boolean;
   searchable?: boolean;
+  multiple?: boolean;
 }
 
 const Select: React.FC<Props> = ({
@@ -39,6 +40,7 @@ const Select: React.FC<Props> = ({
   allowClear = false,
   allowOther = false,
   searchable = false,
+  multiple = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,24 +62,34 @@ const Select: React.FC<Props> = ({
   }, [ordered, searchable, searchTerm]);
 
   const handleSelectChange = (newVal: any) => {
-    if (allowOther && String(newVal) === 'Other') {
-      setOtherMode(true);
-      onChange('');
+    if (!multiple) {
+      if (allowOther && String(newVal) === 'Other') {
+        setOtherMode(true);
+        onChange('');
+      } else {
+        setOtherMode(false);
+        onChange(newVal);
+      }
     } else {
-      setOtherMode(false);
-      onChange(newVal);
+      // In multiple mode, value is an array. Ignore allowOther for now.
+      const next = Array.isArray(newVal) ? newVal : [];
+      onChange(next);
     }
   };
 
   const clearValue = () => {
     setOtherMode(false);
-    onChange('');
+    if (multiple) {
+      onChange([]);
+    } else {
+      onChange('');
+    }
   };
 
-  const isClearVisible = allowClear && (value !== '' || otherMode);
+  const isClearVisible = allowClear && ((multiple ? (Array.isArray(value) && value.length > 0) : value !== '') || otherMode);
 
   // If in other mode, show inline text field instead of Select
-  if (allowOther && (otherMode || (typeof value === 'string' && value !== '' && !ordered.some(o => optionLabel(o) === String(value))))) {
+  if (!multiple && allowOther && (otherMode || (typeof value === 'string' && value !== '' && !ordered.some(o => optionLabel(o) === String(value))))) {
     return (
       <FormControl fullWidth={fullWidth} size={size} error={error} sx={{ position: 'relative' }}>
         {/* Absolutely positioned label row so input doesn't move */}
@@ -106,7 +118,8 @@ const Select: React.FC<Props> = ({
     <FormControl fullWidth={fullWidth} size={size} error={error} sx={{ position: 'relative' }}>
       <InputLabel>{label}</InputLabel>
       <MuiSelect
-        value={value}
+        multiple={multiple}
+        value={multiple ? (Array.isArray(value) ? value : []) : value}
         label={label}
         onChange={(e) => handleSelectChange(e.target.value as any)}
         open={isOpen}
@@ -127,6 +140,35 @@ const Select: React.FC<Props> = ({
           PaperProps: { style: { maxHeight: 300 } },
           MenuListProps: { autoFocusItem: false },
         }}
+        renderValue={multiple ? (selected => {
+          const selectedArray = Array.isArray(selected) ? selected : [];
+          if (selectedArray.length === 0) return <em style={{ color: 'rgba(0,0,0,0.6)' }}>{placeholder}</em> as any;
+          return (
+            <Box sx={{ display: 'flex', flexWrap: 'nowrap', gap: 0.375, overflowX: 'auto', overflowY: 'hidden', whiteSpace: 'nowrap', '::-webkit-scrollbar': { display: 'none' } }}>
+              {selectedArray.map((val) => {
+                const opt = ordered.find(o => optionValue(o) === val);
+                const labelText = opt ? optionLabel(opt) : String(val);
+                return (
+                  <Chip
+                    key={String(val)}
+                    size="small"
+                    label={labelText}
+                    onMouseDown={(e) => { e.stopPropagation(); }}
+                    onDelete={() => {
+                      const current = Array.isArray(value) ? value : [];
+                      onChange(current.filter(v => v !== val));
+                    }}
+                    sx={{
+                      height: 22,
+                      '& .MuiChip-label': { fontSize: '0.75rem', px: 0.75 },
+                      '& .MuiChip-deleteIcon': { fontSize: '0.9rem' }
+                    }}
+                  />
+                );
+              })}
+            </Box>
+          );
+        }) : undefined}
       >
         {searchable && (
           <Box sx={{ p: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -144,9 +186,11 @@ const Select: React.FC<Props> = ({
             />
           </Box>
         )}
-        <MenuItem value="">
-          <em>{placeholder}</em>
-        </MenuItem>
+        {!multiple && (
+          <MenuItem value="">
+            <em>{placeholder}</em>
+          </MenuItem>
+        )}
         {filtered.map((opt) => (
           <MenuItem key={String(optionLabel(opt))} value={optionValue(opt)}>
             {optionLabel(opt)}

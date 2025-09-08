@@ -87,6 +87,24 @@ export const updateCustomer = async (organizationId: string, customerId: string,
   if (updateData.notes !== undefined) set.notes = updateData.notes;
   if (updateData.startDate !== undefined) set.startDate = updateData.startDate ? new Date(updateData.startDate) : undefined;
 
+  // Geo / Media & Signals
+  if (updateData.website !== undefined) set.website = updateData.website;
+  if (updateData.domains !== undefined) set.domains = updateData.domains;
+  if (updateData.hq !== undefined) {
+    // replace entire hq object
+    set.hq = updateData.hq as any;
+  }
+  if (updateData.operatingRegions !== undefined) set.operatingRegions = updateData.operatingRegions;
+  if (updateData.countriesServed !== undefined) set.countriesServed = updateData.countriesServed;
+  if (updateData.languages !== undefined) set.languages = updateData.languages;
+  if (updateData.publicListing !== undefined) set.publicListing = updateData.publicListing as any;
+  if (updateData.newsKeywords !== undefined) set.newsKeywords = updateData.newsKeywords;
+  if (updateData.excludedKeywords !== undefined) set.excludedKeywords = updateData.excludedKeywords;
+  if (updateData.competitorNames !== undefined) set.competitorNames = updateData.competitorNames;
+  if (updateData.productLines !== undefined) set.productLines = updateData.productLines;
+  if (updateData.contentSources !== undefined) set.contentSources = updateData.contentSources as any;
+  if (updateData.mediaLookbackDaysDefault !== undefined) set.mediaLookbackDaysDefault = updateData.mediaLookbackDaysDefault;
+
   if (updateData.usageData) {
     if (updateData.usageData.activeUsersCount !== undefined) set['usageData.activeUsersCount'] = updateData.usageData.activeUsersCount;
     if (updateData.usageData.seatsPurchased !== undefined) set['usageData.seatsPurchased'] = updateData.usageData.seatsPurchased;

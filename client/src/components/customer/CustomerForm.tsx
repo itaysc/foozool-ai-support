@@ -39,6 +39,11 @@ import SelectBase from '@/components/base/Select';
 import Modal from '@/components/Modal';
 import industriesStore from '@/stores/industries.store';
 import featuresStore from '@/stores/features.store';
+import { COUNTRIES } from '@/constants/countries';
+import { REGIONS } from '@/constants/regions';
+import { LANGUAGES } from '@/constants/languages';
+import { EXCHANGES } from '@/constants/exchanges';
+import TagsInput from '@/components/tagsInput';
 
 interface CustomerFormProps {
   mode: 'create' | 'edit';
@@ -122,6 +127,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
       fetchCustomer();
     }
     featuresStore.ensureLoaded();
+    industriesStore.ensureLoaded();
     if (customerId) {
       featuresStore.loadUsageForCustomer(customerId);
     }
@@ -151,6 +157,20 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
             seatsPurchased: customerData.usageData.seatsPurchased,
             seatsUsed: customerData.usageData.seatsUsed,
           } : undefined,
+          // Geo / Media & Signals fields
+          website: customerData.website || '',
+          domains: customerData.domains || [],
+          hq: customerData.hq as any,
+          operatingRegions: customerData.operatingRegions || [],
+          countriesServed: customerData.countriesServed || [],
+          languages: customerData.languages || [],
+          publicListing: customerData.publicListing || { isPublic: false },
+          newsKeywords: customerData.newsKeywords || [],
+          excludedKeywords: customerData.excludedKeywords || [],
+          competitorNames: customerData.competitorNames || [],
+          productLines: customerData.productLines || [],
+          contentSources: customerData.contentSources || [],
+          mediaLookbackDaysDefault: customerData.mediaLookbackDaysDefault ?? 30,
         });
       }
     } catch (err) {
@@ -508,15 +528,67 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>Geography</Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField fullWidth size="small" label="HQ Country" value={(formData as any).hq?.country || ''} onChange={(e) => handleInputChange('hq' as any, { ...(formData as any).hq, country: e.target.value })} />
-              <TextField fullWidth size="small" label="Region" value={(formData as any).hq?.region || ''} onChange={(e) => handleInputChange('hq' as any, { ...(formData as any).hq, region: e.target.value })} />
+              <SelectBase
+                value={(formData as any).hq?.country || ''}
+                onChange={(v) => handleInputChange('hq' as any, { ...(formData as any).hq, country: String(v) })}
+                size="small"
+                fullWidth
+                label="HQ Country"
+                placeholder="Select country"
+                searchable
+                allowClear
+                options={COUNTRIES}
+              />
+              <SelectBase
+                value={(formData as any).hq?.region || ''}
+                onChange={(v) => handleInputChange('hq' as any, { ...(formData as any).hq, region: String(v) })}
+                size="small"
+                fullWidth
+                label="Region"
+                placeholder="Select region"
+                allowClear
+                options={REGIONS}
+              />
               <TextField fullWidth size="small" label="City" value={(formData as any).hq?.city || ''} onChange={(e) => handleInputChange('hq' as any, { ...(formData as any).hq, city: e.target.value })} />
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField fullWidth size="small" label="Operating Regions (comma-separated)" value={(formData.operatingRegions || []).join(', ')} onChange={(e) => handleInputChange('operatingRegions', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
-              <TextField fullWidth size="small" label="Countries Served (comma-separated)" value={(formData.countriesServed || []).join(', ')} onChange={(e) => handleInputChange('countriesServed', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
+              <SelectBase
+                value={(formData.operatingRegions || []) as any}
+                onChange={(vals) => handleInputChange('operatingRegions', (Array.isArray(vals) ? vals.map(String) : []) as string[])}
+                size="small"
+                fullWidth
+                label="Operating Regions"
+                placeholder="Select operating regions"
+                multiple
+                searchable
+                allowClear
+                options={REGIONS}
+              />
+              <SelectBase
+                value={(formData.countriesServed || []) as any}
+                onChange={(vals) => handleInputChange('countriesServed', (Array.isArray(vals) ? vals.map(String) : []) as string[])}
+                size="small"
+                fullWidth
+                label="Countries Served"
+                placeholder="Select countries"
+                multiple
+                searchable
+                allowClear
+                options={[ 'International', ...COUNTRIES.filter(c => c !== 'International') ]}
+              />
             </Box>
-            <TextField fullWidth size="small" label="Languages (comma-separated)" value={(formData.languages || []).join(', ')} onChange={(e) => handleInputChange('languages', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
+            <SelectBase
+              value={(formData.languages || []) as any}
+              onChange={(vals) => handleInputChange('languages', (Array.isArray(vals) ? vals.map(String) : []) as string[])}
+              size="small"
+              fullWidth
+              label="Languages"
+              placeholder="Select languages"
+              multiple
+              searchable
+              allowClear
+              options={LANGUAGES}
+            />
           </Box>
         )}
 
@@ -525,7 +597,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
             <Typography variant="h6" sx={{ fontWeight: 600 }}>Media & Signals</Typography>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField fullWidth size="small" label="Website" value={formData.website || ''} onChange={(e) => handleInputChange('website', e.target.value)} />
-              <TextField fullWidth size="small" label="Domains (comma-separated)" value={(formData.domains || []).join(', ')} onChange={(e) => handleInputChange('domains', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
+              <TagsInput
+                value={(formData.domains || [])}
+                onChange={(vals) => handleInputChange('domains', vals)}
+                label="Domains"
+                placeholder="Domains (Comma-Separated)"
+                normalize={(t) => t.replace(/^https?:\/\//, '').replace(/\/$/, '')}
+              />
             </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <FormControl size="small" sx={{ minWidth: 160 }}>
@@ -536,14 +614,44 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
                 </Select>
               </FormControl>
               <TextField size="small" label="Ticker" value={(formData.publicListing?.ticker) || ''} onChange={(e) => handleInputChange('publicListing' as any, { ...(formData as any).publicListing, ticker: e.target.value })} />
-              <TextField size="small" label="Exchange" value={(formData.publicListing?.exchange) || ''} onChange={(e) => handleInputChange('publicListing' as any, { ...(formData as any).publicListing, exchange: e.target.value })} />
+              <SelectBase
+                value={(formData.publicListing?.exchange) || ''}
+                onChange={(v) => handleInputChange('publicListing' as any, { ...(formData as any).publicListing, exchange: String(v) })}
+                size="small"
+                label="Exchange"
+                placeholder="Select exchange"
+                allowClear
+                searchable
+                options={EXCHANGES}
+              />
             </Box>
-            <TextField fullWidth size="small" label="News Keywords (comma-separated)" value={(formData.newsKeywords || []).join(', ')} onChange={(e) => handleInputChange('newsKeywords', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
+            <TagsInput
+              value={(formData.newsKeywords || [])}
+              onChange={(vals) => handleInputChange('newsKeywords', vals)}
+              label="News Keywords"
+              placeholder="Keywords (Comma-Separated)"
+            />
             <TextField fullWidth size="small" label="Excluded Keywords (comma-separated)" value={(formData.excludedKeywords || []).join(', ')} onChange={(e) => handleInputChange('excludedKeywords', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
-            <TextField fullWidth size="small" label="Competitors (comma-separated)" value={(formData.competitorNames || []).join(', ')} onChange={(e) => handleInputChange('competitorNames', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
-            <TextField fullWidth size="small" label="Product Lines (comma-separated)" value={(formData.productLines || []).join(', ')} onChange={(e) => handleInputChange('productLines', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
+            <TagsInput
+              value={(formData.competitorNames || [])}
+              onChange={(vals) => handleInputChange('competitorNames', vals)}
+              label="Competitors"
+              placeholder="Competitors (Comma-Separated)"
+            />
+            <TagsInput
+              value={(formData.productLines || [])}
+              onChange={(vals) => handleInputChange('productLines', vals)}
+              label="Product Lines"
+              placeholder="Product Lines (Comma-Separated)"
+            />
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField fullWidth size="small" label="Content Sources (URLs/handles, comma-separated)" value={(formData.contentSources || []).map(s => (s as any).handleOrUrl || s).join(', ')} onChange={(e) => handleInputChange('contentSources', e.target.value.split(',').map(s => ({ type: 'custom', handleOrUrl: s.trim() })).filter(x => x.handleOrUrl))} />
+              <TagsInput
+                value={(formData.contentSources || []).map((s: any) => s?.handleOrUrl || String(s))}
+                onChange={(vals) => handleInputChange('contentSources', vals.map((s) => ({ type: 'custom', handleOrUrl: s })))}
+                label="Content Sources (URLs/handles)"
+                placeholder="Content Sources (Comma-Separated)"
+                normalize={(t) => t.trim()}
+              />
               <TextField size="small" label="Default Lookback Days" type="number" value={formData.mediaLookbackDaysDefault ?? 30} onChange={(e) => handleInputChange('mediaLookbackDaysDefault', e.target.value === '' ? undefined : Number(e.target.value))} />
             </Box>
           </Box>
