@@ -28,17 +28,19 @@ import {
 import {
   ArrowBack,
   Save,
+  Delete,
   Cancel,
   Help
 } from '@mui/icons-material';
 import { observer } from 'mobx-react';
 import { ICustomer, CreateCustomerRequest, UpdateCustomerRequest } from '@/types';
+import toast from '@/utils/toast';
 import botsStore from '@/stores/bots.store';
 import customersStore from '@/stores/customers.store';
 import SelectBase from '@/components/base/Select';
 import Modal from '@/components/Modal';
 import industriesStore from '@/stores/industries.store';
-import featuresStore from '@/stores/features.store';
+import customerActivityStore from '../../stores/customer-activity.store';
 import { COUNTRIES } from '@/constants/countries';
 import { REGIONS } from '@/constants/regions';
 import { LANGUAGES } from '@/constants/languages';
@@ -88,7 +90,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
   const [customer, setCustomer] = useState<ICustomer | null>(null);
   const [tab, setTab] = useState<'general' | 'media' | 'geo' | 'features' | 'bots'>('general');
   const [addUsageOpen, setAddUsageOpen] = useState(false);
-  const [newUsage, setNewUsage] = useState<{ featureName: string; activeUsers?: number; utilization?: number; usageDate?: string }>({ featureName: '' });
+  const [newUsage, setNewUsage] = useState<{ featureName: string; metricType: 'count' | 'amount' | 'percentage' | 'duration' | 'custom'; metricValue?: number; unit?: string; usageDate?: string }>({ featureName: '', metricType: 'count' });
   const [addBotOpen, setAddBotOpen] = useState(false);
   const [newBot, setNewBot] = useState<{ name: string; type: 'customer_success' }>({ name: '', type: 'customer_success' });
   
@@ -126,10 +128,10 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
     if (mode === 'edit' && customerId) {
       fetchCustomer();
     }
-    featuresStore.ensureLoaded();
+    customerActivityStore.ensureLoaded();
     industriesStore.ensureLoaded();
     if (customerId) {
-      featuresStore.loadUsageForCustomer(customerId);
+      customerActivityStore.loadUsageForCustomer(customerId);
     }
     botsStore.load();
   }, [mode, customerId]);
@@ -266,7 +268,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         <Tab label="General" value="general" />
         <Tab label="Geo" value="geo" />
         <Tab label="Media & Signals" value="media" />
-        <Tab label="Feature Usage" value="features" />
+        <Tab label="Customer Activity" value="features" />
         {mode === 'edit' && <Tab label="Bots" value="bots" />}
       </Tabs>
 
@@ -631,7 +633,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
               label="News Keywords"
               placeholder="Keywords (Comma-Separated)"
             />
-            <TextField fullWidth size="small" label="Excluded Keywords (comma-separated)" value={(formData.excludedKeywords || []).join(', ')} onChange={(e) => handleInputChange('excludedKeywords', e.target.value.split(',').map(s => s.trim()).filter(Boolean))} />
+            <TagsInput
+              value={(formData.excludedKeywords || [])}
+              onChange={(vals) => handleInputChange('excludedKeywords', vals)}
+              label="Excluded Keywords"
+              placeholder="Excluded Keywords (Comma-Separated)"
+            />
             <TagsInput
               value={(formData.competitorNames || [])}
               onChange={(vals) => handleInputChange('competitorNames', vals)}
@@ -661,33 +668,61 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Usage History</Typography>
-              <Button variant="text" onClick={() => setAddUsageOpen(true)}>+ Add Usage</Button>
+              <Button variant="text" onClick={() => setAddUsageOpen(true)}>+ Add Activity</Button>
             </Box>
             {mode === 'edit' && customerId ? (
               <>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell>Feature</TableCell>
-                      <TableCell align="right">Active Users</TableCell>
-                      <TableCell align="right">Utilization %</TableCell>
-                      <TableCell>Usage Date</TableCell>
+                      <TableCell>Solution</TableCell>
+                      <TableCell>Metric Type</TableCell>
+                      <TableCell align="right">Value</TableCell>
+                      <TableCell>Unit</TableCell>
+                      <TableCell>Activity Date</TableCell>
                       <TableCell>Created</TableCell>
+                      <TableCell>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {(featuresStore.usageByCustomer[customerId] || []).map((u) => (
+                    {(customerActivityStore.usageByCustomer[customerId] || []).map((u: any) => (
                       <TableRow key={u._id}>
-                        <TableCell>{u.featureName}</TableCell>
-                        <TableCell align="right">{u.activeUsersCount ?? '-'}</TableCell>
-                        <TableCell align="right">{u.utilizationPercent ?? '-'}</TableCell>
-                        <TableCell>{u.usageDate ? new Date(u.usageDate).toISOString().split('T')[0] : (u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : '-')}</TableCell>
+                        <TableCell>{u.solutionName || u.featureName}</TableCell>
+                        <TableCell sx={{ textTransform: 'capitalize' }}>{u.metricType || (u.utilizationPercent !== undefined ? 'percentage' : (u.activeUsersCount !== undefined ? 'count' : '-'))}</TableCell>
+                        <TableCell align="right">{u.metricValue ?? u.utilizationPercent ?? u.activeUsersCount ?? '-'}</TableCell>
+                        <TableCell>{u.unit || '-'}</TableCell>
+                        <TableCell>
+                          {u.activityDate ? new Date(u.activityDate).toISOString().split('T')[0] :
+                           u.periodStart || u.periodEnd ? `${u.periodStart ? new Date(u.periodStart).toISOString().split('T')[0] : ''} - ${u.periodEnd ? new Date(u.periodEnd).toISOString().split('T')[0] : ''}` :
+                           (u.usageDate ? new Date(u.usageDate).toISOString().split('T')[0] : '-')}
+                        </TableCell>
                         <TableCell>{new Date(u.createdAt).toISOString().split('T')[0]}</TableCell>
+                        <TableCell>
+                          <Tooltip title="Delete Activity">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={async () => {
+                                if (window.confirm('Are you sure you want to delete this activity?')) {
+                                  try {
+                                    await customerActivityStore.deleteActivity(u._id, customerId);
+                                    toast.success('Activity deleted successfully');
+                                  } catch (error) {
+                                    console.error('Failed to delete activity:', error);
+                                    toast.error('Failed to delete activity. Please try again.');
+                                  }
+                                }
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
                       </TableRow>
                     ))}
-                    {(!featuresStore.usageByCustomer[customerId] || featuresStore.usageByCustomer[customerId].length === 0) && (
+                    {(!customerActivityStore.usageByCustomer[customerId] || customerActivityStore.usageByCustomer[customerId].length === 0) && (
                       <TableRow>
-                        <TableCell colSpan={4} align="center">No usage entries yet</TableCell>
+                        <TableCell colSpan={7} align="center">No usage entries yet</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -738,23 +773,36 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         )}
         </form>
 
-        <Modal open={addUsageOpen} onClose={() => setAddUsageOpen(false)} title="Add Feature Usage" maxWidth="sm" contentTopGap={5}
+        <Modal open={addUsageOpen} onClose={() => setAddUsageOpen(false)} title="Add Customer Activity" maxWidth="sm" contentTopGap={5}
           actions={
             <>
               <Button onClick={() => setAddUsageOpen(false)}>Cancel</Button>
               <Button variant="contained" onClick={async () => {
-                if (!customerId) return;
-                const featureName = newUsage.featureName?.trim();
-                if (!featureName) return;
-                await featuresStore.addUsage({
-                  featureName,
-                  customerId,
-                  activeUsersCount: newUsage.activeUsers,
-                  utilizationPercent: newUsage.utilization,
-                  usageDate: newUsage.usageDate ? new Date(newUsage.usageDate).toISOString() : undefined 
-                });
-                setAddUsageOpen(false);
-                setNewUsage({ featureName: '' });
+                try {
+                  if (!customerId) return;
+                  const solutionName = newUsage.featureName?.trim();
+                  if (!solutionName) return;
+                  
+                  // First, upsert the solution name to ensure it appears in future dropdowns
+                  await customerActivityStore.upsertSolution(solutionName);
+                  
+                  if (!newUsage.metricValue) return;
+                  
+                  await customerActivityStore.addUsage({
+                    customerId,
+                    solutionName,
+                    metricType: newUsage.metricType,
+                    metricValue: newUsage.metricValue,
+                    unit: newUsage.unit,
+                    activityDate: newUsage.usageDate ? new Date(newUsage.usageDate).toISOString() : undefined,
+                  } as any);
+                  setAddUsageOpen(false);
+                  setNewUsage({ featureName: '', metricType: 'count' });
+                  toast.success('Activity added successfully');
+                } catch (error) {
+                  console.error('Failed to add activity:', error);
+                  toast.error('Failed to add activity. Please try again.');
+                }
               }}>Add Usage</Button>
             </>
           }
@@ -763,17 +811,57 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
             <SelectBase
               value={newUsage.featureName}
               onChange={(v) => setNewUsage(prev => ({ ...prev, featureName: String(v) }))}
-              label="Feature (name)"
-              placeholder="Select or Other"
+              label="Solution (name)"
+              placeholder="Enter name or pick"
               allowOther
               allowClear
-              options={featuresStore.features.map(f => f.name)}
+              options={customerActivityStore.solutions.map(s => s.name)}
             />
             <Box sx={{ display: 'flex', gap: 2 }}>
-              <TextField fullWidth size="small" label="Active Users" type="number" InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} value={newUsage.activeUsers ?? ''} onChange={(e) => setNewUsage(prev => ({ ...prev, activeUsers: e.target.value === '' ? undefined : Number(e.target.value) }))} />
-              <TextField fullWidth size="small" label="Utilization %" type="number" InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} value={newUsage.utilization ?? ''} onChange={(e) => setNewUsage(prev => ({ ...prev, utilization: e.target.value === '' ? undefined : Number(e.target.value) }))} />
-              <TextField fullWidth size="small" label="Usage Date" type="date" InputLabelProps={{ shrink: true }} sx={{ '& .MuiInputBase-root': { height: 40 } }} value={newUsage.usageDate ?? ''} onChange={(e) => setNewUsage(prev => ({ ...prev, usageDate: e.target.value }))} />
+              <SelectBase
+                value={newUsage.metricType}
+                onChange={(v) => setNewUsage(prev => ({ ...prev, metricType: v as any }))}
+                label="Metric Type"
+                placeholder="Select metric type"
+                options={[
+                  { value: 'count', label: 'Count' },
+                  { value: 'amount', label: 'Amount' },
+                  { value: 'percentage', label: 'Percentage' },
+                  { value: 'duration', label: 'Duration' },
+                  { value: 'custom', label: 'Custom' }
+                ]}
+              />
+              <TextField 
+                fullWidth 
+                size="small" 
+                label="Value" 
+                type="number" 
+                InputLabelProps={{ shrink: true }} 
+                sx={{ '& .MuiInputBase-root': { height: 40 } }} 
+                value={newUsage.metricValue ?? ''} 
+                onChange={(e) => setNewUsage(prev => ({ ...prev, metricValue: e.target.value === '' ? undefined : Number(e.target.value) }))} 
+              />
+              <TextField 
+                fullWidth 
+                size="small" 
+                label="Unit (optional)" 
+                InputLabelProps={{ shrink: true }} 
+                sx={{ '& .MuiInputBase-root': { height: 40 } }} 
+                value={newUsage.unit ?? ''} 
+                onChange={(e) => setNewUsage(prev => ({ ...prev, unit: e.target.value }))} 
+                placeholder="e.g., users, USD, hours"
+              />
             </Box>
+            <TextField 
+              fullWidth 
+              size="small" 
+              label="Activity Date" 
+              type="date" 
+              InputLabelProps={{ shrink: true }} 
+              sx={{ '& .MuiInputBase-root': { height: 40 } }} 
+              value={newUsage.usageDate ?? ''} 
+              onChange={(e) => setNewUsage(prev => ({ ...prev, usageDate: e.target.value }))} 
+            />
           </Box>
         </Modal>
 

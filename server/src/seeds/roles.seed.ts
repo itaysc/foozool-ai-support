@@ -9,7 +9,7 @@ const basePermissions: string[] = [
   'organizations:read', 'organizations:update',
   'tickets:read', 'tickets:update', 'tickets:predict',
   'customers:read', 'customers:create', 'customers:update', 'customers:delete',
-  'features:read', 'features:create', 'features:update', 'features:delete',
+  'solutions:read', 'solutions:create', 'solutions:update', 'solutions:delete',
   'insights:read', 'insights:export',
   'anomalies:read', 'anomalies:recompute',
   'nps:read', 'nps:update',
@@ -41,7 +41,7 @@ const roleDefinitions: Array<{ name: string; description?: string; permissions: 
     permissions: [
       'users:read', 'users:create', 'users:update',
       'customers:read', 'customers:create', 'customers:update', 'customers:delete',
-      'features:read', 'features:create', 'features:update', 'features:delete',
+      'solutions:read', 'solutions:create', 'solutions:update', 'solutions:delete',
       'bots:read', 'bots:create', 'bots:update', 'bots:delete',
       'insights:read', 'insights:export', 'news:read',
       'anomalies:read',
@@ -57,7 +57,7 @@ const roleDefinitions: Array<{ name: string; description?: string; permissions: 
     description: 'Read-only insights and analytics',
     permissions: [
       'insights:read', 'insights:export', 'anomalies:read', 'predictions:read', 'tickets:read',
-      'customers:read', 'features:read', 'ai:logs:read', 'search:read', 'industries:read', 'news:read',
+      'customers:read', 'solutions:read', 'ai:logs:read', 'search:read', 'industries:read', 'news:read',
     ],
   },
   {

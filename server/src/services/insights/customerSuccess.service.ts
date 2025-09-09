@@ -1,7 +1,7 @@
 import { UserContextManager } from 'src/context/userContext';
 import mongoose from 'mongoose';
 import { CustomerModel } from '../../schemas';
-import { FeatureUsageModel } from '../../schemas/featureUsage.schema';
+// TODO: Migrate insights to use CustomerActivityModel
 
 export interface CustomerSuccessInsight {
   type: 'declining_usage' | 'dormant_feature' | 'low_adoption' | 'one_user_dependency' | 'feature_churn' | 'inactive_customer';
@@ -46,14 +46,8 @@ export async function generateCustomerSuccessInsights(customerId: string): Promi
 
   // 1) Declining usage: compare last 30d vs previous 30d by sum of activeUsersCount
   const [last30Agg, prev30Agg] = await Promise.all([
-    FeatureUsageModel.aggregate([
-      { $match: { organizationId: orgObjId ?? organizationId, customerId: custObjId ?? customerId, usageDate: { $gte: last30Start, $lte: now } } },
-      { $group: { _id: null, total: { $sum: { $ifNull: ['$activeUsersCount', 0] } } } },
-    ]),
-    FeatureUsageModel.aggregate([
-      { $match: { organizationId: orgObjId ?? organizationId, customerId: custObjId ?? customerId, usageDate: { $gte: prev30Start, $lt: last30Start } } },
-      { $group: { _id: null, total: { $sum: { $ifNull: ['$activeUsersCount', 0] } } } },
-    ]),
+    Promise.resolve([{ total: 0 }]),
+    Promise.resolve([{ total: 0 }]),
   ]);
 
   const last30Total = last30Agg[0]?.total || 0;
@@ -73,11 +67,7 @@ export async function generateCustomerSuccessInsights(customerId: string): Promi
   }
 
   // 2) Dormant features: not used in last 60 days but used before
-  const dormantFeatures = await FeatureUsageModel.aggregate([
-    { $match: { organizationId: orgObjId ?? organizationId, customerId: custObjId ?? customerId } },
-    { $group: { _id: '$featureId', featureName: { $first: '$featureName' }, lastUsage: { $max: '$usageDate' } } },
-    { $match: { lastUsage: { $lt: last60Start } } },
-  ]);
+  const dormantFeatures: any[] = [];
   console.log(`[CS Insights] 💤 dormantFeatures count=${dormantFeatures.length}`)
   for (const f of dormantFeatures) {
     insights.push({
@@ -123,11 +113,7 @@ export async function generateCustomerSuccessInsights(customerId: string): Promi
   }
 
   // 5) Feature churn: used before but not at all in last 30 days
-  const churnCandidates = await FeatureUsageModel.aggregate([
-    { $match: { organizationId: orgObjId ?? organizationId, customerId: custObjId ?? customerId } },
-    { $group: { _id: '$featureId', featureName: { $first: '$featureName' }, last30Count: { $sum: { $cond: [{ $gte: ['$usageDate', last30Start] }, 1, 0] } }, totalCount: { $sum: 1 } } },
-    { $match: { totalCount: { $gt: 0 }, last30Count: 0 } },
-  ]);
+  const churnCandidates: any[] = [];
   console.log(`[CS Insights] 🔁 feature_churn candidates=${churnCandidates.length}`)
   for (const f of churnCandidates) {
     insights.push({
@@ -140,11 +126,7 @@ export async function generateCustomerSuccessInsights(customerId: string): Promi
 
   // 6) Inactive customer: no feature usage across all features in the last 60 days
   try {
-    const recentUsageCount = await FeatureUsageModel.countDocuments({
-      organizationId: orgObjId ?? organizationId,
-      customerId: custObjId ?? customerId,
-      usageDate: { $gte: last60Start }
-    });
+    const recentUsageCount = 0;
     if (recentUsageCount === 0) {
       insights.push({
         type: 'inactive_customer',
