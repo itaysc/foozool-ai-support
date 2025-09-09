@@ -59,6 +59,12 @@
       "value": "",
       "type": "string",
       "description": "ID of a customer to test with (get from Create Customer or Get All Customers response)"
+    },
+    {
+      "key": "activity_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a customer activity to test with (get from Create Customer Activity response)"
     }
   ],
   "auth": {
@@ -868,10 +874,10 @@
       ]
     },
     {
-      "name": "🧩 Features",
+      "name": "🎯 Solutions",
       "item": [
         {
-          "name": "Upsert Feature",
+          "name": "Upsert Solution",
           "request": {
             "method": "POST",
             "header": [
@@ -879,47 +885,83 @@
               { "key": "Authorization", "value": "Bearer {{auth_token}}" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"name\": \"Automation\"\n}" },
-            "url": { "raw": "{{nodejs_base_url}}/api/v1/features", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","features"] },
-            "description": "Create or fetch a feature by name for the current organization"
+            "url": { "raw": "{{nodejs_base_url}}/api/v1/solutions", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","solutions"] },
+            "description": "Create or fetch a solution by name for the current organization"
           },
           "response": []
         },
         {
-          "name": "List Features",
+          "name": "List Solutions",
           "request": {
             "method": "GET",
             "header": [ { "key": "Authorization", "value": "Bearer {{auth_token}}" } ],
-            "url": { "raw": "{{nodejs_base_url}}/api/v1/features", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","features"] },
-            "description": "List all features for the organization"
+            "url": { "raw": "{{nodejs_base_url}}/api/v1/solutions", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","solutions"] },
+            "description": "List all solutions for the organization"
           },
           "response": []
-        },
+        }
+      ]
+    },
+    {
+      "name": "📊 Customer Activity",
+      "item": [
         {
-          "name": "Create Feature Usage",
+          "name": "Create Customer Activity",
           "request": {
             "method": "POST",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{auth_token}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"featureName\": \"Automation\",\n  \"customerId\": \"{{customer_id}}\",\n  \"activeUsersCount\": 43,\n  \"utilizationPercent\": 86\n}" },
-            "url": { "raw": "{{nodejs_base_url}}/api/v1/features/usage", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","features","usage"] },
-            "description": "Record feature usage for a customer (creates feature if name is new)"
+            "body": { 
+              "mode": "raw", 
+              "raw": "{\n  \"customerId\": \"{{customer_id}}\",\n  \"solutionName\": \"Automation\",\n  \"metricType\": \"count\",\n  \"metricValue\": 150,\n  \"unit\": \"users\",\n  \"activityDate\": \"2024-01-15T10:00:00Z\"\n}" 
+            },
+            "url": { "raw": "{{nodejs_base_url}}/api/v1/customer-activity", "host": ["{{nodejs_base_url}}"], "path": ["api","v1","customer-activity"] },
+            "description": "Create a new customer activity record with metric data"
           },
           "response": []
         },
         {
-          "name": "List Feature Usage (by Customer)",
+          "name": "List Customer Activities (by Customer)",
           "request": {
             "method": "GET",
             "header": [ { "key": "Authorization", "value": "Bearer {{auth_token}}" } ],
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/features/usage?customerId={{customer_id}}",
+              "raw": "{{nodejs_base_url}}/api/v1/customer-activity?customerId={{customer_id}}",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api","v1","features","usage"],
+              "path": ["api","v1","customer-activity"],
               "query": [ { "key": "customerId", "value": "{{customer_id}}" } ]
             },
-            "description": "List feature usage entries for a specific customer"
+            "description": "List all customer activity entries for a specific customer"
+          },
+          "response": []
+        },
+        {
+          "name": "List All Customer Activities",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{auth_token}}" } ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customer-activity",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","customer-activity"]
+            },
+            "description": "List all customer activity entries for the organization"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Customer Activity",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Authorization", "value": "Bearer {{auth_token}}" } ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customer-activity/{{activity_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api","v1","customer-activity","{{activity_id}}"]
+            },
+            "description": "Delete a specific customer activity record"
           },
           "response": []
         }

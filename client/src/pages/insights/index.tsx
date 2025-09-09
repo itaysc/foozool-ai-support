@@ -1029,100 +1029,224 @@ const InsightsPage: React.FC = () => {
             </Box>
 
             {(csInsights && csInsights.length > 0) ? (
-              <Box sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: 'repeat(auto-fill, minmax(300px, 300px))',
-                  md: 'repeat(auto-fill, minmax(320px, 320px))'
-                },
-                justifyContent: 'flex-start',
-                gap: 2
-              }}>
-                {csInsights.map((insight, idx) => (
-                  <Box key={idx} sx={{ width: { xs: '300px', md: '320px' } }}>
-                    <Card sx={{ width: '100%', height: '100%', boxShadow: 1, borderRadius: 1 }}>
-                      <CardContent sx={{ p: 1 }}>
-                        {/* Customer name header */}
-                        {insight.meta?.customerName && (
-                          <>
-                            <Typography variant="overline" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: 0.4, fontSize: '0.7rem' }}>
-                              {insight.meta.customerName}
-                            </Typography>
-                            <Divider sx={{ mb: 0.5 }} />
-                          </>
-                        )}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                          <Chip 
-                            label={insight.type.replace(/_/g, ' ')} 
-                            color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'default'}
-                            size="small"
-                            sx={{ textTransform: 'capitalize', fontWeight: 'bold', '& .MuiChip-label': { fontSize: '0.7rem' } }}
-                          />
-                        </Box>
-                        <Typography variant="caption" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3, fontSize: '0.78rem' }}>
-                          {insight.message}
-                        </Typography>
-                        {insight.meta && (
-                          <Box sx={{ mt: 0.5, p: 0.5, borderRadius: 1, backgroundColor: '#f5f7fb' }}>
-                            {Object.entries(insight.meta)
-                              .filter(([k]) => k !== 'customerName' && k !== 'featureId' && k !== '_id')
-                              .map(([k, v]) => (
-                                <Typography key={k} variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.72rem' }}>
-                                  <strong>{k}:</strong> {String(v)}
+              <Box>
+                {/* Group insights by category */}
+                {['risk', 'upsell', 'customer_success', 'strategic'].map(category => {
+                  const categoryInsights = csInsights.filter(insight => insight.category === category);
+                  if (categoryInsights.length === 0) return null;
+                  
+                  const categoryLabels = {
+                    risk: '🚨 Risk Alerts',
+                    upsell: '💰 Upsell Opportunities', 
+                    customer_success: '🎯 Customer Success Prep',
+                    strategic: '📊 Strategic Insights'
+                  };
+                  
+                  const categoryColors = {
+                    risk: 'error',
+                    upsell: 'success', 
+                    customer_success: 'info',
+                    strategic: 'warning'
+                  };
+                  
+                  return (
+                    <Box key={category} sx={{ mb: 4 }}>
+                      <Typography variant="h6" gutterBottom sx={{ 
+                        fontWeight: 'bold', 
+                        color: '#1976d2', 
+                        mb: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}>
+                        {categoryLabels[category as keyof typeof categoryLabels]}
+                        <Chip 
+                          label={`${categoryInsights.length}`}
+                          color={categoryColors[category as keyof typeof categoryColors] as any}
+                          size="small"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      </Typography>
+                      
+                      <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                          xs: 'repeat(auto-fill, minmax(300px, 300px))',
+                          md: 'repeat(auto-fill, minmax(320px, 320px))'
+                        },
+                        justifyContent: 'flex-start',
+                        gap: 2
+                      }}>
+                        {categoryInsights.map((insight, idx) => (
+                          <Box key={idx} sx={{ width: { xs: '300px', md: '320px' } }}>
+                            <Card sx={{ 
+                              width: '100%', 
+                              height: '100%', 
+                              boxShadow: 2, 
+                              borderRadius: 2,
+                              border: `2px solid ${
+                                insight.severity === 'red' ? '#f44336' : 
+                                insight.severity === 'yellow' ? '#ff9800' : '#e0e0e0'
+                              }`
+                            }}>
+                              <CardContent sx={{ p: 2 }}>
+                                {/* Customer name header */}
+                                {insight.meta?.customerName && (
+                                  <>
+                                    <Typography variant="overline" sx={{ fontWeight: 700, mb: 1, letterSpacing: 0.4, fontSize: '0.7rem' }}>
+                                      {insight.meta.customerName}
+                                    </Typography>
+                                    <Divider sx={{ mb: 1 }} />
+                                  </>
+                                )}
+                                
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                  <Chip 
+                                    label={insight.type.replace(/_/g, ' ')} 
+                                    color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'default'}
+                                    size="small"
+                                    sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
+                                  />
+                                  <Chip 
+                                    label={insight.category.replace(/_/g, ' ')}
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ textTransform: 'capitalize', fontSize: '0.7rem' }}
+                                  />
+                                </Box>
+                                
+                                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, lineHeight: 1.4 }}>
+                                  {insight.message}
                                 </Typography>
-                              ))}
+                                
+                                {insight.meta && (
+                                  <Box sx={{ mt: 1, p: 1, borderRadius: 1, backgroundColor: '#f5f7fb' }}>
+                                    {Object.entries(insight.meta)
+                                      .filter(([k]) => k !== 'customerName' && k !== 'featureId' && k !== '_id')
+                                      .map(([k, v]) => (
+                                        <Typography key={k} variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.75rem' }}>
+                                          <strong>{k}:</strong> {String(v)}
+                                        </Typography>
+                                      ))}
+                                  </Box>
+                                )}
+                              </CardContent>
+                            </Card>
                           </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Box>
-                ))}
+                        ))}
+                      </Box>
+                    </Box>
+                  );
+                })}
               </Box>
             ) : (allCsInsights && allCsInsights.length > 0) ? (
-              <Box sx={{
-                display: 'grid',
-                gridTemplateColumns: {
-                  xs: 'repeat(auto-fill, minmax(300px, 300px))',
-                  md: 'repeat(auto-fill, minmax(320px, 320px))'
-                },
-                justifyContent: 'flex-start',
-                gap: 2
-              }}>
-                {allCsInsights.flatMap(group => group.insights.map((insight, idx) => (
-                  <Box key={`${group.customerId}-${idx}`} sx={{ width: { xs: '300px', md: '320px' } }}>
-                    <Card sx={{ width: '100%', height: '100%', boxShadow: 1, borderRadius: 1 }}>
-                      <CardContent sx={{ p: 1 }}>
-                        {/* Customer name header */}
-                        <Typography variant="overline" sx={{ fontWeight: 700, mb: 0.5, letterSpacing: 0.4, fontSize: '0.7rem' }}>
-                          {insight.meta?.customerName || group.customerName}
-                        </Typography>
-                        <Divider sx={{ mb: 0.5 }} />
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5 }}>
-                          <Chip 
-                            label={insight.type.replace(/_/g, ' ')} 
-                            color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'default'}
-                            size="small"
-                            sx={{ textTransform: 'capitalize', fontWeight: 'bold', '& .MuiChip-label': { fontSize: '0.7rem' } }}
-                          />
-                        </Box>
-                        <Typography variant="caption" sx={{ fontWeight: 600, mb: 0.5, lineHeight: 1.3, fontSize: '0.78rem' }}>
-                          {insight.message}
-                        </Typography>
-                        {insight.meta && (
-                          <Box sx={{ mt: 0.5, p: 0.5, borderRadius: 1, backgroundColor: '#f5f7fb' }}>
-                            {Object.entries(insight.meta)
-                              .filter(([k]) => k !== 'customerName' && k !== 'featureId' && k !== '_id')
-                              .map(([k, v]) => (
-                                <Typography key={k} variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.72rem' }}>
-                                  <strong>{k}:</strong> {String(v)}
+              <Box>
+                {/* Group insights by category for all customers */}
+                {['risk', 'upsell', 'customer_success', 'strategic'].map(category => {
+                  const categoryInsights = allCsInsights.flatMap(group => 
+                    group.insights.filter(insight => insight.category === category)
+                  );
+                  if (categoryInsights.length === 0) return null;
+                  
+                  const categoryLabels = {
+                    risk: '🚨 Risk Alerts',
+                    upsell: '💰 Upsell Opportunities', 
+                    customer_success: '🎯 Customer Success Prep',
+                    strategic: '📊 Strategic Insights'
+                  };
+                  
+                  const categoryColors = {
+                    risk: 'error',
+                    upsell: 'success', 
+                    customer_success: 'info',
+                    strategic: 'warning'
+                  };
+                  
+                  return (
+                    <Box key={category} sx={{ mb: 4 }}>
+                      <Typography variant="h6" gutterBottom sx={{ 
+                        fontWeight: 'bold', 
+                        color: '#1976d2', 
+                        mb: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1
+                      }}>
+                        {categoryLabels[category as keyof typeof categoryLabels]}
+                        <Chip 
+                          label={`${categoryInsights.length}`}
+                          color={categoryColors[category as keyof typeof categoryColors] as any}
+                          size="small"
+                          sx={{ fontWeight: 'bold' }}
+                        />
+                      </Typography>
+                      
+                      <Box sx={{
+                        display: 'grid',
+                        gridTemplateColumns: {
+                          xs: 'repeat(auto-fill, minmax(300px, 300px))',
+                          md: 'repeat(auto-fill, minmax(320px, 320px))'
+                        },
+                        justifyContent: 'flex-start',
+                        gap: 2
+                      }}>
+                        {categoryInsights.map((insight, idx) => (
+                          <Box key={idx} sx={{ width: { xs: '300px', md: '320px' } }}>
+                            <Card sx={{ 
+                              width: '100%', 
+                              height: '100%', 
+                              boxShadow: 2, 
+                              borderRadius: 2,
+                              border: `2px solid ${
+                                insight.severity === 'red' ? '#f44336' : 
+                                insight.severity === 'yellow' ? '#ff9800' : '#e0e0e0'
+                              }`
+                            }}>
+                              <CardContent sx={{ p: 2 }}>
+                                {/* Customer name header */}
+                                <Typography variant="overline" sx={{ fontWeight: 700, mb: 1, letterSpacing: 0.4, fontSize: '0.7rem' }}>
+                                  {insight.meta?.customerName || 'Customer'}
                                 </Typography>
-                              ))}
+                                <Divider sx={{ mb: 1 }} />
+                                
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                                  <Chip 
+                                    label={insight.type.replace(/_/g, ' ')} 
+                                    color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'default'}
+                                    size="small"
+                                    sx={{ textTransform: 'capitalize', fontWeight: 'bold' }}
+                                  />
+                                  <Chip 
+                                    label={insight.category.replace(/_/g, ' ')}
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ textTransform: 'capitalize', fontSize: '0.7rem' }}
+                                  />
+                                </Box>
+                                
+                                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1, lineHeight: 1.4 }}>
+                                  {insight.message}
+                                </Typography>
+                                
+                                {insight.meta && (
+                                  <Box sx={{ mt: 1, p: 1, borderRadius: 1, backgroundColor: '#f5f7fb' }}>
+                                    {Object.entries(insight.meta)
+                                      .filter(([k]) => k !== 'customerName' && k !== 'featureId' && k !== '_id')
+                                      .map(([k, v]) => (
+                                        <Typography key={k} variant="caption" color="text.secondary" display="block" sx={{ fontSize: '0.75rem' }}>
+                                          <strong>{k}:</strong> {String(v)}
+                                        </Typography>
+                                      ))}
+                                  </Box>
+                                )}
+                              </CardContent>
+                            </Card>
                           </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Box>
-                )))}
+                        ))}
+                      </Box>
+                    </Box>
+                  );
+                })}
               </Box>
             ) : (
               <Paper sx={{ p: 6, textAlign: 'center', backgroundColor: '#ffffff' }}>

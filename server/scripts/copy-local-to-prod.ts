@@ -29,7 +29,13 @@ import {
   WebhookModel,
   CRMModel,
   ThresholdMissModel,
+  CustomerModel,
+  CustomerActivityModel,
+  IndustryModel,
+  RoleModel,
+  PermissionModel,
 } from '../src/schemas';
+import { SolutionModel } from '../src/schemas/solution.schema';
 
 interface MigrationConfig {
   local: {
@@ -97,7 +103,13 @@ class DatabaseMigration {
         'customertiers',
         'webhooks',
         'crms',
-        'thresholdmisses'
+        'thresholdmisses',
+        'customers',
+        'customeractivities',
+        'industries',
+        'roles',
+        'permissions',
+        'solutions'
       ],
       batchSize: 1000,
       dryRun: process.env.DRY_RUN === 'true'
@@ -178,7 +190,13 @@ class DatabaseMigration {
       'customertiers': CustomerTierModel,
       'webhooks': WebhookModel,
       'crms': CRMModel,
-      'thresholdmisses': ThresholdMissModel
+      'thresholdmisses': ThresholdMissModel,
+      'customers': CustomerModel,
+      'customeractivities': CustomerActivityModel,
+      'industries': IndustryModel,
+      'roles': RoleModel,
+      'permissions': PermissionModel,
+      'solutions': SolutionModel
     };
 
     return modelMap[collectionName] || null;
