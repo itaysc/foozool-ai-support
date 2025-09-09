@@ -220,7 +220,7 @@ const InsightsPage: React.FC = () => {
       const sanitizedName = customerName.replace(/[^a-zA-Z0-9]/g, '-');
       const date = new Date().toISOString().split('T')[0];
       
-      link.download = `meeting-prep-${sanitizedName}-${date}.txt`;
+      link.download = `meeting-prep-${sanitizedName}-${date}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

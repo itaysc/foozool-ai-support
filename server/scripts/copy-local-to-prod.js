@@ -92,7 +92,7 @@ class DatabaseMigration {
         'migrations',
         'predictions',
         'crmconfigs',
-        'insighs',
+        'insights',
         'bot_performance_metrics',
         'processedstubs'
       ],

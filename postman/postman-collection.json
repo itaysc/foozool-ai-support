@@ -1264,7 +1264,7 @@
                 "{{customer_id}}"
               ]
             },
-            "description": "Generate a comprehensive customer meeting prep document with customer insights and AI-generated recommendations. The LLM will search for relevant recent news and market context online. Returns a downloadable text file. Requires 'insights:meeting-prep' permission."
+            "description": "Generate a comprehensive customer meeting prep document with customer insights and AI-generated recommendations. The LLM will search for relevant recent news and market context online. Returns a professionally formatted PDF document. Requires 'insights:meeting-prep' permission."
           },
           "response": []
         },

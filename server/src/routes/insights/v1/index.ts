@@ -7,6 +7,7 @@ import { UserContextManager } from '../../../context/userContext';
 import { generateCustomerSuccessInsights } from '../../../services/insights/customerSuccess.service';
 import { CustomerModel } from '../../../schemas';
 import { callLLM } from '../../../services/llm';
+import { generateMeetingPrepPdf, MeetingPrepData } from '../../../services/pdf/meetingPrepPdf.service';
 
 const router = express.Router();
 
@@ -173,7 +174,8 @@ Make each section detailed and actionable. Use specific data from the customer p
       meetingPrepDocument = llmResponse.data || 'Failed to generate meeting prep document';
       
       console.log(`LLM response length: ${meetingPrepDocument.length} characters`);
-      console.log(`LLM response preview: ${meetingPrepDocument.substring(0, 200)}...`);
+      console.log(`LLM response preview: ${meetingPrepDocument.substring(0, 500)}...`);
+      console.log(`LLM response full content:`, meetingPrepDocument);
       
       // If the response is too short, it might be incomplete
       if (meetingPrepDocument.length < 500) {
@@ -236,11 +238,59 @@ Make each section comprehensive and actionable. Include recent news and market c
       });
     }
 
-    // Return the document as a downloadable text file
-    res.setHeader('Content-Type', 'text/plain');
-    res.setHeader('Content-Disposition', `attachment; filename="meeting-prep-${customer.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'customer'}-${new Date().toISOString().split('T')[0]}.txt"`);
+    // Debug: Log the content being passed to PDF
+    console.log('=== PDF GENERATION DEBUG ===');
+    console.log('Customer name:', customer.name);
+    console.log('Insights count:', insights.length);
+    console.log('Document content length:', meetingPrepDocument.length);
+    console.log('Document content preview:', meetingPrepDocument.substring(0, 1000));
+    console.log('=== END DEBUG ===');
+
+    // Generate PDF document
+    const pdfData: MeetingPrepData = {
+      customer: {
+        name: customer.name || 'Unknown Customer',
+        industry: customer.industry,
+        companySize: customer.companySize,
+        segment: customer.segment,
+        contractValue: customer.contractValue?.toString(),
+        startDate: customer.startDate?.toISOString(),
+        accountManager: customer.accountManager,
+        healthScore: customer.healthScore?.toString(),
+        operatingRegions: customer.operatingRegions,
+        countriesServed: customer.countriesServed,
+        languages: customer.languages,
+        exchange: customer.publicListing?.exchange,
+        ticker: customer.publicListing?.ticker,
+        domains: customer.domains,
+        competitorNames: customer.competitorNames,
+        productLines: customer.productLines,
+        newsKeywords: customer.newsKeywords,
+        excludedKeywords: customer.excludedKeywords,
+        website: customer.website,
+        hq: customer.hq,
+        usageData: customer.usageData ? {
+          activeUsersCount: customer.usageData.activeUsersCount?.toString(),
+          seatsPurchased: customer.usageData.seatsPurchased?.toString(),
+          seatsUsed: customer.usageData.seatsUsed?.toString()
+        } : undefined,
+        notes: customer.notes
+      },
+      insights,
+      documentContent: meetingPrepDocument,
+      generatedAt: new Date(),
+      generatedBy: UserContextManager.getCurrentUserId() || 'System'
+    };
+
+    const pdfDoc = generateMeetingPrepPdf(pdfData);
     
-    return res.status(200).send(meetingPrepDocument);
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="meeting-prep-${customer.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'customer'}-${new Date().toISOString().split('T')[0]}.pdf"`);
+    
+    // Pipe the PDF to the response
+    pdfDoc.pipe(res);
+    pdfDoc.end();
 
   } catch (err) {
     console.error('Error generating customer meeting prep document:', err);
