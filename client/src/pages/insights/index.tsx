@@ -18,7 +18,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   Grid,
-  Stack
+  Stack,
+  Button
 } from '@mui/material';
 import { 
   TrendingUp, 
@@ -34,7 +35,9 @@ import {
   Dashboard,
   Analytics,
   Assessment,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Description,
+  Download
 } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
 import { Prediction, PredictionSummary, AccuracyAnalysis } from '@/types/prediction';
@@ -84,6 +87,7 @@ const InsightsPage: React.FC = () => {
   const [csInsights, setCsInsights] = useState<any[] | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('__ALL__');
   const [allCsInsights, setAllCsInsights] = useState<Array<{ customerId: string; customerName?: string; insights: any[] }> | null>(null);
+  const [meetingPrepLoading, setMeetingPrepLoading] = useState<boolean>(false);
   const [topUsers, setTopUsers] = useState<Array<{ userId: string; name: string; email?: string; score: number; events: number }> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
@@ -192,6 +196,41 @@ const InsightsPage: React.FC = () => {
       if (top.success) setTopUsers(top.data);
     } catch (e) {
       setAllCsInsights([]);
+    }
+  };
+
+  const generateMeetingPrepDocument = async (customerId: string) => {
+    if (!customerId || customerId === '__ALL__') {
+      alert('Please select a specific customer to generate a meeting prep document.');
+      return;
+    }
+
+    try {
+      setMeetingPrepLoading(true);
+      const blob = await insightsService.generateCustomerMeetingPrep(customerId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Get customer name for filename
+      const customer = customersStore.customers.find(c => c._id === customerId);
+      const customerName = customer?.name || 'customer';
+      const sanitizedName = customerName.replace(/[^a-zA-Z0-9]/g, '-');
+      const date = new Date().toISOString().split('T')[0];
+      
+      link.download = `meeting-prep-${sanitizedName}-${date}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Failed to generate meeting prep document:', error);
+      alert('Failed to generate meeting prep document. Please try again.');
+    } finally {
+      setMeetingPrepLoading(false);
     }
   };
 
@@ -1026,6 +1065,22 @@ const InsightsPage: React.FC = () => {
                 allowClear
                 options={[{ value: '__ALL__', label: 'All customers' }, ...customersStore.customers.map(c => ({ value: c._id, label: c.name }))]}
               />
+              <Tooltip title="Generate comprehensive meeting prep document with customer insights and market context">
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={meetingPrepLoading ? <CircularProgress size={16} /> : <Description />}
+                  onClick={() => generateMeetingPrepDocument(selectedCustomerId)}
+                  disabled={meetingPrepLoading || selectedCustomerId === '__ALL__' || !selectedCustomerId}
+                  sx={{ 
+                    minWidth: 'auto',
+                    px: 2,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {meetingPrepLoading ? 'Generating...' : 'Meeting Prep'}
+                </Button>
+              </Tooltip>
             </Box>
 
             {(csInsights && csInsights.length > 0) ? (

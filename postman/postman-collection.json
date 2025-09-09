@@ -1242,6 +1242,33 @@
           "response": []
         },
         {
+          "name": "Generate Customer Meeting Prep Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep/{{customer_id}}",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-meeting-prep",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "Generate a comprehensive customer meeting prep document with customer insights and AI-generated recommendations. The LLM will search for relevant recent news and market context online. Returns a downloadable text file. Requires 'insights:meeting-prep' permission."
+          },
+          "response": []
+        },
+        {
           "name": "Get Analytics",
           "request": {
             "method": "GET",

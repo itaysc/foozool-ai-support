@@ -87,6 +87,16 @@ export const insightsService = {
   async getTopActiveUsers(limit = 10, days = 30): Promise<{ success: boolean; data: Array<{ userId: string; name: string; email?: string; score: number; events: number }> }>{
     const response = await axios.get(getRoute(`analytics/top-users?limit=${limit}&days=${days}`));
     return { success: true, data: response.data.data };
+  },
+
+  /**
+   * Generate customer meeting prep document for a specific customer
+   */
+  async generateCustomerMeetingPrep(customerId: string): Promise<Blob> {
+    const response = await axios.post(getRoute(`insights/customer-meeting-prep/${customerId}`), {}, {
+      responseType: 'blob'
+    });
+    return response.data;
   }
 };
 

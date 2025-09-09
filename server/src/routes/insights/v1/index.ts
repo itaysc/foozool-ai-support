@@ -6,6 +6,7 @@ import { hasPermission } from '../../../middleware/permissions';
 import { UserContextManager } from '../../../context/userContext';
 import { generateCustomerSuccessInsights } from '../../../services/insights/customerSuccess.service';
 import { CustomerModel } from '../../../schemas';
+import { callLLM } from '../../../services/llm';
 
 const router = express.Router();
 
@@ -53,6 +54,196 @@ router.get('/customer-success', authenticateJWT, hasPermission('insights:read'),
     return res.status(200).json({ status: 200, count: results.length, payload: results });
   } catch (err) {
     console.error('Error generating CS insights for all customers:', err);
+    return res.status(500).json({ status: 500, error: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /insights/customer-meeting-prep/:customerId
+ * Generate a comprehensive customer meeting prep document for a specific customer
+ */
+router.post('/customer-meeting-prep/:customerId', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    const { customerId } = req.params;
+    
+    if (!organizationId) {
+      return res.status(400).json({ status: 400, error: 'Organization ID not found in user context' });
+    }
+
+    // Get customer details
+    const customer = await CustomerModel.findOne({ 
+      _id: customerId, 
+      organizationId 
+    }).lean();
+
+    if (!customer) {
+      return res.status(404).json({ status: 404, error: 'Customer not found' });
+    }
+
+    // Get customer success insights
+    const insights = await generateCustomerSuccessInsights(customerId);
+
+    // Note: LLM will search for relevant news online instead of using RSS data
+
+    // Generate comprehensive meeting prep document using LLM
+    const meetingPrepPrompt = `Generate a comprehensive customer meeting preparation document for ${customer.name || 'this customer'}.
+
+CUSTOMER PROFILE:
+- Name: ${customer.name || 'N/A'}
+- Industry: ${customer.industry || 'N/A'}
+- Company Size: ${customer.companySize || 'N/A'}
+- Segment: ${customer.segment || 'N/A'}
+- Contract Value: ${customer.contractValue || 'N/A'}
+- Start Date: ${customer.startDate || 'N/A'}
+- Account Manager: ${customer.accountManager || 'N/A'}
+- Health Score: ${customer.healthScore || 'N/A'}
+- Operating Regions: ${customer.operatingRegions?.join(', ') || 'N/A'}
+- Countries Served: ${customer.countriesServed?.join(', ') || 'N/A'}
+- Languages: ${customer.languages?.join(', ') || 'N/A'}
+- Exchange: ${customer.publicListing?.exchange || 'N/A'}
+- Ticker: ${customer.publicListing?.ticker || 'N/A'}
+- Domains: ${customer.domains?.join(', ') || 'N/A'}
+- Competitors: ${customer.competitorNames?.join(', ') || 'N/A'}
+- Product Lines: ${customer.productLines?.join(', ') || 'N/A'}
+- News Keywords: ${customer.newsKeywords?.join(', ') || 'N/A'}
+- Excluded Keywords: ${customer.excludedKeywords?.join(', ') || 'N/A'}
+- Website: ${customer.website || 'N/A'}
+- HQ Country: ${customer.hq?.country || 'N/A'}
+- HQ Region: ${customer.hq?.region || 'N/A'}
+- HQ City: ${customer.hq?.city || 'N/A'}
+- Active Users: ${customer.usageData?.activeUsersCount || 'N/A'}
+- Seats Purchased: ${customer.usageData?.seatsPurchased || 'N/A'}
+- Seats Used: ${customer.usageData?.seatsUsed || 'N/A'}
+- Notes: ${customer.notes || 'N/A'}
+
+CUSTOMER SUCCESS INSIGHTS:
+${insights.length > 0 ? insights.map(insight => `
+- ${insight.type.replace(/_/g, ' ').toUpperCase()} (${insight.category}, ${insight.severity} severity)
+  Message: ${insight.message}
+  ${insight.meta ? `Details: ${JSON.stringify(insight.meta, null, 2)}` : ''}
+`).join('\n') : 'No insights available'}
+
+MARKET CONTEXT:
+Search for recent news and market developments relevant to ${customer.name || 'this customer'} in the ${customer.industry || 'technology'} industry. Focus on:
+- Recent company announcements, partnerships, or product launches
+- Industry trends and market developments
+- Competitor activities and market positioning
+- Regulatory changes or market disruptions
+- Financial performance and business updates
+
+INSTRUCTIONS:
+Create a detailed meeting prep document with these sections:
+1. EXECUTIVE SUMMARY
+2. CUSTOMER HEALTH ASSESSMENT  
+3. STRATEGIC OPPORTUNITIES
+4. RISK MITIGATION
+5. TALKING POINTS
+6. QUESTIONS TO ASK
+7. RECOMMENDATIONS
+8. MARKET CONTEXT
+9. SUCCESS METRICS
+10. FOLLOW-UP ACTIONS
+
+Make each section detailed and actionable. Use specific data from the customer profile and insights. For market context, search for and include relevant recent news about the customer and their industry. End with "END OF DOCUMENT" to signal completion.`;
+
+    // Get userId from user context (guaranteed by middleware)
+    const userId = UserContextManager.getCurrentUserId();
+    
+    if (!userId) {
+      console.error('User ID not found in context for meeting prep generation');
+      return res.status(400).json({ status: 400, error: 'User ID is required for LLM operations' });
+    }
+
+    console.log(`Generating meeting prep document for customer ${customerId} by user ${userId}`);
+
+    let meetingPrepDocument: string;
+    try {
+      const llmResponse = await callLLM({
+        userId,
+        prompt: meetingPrepPrompt,
+        maxTokens: 5000,
+        temperature: 0.3,
+        topP: 0.9,
+        stop: ['END OF DOCUMENT'],
+        systemMsg: 'You are an expert Customer Success Manager. Generate comprehensive, detailed meeting preparation documents. Always complete all requested sections and end with "END OF DOCUMENT".',
+        isChat: true
+      });
+
+      meetingPrepDocument = llmResponse.data || 'Failed to generate meeting prep document';
+      
+      console.log(`LLM response length: ${meetingPrepDocument.length} characters`);
+      console.log(`LLM response preview: ${meetingPrepDocument.substring(0, 200)}...`);
+      
+      // If the response is too short, it might be incomplete
+      if (meetingPrepDocument.length < 500) {
+        console.warn('LLM response appears to be incomplete, attempting to generate a more detailed response');
+        
+        // Try a simpler, more direct prompt with key customer data
+        const simplePrompt = `Create a detailed meeting preparation document for ${customer.name || 'this customer'}.
+
+CUSTOMER DETAILS:
+- Industry: ${customer.industry || 'N/A'}
+- Company Size: ${customer.companySize || 'N/A'}
+- Contract Value: ${customer.contractValue || 'N/A'}
+- Health Score: ${customer.healthScore || 'N/A'}
+- Account Manager: ${customer.accountManager || 'N/A'}
+- Competitors: ${customer.competitorNames?.join(', ') || 'N/A'}
+- Operating Regions: ${customer.operatingRegions?.join(', ') || 'N/A'}
+- Usage: ${customer.usageData?.activeUsersCount || 'N/A'} active users, ${customer.usageData?.seatsUsed || 'N/A'}/${customer.usageData?.seatsPurchased || 'N/A'} seats used
+
+INSIGHTS:
+${insights.length > 0 ? insights.slice(0, 3).map(insight => `- ${insight.type.replace(/_/g, ' ')}: ${insight.message}`).join('\n') : 'No insights available'}
+
+MARKET CONTEXT:
+Search for recent news about ${customer.name || 'this customer'} and the ${customer.industry || 'technology'} industry.
+
+Create detailed sections:
+1. EXECUTIVE SUMMARY
+2. CUSTOMER HEALTH ASSESSMENT
+3. STRATEGIC OPPORTUNITIES
+4. RISK MITIGATION
+5. TALKING POINTS
+6. QUESTIONS TO ASK
+7. RECOMMENDATIONS
+8. MARKET CONTEXT
+9. SUCCESS METRICS
+10. FOLLOW-UP ACTIONS
+
+Make each section comprehensive and actionable. Include recent news and market context by searching online. End with "END OF DOCUMENT".`;
+
+        const retryResponse = await callLLM({
+          userId,
+          prompt: simplePrompt,
+          maxTokens: 5000,
+          temperature: 0.3,
+          topP: 0.9,
+          stop: ['END OF DOCUMENT'],
+          systemMsg: 'You are an expert Customer Success Manager. Generate detailed, comprehensive meeting preparation documents.',
+          isChat: true
+        });
+        
+        if (retryResponse.data && retryResponse.data.length > meetingPrepDocument.length) {
+          meetingPrepDocument = retryResponse.data;
+          console.log(`Retry successful, new length: ${meetingPrepDocument.length} characters`);
+        }
+      }
+    } catch (llmError) {
+      console.error('LLM call failed for meeting prep generation:', llmError);
+      return res.status(500).json({ 
+        status: 500, 
+        error: 'Failed to generate meeting prep document. Please try again.' 
+      });
+    }
+
+    // Return the document as a downloadable text file
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename="meeting-prep-${customer.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'customer'}-${new Date().toISOString().split('T')[0]}.txt"`);
+    
+    return res.status(200).send(meetingPrepDocument);
+
+  } catch (err) {
+    console.error('Error generating customer meeting prep document:', err);
     return res.status(500).json({ status: 500, error: 'Internal server error' });
   }
 });
