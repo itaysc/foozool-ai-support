@@ -22,3 +22,4 @@ export * from './region';
 export * from './thresholdMiss';
 export * from './anomaly';
 export * from './customer';
+export * from './customerSuccess';

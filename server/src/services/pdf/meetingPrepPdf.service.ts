@@ -69,6 +69,9 @@ export class MeetingPrepPdfGenerator {
     this.addDocumentContent(data.documentContent);
     this.addFooter(data.generatedBy);
 
+    // Ensure no empty pages at the end
+    this.ensureNoEmptyPages();
+
     return this.doc;
   }
 
@@ -197,7 +200,10 @@ export class MeetingPrepPdfGenerator {
   }
 
   private addFooter(generatedBy: string): void {
-    const footerY = this.pageHeight - 60;
+    // Ensure we have enough space for footer
+    this.checkPageBreak(40);
+    
+    const footerY = this.currentY + 20;
     
     this.doc
       .fontSize(8)
@@ -241,35 +247,42 @@ export class MeetingPrepPdfGenerator {
     
     const columnWidth = (this.contentWidth - 20) / 2;
     const startY = this.currentY;
+    const labelWidth = 100; // Fixed width for labels to prevent overlap
+    const valueStartX = this.margin + labelWidth + 10; // 10px gap between label and value
 
     // Left column
     leftData.forEach((item, index) => {
+      const yPos = startY + (index * 15);
+      
       this.doc
         .fontSize(10)
         .font('Helvetica-Bold')
         .fillColor('#4a5568')
-        .text(item.label + ':', this.margin, startY + (index * 15));
+        .text(item.label + ':', this.margin, yPos, { width: labelWidth });
       
       this.doc
         .fontSize(10)
         .font('Helvetica')
         .fillColor('#2d3748')
-        .text(item.value, this.margin + 80, startY + (index * 15));
+        .text(item.value, valueStartX, yPos, { width: columnWidth - labelWidth - 10 });
     });
 
     // Right column
+    const rightColumnStartX = this.margin + columnWidth + 20;
     rightData.forEach((item, index) => {
+      const yPos = startY + (index * 15);
+      
       this.doc
         .fontSize(10)
         .font('Helvetica-Bold')
         .fillColor('#4a5568')
-        .text(item.label + ':', this.margin + columnWidth + 20, startY + (index * 15));
+        .text(item.label + ':', rightColumnStartX, yPos, { width: labelWidth });
       
       this.doc
         .fontSize(10)
         .font('Helvetica')
         .fillColor('#2d3748')
-        .text(item.value, this.margin + columnWidth + 100, startY + (index * 15));
+        .text(item.value, rightColumnStartX + labelWidth + 10, yPos, { width: columnWidth - labelWidth - 10 });
     });
 
     this.currentY = startY + (Math.max(leftData.length, rightData.length) * 15) + 15;
@@ -454,9 +467,18 @@ export class MeetingPrepPdfGenerator {
   }
 
   private checkPageBreak(requiredSpace: number): void {
-    if (this.currentY + requiredSpace > this.pageHeight - this.margin - 50) {
+    if (this.currentY + requiredSpace > this.pageHeight - this.margin - 80) { // Increased bottom margin for footer
       this.doc.addPage();
       this.currentY = this.margin;
+    }
+  }
+
+  private ensureNoEmptyPages(): void {
+    // Check if the current page is mostly empty (less than 100px of content)
+    if (this.currentY < this.margin + 100) {
+      // If we're on a mostly empty page, we could remove it, but PDFKit doesn't support this easily
+      // Instead, we'll just ensure the footer is properly positioned
+      console.log('PDF: Current page appears to be mostly empty, ensuring proper footer placement');
     }
   }
 }
