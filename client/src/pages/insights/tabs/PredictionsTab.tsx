@@ -150,26 +150,17 @@ const PredictionsTab: React.FC<PredictionsTabProps> = ({
                     fontWeight: 500,
                     color: 'info.main'
                   }}>
-                    🔮 Predictions
+                    Ticket #{prediction.ticketId}
                   </Typography>
                   
                   {/* Main content row */}
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                      <Typography variant="subtitle2" sx={{ 
-                        fontWeight: 600, 
-                        fontSize: '0.8rem',
-                        mr: 1
-                      }}>
-                        Ticket #{prediction.ticketId}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ 
-                        fontSize: '0.75rem',
-                        flex: 1
-                      }}>
-                        Escalation: {prediction.predictedEscalation.risk} | CSAT: {prediction.predictedCSAT.risk}
-                      </Typography>
-                    </Box>
+                    <Typography variant="body2" color="text.secondary" sx={{ 
+                      fontSize: '0.75rem',
+                      flex: 1
+                    }}>
+                      Escalation: {prediction.predictedEscalation.risk} | CSAT: {prediction.predictedCSAT.risk}
+                    </Typography>
                     <Chip 
                       label={`${prediction.predictedEscalation.confidence}%`}
                       color={prediction.predictedEscalation.confidence > 80 ? 'success' : prediction.predictedEscalation.confidence > 60 ? 'warning' : 'error'}

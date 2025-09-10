@@ -138,89 +138,95 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
             const categoryInsights = csInsights.filter(insight => insight.category === category);
             if (categoryInsights.length === 0) return null;
             
+            // Get category color
+            const categoryColor = category === 'risk' ? '#f44336' : 
+                                 category === 'upsell' ? '#4caf50' :
+                                 category === 'customer_success' ? '#2196f3' : '#9c27b0';
+            
             return (
-              <Box key={category} sx={{ mb: 2 }}>
-                <Paper sx={{ p: 2, backgroundColor: 'grey.50' }}>
-                  {categoryInsights.map((insight, index) => (
-                    <Box key={`${insight.type}-${index}`} sx={{ 
-                      mb: 1,
-                      position: 'relative',
-                      border: `1px solid ${
-                        insight.severity === 'red' ? '#f44336' : 
-                        insight.severity === 'yellow' ? '#ff9800' : '#2196f3'
-                      }`,
-                      borderRadius: 1,
-                      backgroundColor: 'white',
-                      p: 1.5,
-                      '&:hover': {
-                        boxShadow: 1
-                      }
-                    }}>
-                      {/* Floating label on top border */}
-                      <Typography variant="caption" sx={{
-                        position: 'absolute',
-                        top: -8,
-                        left: 8,
-                        backgroundColor: 'white',
-                        px: 1,
-                        fontSize: '0.7rem',
-                        fontWeight: 500,
-                        color: category === 'risk' ? 'error.main' : 
-                               category === 'upsell' ? 'success.main' :
-                               category === 'customer_success' ? 'primary.main' : 'secondary.main'
-                      }}>
-                        {categoryLabels[category as keyof typeof categoryLabels]}
-                      </Typography>
-                      
-                      {/* Main content row */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                          <Typography variant="subtitle2" sx={{ 
-                            fontWeight: 600, 
-                            textTransform: 'capitalize',
-                            fontSize: '0.8rem',
-                            mr: 1
-                          }}>
-                            {insight.type.replace(/_/g, ' ')}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ 
-                            fontSize: '0.75rem',
-                            flex: 1
-                          }}>
-                            {insight.message}
-                          </Typography>
-                        </Box>
-                        <Chip 
-                          label={insight.severity.toUpperCase()}
-                          color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'info'}
-                          size="small"
-                          sx={{ ml: 1, fontSize: '0.65rem', height: '18px' }}
-                        />
-                      </Box>
-                      
-                      {/* Meta data if available */}
-                      {insight.meta && Object.keys(insight.meta).length > 0 && (
-                        <Box sx={{ 
-                          backgroundColor: 'grey.50', 
-                          p: 0.75, 
-                          borderRadius: 0.5, 
-                          border: '1px solid',
-                          borderColor: 'grey.200',
-                          mt: 0.5
+              <Box key={category} sx={{ 
+                mb: 2,
+                position: 'relative',
+                border: `1px solid ${categoryColor}`,
+                borderRadius: 1,
+                backgroundColor: 'white',
+                p: 1.5,
+                '&:hover': {
+                  boxShadow: 1
+                }
+              }}>
+                {/* Floating label on top border */}
+                <Typography variant="caption" sx={{
+                  position: 'absolute',
+                  top: -8,
+                  left: 8,
+                  backgroundColor: 'white',
+                  px: 1,
+                  fontSize: '0.7rem',
+                  fontWeight: 500,
+                  color: categoryColor
+                }}>
+                  {categoryLabels[category as keyof typeof categoryLabels]}
+                </Typography>
+                
+                {/* Insights content */}
+                {categoryInsights.map((insight, index) => (
+                  <Box key={`${insight.type}-${index}`} sx={{ 
+                    mb: index < categoryInsights.length - 1 ? 1 : 0,
+                    p: 1,
+                    backgroundColor: 'grey.50',
+                    borderRadius: 0.5,
+                    border: '1px solid',
+                    borderColor: 'grey.200'
+                  }}>
+                    {/* Main content row */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                        <Typography variant="subtitle2" sx={{ 
+                          fontWeight: 600, 
+                          textTransform: 'capitalize',
+                          fontSize: '0.8rem',
+                          mr: 1
                         }}>
-                          {Object.entries(insight.meta).map(([key, value]) => (
-                            <Typography key={key} variant="caption" color="text.secondary" sx={{ 
-                              fontSize: '0.65rem',
-                              display: 'block'
-                            }}>
-                              <strong>{key.replace(/_/g, ' ')}:</strong> {String(value)}
-                            </Typography>
-                          ))}
-                        </Box>
-                      )}
+                          {insight.type.replace(/_/g, ' ')}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ 
+                          fontSize: '0.75rem',
+                          flex: 1
+                        }}>
+                          {insight.message}
+                        </Typography>
+                      </Box>
+                      <Chip 
+                        label={insight.severity.toUpperCase()}
+                        color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'info'}
+                        size="small"
+                        sx={{ ml: 1, fontSize: '0.65rem', height: '18px' }}
+                      />
                     </Box>
-                  ))}
-                </Paper>
+                    
+                    {/* Meta data if available */}
+                    {insight.meta && Object.keys(insight.meta).length > 0 && (
+                      <Box sx={{ 
+                        backgroundColor: 'white', 
+                        p: 0.75, 
+                        borderRadius: 0.5, 
+                        border: '1px solid',
+                        borderColor: 'grey.300',
+                        mt: 0.5
+                      }}>
+                        {Object.entries(insight.meta).map(([key, value]) => (
+                          <Typography key={key} variant="caption" color="text.secondary" sx={{ 
+                            fontSize: '0.65rem',
+                            display: 'block'
+                          }}>
+                            <strong>{key.replace(/_/g, ' ')}:</strong> {String(value)}
+                          </Typography>
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                ))}
               </Box>
             );
           })}

@@ -106,26 +106,17 @@ const TicketInsightsTab: React.FC<TicketInsightsTabProps> = ({
                   fontWeight: 500,
                   color: 'primary.main'
                 }}>
-                  🔴 Ticket Insights
+                  Issue Cluster #{index + 1}
                 </Typography>
                 
                 {/* Main content row */}
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                    <Typography variant="subtitle2" sx={{ 
-                      fontWeight: 600, 
-                      fontSize: '0.8rem',
-                      mr: 1
-                    }}>
-                      Issue Cluster #{index + 1}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ 
-                      fontSize: '0.75rem',
-                      flex: 1
-                    }}>
-                      {insight.issueDescription}
-                    </Typography>
-                  </Box>
+                  <Typography variant="body2" color="text.secondary" sx={{ 
+                    fontSize: '0.75rem',
+                    flex: 1
+                  }}>
+                    {insight.issueDescription}
+                  </Typography>
                   <Chip 
                     label={`${insight.growthRate > 0 ? '+' : ''}${insight.growthRate.toFixed(1)}%`}
                     color={insight.growthRate > 0 ? 'error' : 'success'}
