@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Typography, Alert, Card, CardContent, Button, Select, MenuItem, FormControl, InputLabel, Paper, Divider, Chip } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Alert, Card, CardContent, Button, Select, MenuItem, FormControl, InputLabel, Paper, Divider, Chip, CircularProgress } from '@mui/material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
 import MetricCard from '@/components/insights/MetricCard';
 import InsightCard from '@/components/insights/InsightCard';
@@ -26,6 +26,8 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
   onRefresh,
   onCustomerChange
 }) => {
+  const [meetingPrepLoading, setMeetingPrepLoading] = useState(false);
+
   const generateMeetingPrepDocument = async () => {
     if (!selectedCustomer) {
       alert('Please select a specific customer to generate a meeting prep document.');
@@ -33,11 +35,18 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
     }
 
     try {
+      setMeetingPrepLoading(true);
       const blob = await insightsService.generateCustomerMeetingPrep(selectedCustomer);
+      
+      // Get customer name for filename
+      const customer = customers.find(c => c._id === selectedCustomer);
+      const customerName = customer?.name || customer?.companyName || 'Unknown Customer';
+      const sanitizedCustomerName = customerName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-');
+      
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `meeting-prep-${selectedCustomer}.pdf`;
+      link.download = `meeting-prep-${sanitizedCustomerName}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -45,6 +54,8 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
     } catch (error) {
       console.error('Error generating meeting prep document:', error);
       alert('Failed to generate meeting prep document. Please try again.');
+    } finally {
+      setMeetingPrepLoading(false);
     }
   };
 
@@ -74,17 +85,23 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
         actionButton={
           <Button
             variant="contained"
-            startIcon={<Description />}
+            startIcon={meetingPrepLoading ? <CircularProgress size={16} color="inherit" /> : <Description />}
             onClick={generateMeetingPrepDocument}
-            disabled={!selectedCustomer}
+            disabled={!selectedCustomer || meetingPrepLoading}
             sx={{
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
               '&:hover': {
                 background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+              },
+              '&:disabled': {
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                opacity: 0.7
               }
             }}
           >
-            Meeting Prep
+            {meetingPrepLoading ? 'Generating...' : 'Meeting Prep'}
           </Button>
         }
       />

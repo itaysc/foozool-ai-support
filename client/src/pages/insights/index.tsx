@@ -112,7 +112,6 @@ const InsightsPage: React.FC = () => {
 
         // Load predictions
         const predictionsRes = await insightsService.getPredictions(20);
-        console.log('Predictions API response:', predictionsRes);
         setPredictions(predictionsRes.data || []);
         setPredictionSummary(null); // Will be loaded separately if needed
         setAccuracyAnalysis(null); // Will be loaded separately if needed

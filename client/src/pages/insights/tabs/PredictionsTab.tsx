@@ -22,8 +22,6 @@ const PredictionsTab: React.FC<PredictionsTabProps> = ({
   error,
   onRefresh
 }) => {
-  console.log('PredictionsTab - predictions:', predictions);
-  console.log('PredictionsTab - predictions.length:', predictions?.length);
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
@@ -125,11 +123,7 @@ const PredictionsTab: React.FC<PredictionsTabProps> = ({
             No predictions available. Generate predictions to see AI-powered forecasts.
           </Alert>
         ) : (
-          <Box>
-            <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-              Found {predictions.length} predictions
-            </Typography>
-            <Paper sx={{ p: 2, backgroundColor: 'grey.50' }}>
+          <Paper sx={{ p: 2, backgroundColor: 'grey.50' }}>
               {predictions.slice(0, 10).map((prediction) => (
                 <Box key={prediction.ticketId} sx={{ 
                   mb: 1,
@@ -213,8 +207,7 @@ const PredictionsTab: React.FC<PredictionsTabProps> = ({
                   </Box>
                 </Box>
               ))}
-            </Paper>
-          </Box>
+          </Paper>
         )}
       </Box>
     </Box>
