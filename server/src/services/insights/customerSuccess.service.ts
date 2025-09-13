@@ -1,11 +1,15 @@
 import { UserContextManager } from 'src/context/userContext';
 import mongoose from 'mongoose';
 import { CustomerModel, CustomerActivityModel } from '../../schemas';
+import { generateTicketInsights, TicketInsight } from './ticketInsights.service';
 
 export interface CustomerSuccessInsight {
   type: 'declining_activity' | 'inactive_customer' | 'low_utilization' | 'one_solution_dependency' | 
         'high_utilization' | 'solution_gap' | 'increasing_usage' | 'top_solution' | 'adoption_milestones' | 
-        'seasonality' | 'correlation_to_value' | 'renewal_warning';
+        'seasonality' | 'correlation_to_value' | 'renewal_warning' |
+        'high_ticket_volume' | 'escalating_issues' | 'sentiment_decline' | 'recurring_problems' | 
+        'resolution_delays' | 'support_patterns' | 'urgent_trends' | 'positive_feedback' | 
+        'technical_debt' | 'user_experience_issues' | 'integration_problems' | 'performance_concerns';
   message: string;
   severity: 'red' | 'yellow' | 'info';
   category: 'risk' | 'upsell' | 'customer_success' | 'strategic';
@@ -67,6 +71,16 @@ export async function generateCustomerSuccessInsights(customerId: string): Promi
   insights.push(...generateUpsellOpportunities(activities, orgActivities, customerName));
   insights.push(...generateCustomerSuccessPrep(activities, customerName));
   insights.push(...generateStrategicInsights(activities, customerName));
+
+  // 3. Generate Ticket Insights
+  try {
+    console.log(`[CS Insights] 🎫 generating ticket insights for customer ${customerId}`);
+    const ticketInsights = await generateTicketInsights(customerId);
+    insights.push(...ticketInsights);
+    console.log(`[CS Insights] ✅ added ${ticketInsights.length} ticket insights`);
+  } catch (error) {
+    console.error(`[CS Insights] ❌ failed to generate ticket insights:`, error);
+  }
 
   // Logging summary
   const breakdown = insights.reduce<Record<string, number>>((acc, i) => {

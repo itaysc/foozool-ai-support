@@ -36,6 +36,7 @@ export interface QdrantTicketPoint {
     payload: {
         ticket_id: string;
         organization: string;
+        customer_id?: string;
         sentiment_score: number;
         sentiment: string;
         created_at: number; // Unix timestamp in milliseconds
@@ -92,6 +93,44 @@ export const ticketFilters = {
             {
                 key: 'sentiment',
                 match: { value: sentiment }
+            }
+        ]
+    }),
+    
+    byCustomer: (customerId: string) => ({
+        must: [
+            {
+                key: 'customer_id',
+                match: { value: customerId }
+            }
+        ]
+    }),
+    
+    byCustomerAndOrganization: (customerId: string, organizationId: string) => ({
+        must: [
+            {
+                key: 'customer_id',
+                match: { value: customerId }
+            },
+            {
+                key: 'organization',
+                match: { value: organizationId }
+            }
+        ]
+    }),
+    
+    byCustomerAndDateRange: (customerId: string, startDate: string, endDate: string) => ({
+        must: [
+            {
+                key: 'customer_id',
+                match: { value: customerId }
+            },
+            {
+                key: 'created_at',
+                range: {
+                    gte: new Date(startDate).getTime(),
+                    lte: new Date(endDate).getTime()
+                }
             }
         ]
     }),

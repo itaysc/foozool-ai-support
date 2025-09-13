@@ -234,6 +234,11 @@ export default class Server{
       field_name: 'organization',
       field_schema: 'keyword'
     });
+    // Create index for customer_id for filtering in tickets collection
+    await qdrantService.client.createPayloadIndex(ticketCollectionConfig.name, {
+      field_name: 'customer_id',
+      field_schema: 'keyword'
+    });
   }
 
   public async connectDB() {

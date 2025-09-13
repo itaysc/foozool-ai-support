@@ -269,6 +269,87 @@ class QdrantService {
             return [];
         }
     }
+
+    /**
+     * Search tickets by customer ID
+     */
+    async searchTicketsByCustomer(customerId: string, limit = 50): Promise<any[]> {
+        try {
+            const result = await this.client.scroll(ticketCollectionConfig.name, {
+                filter: {
+                    must: [
+                        {
+                            key: 'customer_id',
+                            match: { value: customerId }
+                        }
+                    ]
+                },
+                limit,
+                with_payload: true,
+                with_vector: false
+            });
+
+            return result.points || [];
+        } catch (error: any) {
+            console.error(`Error searching tickets for customer ${customerId}:`, error);
+            return [];
+        }
+    }
+
+    /**
+     * Get ticket statistics for a customer
+     */
+    async getCustomerTicketStats(customerId: string): Promise<{
+        totalTickets: number;
+        avgSentiment: number;
+        sentimentBreakdown: { [key: string]: number };
+        recentTickets: any[];
+    }> {
+        try {
+            const tickets = await this.searchTicketsByCustomer(customerId, 1000);
+            
+            const totalTickets = tickets.length;
+            const sentiments = tickets.map(t => t.payload.sentiment).filter(Boolean);
+            const sentimentScores = tickets.map(t => t.payload.sentiment_score).filter(score => typeof score === 'number');
+            
+            const avgSentiment = sentimentScores.length > 0 
+                ? sentimentScores.reduce((sum, score) => sum + score, 0) / sentimentScores.length 
+                : 0;
+
+            const sentimentBreakdown = sentiments.reduce((acc, sentiment) => {
+                acc[sentiment] = (acc[sentiment] || 0) + 1;
+                return acc;
+            }, {} as { [key: string]: number });
+
+            // Get recent tickets (last 10)
+            const recentTickets = tickets
+                .sort((a, b) => b.payload.created_at - a.payload.created_at)
+                .slice(0, 10)
+                .map(ticket => ({
+                    ticket_id: ticket.payload.ticket_id,
+                    subject: ticket.payload.subject || 'No subject',
+                    sentiment: ticket.payload.sentiment,
+                    sentiment_score: ticket.payload.sentiment_score,
+                    created_at: ticket.payload.created_at,
+                    status: ticket.payload.status || 'unknown'
+                }));
+
+            return {
+                totalTickets,
+                avgSentiment,
+                sentimentBreakdown,
+                recentTickets
+            };
+        } catch (error: any) {
+            console.error(`Error getting ticket stats for customer ${customerId}:`, error);
+            return {
+                totalTickets: 0,
+                avgSentiment: 0,
+                sentimentBreakdown: {},
+                recentTickets: []
+            };
+        }
+    }
 }
 
 export default QdrantService; 
