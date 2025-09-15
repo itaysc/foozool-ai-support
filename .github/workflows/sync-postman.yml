@@ -45,14 +45,4 @@ jobs:
         run: |
           echo "📋 Collection Summary:"
           echo "===================="
-          node -e "
-            const fs = require('fs');
-            const collection = JSON.parse(fs.readFileSync('postman/postman-collection.json', 'utf8'));
-            
-            collection.item.forEach(section => {
-              console.log(\`📁 \${section.name} (\${section.item.length} requests)\`);
-              section.item.forEach(request => {
-                console.log(\`  - \${request.name} (\${request.request.method})\`);
-              });
-            });
-          "
+          node scripts/sync-postman.js
