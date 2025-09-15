@@ -77,6 +77,42 @@ router.post('/:surveyType/json', authenticateJWT, async (req, res) => {
 });
 
 /**
+ * Upload JSON data directly in request body for survey processing
+ */
+router.post('/:surveyType/data', authenticateJWT, async (req, res) => {
+  try {
+    const { surveyType } = req.params as { surveyType: SurveyType };
+    const organizationId = req.user!.organization.toString();
+    const userId = req.user!._id.toString();
+    
+    if (!['nps', 'csat'].includes(surveyType)) {
+      return res.status(400).json({ error: 'Invalid survey type. Must be "nps" or "csat"' });
+    }
+
+    // Validate the request body contains survey data
+    if (!req.body || !req.body.responses || !Array.isArray(req.body.responses)) {
+      return res.status(400).json({ 
+        error: 'Invalid JSON data. Expected object with "responses" array' 
+      });
+    }
+
+    const result = await surveysService.processJSONData(req.body, organizationId, userId, surveyType);
+    
+    res.json({
+      success: true,
+      data: result,
+      message: `${surveyType.toUpperCase()} JSON data processed successfully`
+    });
+  } catch (error) {
+    console.error('JSON data upload error:', error);
+    res.status(500).json({ 
+      error: 'Failed to process JSON data',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * Upload generic data with AI mapping
  */
 router.post('/:surveyType/generic', authenticateJWT, async (req, res) => {

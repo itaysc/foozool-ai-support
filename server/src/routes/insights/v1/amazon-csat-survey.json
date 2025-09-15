@@ -1,0 +1,869 @@
+{
+  "surveyType": "csat",
+  "organizationId": "68485e9d1b8bc528969fee61",
+  "customerId": "68bf380892aa6032eb66826e",
+  "customerName": "Amazon Web Services",
+  "surveyTitle": "Customer Satisfaction Survey - Q4 2024",
+  "surveyDescription": "Please rate your satisfaction with our services",
+  "responses": [
+    {
+      "timestamp": "2024-12-15T10:30:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 5,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 3,
+          "metadata": {
+            "source": "email_survey",
+            "department": "customer_success"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "compliance"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "support"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "product"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 5,
+          "metadata": {
+            "source": "email_survey",
+            "department": "account_management"
+          }
+        }
+      ],
+      "context": {
+        "source": "email_survey",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "Security Manager",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-12-10T14:15:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 2,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 5,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        }
+      ],
+      "context": {
+        "source": "web_survey",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "Senior Engineer",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-12-05T09:45:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "compliance"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "compliance"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 4,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "compliance"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "compliance"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 4,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "compliance"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "compliance"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "compliance"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "compliance"
+          }
+        }
+      ],
+      "context": {
+        "source": "phone_interview",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "Compliance Director",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-11-28T16:20:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 3,
+          "metadata": {
+            "source": "email_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 3,
+          "metadata": {
+            "source": "email_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "operations"
+          }
+        }
+      ],
+      "context": {
+        "source": "email_survey",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "Operations Manager",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-11-20T11:30:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 2,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 1,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 2,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 2,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "engineering"
+          }
+        }
+      ],
+      "context": {
+        "source": "web_survey",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "DevOps Engineer",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-11-15T13:45:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 5,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 5,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 5,
+          "metadata": {
+            "source": "email_survey",
+            "department": "security"
+          }
+        }
+      ],
+      "context": {
+        "source": "email_survey",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "Security Architect",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-11-08T08:15:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "product"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "product"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 2,
+          "metadata": {
+            "source": "web_survey",
+            "department": "product"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "product"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "product"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "product"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "product"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "product"
+          }
+        }
+      ],
+      "context": {
+        "source": "web_survey",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "Product Manager",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-11-01T15:30:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "executive"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "executive"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 4,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "executive"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "executive"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 4,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "executive"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "executive"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "executive"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 5,
+          "metadata": {
+            "source": "phone_interview",
+            "department": "executive"
+          }
+        }
+      ],
+      "context": {
+        "source": "phone_interview",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "VP of Security",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-10-25T12:00:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 3,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 3,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 4,
+          "metadata": {
+            "source": "email_survey",
+            "department": "engineering"
+          }
+        }
+      ],
+      "context": {
+        "source": "email_survey",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "Platform Engineer",
+        "companySize": "Enterprise"
+      }
+    },
+    {
+      "timestamp": "2024-10-18T09:30:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "question": "How satisfied are you with our overall service?",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "threat_monitoring",
+          "question": "Rate your satisfaction with Threat Monitoring service",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "onboarding_support",
+          "question": "Rate your satisfaction with Onboarding Support",
+          "value": 2,
+          "metadata": {
+            "source": "web_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "compliance_reporting",
+          "question": "Rate your satisfaction with Compliance Reporting",
+          "value": 4,
+          "metadata": {
+            "source": "web_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "api_access_logs",
+          "question": "Rate your satisfaction with API Access Logs",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "support_quality",
+          "question": "Rate the quality of our support team",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "product_value",
+          "question": "Rate the value you get from our products",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "operations"
+          }
+        },
+        {
+          "questionId": "relationship",
+          "question": "Rate your relationship with our account team",
+          "value": 3,
+          "metadata": {
+            "source": "web_survey",
+            "department": "operations"
+          }
+        }
+      ],
+      "context": {
+        "source": "web_survey",
+        "campaign": "q4_2024_csat",
+        "respondentRole": "Operations Analyst",
+        "companySize": "Enterprise"
+      }
+    }
+  ],
+  "metadata": {
+    "totalResponses": 10,
+    "surveyPeriod": "Q4 2024",
+    "responseRate": "85%",
+    "averageResponseTime": "4.2 minutes",
+    "distributionBySource": {
+      "email_survey": 4,
+      "web_survey": 4,
+      "phone_interview": 2
+    },
+    "distributionByDepartment": {
+      "security": 2,
+      "engineering": 4,
+      "compliance": 1,
+      "operations": 2,
+      "product": 1,
+      "executive": 1
+    }
+  }
+}

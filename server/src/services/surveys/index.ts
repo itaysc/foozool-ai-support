@@ -143,6 +143,64 @@ export class SurveysService {
   }
 
   /**
+   * Process JSON data directly from request body and generate insights
+   */
+  async processJSONData(
+    jsonData: any, 
+    organizationId: string, 
+    userId: string, 
+    surveyType: SurveyType
+  ): Promise<ProcessedSurveyData> {
+    try {
+      const { uploadId, upload } = await UploadManager.createUpload(organizationId, 'json', {
+        filename: 'direct-json-data',
+        originalSize: JSON.stringify(jsonData).length,
+        surveyType
+      });
+
+      console.log(`🔍 Processing ${surveyType.toUpperCase()} JSON data ${uploadId} for organization ${organizationId}`);
+      
+      await UploadManager.updateUploadStatus(uploadId, 'processing', 10, 'Processing JSON data...');
+      
+      // Process the JSON data directly (no file parsing needed)
+      const processedData = await DataProcessor.processSurveyData(jsonData.responses, organizationId, surveyType);
+      
+      await UploadManager.updateUploadStatus(uploadId, 'processing', 60, 'Generating insights...');
+      
+      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType);
+      
+      await UploadManager.updateUploadStatus(uploadId, 'processing', 80, 'Saving insights to database...');
+      
+      await InsightsManager.saveInsights({
+        ...processedData,
+        insights,
+        metadata: {
+          ...processedData.metadata,
+          uploadId,
+          surveyType,
+          processedAt: new Date()
+        }
+      }, organizationId);
+
+      await UploadManager.updateUploadStatus(uploadId, 'completed', 100, 'Upload completed successfully');
+
+      return {
+        ...processedData,
+        insights,
+        metadata: {
+          ...processedData.metadata,
+          uploadId,
+          surveyType,
+          processedAt: new Date()
+        }
+      };
+    } catch (error) {
+      console.error(`❌ Error processing ${surveyType.toUpperCase()} JSON data:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Process webhook data and generate insights
    */
   async processWebhookData(
