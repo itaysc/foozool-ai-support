@@ -1,31 +1,33 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "docker-compose-up",
-            "type": "shell",
-            "command": "docker-compose up",
-            "isBackground": true,
-            "problemMatcher": {
-                "owner": "docker-compose",
-                "pattern": {
-                    "regexp": ".",
-                    "file": 1,
-                    "location": 2,
-                    "message": 3
-                },
-                "background": {
-                    "activeOnStart": true,
-                    "beginsPattern": ".",
-                    "endsPattern": "Ready"
-                }
-            }
-        },
-        {
-            "label": "docker-compose-down",
-            "type": "shell",
-            "command": "docker-compose down",
-            "problemMatcher": []
-        }
-    ]
-} 
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Validate Postman Collection",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "postman:validate"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Sync Postman Collection",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "postman:sync"],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

@@ -15,7 +15,10 @@
     "stop": "brew services stop elasticsearch-full && brew services stop kibana-full",
     "serve": "node dist/server/src/index.js",
     "build": "tsc",
-    "postinstall": "yarn build"
+    "postinstall": "yarn build",
+    "postman:validate": "node scripts/sync-postman.js",
+    "postman:check": "node scripts/sync-postman.js",
+    "postman:sync": "node scripts/sync-postman.js"
   },
   "author": "",
   "license": "ISC",

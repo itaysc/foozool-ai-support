@@ -1,0 +1,58 @@
+name: Sync Postman Collection
+
+on:
+  push:
+    paths:
+      - 'postman/postman-collection.json'
+  workflow_dispatch:
+
+jobs:
+  sync-postman:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          
+      - name: Install Newman (Postman CLI)
+        run: npm install -g newman
+        
+      - name: Validate Postman Collection
+        run: |
+          newman --version
+          # Validate the collection syntax
+          node -e "
+            const fs = require('fs');
+            const collection = JSON.parse(fs.readFileSync('postman/postman-collection.json', 'utf8'));
+            console.log('✅ Collection is valid JSON');
+            console.log('📊 Collection contains', collection.item.length, 'sections');
+          "
+          
+      - name: Upload to Postman (if POSTMAN_API_KEY is set)
+        if: env.POSTMAN_API_KEY != ''
+        run: |
+          # This would require Postman API key and collection ID
+          echo "🚀 Would sync to Postman workspace here"
+          echo "Collection validated and ready for manual import"
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+          
+      - name: Generate Collection Summary
+        run: |
+          echo "📋 Collection Summary:"
+          echo "===================="
+          node -e "
+            const fs = require('fs');
+            const collection = JSON.parse(fs.readFileSync('postman/postman-collection.json', 'utf8'));
+            
+            collection.item.forEach(section => {
+              console.log(\`📁 \${section.name} (\${section.item.length} requests)\`);
+              section.item.forEach(request => {
+                console.log(\`  - \${request.name} (\${request.request.method})\`);
+              });
+            });
+          "
