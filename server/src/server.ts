@@ -28,7 +28,7 @@ import jobsRoutesV1 from './routes/jobs/v1';
 import predictionsRoutesV1 from './routes/predictions/v1';
 import crmRoutesV1 from './routes/crm/v1';
 import anomaliesRoutesV1 from './routes/anomalies/v1';
-import npsRoutesV1 from './routes/nps/v1';
+import surveysRoutesV1 from './routes/surveys/v1';
 import customersRoutesV1 from './routes/customers/v1';
 import solutionsRoutesV1 from './routes/solutions/v1';
 import customerActivityRoutesV1 from './routes/customer-activity/v1';
@@ -99,7 +99,7 @@ export default class Server{
       this.app.use('/api/v1', predictionsRoutesV1);
       this.app.use('/api/v1/crm', crmRoutesV1);
       this.app.use('/api/v1/anomalies', anomaliesRoutesV1);
-      this.app.use('/api/v1/nps', npsRoutesV1);
+      this.app.use('/api/v1/surveys', surveysRoutesV1);
       this.app.use('/api/v1/customers', customersRoutesV1);
       this.app.use('/api/v1/solutions', solutionsRoutesV1);
       this.app.use('/api/v1/customer-activity', customerActivityRoutesV1);

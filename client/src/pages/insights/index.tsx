@@ -7,11 +7,12 @@ import { Prediction, PredictionSummary, AccuracyAnalysis } from '@/types/predict
 import { NPSInsights } from '@/types/nps';
 import { CustomerSuccessInsight } from '@/types';
 import { insightsService } from '@/services/insights-service';
-import { npsService } from '@/services/nps-service';
+import { surveysService } from '@/services/surveys-service';
 import { useAuth } from '@/context/auth.context';
 import customersStore from '@/stores/customers.store';
 import botsService from '@/services/bots-service';
 import { SideBar, NavItem } from '@/components/sideBar';
+import { DateFilter, DateFilterState } from '@/components/insights/DateFilter';
 import { 
   TicketInsightsTab, 
   PredictionsTab, 
@@ -38,6 +39,7 @@ const InsightsPage: React.FC = () => {
   const [csInsights, setCsInsights] = useState<CustomerSuccessInsight[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [dateFilter, setDateFilter] = useState<DateFilterState>({ fromDate: null, toDate: null });
 
   // Get organization ID
   const getOrganizationId = (org: any): string | null => {
@@ -105,8 +107,8 @@ const InsightsPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Load insights
-        const insightsRes = await insightsService.getInsightsByOrganization(effectiveOrgId);
+        // Load insights with date filter
+        const insightsRes = await insightsService.getInsightsByOrganization(effectiveOrgId, dateFilter);
         setInsights(insightsRes.data || []);
         setInsightSummary(null); // Will be loaded separately if needed
 
@@ -118,7 +120,7 @@ const InsightsPage: React.FC = () => {
 
         // Load NPS insights
         try {
-          const npsRes = await npsService.getNPSInsights();
+          const npsRes = await surveysService.getNPSInsights();
           setNpsInsights(npsRes);
         } catch (npsErr) {
           console.warn('NPS insights not available:', npsErr);
@@ -135,6 +137,25 @@ const InsightsPage: React.FC = () => {
 
     loadData();
   }, [effectiveOrgId]);
+
+  // Reload data when date filter changes (only for stored insights)
+  useEffect(() => {
+    const reloadFilteredData = async () => {
+      if (!effectiveOrgId) return;
+      
+      try {
+        // Only reload insights that are stored in DB (ticket cluster insights, NPS, CSAT)
+        if (activeTab === 'ticket' || activeTab === 'nps') {
+          const insightsRes = await insightsService.getInsightsByOrganization(effectiveOrgId, dateFilter);
+          setInsights(insightsRes.data || []);
+        }
+      } catch (err) {
+        console.error('Error reloading filtered data:', err);
+      }
+    };
+
+    reloadFilteredData();
+  }, [dateFilter, effectiveOrgId, activeTab]);
 
   // Determine visible navigation items based on data or configured bots
   const navItems: NavItem[] = [
@@ -154,6 +175,11 @@ const InsightsPage: React.FC = () => {
     setSelectedCustomer(customerId);
   };
 
+  // Date filter change handler
+  const handleDateFilterChange = (filter: DateFilterState) => {
+    setDateFilter(filter);
+  };
+
   // Refresh handler
   const refreshInsights = async () => {
     if (!effectiveOrgId) return;
@@ -162,8 +188,8 @@ const InsightsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // Reload all data
-      const insightsRes = await insightsService.getInsightsByOrganization(effectiveOrgId);
+      // Reload all data with current date filter
+      const insightsRes = await insightsService.getInsightsByOrganization(effectiveOrgId, dateFilter);
       setInsights(insightsRes.data || []);
       setInsightSummary(null);
 
@@ -173,7 +199,7 @@ const InsightsPage: React.FC = () => {
       setAccuracyAnalysis(null);
 
       try {
-        const npsRes = await npsService.getNPSInsights();
+        const npsRes = await surveysService.getNPSInsights();
         setNpsInsights(npsRes);
       } catch (npsErr) {
         console.warn('NPS insights not available:', npsErr);
@@ -240,6 +266,13 @@ const InsightsPage: React.FC = () => {
         marginLeft: '280px', // Account for fixed sidebar width
         overflow: 'auto'
       }}>
+        {/* Date Filter - only show for tabs with stored insights */}
+        {(activeTab === 'ticket' || activeTab === 'nps') && (
+          <DateFilter
+            onFilterChange={handleDateFilterChange}
+            label={`Filter ${activeTab === 'ticket' ? 'Ticket Cluster' : 'NPS'} Insights by Date`}
+          />
+        )}
         {activeTab === 'ticket' && (
           <TicketInsightsTab
             insights={insights}

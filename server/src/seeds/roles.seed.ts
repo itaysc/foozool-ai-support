@@ -12,7 +12,7 @@ const basePermissions: string[] = [
   'solutions:read', 'solutions:create', 'solutions:update', 'solutions:delete',
   'insights:read', 'insights:export', 'insights:meeting-prep',
   'anomalies:read', 'anomalies:recompute',
-  'nps:read', 'nps:update',
+  'surveys:read', 'surveys:update', 'surveys:delete',
   'industries:read',
   'bots:read', 'bots:create', 'bots:update', 'bots:delete',
   'ai:thresholds:read', 'ai:thresholds:create', 'ai:thresholds:update', 'ai:thresholds:delete',
@@ -45,7 +45,7 @@ const roleDefinitions: Array<{ name: string; description?: string; permissions: 
       'bots:read', 'bots:create', 'bots:update', 'bots:delete',
       'insights:read', 'insights:export', 'insights:meeting-prep', 'news:read',
       'anomalies:read',
-      'nps:read', 'nps:update',
+      'surveys:read', 'surveys:update', 'surveys:delete',
       'ai:thresholds:read', 'ai:thresholds:create', 'ai:thresholds:update', 'ai:thresholds:delete',
       'ai:logs:read', 'ai:customer-tiers:read', 'ai:customer-tiers:create', 'ai:customer-tiers:update',
       'predictions:read', 'search:read',
@@ -58,6 +58,7 @@ const roleDefinitions: Array<{ name: string; description?: string; permissions: 
     permissions: [
       'insights:read', 'insights:export', 'insights:meeting-prep', 'anomalies:read', 'predictions:read', 'tickets:read',
       'customers:read', 'solutions:read', 'ai:logs:read', 'search:read', 'industries:read', 'news:read',
+      'surveys:read',
     ],
   },
   {

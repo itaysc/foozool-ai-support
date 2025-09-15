@@ -2,6 +2,7 @@ import axios from '@/services/axios';
 import config from '@/config';
 import { InsightsResponse, InsightSummaryResponse } from '@/types/insight';
 import { PredictionsResponse, PredictionSummaryResponse, AccuracyAnalysisResponse } from '@/types/prediction';
+import { DateFilterState } from '@/components/insights/DateFilter';
 
 const getRoute = (endpoint: string) => {
   return `${config.apiUrl}/${endpoint}`;
@@ -11,8 +12,22 @@ export const insightsService = {
   /**
    * Get insights for a specific organization
    */
-  async getInsightsByOrganization(organizationId: string): Promise<InsightsResponse> {
-    const response = await axios.get(getRoute(`insights/${organizationId}`));
+  async getInsightsByOrganization(organizationId: string, dateFilter?: DateFilterState): Promise<InsightsResponse> {
+    let url = getRoute(`insights/${organizationId}`);
+    
+    // Add date filter parameters if provided
+    if (dateFilter && (dateFilter.fromDate || dateFilter.toDate)) {
+      const params = new URLSearchParams();
+      if (dateFilter.fromDate) {
+        params.append('fromDate', dateFilter.fromDate.toISOString());
+      }
+      if (dateFilter.toDate) {
+        params.append('toDate', dateFilter.toDate.toISOString());
+      }
+      url += `?${params.toString()}`;
+    }
+    
+    const response = await axios.get(url);
     return response.data;
   },
 

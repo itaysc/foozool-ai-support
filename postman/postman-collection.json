@@ -1836,10 +1836,10 @@
       ]
     },
     {
-      "name": "📊 NPS (Net Promoter Score)",
+      "name": "📊 Surveys (NPS & CSAT)",
       "item": [
         {
-          "name": "Upload CSV File",
+          "name": "NPS - Upload CSV File",
           "request": {
             "method": "POST",
             "header": [
@@ -1859,16 +1859,16 @@
               ]
             },
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/csv",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/nps/csv",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "upload", "csv"]
+              "path": ["api", "v1", "surveys", "nps", "csv"]
             },
             "description": "Upload NPS data via CSV file"
           },
           "response": []
         },
         {
-          "name": "Upload JSON Data",
+          "name": "NPS - Upload JSON Data",
           "request": {
             "method": "POST",
             "header": [
@@ -1883,19 +1883,19 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"surveys\": [\n    {\n      \"id\": \"survey1\",\n      \"name\": \"Customer Satisfaction Survey\",\n      \"questions\": [\n        {\n          \"id\": \"q1\",\n          \"type\": \"nps\",\n          \"text\": \"How likely are you to recommend our service?\",\n          \"required\": true\n        },\n        {\n          \"id\": \"q2\",\n          \"type\": \"open\",\n          \"text\": \"What can we improve?\",\n          \"required\": false\n        }\n      ],\n      \"responses\": [\n        {\n          \"id\": \"r1\",\n          \"timestamp\": \"2024-01-15T10:00:00Z\",\n          \"answers\": [\n            {\n              \"questionId\": \"q1\",\n              \"value\": 9\n            },\n            {\n              \"questionId\": \"q2\",\n              \"value\": \"Great service!\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}"
+              "raw": "{\n  \"survey\": {\n    \"surveyId\": \"nps_survey_001\",\n    \"surveyName\": \"Customer Satisfaction Survey\",\n    \"questions\": [\n      {\n        \"questionId\": \"nps\",\n        \"questionText\": \"How likely are you to recommend our service to a friend or colleague?\",\n        \"questionType\": \"nps\",\n        \"required\": true,\n        \"scale\": 10\n      }\n    ]\n  },\n  \"responses\": [\n    {\n      \"surveyId\": \"nps_survey_001\",\n      \"timestamp\": \"2024-01-15T10:30:00Z\",\n      \"customerId\": \"customer_123\",\n      \"responses\": [\n        {\n          \"questionId\": \"nps\",\n          \"value\": 9\n        }\n      ]\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/json",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/nps/json",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "upload", "json"]
+              "path": ["api", "v1", "surveys", "nps", "json"]
             },
             "description": "Upload NPS data via JSON payload"
           },
           "response": []
         },
         {
-          "name": "Upload Generic Data (AI Mapping)",
+          "name": "NPS - Upload Generic Data (AI Mapping)",
           "request": {
             "method": "POST",
             "header": [
@@ -1910,19 +1910,19 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"metadata\": {\n    \"feedback_data\": [\n      {\n        \"nps_rating\": 9,\n        \"submission_time\": \"2024-01-15T10:00:00Z\",\n        \"customer_email\": \"customer1@example.com\",\n        \"feedback_text\": \"Great service! Very satisfied with the product.\",\n        \"question\": \"How likely are you to recommend our service?\"\n      },\n      {\n        \"nps_rating\": 7,\n        \"submission_time\": \"2024-01-15T11:00:00Z\",\n        \"customer_email\": \"customer2@example.com\",\n        \"feedback_text\": \"Good but could improve customer support.\",\n        \"question\": \"How likely are you to recommend our service?\"\n      }\n    ]\n  }\n}"
+              "raw": "{\n  \"rawData\": [\n    {\n      \"customer_id\": \"12345\",\n      \"recommendation_score\": 8,\n      \"feedback\": \"Great service!\",\n      \"date\": \"2024-01-15\"\n    },\n    {\n      \"customer_id\": \"67890\",\n      \"recommendation_score\": 6,\n      \"feedback\": \"Could be better\",\n      \"date\": \"2024-01-16\"\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/generic",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/nps/generic",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "upload", "generic"]
+              "path": ["api", "v1", "surveys", "nps", "generic"]
             },
             "description": "Upload NPS data in any format - uses AI mapping to detect structure and transform data automatically"
           },
           "response": []
         },
         {
-          "name": "Webhook Data",
+          "name": "NPS - Webhook Data Upload",
           "request": {
             "method": "POST",
             "header": [
@@ -1931,32 +1931,130 @@
                 "value": "application/json"
               },
               {
-                "key": "x-organization-id",
-                "value": "{{organization_id}}"
-              },
-              {
-                "key": "x-user-id",
-                "value": "your_user_id_here"
-              },
-              {
-                "key": "x-token-type",
-                "value": "nps-webhook"
-              },
-              {
                 "key": "Authorization",
-                "value": "Bearer {{webhook_token}}"
+                "value": "Bearer {{auth_token}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"surveyId\": \"survey1\",\n  \"response\": {\n    \"id\": \"r2\",\n    \"timestamp\": \"2024-01-15T11:00:00Z\",\n    \"answers\": [\n      {\n        \"questionId\": \"q1\",\n        \"value\": 7\n      },\n        {\n        \"questionId\": \"q2\",\n        \"value\": \"Could be better\"\n      }\n    ]\n  }\n}"
+              "raw": "{\n  \"surveyId\": \"nps_survey_001\",\n  \"timestamp\": \"2024-01-15T10:30:00Z\",\n  \"customerId\": \"customer_123\",\n  \"responses\": [\n    {\n      \"questionId\": \"nps\",\n      \"value\": 9\n    }\n  ],\n  \"metadata\": {\n    \"source\": \"webhook\",\n    \"provider\": \"survey_monkey\"\n  }\n}"
             },
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/webhook",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/nps/webhook",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "upload", "webhook"]
+              "path": ["api", "v1", "surveys", "nps", "webhook"]
             },
             "description": "Receive NPS data via webhook"
+          },
+          "response": []
+        },
+        {
+          "name": "CSAT - Upload CSV File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/csat/csv",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "surveys", "csat", "csv"]
+            },
+            "description": "Upload CSAT data via CSV file"
+          },
+          "response": []
+        },
+        {
+          "name": "CSAT - Upload JSON Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"survey\": {\n    \"surveyId\": \"csat_survey_001\",\n    \"surveyName\": \"Customer Satisfaction Survey\",\n    \"questions\": [\n      {\n        \"questionId\": \"csat\",\n        \"questionText\": \"How satisfied are you with our service?\",\n        \"questionType\": \"csat\",\n        \"required\": true,\n        \"scale\": 5\n      }\n    ]\n  },\n  \"responses\": [\n    {\n      \"surveyId\": \"csat_survey_001\",\n      \"timestamp\": \"2024-01-15T10:30:00Z\",\n      \"customerId\": \"customer_123\",\n      \"responses\": [\n        {\n          \"questionId\": \"csat\",\n          \"value\": 4\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/csat/json",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "surveys", "csat", "json"]
+            },
+            "description": "Upload CSAT data via JSON payload"
+          },
+          "response": []
+        },
+        {
+          "name": "CSAT - Upload Generic Data (AI Mapping)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawData\": [\n    {\n      \"customer_id\": \"12345\",\n      \"satisfaction_score\": 4,\n      \"feedback\": \"Great service!\",\n      \"date\": \"2024-01-15\"\n    },\n    {\n      \"customer_id\": \"67890\",\n      \"satisfaction_score\": 2,\n      \"feedback\": \"Could be better\",\n      \"date\": \"2024-01-16\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/csat/generic",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "surveys", "csat", "generic"]
+            },
+            "description": "Upload CSAT data in any format - uses AI mapping to detect structure and transform data automatically"
+          },
+          "response": []
+        },
+        {
+          "name": "CSAT - Webhook Data Upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"surveyId\": \"csat_survey_001\",\n  \"timestamp\": \"2024-01-15T10:30:00Z\",\n  \"customerId\": \"customer_123\",\n  \"responses\": [\n    {\n      \"questionId\": \"csat\",\n      \"value\": 4\n    }\n  ],\n  \"metadata\": {\n    \"source\": \"webhook\",\n    \"provider\": \"survey_monkey\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/csat/webhook",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "surveys", "csat", "webhook"]
+            },
+            "description": "Receive CSAT data via webhook"
           },
           "response": []
         },
@@ -1971,9 +2069,9 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/status/{{upload_id}}",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/uploads/{{upload_id}}/status",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "upload", "status", "{{upload_id}}"]
+              "path": ["api", "v1", "surveys", "uploads", "{{upload_id}}", "status"]
             },
             "description": "Get status of a specific upload"
           },
@@ -1990,9 +2088,16 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/history",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/uploads/history?surveyType=nps",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "upload", "history"]
+              "path": ["api", "v1", "surveys", "uploads", "history"],
+              "query": [
+                {
+                  "key": "surveyType",
+                  "value": "nps",
+                  "description": "Optional: filter by survey type (nps or csat)"
+                }
+              ]
             },
             "description": "Get history of all uploads"
           },
@@ -2009,9 +2114,9 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/{{upload_id}}/cancel",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/uploads/{{upload_id}}/cancel",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "upload", "{{upload_id}}", "cancel"]
+              "path": ["api", "v1", "surveys", "uploads", "{{upload_id}}", "cancel"]
             },
             "description": "Cancel an ongoing upload"
           },
@@ -2028,9 +2133,9 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/upload/{{upload_id}}",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/uploads/{{upload_id}}",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "upload", "{{upload_id}}"]
+              "path": ["api", "v1", "surveys", "uploads", "{{upload_id}}"]
             },
             "description": "Delete an upload and its data"
           },
@@ -2047,9 +2152,9 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/insights",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/nps/insights",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "insights"]
+              "path": ["api", "v1", "surveys", "nps", "insights"]
             },
             "description": "Get NPS insights and analytics"
           },
@@ -2066,11 +2171,75 @@
               }
             ],
             "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/nps/insights/history",
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/nps/insights/history",
               "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "nps", "insights", "history"]
+              "path": ["api", "v1", "surveys", "nps", "insights", "history"]
             },
             "description": "Get history of NPS insights"
+          },
+          "response": []
+        },
+        {
+          "name": "Get CSAT Insights",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/csat/insights",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "surveys", "csat", "insights"]
+            },
+            "description": "Get CSAT insights and analytics"
+          },
+          "response": []
+        },
+        {
+          "name": "Get CSAT Insights History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/csat/insights/history",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "surveys", "csat", "insights", "history"]
+            },
+            "description": "Get history of CSAT insights"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Upload Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/surveys/uploads/statistics?surveyType=csat",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "surveys", "uploads", "statistics"],
+              "query": [
+                {
+                  "key": "surveyType",
+                  "value": "csat",
+                  "description": "Optional: filter by survey type (nps or csat)"
+                }
+              ]
+            },
+            "description": "Get upload statistics for the organization"
           },
           "response": []
         }

@@ -304,6 +304,7 @@ Make each section comprehensive and actionable. Include recent news and market c
  */
 router.get('/:organizationId', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   const { organizationId } = req.params;
+  const { fromDate, toDate } = req.query;
   
   // Validate organization ID format
   if (!mongoose.Types.ObjectId.isValid(organizationId)) {
@@ -314,10 +315,29 @@ router.get('/:organizationId', authenticateJWT, hasPermission('insights:read'), 
   }
 
   try {
-    // Fetch insights for the organization, sorted by most recent
-    const insights = await InsightModel.find({ 
+    // Build query filter
+    const queryFilter: any = { 
       organizationId: new mongoose.Types.ObjectId(organizationId) 
-    })
+    };
+
+    // Add date filtering if provided
+    if (fromDate || toDate) {
+      queryFilter.lastUpdatedAt = {};
+      
+      if (fromDate) {
+        queryFilter.lastUpdatedAt.$gte = new Date(fromDate as string);
+      }
+      
+      if (toDate) {
+        // Add one day to include the entire toDate
+        const toDateObj = new Date(toDate as string);
+        toDateObj.setDate(toDateObj.getDate() + 1);
+        queryFilter.lastUpdatedAt.$lt = toDateObj;
+      }
+    }
+
+    // Fetch insights for the organization, sorted by most recent
+    const insights = await InsightModel.find(queryFilter)
       .sort({ lastUpdatedAt: -1 })
       .limit(50) // Limit to 50 most recent insights
       .lean(); // Use lean() for better performance
@@ -355,6 +375,7 @@ router.get('/:organizationId', authenticateJWT, hasPermission('insights:read'), 
  */
 router.get('/:organizationId/summary', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   const { organizationId } = req.params;
+  const { fromDate, toDate } = req.query;
   
   if (!mongoose.Types.ObjectId.isValid(organizationId)) {
     return res.status(400).json({ 
@@ -366,9 +387,28 @@ router.get('/:organizationId/summary', authenticateJWT, hasPermission('insights:
   try {
     const orgObjectId = new mongoose.Types.ObjectId(organizationId);
     
+    // Build match filter for aggregation
+    const matchFilter: any = { organizationId: orgObjectId };
+    
+    // Add date filtering if provided
+    if (fromDate || toDate) {
+      matchFilter.lastUpdatedAt = {};
+      
+      if (fromDate) {
+        matchFilter.lastUpdatedAt.$gte = new Date(fromDate as string);
+      }
+      
+      if (toDate) {
+        // Add one day to include the entire toDate
+        const toDateObj = new Date(toDate as string);
+        toDateObj.setDate(toDateObj.getDate() + 1);
+        matchFilter.lastUpdatedAt.$lt = toDateObj;
+      }
+    }
+    
     // Get aggregated statistics
     const stats = await InsightModel.aggregate([
-      { $match: { organizationId: orgObjectId } },
+      { $match: matchFilter },
       {
         $group: {
           _id: null,

@@ -106,7 +106,7 @@ const TicketInsightsTab: React.FC<TicketInsightsTabProps> = ({
                   fontWeight: 500,
                   color: 'primary.main'
                 }}>
-                  Issue Cluster #{index + 1}
+                  Issue Cluster #{index + 1} - {new Date(insight.firstDetectedAt).toISOString().split('T')[0]}
                 </Typography>
                 
                 {/* Main content row */}

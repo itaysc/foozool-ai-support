@@ -150,7 +150,7 @@ const PredictionsTab: React.FC<PredictionsTabProps> = ({
                     fontWeight: 500,
                     color: 'info.main'
                   }}>
-                    Ticket #{prediction.ticketId}
+                    Ticket #{prediction.ticketId} - {new Date(prediction.createdAt).toISOString().split('T')[0]}
                   </Typography>
                   
                   {/* Main content row */}

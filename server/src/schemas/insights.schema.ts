@@ -28,6 +28,36 @@ export interface IInsight extends Document {
     insights: string[];
     recommendations: string[];
   };
+  // CSAT-specific fields
+  csatData?: {
+    currentCSAT: number;
+    csatChange: number;
+    responseRate: number;
+    totalResponses: number;
+    averageScores: {
+      overall: number;
+      product: number;
+      support: number;
+      onboarding: number;
+      value: number;
+      relationship: number;
+    };
+    scoreDistribution: {
+      excellent: number;
+      good: number;
+      average: number;
+      poor: number;
+      terrible: number;
+    };
+    trends: Array<{
+      date: Date;
+      csat: number;
+      responses: number;
+    }>;
+    insights: string[];
+    recommendations: string[];
+    processedAt: Date;
+  };
   metadata?: Record<string, any>;
 }
 
@@ -62,6 +92,36 @@ const InsightSchema: Schema = new Schema({
     }],
     insights: [{ type: String }],
     recommendations: [{ type: String }]
+  },
+  // CSAT-specific fields
+  csatData: {
+    currentCSAT: { type: Number },
+    csatChange: { type: Number },
+    responseRate: { type: Number },
+    totalResponses: { type: Number },
+    averageScores: {
+      overall: { type: Number },
+      product: { type: Number },
+      support: { type: Number },
+      onboarding: { type: Number },
+      value: { type: Number },
+      relationship: { type: Number }
+    },
+    scoreDistribution: {
+      excellent: { type: Number },
+      good: { type: Number },
+      average: { type: Number },
+      poor: { type: Number },
+      terrible: { type: Number }
+    },
+    trends: [{
+      date: { type: Date },
+      csat: { type: Number },
+      responses: { type: Number }
+    }],
+    insights: [{ type: String }],
+    recommendations: [{ type: String }],
+    processedAt: { type: Date }
   },
   metadata: { type: Schema.Types.Mixed }
 });
