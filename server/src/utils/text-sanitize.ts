@@ -28,7 +28,13 @@ export function extractJSONFromText(text: string): string {
   // Try to find JSON object in the text
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (jsonMatch) {
-    return jsonMatch[0];
+    let jsonText = jsonMatch[0];
+    
+    // Remove comments that might be in the JSON
+    jsonText = jsonText.replace(/\/\/.*$/gm, ''); // Remove single-line comments
+    jsonText = jsonText.replace(/\/\*[\s\S]*?\*\//g, ''); // Remove multi-line comments
+    
+    return jsonText.trim();
   }
   
   // If no JSON object found, return the original text

@@ -9,6 +9,7 @@ import { insightsService } from '@/services/insights-service';
 
 interface CustomerSuccessTabProps {
   csInsights: CustomerSuccessInsight[];
+  csatInsights: any | null;
   selectedCustomer: string | null;
   customers: any[];
   loading: boolean;
@@ -19,6 +20,7 @@ interface CustomerSuccessTabProps {
 
 const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
   csInsights,
+  csatInsights,
   selectedCustomer,
   customers,
   loading,
@@ -233,7 +235,101 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
         </Box>
       )}
 
-      {selectedCustomer && csInsights.length === 0 && (
+      {/* CSAT Insights Section */}
+      {csatInsights && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+            Customer Satisfaction (CSAT) Insights
+          </Typography>
+          
+          <Card sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                  Overall CSAT Score
+                </Typography>
+                <Chip 
+                  label={`${csatInsights.currentCSAT || 0}%`}
+                  color={csatInsights.currentCSAT >= 80 ? 'success' : csatInsights.currentCSAT >= 60 ? 'warning' : 'error'}
+                  sx={{ fontSize: '1rem', fontWeight: 600, px: 2, py: 1 }}
+                />
+              </Box>
+              
+              {csatInsights.csatChange && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Change from previous period: {csatInsights.csatChange > 0 ? '+' : ''}{csatInsights.csatChange}%
+                </Typography>
+              )}
+              
+              <Typography variant="body2" color="text.secondary">
+                Total Responses: {csatInsights.totalResponses || 0} | 
+                Response Rate: {csatInsights.responseRate || 0}%
+              </Typography>
+            </CardContent>
+          </Card>
+
+          {/* CSAT Insights */}
+          {csatInsights.insights && csatInsights.insights.length > 0 && (
+            <Card sx={{ mb: 3, border: '1px solid #2196f3' }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2196f3' }}>
+                  Key Insights
+                </Typography>
+                {csatInsights.insights.map((insight: string, index: number) => (
+                  <Box key={index} sx={{ mb: 1, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+                    <Typography variant="body2">
+                      • {insight}
+                    </Typography>
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* CSAT Recommendations */}
+          {csatInsights.recommendations && csatInsights.recommendations.length > 0 && (
+            <Card sx={{ mb: 3, border: '1px solid #4caf50' }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#4caf50' }}>
+                  Recommendations
+                </Typography>
+                {csatInsights.recommendations.map((recommendation: string, index: number) => (
+                  <Box key={index} sx={{ mb: 1, p: 1, backgroundColor: '#f1f8e9', borderRadius: 1 }}>
+                    <Typography variant="body2">
+                      • {recommendation}
+                    </Typography>
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Score Distribution */}
+          {csatInsights.scoreDistribution && (
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                  Score Distribution
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  {Object.entries(csatInsights.scoreDistribution).map(([score, count]) => (
+                    <Box key={score} sx={{ textAlign: 'center', minWidth: '60px' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        {count}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Score {score}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+        </Box>
+      )}
+
+      {selectedCustomer && csInsights.length === 0 && !csatInsights && (
         <Alert severity="info">
           No customer success insights available for the selected customer. Generate insights to see AI-powered analysis.
         </Alert>

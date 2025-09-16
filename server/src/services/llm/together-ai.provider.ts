@@ -123,7 +123,9 @@ export class TogetherAIProvider implements LLMProviderInterface {
       const maxTokens = request.maxTokens || this.config.maxTokens;
       const temperature = request.temperature || this.config.temperature;
       const topP = request.topP || this.config.topP;
-      const stop = request.stop || ['\n\n'];
+      const stop = request.stop || [];
+      
+      console.log(`🔧 Together AI Provider: Request params - model: ${model}, maxTokens: ${maxTokens}, temperature: ${temperature}`);
 
       let response: any;
 
@@ -155,6 +157,8 @@ export class TogetherAIProvider implements LLMProviderInterface {
           },
           provider: LLMProvider.TOGETHER_AI
         };
+        
+        console.log(`🔧 Together AI Provider: Raw API response:`, JSON.stringify(response, null, 2));
 
         // Record usage if we have a record
         if (usageRecord) {

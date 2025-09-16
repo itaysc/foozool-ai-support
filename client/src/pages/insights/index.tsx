@@ -36,6 +36,7 @@ const InsightsPage: React.FC = () => {
   const [predictionSummary, setPredictionSummary] = useState<PredictionSummary | null>(null);
   const [accuracyAnalysis, setAccuracyAnalysis] = useState<AccuracyAnalysis | null>(null);
   const [npsInsights, setNpsInsights] = useState<NPSInsights | null>(null);
+  const [csatInsights, setCsatInsights] = useState<any | null>(null);
   const [csInsights, setCsInsights] = useState<CustomerSuccessInsight[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -125,6 +126,15 @@ const InsightsPage: React.FC = () => {
         } catch (npsErr) {
           console.warn('NPS insights not available:', npsErr);
           setNpsInsights(null);
+        }
+
+        // Load CSAT insights
+        try {
+          const csatRes = await surveysService.getCSATInsights();
+          setCsatInsights(csatRes);
+        } catch (csatErr) {
+          console.warn('CSAT insights not available:', csatErr);
+          setCsatInsights(null);
         }
 
       } catch (err) {
@@ -306,6 +316,7 @@ const InsightsPage: React.FC = () => {
         {activeTab === 'cs' && (
           <CustomerSuccessTab
             csInsights={csInsights}
+            csatInsights={csatInsights}
             selectedCustomer={selectedCustomer}
             customers={customers}
             loading={loading}

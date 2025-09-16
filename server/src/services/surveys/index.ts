@@ -47,7 +47,7 @@ export class SurveysService {
       await UploadManager.updateUploadStatus(uploadId, 'processing', 60, 'Generating insights...');
       
       // Generate insights
-      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType);
+      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType, userId);
       
       await UploadManager.updateUploadStatus(uploadId, 'processing', 80, 'Saving insights to database...');
       
@@ -109,7 +109,7 @@ export class SurveysService {
       
       await UploadManager.updateUploadStatus(uploadId, 'processing', 60, 'Generating insights...');
       
-      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType);
+      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType, userId);
       
       await UploadManager.updateUploadStatus(uploadId, 'processing', 80, 'Saving insights to database...');
       
@@ -167,7 +167,7 @@ export class SurveysService {
       
       await UploadManager.updateUploadStatus(uploadId, 'processing', 60, 'Generating insights...');
       
-      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType);
+      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType, userId);
       
       await UploadManager.updateUploadStatus(uploadId, 'processing', 80, 'Saving insights to database...');
       
@@ -214,7 +214,7 @@ export class SurveysService {
       
       const transformedData = await DataProcessor.transformWebhookData(webhookData, userId, surveyType);
       const processedData = await DataProcessor.processSurveyData(transformedData, organizationId, surveyType);
-      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType);
+      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType, userId);
       
       await InsightsManager.saveInsights({
         ...processedData,
@@ -257,7 +257,7 @@ export class SurveysService {
       
       const mappedData = await DataProcessor.mapGenericDataWithAI(genericData, userId, surveyType);
       const processedData = await DataProcessor.processSurveyData(mappedData, organizationId, surveyType);
-      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType);
+      const insights = await InsightsManager.generateInsights(processedData.responses, organizationId, surveyType, userId);
       
       await InsightsManager.saveInsights({
         ...processedData,
@@ -295,19 +295,93 @@ export class SurveysService {
       
       // Check memory cache first
       if (this.memoryCache.has(cacheKey)) {
-        return this.memoryCache.get(cacheKey)!;
+        const cachedInsights = this.memoryCache.get(cacheKey)!;
+        
+        // Validate cached insights - only use if they have valid data
+        if (this.hasValidInsights(cachedInsights, surveyType)) {
+          return cachedInsights;
+        } else {
+          console.log(`🔄 Cached ${surveyType.toUpperCase()} insights are invalid, regenerating...`);
+          this.memoryCache.delete(cacheKey); // Remove invalid cache
+        }
       }
 
       const insights = await InsightsManager.getLatestInsights(organizationId, surveyType);
       
-      if (insights) {
+      if (insights && this.hasValidInsights(insights, surveyType)) {
         this.memoryCache.set(cacheKey, insights);
+        return insights;
+      } else if (insights) {
+        console.log(`🔄 Database ${surveyType.toUpperCase()} insights are invalid, clearing them...`);
+        // Clear invalid insights from database and cache
+        await this.clearInvalidInsights(organizationId, surveyType);
       }
 
-      return insights;
+      return null;
     } catch (error) {
       console.error(`Error getting ${surveyType.toUpperCase()} insights:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Validate if insights contain valid data (not errors or empty)
+   */
+  private hasValidInsights(insights: SurveyInsights, surveyType: SurveyType): boolean {
+    if (!insights) return false;
+    
+    // Check if insights contain error messages
+    const hasErrorInsights = insights.insights?.some(insight => 
+      insight.toLowerCase().includes('error') || 
+      insight.toLowerCase().includes('no insights available')
+    );
+    
+    const hasErrorRecommendations = insights.recommendations?.some(rec => 
+      rec.toLowerCase().includes('error') || 
+      rec.toLowerCase().includes('no recommendations available')
+    );
+    
+    if (hasErrorInsights || hasErrorRecommendations) {
+      return false;
+    }
+    
+    // Check if insights are essentially empty (no real data)
+    if (surveyType === 'nps') {
+      const npsInsights = insights as any;
+      return npsInsights.currentNPS !== 0 || 
+             npsInsights.totalResponses > 0 || 
+             (npsInsights.insights && npsInsights.insights.length > 0 && 
+              !npsInsights.insights.every((i: string) => i.toLowerCase().includes('no nps data')));
+    } else if (surveyType === 'csat') {
+      const csatInsights = insights as any;
+      return csatInsights.currentCSAT !== 0 || 
+             csatInsights.totalResponses > 0 || 
+             (csatInsights.insights && csatInsights.insights.length > 0 && 
+              !csatInsights.insights.every((i: string) => i.toLowerCase().includes('no csat data')));
+    }
+    
+    return true;
+  }
+
+  /**
+   * Clear invalid insights from database and cache
+   */
+  private async clearInvalidInsights(organizationId: string, surveyType: SurveyType): Promise<void> {
+    try {
+      console.log(`🗑️ Clearing invalid ${surveyType.toUpperCase()} insights for organization ${organizationId}`);
+      
+      const insightType = surveyType === 'nps' ? 'nps_analysis' : 'customer_satisfaction';
+      
+      // Remove from database
+      await InsightsManager.deleteLatestInsights(organizationId, insightType);
+      
+      // Clear from cache
+      const cacheKey = `${organizationId}_${surveyType}`;
+      this.memoryCache.delete(cacheKey);
+      
+      console.log(`✅ Cleared invalid ${surveyType.toUpperCase()} insights`);
+    } catch (error) {
+      console.error(`❌ Error clearing invalid ${surveyType.toUpperCase()} insights:`, error);
     }
   }
 

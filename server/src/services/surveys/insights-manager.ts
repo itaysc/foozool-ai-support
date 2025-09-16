@@ -18,7 +18,8 @@ export class InsightsManager {
   static async generateInsights(
     responses: SurveyResponse[], 
     organizationId: string, 
-    surveyType: SurveyType
+    surveyType: SurveyType,
+    userId: string
   ): Promise<SurveyInsights> {
     try {
       if (!responses || responses.length === 0) {
@@ -26,9 +27,9 @@ export class InsightsManager {
       }
 
       if (surveyType === 'nps') {
-        return await this.generateNPSInsights(responses, organizationId);
+        return await this.generateNPSInsights(responses, organizationId, userId);
       } else if (surveyType === 'csat') {
-        return await this.generateCSATInsights(responses, organizationId);
+        return await this.generateCSATInsights(responses, organizationId, userId);
       } else {
         throw new Error(`Unsupported survey type: ${surveyType}`);
       }
@@ -41,7 +42,7 @@ export class InsightsManager {
   /**
    * Generate NPS-specific insights
    */
-  private static async generateNPSInsights(responses: SurveyResponse[], organizationId: string): Promise<NPSInsights> {
+  private static async generateNPSInsights(responses: SurveyResponse[], organizationId: string, userId: string): Promise<NPSInsights> {
     try {
       const currentNPS = calculateNPS(responses);
       const previousNPS = await this.getPreviousNPS(organizationId);
@@ -53,7 +54,7 @@ export class InsightsManager {
         nps: number;
         responses: number;
       }>;
-      const { insights, recommendations } = await generateNPSInsights(responses, 'system');
+      const { insights, recommendations } = await generateNPSInsights(responses, userId);
 
       return {
         currentNPS,
@@ -75,7 +76,7 @@ export class InsightsManager {
   /**
    * Generate CSAT-specific insights
    */
-  private static async generateCSATInsights(responses: SurveyResponse[], organizationId: string): Promise<CSATInsights> {
+  private static async generateCSATInsights(responses: SurveyResponse[], organizationId: string, userId: string): Promise<CSATInsights> {
     try {
       const currentCSAT = calculateCSAT(responses);
       const previousCSAT = await this.getPreviousCSAT(organizationId);
@@ -88,7 +89,7 @@ export class InsightsManager {
         csat: number;
         responses: number;
       }>;
-      const { insights, recommendations } = await generateCSATInsights(responses, 'system');
+      const { insights, recommendations } = await generateCSATInsights(responses, userId);
 
       return {
         currentCSAT,
@@ -168,6 +169,43 @@ export class InsightsManager {
     } catch (error) {
       console.error(`Error getting latest ${surveyType.toUpperCase()} insights:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Get the latest insight record (including responses) for regeneration
+   */
+  static async getLatestInsightRecord(organizationId: string, surveyType: SurveyType): Promise<any | null> {
+    try {
+      const insightType = surveyType === 'nps' ? 'nps_analysis' : 'customer_satisfaction';
+      
+      const insight = await InsightModel.findOne({
+        organizationId,
+        insightType
+      }).sort({ lastUpdatedAt: -1 }).lean();
+
+      return insight;
+    } catch (error) {
+      console.error(`Error getting latest ${surveyType.toUpperCase()} insight record:`, error);
+      return null;
+    }
+  }
+
+
+  /**
+   * Delete latest insights from database
+   */
+  static async deleteLatestInsights(organizationId: string, insightType: string): Promise<void> {
+    try {
+      await InsightModel.deleteOne({
+        organizationId,
+        insightType
+      });
+
+      console.log(`✅ Deleted ${insightType} insights from database`);
+    } catch (error) {
+      console.error(`Error deleting ${insightType} insights:`, error);
+      throw error;
     }
   }
 

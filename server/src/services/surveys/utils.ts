@@ -1,5 +1,6 @@
 import { SurveyResponse, SurveyType, NPSInsights, CSATInsights } from '../../types/surveys';
 import { callLLM } from '../llm';
+import { extractJSONFromText } from '../../utils/text-sanitize';
 
 /**
  * Create batches for memory-efficient processing
@@ -159,11 +160,14 @@ export function generateTrends(responses: SurveyResponse[], surveyType: SurveyTy
 export async function parseCSVData(file: Express.Multer.File, userId: string): Promise<SurveyResponse[]> {
   try {
     const csv = require('csv-parser');
-    const fs = require('fs');
+    const { Readable } = require('stream');
     const results: any[] = [];
 
     return new Promise((resolve, reject) => {
-      fs.createReadStream(file.path)
+      // Create a readable stream from the buffer
+      const stream = Readable.from(file.buffer.toString('utf8'));
+      
+      stream
         .pipe(csv())
         .on('data', (data: any) => results.push(data))
         .on('end', () => {
@@ -196,8 +200,9 @@ export async function parseCSVData(file: Express.Multer.File, userId: string): P
  */
 export async function parseJSONData(file: Express.Multer.File, userId: string): Promise<SurveyResponse[]> {
   try {
-    const fs = require('fs');
-    const jsonData = JSON.parse(fs.readFileSync(file.path, 'utf8'));
+    // For memory storage, read from buffer
+    const jsonString = file.buffer.toString('utf8');
+    const jsonData = JSON.parse(jsonString);
     
     if (Array.isArray(jsonData)) {
       return jsonData;
@@ -287,7 +292,9 @@ export async function mapGenericDataWithAI(genericData: any, userId: string, sur
     });
     
     try {
-      const parsed = JSON.parse(result.data || '{}');
+      // Extract JSON from LLM response
+      const cleanedResponse = extractJSONFromText(result.data || '{}');
+      const parsed = JSON.parse(cleanedResponse);
       return parsed.responses || [];
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
@@ -339,7 +346,9 @@ export async function generateNPSInsights(responses: SurveyResponse[], userId: s
     });
     
     try {
-      const parsed = JSON.parse(result.data || '{}');
+      // Extract JSON from LLM response
+      const cleanedResponse = extractJSONFromText(result.data || '{}');
+      const parsed = JSON.parse(cleanedResponse);
       return {
         insights: parsed.insights || ['No insights available'],
         recommendations: parsed.recommendations || ['No recommendations available']
@@ -372,42 +381,54 @@ export async function generateCSATInsights(responses: SurveyResponse[], userId: 
     const distribution = calculateScoreDistribution(responses);
     const trends = generateTrends(responses, 'csat');
     
-    const prompt = `
-    Analyze this CSAT data and provide insights and recommendations:
+    const prompt = `You are a customer success analyst. Analyze this CSAT data and provide insights and recommendations.
+
+Current CSAT Score: ${csat}
+Total Responses: ${responses.length}
+Score Distribution: ${JSON.stringify(distribution)}
+Recent Trends: ${JSON.stringify(trends.slice(-7))}
+
+Based on this data, provide:
+1. Key insights about customer satisfaction trends
+2. Specific recommendations for improvement
+3. Focus areas based on the data
+4. Category-specific insights
+
+You must respond with valid JSON only. Do not include any other text, comments, or markdown formatting.
+
+{
+  "insights": ["insight1", "insight2", "insight3"],
+  "recommendations": ["recommendation1", "recommendation2", "recommendation3"]
+}`;
     
-    Current CSAT: ${csat}
-    Total Responses: ${responses.length}
-    Score Distribution: ${JSON.stringify(distribution)}
-    Trends: ${JSON.stringify(trends.slice(-7))} // Last 7 days
-    
-    Provide:
-    1. Key insights about customer satisfaction trends
-    2. Specific recommendations for improvement
-    3. Focus areas based on the data
-    4. Category-specific insights (product, support, onboarding, etc.)
-    
-    Format as JSON:
-    {
-      "insights": ["insight1", "insight2", "insight3"],
-      "recommendations": ["recommendation1", "recommendation2", "recommendation3"]
-    }
-    `;
+    console.log('CSAT Prompt being sent:', prompt);
+    console.log('CSAT Prompt length:', prompt.length);
     
     const result = await callLLM({
       userId: userId,
-      prompt: prompt,
+      prompt,
       maxTokens: 2000,
       temperature: 0.3
     });
     
     try {
-      const parsed = JSON.parse(result.data || '{}');
+      // Extract JSON from LLM response
+      const cleanedResponse = extractJSONFromText(result.data || '{}');
+      console.log('CSAT LLM Raw Response:', result.data);
+      console.log('CSAT LLM Response Length:', result.data?.length || 0);
+      console.log('CSAT LLM Usage:', result.usage);
+      console.log('CSAT Cleaned Response:', cleanedResponse);
+      const parsed = JSON.parse(cleanedResponse);
       return {
         insights: parsed.insights || ['No insights available'],
         recommendations: parsed.recommendations || ['No recommendations available']
       };
     } catch (parseError) {
       console.error('Error parsing CSAT insights:', parseError);
+      console.error('Raw LLM response:', result.data);
+      console.error('Raw LLM response length:', result.data?.length || 0);
+      console.error('LLM usage:', result.usage);
+      console.error('Cleaned response:', extractJSONFromText(result.data || '{}'));
       return {
         insights: ['Error generating insights'],
         recommendations: ['Error generating recommendations']

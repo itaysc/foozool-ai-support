@@ -1,19 +1,35 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { SurveysService } from '../../../services/surveys';
 import { authenticateJWT } from '../../../middleware/authenticate';
-import { 
-  bulkSurveyImportSchema, 
-  surveyResponseSchema 
-} from './validation';
 import { SurveyType } from '../../../types/surveys';
 
 const router = Router();
 const surveysService = SurveysService.getInstance();
 
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow CSV and JSON files
+    if (file.mimetype === 'text/csv' || 
+        file.mimetype === 'application/json' ||
+        file.originalname.endsWith('.csv') ||
+        file.originalname.endsWith('.json')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV and JSON files are allowed'));
+    }
+  }
+});
+
 /**
  * Upload CSV file for survey processing
  */
-router.post('/:surveyType/csv', authenticateJWT, async (req, res) => {
+router.post('/:surveyType/csv', authenticateJWT, upload.single('file'), async (req, res) => {
   try {
     const { surveyType } = req.params as { surveyType: SurveyType };
     const organizationId = req.user!.organization.toString();
@@ -46,7 +62,7 @@ router.post('/:surveyType/csv', authenticateJWT, async (req, res) => {
 /**
  * Upload JSON file for survey processing
  */
-router.post('/:surveyType/json', authenticateJWT, async (req, res) => {
+router.post('/:surveyType/json', authenticateJWT, upload.single('file'), async (req, res) => {
   try {
     const { surveyType } = req.params as { surveyType: SurveyType };
     const organizationId = req.user!.organization.toString();
@@ -342,6 +358,31 @@ router.get('/uploads/statistics', authenticateJWT, async (req, res) => {
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
+});
+
+// Multer error handling middleware
+router.use((error: any, req: any, res: any, next: any) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ 
+        error: 'File too large', 
+        details: 'File size must be less than 10MB' 
+      });
+    }
+    return res.status(400).json({ 
+      error: 'File upload error', 
+      details: error.message 
+    });
+  }
+  
+  if (error.message === 'Only CSV and JSON files are allowed') {
+    return res.status(400).json({ 
+      error: 'Invalid file type', 
+      details: 'Only CSV and JSON files are allowed' 
+    });
+  }
+  
+  next(error);
 });
 
 export default router;

@@ -8,7 +8,7 @@ export class UploadManager {
    */
   static async createUpload(
     organizationId: string,
-    fileType: 'csv' | 'json',
+    type: 'csv' | 'json' | 'webhook' | 'generic',
     metadata: {
       filename: string;
       originalSize: number;
@@ -20,7 +20,7 @@ export class UploadManager {
     const upload = new UploadModel({
       uploadId,
       organizationId: new Types.ObjectId(organizationId),
-      fileType,
+      type,
       status: 'pending',
       progress: 0,
       metadata: {

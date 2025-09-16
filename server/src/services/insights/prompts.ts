@@ -49,7 +49,7 @@ export interface InsightData {
 /**
  * Generate comprehensive meeting prep prompt
  */
-export function generateMeetingPrepPrompt(customer: CustomerData, insights: InsightData[]): string {
+export function generateMeetingPrepPrompt(customer: CustomerData, insights: InsightData[], csatInsights?: any): string {
   return `Generate a comprehensive customer meeting preparation document for ${customer.name || 'this customer'}.
 
 CUSTOMER PROFILE:
@@ -87,6 +87,23 @@ ${insights.length > 0 ? insights.map(insight => `
   ${insight.meta ? `Details: ${JSON.stringify(insight.meta, null, 2)}` : ''}
 `).join('\n') : 'No insights available'}
 
+CUSTOMER SATISFACTION (CSAT) INSIGHTS:
+${csatInsights ? `
+- Overall CSAT Score: ${csatInsights.currentCSAT || 0}%
+- Change from Previous Period: ${csatInsights.csatChange > 0 ? '+' : ''}${csatInsights.csatChange || 0}%
+- Total Responses: ${csatInsights.totalResponses || 0}
+- Response Rate: ${csatInsights.responseRate || 0}%
+
+Key Insights:
+${csatInsights.insights && csatInsights.insights.length > 0 ? csatInsights.insights.map((insight: string) => `- ${insight}`).join('\n') : 'No insights available'}
+
+Recommendations:
+${csatInsights.recommendations && csatInsights.recommendations.length > 0 ? csatInsights.recommendations.map((rec: string) => `- ${rec}`).join('\n') : 'No recommendations available'}
+
+Score Distribution:
+${csatInsights.scoreDistribution ? Object.entries(csatInsights.scoreDistribution).map(([score, count]) => `- ${score}: ${count} responses`).join('\n') : 'No distribution data available'}
+` : 'No CSAT data available'}
+
 MARKET CONTEXT:
 Search for recent news and market developments relevant to ${customer.name || 'this customer'} in the ${customer.industry || 'technology'} industry. Focus on:
 - Recent company announcements, partnerships, or product launches
@@ -108,7 +125,7 @@ Create a detailed meeting prep document with these sections:
 9. SUCCESS METRICS
 10. FOLLOW-UP ACTIONS
 
-Make each section detailed and actionable. Use specific data from the customer profile and insights. For market context, search for and include relevant recent news about the customer and their industry. End with "END OF DOCUMENT" to signal completion.`;
+Make each section detailed and actionable. Use specific data from the customer profile, customer success insights, and CSAT insights. Pay special attention to customer satisfaction trends and recommendations when discussing customer health and strategic opportunities. For market context, search for and include relevant recent news about the customer and their industry. End with "END OF DOCUMENT" to signal completion.`;
 }
 
 /**

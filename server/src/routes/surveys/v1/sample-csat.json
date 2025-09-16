@@ -1,0 +1,214 @@
+{
+  "responses": [
+    {
+      "timestamp": "2024-01-15T10:30:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "value": 4
+        },
+        {
+          "questionId": "threat_monitoring",
+          "value": 5
+        },
+        {
+          "questionId": "onboarding_support",
+          "value": 4
+        },
+        {
+          "questionId": "compliance_reporting",
+          "value": 5
+        },
+        {
+          "questionId": "api_access_logs",
+          "value": 3
+        },
+        {
+          "questionId": "support_quality",
+          "value": 4
+        },
+        {
+          "questionId": "product_value",
+          "value": 4
+        },
+        {
+          "questionId": "relationship",
+          "value": 5
+        },
+        {
+          "questionId": "feedback",
+          "value": "Excellent service overall, minor issues with API logs"
+        }
+      ]
+    },
+    {
+      "timestamp": "2024-01-16T14:20:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "value": 5
+        },
+        {
+          "questionId": "threat_monitoring",
+          "value": 5
+        },
+        {
+          "questionId": "onboarding_support",
+          "value": 5
+        },
+        {
+          "questionId": "compliance_reporting",
+          "value": 4
+        },
+        {
+          "questionId": "api_access_logs",
+          "value": 4
+        },
+        {
+          "questionId": "support_quality",
+          "value": 5
+        },
+        {
+          "questionId": "product_value",
+          "value": 5
+        },
+        {
+          "questionId": "relationship",
+          "value": 5
+        },
+        {
+          "questionId": "feedback",
+          "value": "Outstanding support team, very responsive"
+        }
+      ]
+    },
+    {
+      "timestamp": "2024-01-17T09:15:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "value": 3
+        },
+        {
+          "questionId": "threat_monitoring",
+          "value": 4
+        },
+        {
+          "questionId": "onboarding_support",
+          "value": 3
+        },
+        {
+          "questionId": "compliance_reporting",
+          "value": 4
+        },
+        {
+          "questionId": "api_access_logs",
+          "value": 2
+        },
+        {
+          "questionId": "support_quality",
+          "value": 3
+        },
+        {
+          "questionId": "product_value",
+          "value": 3
+        },
+        {
+          "questionId": "relationship",
+          "value": 4
+        },
+        {
+          "questionId": "feedback",
+          "value": "API logs need improvement, otherwise good service"
+        }
+      ]
+    },
+    {
+      "timestamp": "2024-01-18T16:45:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "value": 4
+        },
+        {
+          "questionId": "threat_monitoring",
+          "value": 5
+        },
+        {
+          "questionId": "onboarding_support",
+          "value": 4
+        },
+        {
+          "questionId": "compliance_reporting",
+          "value": 5
+        },
+        {
+          "questionId": "api_access_logs",
+          "value": 4
+        },
+        {
+          "questionId": "support_quality",
+          "value": 4
+        },
+        {
+          "questionId": "product_value",
+          "value": 4
+        },
+        {
+          "questionId": "relationship",
+          "value": 5
+        },
+        {
+          "questionId": "feedback",
+          "value": "Good overall experience, compliance reporting is excellent"
+        }
+      ]
+    },
+    {
+      "timestamp": "2024-01-19T11:30:00Z",
+      "customerId": "68bf380892aa6032eb66826e",
+      "responses": [
+        {
+          "questionId": "overall_satisfaction",
+          "value": 5
+        },
+        {
+          "questionId": "threat_monitoring",
+          "value": 5
+        },
+        {
+          "questionId": "onboarding_support",
+          "value": 5
+        },
+        {
+          "questionId": "compliance_reporting",
+          "value": 5
+        },
+        {
+          "questionId": "api_access_logs",
+          "value": 4
+        },
+        {
+          "questionId": "support_quality",
+          "value": 5
+        },
+        {
+          "questionId": "product_value",
+          "value": 5
+        },
+        {
+          "questionId": "relationship",
+          "value": 5
+        },
+        {
+          "questionId": "feedback",
+          "value": "Perfect service, highly recommend"
+        }
+      ]
+    }
+  ]
+}
