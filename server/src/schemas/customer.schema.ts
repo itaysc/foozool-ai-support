@@ -85,6 +85,40 @@ const CustomerSchema: Schema = new Schema<ICustomer>({
     seatsPurchased: { type: Number, min: 0 },
     seatsUsed: { type: Number, min: 0 },
   },
+  stakeholders: [{
+    name: { type: String, required: true },
+    title: { type: String, required: true },
+    department: { type: String, required: true },
+    role: { type: String, required: true },
+    stakeholderType: { 
+      type: String, 
+      enum: ['primary', 'secondary', 'technical', 'business'],
+      default: 'secondary'
+    },
+    contact: {
+      email: { type: String, required: true },
+      phone: { type: String },
+      linkedin: { type: String }
+    },
+    engagement: {
+      level: { 
+        type: String, 
+        enum: ['high', 'medium', 'low', 'inactive'],
+        default: 'medium'
+      },
+      lastContact: { type: Date },
+      lastLogin: { type: Date },
+      usageRate: { type: Number, min: 0, max: 100, default: 0 }
+    },
+    influence: {
+      teamSize: { type: Number, min: 0, default: 0 },
+      decisionPower: { type: Number, min: 1, max: 10, default: 5 },
+      adoptionInfluence: { type: Number, min: 1, max: 10, default: 5 }
+    },
+    notes: { type: String },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+  }],
   // featureUsage moved to separate collection (FeatureUsage)
 }, {
   timestamps: true,
@@ -97,5 +131,9 @@ CustomerSchema.index({ organizationId: 1, industry: 1 }); // For industry filter
 CustomerSchema.index({ organizationId: 1, companySize: 1 }); // For company size filtering
 CustomerSchema.index({ organizationId: 1, segment: 1 }); // For segment filtering
 CustomerSchema.index({ organizationId: 1, accountManager: 1 }); // For account manager filtering
+CustomerSchema.index({ organizationId: 1, 'stakeholders.role': 1 }); // For role filtering
+CustomerSchema.index({ organizationId: 1, 'stakeholders.engagement.level': 1 }); // For engagement filtering
+CustomerSchema.index({ organizationId: 1, 'stakeholders.department': 1 }); // For department filtering
+CustomerSchema.index({ organizationId: 1, 'stakeholders.stakeholderType': 1 }); // For stakeholder type filtering
 
 export const CustomerModel = mongoose.model<ICustomer>('Customer', CustomerSchema);

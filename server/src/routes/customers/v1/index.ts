@@ -3,19 +3,13 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { validateRequest } from '../../../middleware/validateRequest';
 import { hasPermission } from '../../../middleware/permissions';
 import { UserContextManager } from '../../../context/userContext';
-import {
-  createCustomer,
-  getCustomers,
-  getCustomerById,
-  updateCustomer,
-  deleteCustomer,
-  getCustomerStats,
-} from '../../../services/customers';
+import { CustomerService } from '../../../services/customers';
 import {
   createCustomerSchema,
   updateCustomerSchema,
   getCustomersQuerySchema,
 } from './validations';
+import stakeholderRoutes from './stakeholders';
 
 const router = Router();
 
@@ -33,7 +27,7 @@ router.post('/', authenticateJWT, hasPermission('customers:create'), validateReq
       });
     }
 
-    const customer = await createCustomer(currentOrgId, req.body);
+    const customer = await CustomerService.createCustomer(currentOrgId, req.body);
     
     res.status(201).json({
       status: 201,
@@ -90,7 +84,7 @@ router.get('/', authenticateJWT, hasPermission('customers:read'), async (req: Re
       },
     };
 
-    const result = await getCustomers(currentOrgId, options);
+    const result = await CustomerService.getCustomers(currentOrgId, options);
     
     res.status(200).json({
       status: 200,
@@ -119,7 +113,7 @@ router.get('/stats', authenticateJWT, hasPermission('customers:read'), async (re
       });
     }
 
-    const stats = await getCustomerStats(currentOrgId);
+    const stats = await CustomerService.getCustomerStats(currentOrgId);
     
     res.status(200).json({
       status: 200,
@@ -150,7 +144,7 @@ router.get('/:customerId', authenticateJWT, hasPermission('customers:read'), asy
       });
     }
 
-    const customer = await getCustomerById(currentOrgId, customerId);
+    const customer = await CustomerService.getCustomerById(currentOrgId, customerId);
     if (!customer) {
       return res.status(404).json({
         status: 404,
@@ -187,7 +181,7 @@ router.put('/:customerId', authenticateJWT, hasPermission('customers:update'), v
       });
     }
 
-    const customer = await updateCustomer(currentOrgId, customerId, req.body);
+    const customer = await CustomerService.updateCustomer(currentOrgId, customerId, req.body);
     if (!customer) {
       return res.status(404).json({
         status: 404,
@@ -224,7 +218,7 @@ router.delete('/:customerId', authenticateJWT, hasPermission('customers:delete')
       });
     }
 
-    const deleted = await deleteCustomer(currentOrgId, customerId);
+    const deleted = await CustomerService.deleteCustomer(currentOrgId, customerId);
     if (!deleted) {
       return res.status(404).json({
         status: 404,
@@ -244,5 +238,8 @@ router.delete('/:customerId', authenticateJWT, hasPermission('customers:delete')
     });
   }
 });
+
+// Mount stakeholder routes
+router.use('/', stakeholderRoutes);
 
 export default router;

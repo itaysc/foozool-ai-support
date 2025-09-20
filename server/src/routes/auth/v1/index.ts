@@ -281,9 +281,6 @@ router.get('/isAuthorized', async (req: Request, res: Response) => {
       }
       
       try {
-        console.log('✅ JWT verified successfully');
-        console.log('🔄 JWT payload data:', JSON.stringify(data, null, 2));
-        
         // Get the user ID from the JWT payload
         const userId = (data as any).user._id || (data as any).user.id;
         

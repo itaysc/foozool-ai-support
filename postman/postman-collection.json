@@ -49,6 +49,18 @@
       "description": "ID of an NPS upload to test with (get from upload responses)"
     },
     {
+      "key": "customer_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a customer to test with (get from customer responses)"
+    },
+    {
+      "key": "stakeholder_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a stakeholder to test with (get from stakeholder responses)"
+    },
+    {
       "key": "webhook_token",
       "value": "",
       "type": "string",
@@ -660,7 +672,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"industry\": \"Technology\",\n  \"companySize\": \"51-200\",\n  \"contractValue\": 50000,\n  \"startDate\": \"2024-01-15T00:00:00.000Z\",\n  \"accountManager\": \"John Doe\",\n  \"healthScore\": 8,\n  \"notes\": \"High-value customer with great potential for expansion\"\n}"
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"industry\": \"Technology\",\n  \"companySize\": \"51-200\",\n  \"contractValue\": 50000,\n  \"startDate\": \"2024-01-15T00:00:00.000Z\",\n  \"accountManager\": \"John Doe\",\n  \"healthScore\": 8,\n  \"notes\": \"High-value customer with great potential for expansion\",\n  \"stakeholders\": [\n    {\n      \"name\": \"Sarah Johnson\",\n      \"title\": \"VP of Engineering\",\n      \"department\": \"Engineering\",\n      \"role\": \"Decision Maker\",\n      \"stakeholderType\": \"primary\",\n      \"contact\": {\n        \"email\": \"sarah.johnson@acme.com\",\n        \"phone\": \"+1-555-0100\"\n      },\n      \"engagement\": {\n        \"level\": \"high\",\n        \"usageRate\": 85\n      },\n      \"influence\": {\n        \"teamSize\": 25,\n        \"decisionPower\": 9,\n        \"adoptionInfluence\": 8\n      },\n      \"notes\": \"Primary technical decision maker\"\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{nodejs_base_url}}/api/v1/customers",
@@ -829,6 +841,128 @@
               ]
             },
             "description": "Filter customers by various criteria"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Stakeholder to Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Smith\",\n  \"title\": \"Chief Technology Officer\",\n  \"department\": \"Engineering\",\n  \"role\": \"Decision Maker\",\n  \"stakeholderType\": \"primary\",\n  \"contact\": {\n    \"email\": \"jsmith@company.com\",\n    \"phone\": \"+1-555-0123\",\n    \"linkedin\": \"linkedin.com/in/johnsmith\"\n  },\n  \"engagement\": {\n    \"level\": \"medium\",\n    \"usageRate\": 25\n  },\n  \"influence\": {\n    \"teamSize\": 15,\n    \"decisionPower\": 9,\n    \"adoptionInfluence\": 8\n  },\n  \"notes\": \"Primary decision maker for technology purchases\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}/stakeholders",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}", "stakeholders"]
+            },
+            "description": "Add a new stakeholder to a customer"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Stakeholders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}/stakeholders",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}", "stakeholders"]
+            },
+            "description": "Get all stakeholders for a specific customer"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Stakeholder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"engagement\": {\n    \"level\": \"high\",\n    \"lastContact\": \"2024-01-20T10:00:00.000Z\",\n    \"usageRate\": 45\n  },\n  \"notes\": \"Increased engagement after product demo\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}/stakeholders/{{stakeholder_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}", "stakeholders", "{{stakeholder_id}}"]
+            },
+            "description": "Update a specific stakeholder's information"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Stakeholder",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}/stakeholders/{{stakeholder_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}", "stakeholders", "{{stakeholder_id}}"]
+            },
+            "description": "Delete a specific stakeholder from a customer"
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Import Stakeholders (CSV)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "CSV file with stakeholder data"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}/stakeholders/import",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}", "stakeholders", "import"]
+            },
+            "description": "Bulk import stakeholders from CSV file"
           },
           "response": []
         }

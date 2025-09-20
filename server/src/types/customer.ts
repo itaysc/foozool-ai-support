@@ -1,3 +1,28 @@
+export interface StakeholderData {
+  name: string;
+  title: string;
+  department: string;
+  role: string;
+  stakeholderType?: 'primary' | 'secondary' | 'technical' | 'business';
+  contact: {
+    email: string;
+    phone?: string;
+    linkedin?: string;
+  };
+  engagement?: {
+    level?: 'high' | 'medium' | 'low' | 'inactive';
+    lastContact?: string; // ISO date string
+    lastLogin?: string; // ISO date string
+    usageRate?: number;
+  };
+  influence?: {
+    teamSize?: number;
+    decisionPower?: number;
+    adoptionInfluence?: number;
+  };
+  notes?: string;
+}
+
 export interface ICustomer {
   _id?: string;
   organizationId: string; // Multi-tenancy: which organization owns this customer
@@ -34,6 +59,33 @@ export interface ICustomer {
   productLines?: string[];
   contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
   mediaLookbackDaysDefault?: number;
+  stakeholders?: Array<{
+    _id?: string;
+    name: string;
+    title: string;
+    department: string;
+    role: string;
+    stakeholderType: 'primary' | 'secondary' | 'technical' | 'business';
+    contact: {
+      email: string;
+      phone?: string;
+      linkedin?: string;
+    };
+    engagement: {
+      level: 'high' | 'medium' | 'low' | 'inactive';
+      lastContact?: Date;
+      lastLogin?: Date;
+      usageRate: number; // 0-100
+    };
+    influence: {
+      teamSize: number;
+      decisionPower: number; // 1-10
+      adoptionInfluence: number; // 1-10
+    };
+    notes?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+  }>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -71,6 +123,7 @@ export interface CreateCustomerRequest {
   productLines?: string[];
   contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
   mediaLookbackDaysDefault?: number;
+  stakeholders?: StakeholderData[];
 }
 
 export interface UpdateCustomerRequest {
@@ -106,4 +159,5 @@ export interface UpdateCustomerRequest {
   productLines?: string[];
   contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
   mediaLookbackDaysDefault?: number;
+  stakeholders?: StakeholderData[];
 }

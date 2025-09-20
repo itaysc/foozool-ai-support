@@ -230,7 +230,7 @@ const CustomersPage: React.FC = () => {
               <People sx={{ fontSize: 24, color: 'primary.main' }} />
             </Box>
             <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {customersStore.stats.totalCustomers}
+              {customersStore.stats?.totalCustomers || 0}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
               Total Customers
@@ -252,7 +252,7 @@ const CustomersPage: React.FC = () => {
               <Assessment sx={{ fontSize: 24, color: 'success.main' }} />
             </Box>
             <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {customersStore.stats.averageHealthScore.toFixed(1)}
+              {customersStore.stats?.averageHealthScore?.toFixed(1) || '0.0'}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
               Avg Health Score
@@ -274,7 +274,7 @@ const CustomersPage: React.FC = () => {
               <Business sx={{ fontSize: 24, color: 'info.main' }} />
             </Box>
             <Typography variant="h4" color="info.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {customersStore.stats.customersByIndustry.length > 0 ? customersStore.stats.customersByIndustry[0].industry : 'N/A'}
+              {customersStore.stats?.customersByIndustry?.length > 0 ? customersStore.stats.customersByIndustry[0].industry : 'N/A'}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
               Top Industry
@@ -296,7 +296,7 @@ const CustomersPage: React.FC = () => {
               <TrendingUp sx={{ fontSize: 24, color: 'warning.main' }} />
             </Box>
             <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-              {customersStore.stats.customersBySize.length > 0 ? customersStore.stats.customersBySize[0].size : 'N/A'}
+              {customersStore.stats?.customersBySize?.length > 0 ? customersStore.stats.customersBySize[0].size : 'N/A'}
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.75rem' }}>
               Most Common Size

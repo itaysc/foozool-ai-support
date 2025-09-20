@@ -46,6 +46,7 @@ import { REGIONS } from '@/constants/regions';
 import { LANGUAGES } from '@/constants/languages';
 import { EXCHANGES } from '@/constants/exchanges';
 import TagsInput from '@/components/tagsInput';
+import StakeholderManagement from '@/components/stakeholder/StakeholderManagement';
 
 interface CustomerFormProps {
   mode: 'create' | 'edit';
@@ -88,7 +89,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
   const { customerId } = useParams<{ customerId: string }>();
   
   const [customer, setCustomer] = useState<ICustomer | null>(null);
-  const [tab, setTab] = useState<'general' | 'media' | 'geo' | 'features' | 'bots'>('general');
+  const [tab, setTab] = useState<'general' | 'media' | 'geo' | 'features' | 'stakeholders' | 'bots'>('general');
   const [addUsageOpen, setAddUsageOpen] = useState(false);
   const [newUsage, setNewUsage] = useState<{ featureName: string; metricType: 'count' | 'amount' | 'percentage' | 'duration' | 'custom'; metricValue?: number; unit?: string; usageDate?: string }>({ featureName: '', metricType: 'count' });
   const [addBotOpen, setAddBotOpen] = useState(false);
@@ -269,6 +270,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         <Tab label="Geo" value="geo" />
         <Tab label="Media & Signals" value="media" />
         <Tab label="Customer Activity" value="features" />
+        {mode === 'edit' && <Tab label="Stakeholders" value="stakeholders" />}
         {mode === 'edit' && <Tab label="Bots" value="bots" />}
       </Tabs>
 
@@ -731,6 +733,12 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
             ) : (
               <Alert severity="info">Save the customer first to manage feature usage.</Alert>
             )}
+          </Box>
+        )}
+
+        {tab === 'stakeholders' && mode === 'edit' && customerId && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <StakeholderManagement customerId={customerId} />
           </Box>
         )}
 

@@ -1,5 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import customersService from '@/services/customers-service';
+import stakeholdersService, { Stakeholder, StakeholderData } from '@/services/stakeholders-service';
 import { 
   ICustomer, 
   CustomerFilters, 
@@ -322,6 +323,154 @@ class CustomersStore {
     this.setFilters(defaultFilters);
     this.fetchCustomers(defaultFilters);
   };
+
+  // Stakeholder management methods
+  fetchStakeholders = async (customerId: string) => {
+    console.log('🔄 CustomersStore: fetchStakeholders called for customer:', customerId);
+    console.trace('📍 Stack trace for fetchStakeholders call:');
+    
+    // TEMPORARY: Disable to test if this is the source of infinite calls
+    console.log('🚫 TEMPORARILY DISABLED fetchStakeholders to test infinite loop');
+    return;
+    
+    try {
+      this.setLoading(true);
+      this.setError(null);
+      
+      const stakeholders = await stakeholdersService.getByCustomerId(customerId);
+      
+      runInAction(() => {
+        // Update the current customer's stakeholders
+        if (this.currentCustomer?._id === customerId) {
+          this.currentCustomer.stakeholders = stakeholders;
+        }
+        // Also update in the customers list
+        const customerIndex = this.customers.findIndex(c => c._id === customerId);
+        if (customerIndex !== -1) {
+          this.customers[customerIndex].stakeholders = stakeholders;
+        }
+        this.setLastUpdated(new Date());
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.setError(err.response?.data?.error || 'Failed to fetch stakeholders');
+      });
+      console.error('Error fetching stakeholders:', err);
+    } finally {
+      runInAction(() => {
+        this.setLoading(false);
+      });
+    }
+  };
+
+  createStakeholder = async (customerId: string, data: StakeholderData) => {
+    console.log('🔄 CustomersStore: createStakeholder called with customerId:', customerId, 'data:', data);
+    try {
+      this.setSaving(true);
+      this.setError(null);
+      
+      console.log('🔄 CustomersStore: Calling stakeholdersService.create');
+      const newStakeholder = await stakeholdersService.create(customerId, data);
+      console.log('🔄 CustomersStore: stakeholdersService.create completed, newStakeholder:', newStakeholder);
+      
+      runInAction(() => {
+        // Update the current customer's stakeholders
+        if (this.currentCustomer?._id === customerId) {
+          this.currentCustomer.stakeholders = this.currentCustomer.stakeholders || [];
+          this.currentCustomer.stakeholders.push(newStakeholder);
+        }
+        // Also update in the customers list
+        const customerIndex = this.customers.findIndex(c => c._id === customerId);
+        if (customerIndex !== -1) {
+          this.customers[customerIndex].stakeholders = this.customers[customerIndex].stakeholders || [];
+          this.customers[customerIndex].stakeholders.push(newStakeholder);
+        }
+        this.setLastUpdated(new Date());
+      });
+      
+      return newStakeholder;
+    } catch (err: any) {
+      runInAction(() => {
+        this.setError(err.response?.data?.error || 'Failed to create stakeholder');
+      });
+      throw err;
+    } finally {
+      runInAction(() => {
+        this.setSaving(false);
+      });
+    }
+  };
+
+  updateStakeholder = async (customerId: string, stakeholderId: string, data: Partial<StakeholderData>) => {
+    try {
+      this.setSaving(true);
+      this.setError(null);
+      
+      const updatedStakeholder = await stakeholdersService.update(customerId, stakeholderId, data);
+      
+      runInAction(() => {
+        // Update the current customer's stakeholders
+        if (this.currentCustomer?._id === customerId) {
+          const stakeholderIndex = this.currentCustomer.stakeholders?.findIndex(s => s._id === stakeholderId);
+          if (stakeholderIndex !== -1 && stakeholderIndex !== undefined) {
+            this.currentCustomer.stakeholders![stakeholderIndex] = updatedStakeholder;
+          }
+        }
+        // Also update in the customers list
+        const customerIndex = this.customers.findIndex(c => c._id === customerId);
+        if (customerIndex !== -1) {
+          const stakeholderIndex = this.customers[customerIndex].stakeholders?.findIndex(s => s._id === stakeholderId);
+          if (stakeholderIndex !== -1 && stakeholderIndex !== undefined) {
+            this.customers[customerIndex].stakeholders![stakeholderIndex] = updatedStakeholder;
+          }
+        }
+        this.setLastUpdated(new Date());
+      });
+      
+      return updatedStakeholder;
+    } catch (err: any) {
+      runInAction(() => {
+        this.setError(err.response?.data?.error || 'Failed to update stakeholder');
+      });
+      throw err;
+    } finally {
+      runInAction(() => {
+        this.setSaving(false);
+      });
+    }
+  };
+
+  deleteStakeholder = async (customerId: string, stakeholderId: string) => {
+    try {
+      this.setSaving(true);
+      this.setError(null);
+      
+      await stakeholdersService.delete(customerId, stakeholderId);
+      
+      runInAction(() => {
+        // Update the current customer's stakeholders
+        if (this.currentCustomer?._id === customerId) {
+          this.currentCustomer.stakeholders = this.currentCustomer.stakeholders?.filter(s => s._id !== stakeholderId) || [];
+        }
+        // Also update in the customers list
+        const customerIndex = this.customers.findIndex(c => c._id === customerId);
+        if (customerIndex !== -1) {
+          this.customers[customerIndex].stakeholders = this.customers[customerIndex].stakeholders?.filter(s => s._id !== stakeholderId) || [];
+        }
+        this.setLastUpdated(new Date());
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.setError(err.response?.data?.error || 'Failed to delete stakeholder');
+      });
+      throw err;
+    } finally {
+      runInAction(() => {
+        this.setSaving(false);
+      });
+    }
+  };
+
 }
 
 const customersStore = new CustomersStore();

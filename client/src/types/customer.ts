@@ -28,6 +28,33 @@ export interface ICustomer {
     seatsPurchased?: number;
     seatsUsed?: number;
   };
+  stakeholders?: Array<{
+    _id?: string;
+    name: string;
+    title: string;
+    department: string;
+    role: string;
+    stakeholderType: 'primary' | 'secondary' | 'technical' | 'business';
+    contact: {
+      email: string;
+      phone?: string;
+      linkedin?: string;
+    };
+    engagement: {
+      level: 'high' | 'medium' | 'low' | 'inactive';
+      lastContact?: Date;
+      lastLogin?: Date;
+      usageRate: number;
+    };
+    influence: {
+      teamSize: number;
+      decisionPower: number;
+      adoptionInfluence: number;
+    };
+    notes?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+  }>;
   createdAt: string;
   updatedAt: string;
 }

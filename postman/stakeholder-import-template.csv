@@ -1,0 +1,5 @@
+name,title,department,role,stakeholderType,email,phone,linkedin,engagementLevel,usageRate,teamSize,decisionPower,adoptionInfluence,notes
+John Smith,Chief Technology Officer,Engineering,Decision Maker,primary,jsmith@company.com,+1-555-0123,linkedin.com/in/johnsmith,medium,25,15,9,8,Primary decision maker for technology purchases
+Sarah Chen,Security Team Lead,Security Operations,Champion,technical,sarah.chen@company.com,+1-555-0124,linkedin.com/in/sarahchen,high,95,8,6,9,Top user and platform advocate
+Mike Rodriguez,IT Director,Information Technology,Blocker,secondary,mike.rodriguez@company.com,+1-555-0125,,low,0,12,7,3,Resists new tools and prefers legacy systems
+Lisa Wang,VP Engineering,Engineering,Influencer,business,lisa.wang@company.com,+1-555-0126,linkedin.com/in/lisawang,medium,60,25,8,9,Influences 15+ engineers across the organization
