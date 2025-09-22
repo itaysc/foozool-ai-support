@@ -25,10 +25,3 @@ export interface CustomerSuccessInsight {
   category: 'risk' | 'upsell' | 'customer_success' | 'strategic';
   meta?: Record<string, any>;
 }
-
-export interface CustomerSuccessInsightsResponse {
-  success: boolean;
-  insights: CustomerSuccessInsight[];
-  customerId: string;
-  customerName?: string;
-}

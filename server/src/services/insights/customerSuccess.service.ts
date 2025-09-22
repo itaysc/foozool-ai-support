@@ -2,19 +2,8 @@ import { UserContextManager } from 'src/context/userContext';
 import mongoose from 'mongoose';
 import { CustomerModel, CustomerActivityModel } from '../../schemas';
 import { generateTicketInsights, TicketInsight } from './ticketInsights.service';
-
-export interface CustomerSuccessInsight {
-  type: 'declining_activity' | 'inactive_customer' | 'low_utilization' | 'one_solution_dependency' | 
-        'high_utilization' | 'solution_gap' | 'increasing_usage' | 'top_solution' | 'adoption_milestones' | 
-        'seasonality' | 'correlation_to_value' | 'renewal_warning' |
-        'high_ticket_volume' | 'escalating_issues' | 'sentiment_decline' | 'recurring_problems' | 
-        'resolution_delays' | 'support_patterns' | 'urgent_trends' | 'positive_feedback' | 
-        'technical_debt' | 'user_experience_issues' | 'integration_problems' | 'performance_concerns';
-  message: string;
-  severity: 'red' | 'yellow' | 'info';
-  category: 'risk' | 'upsell' | 'customer_success' | 'strategic';
-  meta?: Record<string, any>;
-}
+import { generateStakeholderInsights as generateStakeholderInsightsFromModule } from './stakeholders';
+import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
 
 export async function generateCustomerSuccessInsights(customerId: string): Promise<CustomerSuccessInsight[]> {
   const organizationId = UserContextManager.getCurrentOrganizationId();
@@ -71,6 +60,9 @@ export async function generateCustomerSuccessInsights(customerId: string): Promi
   insights.push(...generateUpsellOpportunities(activities, orgActivities, customerName));
   insights.push(...generateCustomerSuccessPrep(activities, customerName));
   insights.push(...generateStrategicInsights(activities, customerName));
+  
+  // Generate stakeholder-specific insights
+  insights.push(...generateStakeholderInsightsFromModule(customer));
 
   // 3. Generate Ticket Insights
   try {
@@ -296,26 +288,85 @@ function generateCustomerSuccessPrep(activities: any[], customerName: string): C
 function generateStrategicInsights(activities: any[], customerName: string): CustomerSuccessInsight[] {
   const insights: CustomerSuccessInsight[] = [];
 
-  // 1. Seasonality Patterns (simplified)
+  // 1. Seasonality Patterns Analysis
   const monthlyGroups = new Map<string, any[]>();
+  const monthlyTotals = new Map<string, number>();
+  
   for (const activity of activities) {
     if (activity.activityDate) {
       const month = new Date(activity.activityDate).toISOString().substring(0, 7);
       if (!monthlyGroups.has(month)) {
         monthlyGroups.set(month, []);
+        monthlyTotals.set(month, 0);
       }
       monthlyGroups.get(month)!.push(activity);
+      monthlyTotals.set(month, monthlyTotals.get(month)! + activity.metricValue);
     }
   }
 
   if (monthlyGroups.size >= 3) {
-    insights.push({
-      type: 'seasonality',
-      message: 'Activity patterns show seasonal variations - consider this in planning',
-      severity: 'info',
-      category: 'strategic',
-      meta: { seasonalityPattern: 'Monthly variations detected' }
-    });
+    // Analyze seasonal patterns
+    const sortedMonths = Array.from(monthlyTotals.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    const values = sortedMonths.map(([_, value]) => value);
+    const avgActivity = values.reduce((sum, val) => sum + val, 0) / values.length;
+    
+    // Find peak and low months
+    const maxMonth = sortedMonths.reduce((max, current) => 
+      monthlyTotals.get(current[0])! > monthlyTotals.get(max[0])! ? current : max
+    );
+    const minMonth = sortedMonths.reduce((min, current) => 
+      monthlyTotals.get(current[0])! < monthlyTotals.get(min[0])! ? current : min
+    );
+    
+    const peakValue = monthlyTotals.get(maxMonth[0])!;
+    const lowValue = monthlyTotals.get(minMonth[0])!;
+    const variationPercent = avgActivity > 0 ? Math.round(((peakValue - lowValue) / avgActivity) * 100) : 0;
+    
+    // Generate specific insights based on patterns
+    if (variationPercent > 50) {
+      const peakMonthName = new Date(maxMonth[0] + '-01').toLocaleDateString('en-US', { month: 'long' });
+      const lowMonthName = new Date(minMonth[0] + '-01').toLocaleDateString('en-US', { month: 'long' });
+      
+      insights.push({
+        type: 'seasonality',
+        message: `Strong seasonal pattern detected: ${peakMonthName} is ${Math.round(peakValue/lowValue)}x more active than ${lowMonthName}. Plan engagement accordingly.`,
+        severity: 'info',
+        category: 'strategic',
+        meta: { 
+          seasonalityPattern: 'High variation detected',
+          peakMonth: peakMonthName,
+          lowMonth: lowMonthName,
+          variationPercent,
+          peakValue,
+          lowValue,
+          recommendation: 'Schedule major initiatives during peak months, use low months for planning and training'
+        }
+      });
+    } else if (variationPercent > 25) {
+      insights.push({
+        type: 'seasonality',
+        message: `Moderate seasonal variations detected (${variationPercent}% difference). Monitor patterns for optimal engagement timing.`,
+        severity: 'info',
+        category: 'strategic',
+        meta: { 
+          seasonalityPattern: 'Moderate variation detected',
+          variationPercent,
+          recommendation: 'Track monthly patterns to identify best times for feature launches and customer outreach'
+        }
+      });
+    } else {
+      insights.push({
+        type: 'seasonality',
+        message: `Consistent activity patterns across months. Customer maintains steady engagement throughout the year.`,
+        severity: 'info',
+        category: 'strategic',
+        meta: { 
+          seasonalityPattern: 'Consistent activity',
+          variationPercent,
+          recommendation: 'Customer is reliable year-round - focus on growth initiatives rather than seasonal adjustments'
+        }
+      });
+    }
   }
 
   // 2. Early Warning for Renewal (placeholder)
@@ -346,5 +397,6 @@ function calculateAverageMetricValue(activities: any[]): number {
   const total = activities.reduce((sum, a) => sum + (a.metricValue || 0), 0);
   return total / activities.length;
 }
+
 
 

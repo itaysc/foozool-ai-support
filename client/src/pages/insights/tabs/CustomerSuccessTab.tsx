@@ -217,14 +217,53 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
                         borderColor: 'grey.300',
                         mt: 0.5
                       }}>
-                        {Object.entries(insight.meta).map(([key, value]) => (
-                          <Typography key={key} variant="caption" color="text.secondary" sx={{ 
-                            fontSize: '0.65rem',
-                            display: 'block'
-                          }}>
-                            <strong>{key.replace(/_/g, ' ')}:</strong> {String(value)}
-                          </Typography>
-                        ))}
+                        {Object.entries(insight.meta).map(([key, value]) => {
+                          // Debug logging
+                          if (key === 'stakeholders') {
+                            console.log('Stakeholder data:', value);
+                          }
+                          
+                          // Handle different value types properly
+                          const formatValue = (val: any): string => {
+                            if (val === null || val === undefined) return 'N/A';
+                            if (typeof val === 'object') {
+                              if (Array.isArray(val)) {
+                                if (val.length === 0) return 'None';
+                                // Handle array of objects (like stakeholders)
+                                return val.map(item => {
+                                  if (typeof item === 'object') {
+                                    // Special handling for influencer expansion opportunity - show name, title and department
+                                    if (key === 'stakeholders' && insight.type === 'influencer_expansion_opportunity') {
+                                      const name = item.name || 'Unknown Name';
+                                      const title = item.title || 'Unknown Title';
+                                      const department = item.department || 'Unknown Dept';
+                                      return `${name} ${title} (${department})`;
+                                    }
+                                    // Default behavior for other cases
+                                    return Object.entries(item)
+                                      .map(([k, v]) => `${k}: ${v}`)
+                                      .join(', ');
+                                  }
+                                  return String(item);
+                                }).join(' | ');
+                              }
+                              // For objects, show key-value pairs
+                              return Object.entries(val)
+                                .map(([k, v]) => `${k}: ${v}`)
+                                .join(', ');
+                            }
+                            return String(val);
+                          };
+
+                          return (
+                            <Typography key={key} variant="caption" color="text.secondary" sx={{ 
+                              fontSize: '0.65rem',
+                              display: 'block'
+                            }}>
+                              <strong>{key.replace(/_/g, ' ')}:</strong> {formatValue(value)}
+                            </Typography>
+                          );
+                        })}
                       </Box>
                     )}
                   </Box>

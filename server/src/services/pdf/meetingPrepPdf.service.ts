@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { CustomerSuccessInsight } from '../insights/customerSuccess.service';
+import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
 
 export interface CustomerData {
   name: string;
