@@ -27,7 +27,6 @@ router.get('/customer-success/:customerId', authenticateJWT, hasPermission('insi
     return res.status(500).json({ status: 500, error: 'Internal server error' });
   }
 });
-
 /**
  * GET /insights/customer-success
  * Generate Customer Success risk insights for ALL customers in the current organization (authenticated, org-scoped)

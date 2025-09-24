@@ -4,12 +4,14 @@ import { IOrganization } from '../types/organization';
 export interface IInsight extends Document {
   clusterId: string;
   organizationId: mongoose.Types.ObjectId | IOrganization;
-  insightType: 'ticket_cluster' | 'nps_analysis' | 'customer_satisfaction' | 'trend_analysis' | 'anomaly_detection';
+  insightType: 'ticket_cluster' | 'nps_analysis' | 'customer_satisfaction' | 'trend_analysis' | 'anomaly_detection' | 'customer_success';
   issueDescription: string;
   ticketVolume: number;
   growthRate: number;
   firstDetectedAt: Date;
   lastUpdatedAt: Date;
+  customerId?: mongoose.Types.ObjectId | string;
+  customerName?: string;
   // NPS-specific fields
   npsData?: {
     currentNPS: number;
@@ -67,7 +69,7 @@ const InsightSchema: Schema = new Schema({
   insightType: { 
     type: String, 
     required: true, 
-    enum: ['ticket_cluster', 'nps_analysis', 'customer_satisfaction', 'trend_analysis', 'anomaly_detection'],
+    enum: ['ticket_cluster', 'nps_analysis', 'customer_satisfaction', 'trend_analysis', 'anomaly_detection', 'customer_success'],
     default: 'ticket_cluster'
   },
   issueDescription: { type: String, required: true },
@@ -75,6 +77,9 @@ const InsightSchema: Schema = new Schema({
   growthRate: { type: Number, required: true },
   firstDetectedAt: { type: Date, default: Date.now },
   lastUpdatedAt: { type: Date, default: Date.now },
+  // Optional linkage to a specific customer for customer success insights
+  customerId: { type: Schema.Types.ObjectId, ref: 'Customer' },
+  customerName: { type: String },
   // NPS-specific fields
   npsData: {
     currentNPS: { type: Number },
@@ -127,9 +132,10 @@ const InsightSchema: Schema = new Schema({
 });
 
 // Indexes for better query performance
-InsightSchema.index({ organizationId: 1, insightType: 1 }); // Compound index for organization + type queries
+InsightSchema.index({ organizationId: 1, insightType: 1 });
 InsightSchema.index({ organizationId: 1, lastUpdatedAt: -1 });
 InsightSchema.index({ clusterId: 1 });
-InsightSchema.index({ insightType: 1, lastUpdatedAt: -1 }); // For insights of specific type
+InsightSchema.index({ insightType: 1, lastUpdatedAt: -1 });
+InsightSchema.index({ organizationId: 1, customerId: 1, insightType: 1, lastUpdatedAt: -1 });
 
 export const InsightModel = mongoose.model<IInsight>('Insight', InsightSchema);

@@ -2,7 +2,7 @@ import { InsightModel } from '../../schemas/insights.schema';
 import { CustomerModel } from '../../schemas';
 import mongoose from 'mongoose';
 import { UserContextManager } from '../../context/userContext';
-import { generateCustomerSuccessInsights } from './customerSuccess.service';
+import { generateCustomerSuccessInsights, getSavedStakeholderInsights, getAllSavedCustomerSuccessInsights } from './customerSuccess.service';
 import { callLLM } from '../llm';
 import { generateMeetingPrepPdf, MeetingPrepData } from '../pdf/meetingPrepPdf.service';
 import { 
@@ -39,7 +39,17 @@ export interface InsightsSummaryResult {
 
 export interface CustomerSuccessInsightsResult {
   status: number;
-  payload?: any[];
+  payload?: {
+    freshInsights: any[];
+    savedInsights: any[];
+    allInsights: any[];
+  };
+  error?: string;
+}
+
+export interface AllCustomerSuccessInsightsResult {
+  status: number;
+  payload?: Array<{ customerId: string; customerName?: string; insights: any[] }>;
   error?: string;
 }
 
@@ -202,7 +212,7 @@ export async function getAllInsights(limit = 100, skip = 0): Promise<InsightsQue
 }
 
 /**
- * Get customer success insights for a specific customer
+ * Get customer success insights for a specific customer (from persisted data only)
  */
 export async function getCustomerSuccessInsights(customerId: string): Promise<CustomerSuccessInsightsResult> {
   const organizationId = UserContextManager.getCurrentOrganizationId();
@@ -212,10 +222,50 @@ export async function getCustomerSuccessInsights(customerId: string): Promise<Cu
   }
 
   try {
-    const insights = await generateCustomerSuccessInsights(customerId);
-    return { status: 200, payload: insights };
+    // DB-only fetch: return all saved customer success insights (no on-demand generation here)
+    const savedInsights = await getAllSavedCustomerSuccessInsights(customerId);
+    const freshInsights: any[] = [];
+    const allInsights = savedInsights;
+    
+    return { 
+      status: 200, 
+      payload: {
+        freshInsights,
+        savedInsights,
+        allInsights
+      }
+    };
   } catch (err) {
-    console.error('Error generating CS insights:', err);
+    console.error('Error fetching CS insights:', err);
+    return { status: 500, error: 'Internal server error' };
+  }
+}
+
+/**
+ * Generate and persist customer success insights on-demand (for job execution)
+ */
+export async function generateAndSaveCustomerSuccessInsights(customerId: string): Promise<CustomerSuccessInsightsResult> {
+  const organizationId = UserContextManager.getCurrentOrganizationId();
+  
+  if (!organizationId) {
+    return { status: 400, error: 'Organization ID not found in user context' };
+  }
+
+  try {
+    // Generate fresh insights and persist them to database
+    const freshInsights = await generateCustomerSuccessInsights(customerId);
+    
+    // Return the generated insights (they are now persisted)
+    return {
+      status: 200,
+      payload: {
+        freshInsights,
+        savedInsights: freshInsights, // Same as fresh since they're now persisted
+        allInsights: freshInsights
+      }
+    };
+  } catch (err) {
+    console.error('Error generating and saving CS insights:', err);
     return { status: 500, error: 'Internal server error' };
   }
 }
@@ -223,7 +273,7 @@ export async function getCustomerSuccessInsights(customerId: string): Promise<Cu
 /**
  * Get customer success insights for all customers in the organization
  */
-export async function getAllCustomerSuccessInsights(): Promise<CustomerSuccessInsightsResult> {
+export async function getAllCustomerSuccessInsights(): Promise<AllCustomerSuccessInsightsResult> {
   const organizationId = UserContextManager.getCurrentOrganizationId();
   
   if (!organizationId) {
@@ -237,7 +287,8 @@ export async function getAllCustomerSuccessInsights(): Promise<CustomerSuccessIn
 
     const results: Array<{ customerId: string; customerName?: string; insights: any[] }> = [];
     for (const c of customers) {
-      const insights = await generateCustomerSuccessInsights(String(c._id));
+      // DB-only fetch: all saved customer success insights per customer (no on-demand generation)
+      const insights = await getAllSavedCustomerSuccessInsights(String(c._id));
       results.push({ customerId: String(c._id), customerName: c.name, insights });
     }
 

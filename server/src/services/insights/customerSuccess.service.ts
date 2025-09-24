@@ -1,22 +1,94 @@
 import { UserContextManager } from 'src/context/userContext';
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 import { CustomerModel, CustomerActivityModel } from '../../schemas';
+import { InsightModel } from '../../schemas/insights.schema';
 import { generateTicketInsights, TicketInsight } from './ticketInsights.service';
 import { generateStakeholderInsights as generateStakeholderInsightsFromModule } from './stakeholders';
 import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
 
+const { ObjectId } = mongoose.Types;
+
+export async function getSavedStakeholderInsights(customerId: string): Promise<CustomerSuccessInsight[]> {
+  const organizationId = UserContextManager.getCurrentOrganizationId();
+  if (!organizationId || !ObjectId.isValid(String(organizationId))) return [];
+
+  const orgObjId = new ObjectId(String(organizationId));
+  const custObjId = new ObjectId(String(customerId));
+
+  if (!orgObjId || !custObjId) return [];
+
+  try {
+    // Only fetch stakeholder insights (those with clusterId starting with 'stakeholder:')
+    const savedInsights = await InsightModel.find({
+      organizationId: orgObjId,
+      customerId: custObjId,
+      insightType: 'customer_success',
+      clusterId: { $regex: /^stakeholder:/ }
+    }).sort({ lastUpdatedAt: -1 }).lean();
+
+    return savedInsights.map(insight => ({
+      type: insight.metadata?.type as CustomerSuccessInsight['type'],
+      message: insight.issueDescription,
+      severity: insight.metadata?.severity as CustomerSuccessInsight['severity'],
+      category: insight.metadata?.category as CustomerSuccessInsight['category'],
+      meta: insight.metadata?.meta || {}
+    }));
+  } catch (error) {
+    console.error('[CS Insights] ❌ failed to fetch saved stakeholder insights:', error);
+    return [];
+  }
+}
+
+export async function getAllSavedCustomerSuccessInsights(customerId: string): Promise<CustomerSuccessInsight[]> {
+  const organizationId = UserContextManager.getCurrentOrganizationId();
+  if (!organizationId || !ObjectId.isValid(String(organizationId))) return [];
+
+  const orgObjId = new ObjectId(String(organizationId));
+  const custObjId = new ObjectId(String(customerId));
+
+  if (!orgObjId || !custObjId) return [];
+
+  try {
+    // Fetch all customer success insights (both stakeholder and other insights)
+    const savedInsights = await InsightModel.find({
+      organizationId: orgObjId,
+      customerId: custObjId,
+      insightType: 'customer_success',
+    }).sort({ lastUpdatedAt: -1 }).lean();
+
+    return savedInsights.map(insight => ({
+      type: insight.metadata?.type as CustomerSuccessInsight['type'],
+      message: insight.issueDescription,
+      severity: insight.metadata?.severity as CustomerSuccessInsight['severity'],
+      category: insight.metadata?.category as CustomerSuccessInsight['category'],
+      meta: insight.metadata?.meta || {}
+    }));
+  } catch (error) {
+    console.error('[CS Insights] ❌ failed to fetch saved customer success insights:', error);
+    return [];
+  }
+}
+
 export async function generateCustomerSuccessInsights(customerId: string): Promise<CustomerSuccessInsight[]> {
   const organizationId = UserContextManager.getCurrentOrganizationId();
+  if (!organizationId) {
+    throw new Error('Organization ID not found in user context');
+  }
+  return generateCustomerSuccessInsightsForOrganization(customerId, organizationId);
+}
+
+export async function generateCustomerSuccessInsightsForOrganization(customerId: string, organizationId: string): Promise<CustomerSuccessInsight[]> {
   console.log(`[CS Insights] ▶️ start | org=${organizationId} customer=${customerId}`);
   const insights: CustomerSuccessInsight[] = [];
   const now = new Date();
   
   // Ensure ObjectId matching for CustomerActivity
-  const orgObjId = mongoose.Types.ObjectId.isValid(String(organizationId))
-    ? new mongoose.Types.ObjectId(String(organizationId))
+  const orgObjId = ObjectId.isValid(String(organizationId))
+    ? new ObjectId(String(organizationId))
     : undefined;
-  const custObjId = mongoose.Types.ObjectId.isValid(String(customerId))
-    ? new mongoose.Types.ObjectId(String(customerId))
+  const custObjId = ObjectId.isValid(String(customerId))
+    ? new ObjectId(String(customerId))
     : undefined;
   
   if (!orgObjId || !custObjId) {
@@ -56,32 +128,188 @@ export async function generateCustomerSuccessInsights(customerId: string): Promi
   }).lean();
 
   // Generate insights by category
-  insights.push(...generateRiskAlerts(activities, customerName, last30Start, prev30Start, last60Start));
-  insights.push(...generateUpsellOpportunities(activities, orgActivities, customerName));
-  insights.push(...generateCustomerSuccessPrep(activities, customerName));
-  insights.push(...generateStrategicInsights(activities, customerName));
+  const riskInsights = generateRiskAlerts(activities, customerName, last30Start, prev30Start, last60Start);
+  const upsellInsights = generateUpsellOpportunities(activities, orgActivities, customerName);
+  const successPrepInsights = generateCustomerSuccessPrep(activities, customerName);
+  const strategicInsights = generateStrategicInsights(activities, customerName);
   
-  // Generate stakeholder-specific insights
-  insights.push(...generateStakeholderInsightsFromModule(customer));
+  // Generate stakeholder-specific insights (these are persisted separately)
+  const stakeholderInsights = generateStakeholderInsightsFromModule(customer);
 
-  // 3. Generate Ticket Insights
+  // Generate Ticket Insights
+  let ticketInsights: CustomerSuccessInsight[] = [];
   try {
     console.log(`[CS Insights] 🎫 generating ticket insights for customer ${customerId}`);
-    const ticketInsights = await generateTicketInsights(customerId);
-    insights.push(...ticketInsights);
+    ticketInsights = await generateTicketInsights(customerId);
     console.log(`[CS Insights] ✅ added ${ticketInsights.length} ticket insights`);
   } catch (error) {
     console.error(`[CS Insights] ❌ failed to generate ticket insights:`, error);
   }
 
+  // Persist stakeholder insights separately (as they were before)
+  try {
+    await persistStakeholderInsights(organizationId, String(customer._id), customer.name || 'Customer', stakeholderInsights);
+  } catch (e) {
+    console.error('[CS Insights] ❌ failed to persist stakeholder insights:', e);
+  }
+
+  // Persist other customer success insights (risk, upsell, strategic, ticket insights)
+  const otherInsights = [
+    ...riskInsights,
+    ...upsellInsights,
+    ...successPrepInsights,
+    ...strategicInsights,
+    ...ticketInsights
+  ];
+
+  try {
+    await persistCustomerSuccessInsights(organizationId, String(customer._id), customer.name || 'Customer', otherInsights);
+  } catch (e) {
+    console.error('[CS Insights] ❌ failed to persist other customer success insights:', e);
+  }
+
+  // Combine all insights for return
+  const allInsights = [
+    ...riskInsights,
+    ...upsellInsights,
+    ...successPrepInsights,
+    ...strategicInsights,
+    ...stakeholderInsights,
+    ...ticketInsights
+  ];
+
   // Logging summary
-  const breakdown = insights.reduce<Record<string, number>>((acc, i) => {
+  const breakdown = allInsights.reduce<Record<string, number>>((acc, i) => {
     acc[i.category] = (acc[i.category] || 0) + 1;
     return acc;
   }, {});
-  console.log(`[CS Insights] ✅ done | total=${insights.length} | breakdown=${JSON.stringify(breakdown)}`);
+  console.log(`[CS Insights] ✅ done | total=${allInsights.length} | breakdown=${JSON.stringify(breakdown)}`);
 
-  return insights;
+  return allInsights;
+}
+
+/**
+ * Persist all customer success insights into the generic InsightModel using type 'customer_success'.
+ * Uses deterministic clusterId to deduplicate per (org, customer, insight type, meta signature) per month.
+ */
+async function persistCustomerSuccessInsights(
+  organizationId: string | typeof ObjectId | undefined,
+  customerId: string,
+  customerName: string,
+  insights: CustomerSuccessInsight[]
+): Promise<void> {
+  if (!organizationId) return;
+
+  const orgObjId = ObjectId.isValid(String(organizationId))
+    ? new ObjectId(String(organizationId))
+    : undefined;
+  const custObjId = ObjectId.isValid(String(customerId))
+    ? new ObjectId(String(customerId))
+    : undefined;
+  if (!orgObjId || !custObjId) return;
+
+  const now = new Date();
+  const monthKey = now.toISOString().substring(0, 7); // YYYY-MM to limit duplicates monthly
+
+  // Upsert each insight
+  for (const insight of insights) {
+    const metaSignature = crypto
+      .createHash('sha1')
+      .update(JSON.stringify(insight.meta || {}))
+      .digest('hex')
+      .substring(0, 12);
+
+    const clusterId = `cs:${orgObjId.toString()}:${custObjId.toString()}:${insight.type}:${monthKey}:${metaSignature}`;
+
+    await InsightModel.findOneAndUpdate(
+      { clusterId },
+      {
+        $setOnInsert: {
+          firstDetectedAt: now,
+        },
+        $set: {
+          organizationId: orgObjId,
+          insightType: 'customer_success',
+          issueDescription: insight.message,
+          // For customer_success insights, we populate neutral numeric fields
+          ticketVolume: 0,
+          growthRate: 0,
+          lastUpdatedAt: now,
+          customerId: custObjId,
+          customerName,
+          metadata: {
+            type: insight.type,
+            severity: insight.severity,
+            category: insight.category,
+            meta: insight.meta || {},
+          },
+        },
+      },
+      { upsert: true, new: true }
+    );
+  }
+}
+
+/**
+ * Persist stakeholder insights separately with their own clusterId pattern
+ */
+async function persistStakeholderInsights(
+  organizationId: string | typeof ObjectId | undefined,
+  customerId: string,
+  customerName: string,
+  stakeholderInsights: CustomerSuccessInsight[]
+): Promise<void> {
+  if (!organizationId) return;
+
+  const orgObjId = ObjectId.isValid(String(organizationId))
+    ? new ObjectId(String(organizationId))
+    : undefined;
+  const custObjId = ObjectId.isValid(String(customerId))
+    ? new ObjectId(String(customerId))
+    : undefined;
+  if (!orgObjId || !custObjId) return;
+
+  const now = new Date();
+  const monthKey = now.toISOString().substring(0, 7); // YYYY-MM to limit duplicates monthly
+
+  // Upsert each stakeholder insight with 'stakeholder' prefix in clusterId
+  for (const insight of stakeholderInsights) {
+    const metaSignature = crypto
+      .createHash('sha1')
+      .update(JSON.stringify(insight.meta || {}))
+      .digest('hex')
+      .substring(0, 12);
+
+    const clusterId = `stakeholder:${orgObjId.toString()}:${custObjId.toString()}:${insight.type}:${monthKey}:${metaSignature}`;
+
+    await InsightModel.findOneAndUpdate(
+      { clusterId },
+      {
+        $setOnInsert: {
+          firstDetectedAt: now,
+        },
+        $set: {
+          organizationId: orgObjId,
+          insightType: 'customer_success',
+          issueDescription: insight.message,
+          // For customer_success insights, we populate neutral numeric fields
+          ticketVolume: 0,
+          growthRate: 0,
+          lastUpdatedAt: now,
+          customerId: custObjId,
+          customerName,
+          metadata: {
+            type: insight.type,
+            severity: insight.severity,
+            category: insight.category,
+            meta: insight.meta || {},
+            source: 'stakeholder' // Mark as stakeholder insight
+          },
+        },
+      },
+      { upsert: true, new: true }
+    );
+  }
 }
 
 function generateRiskAlerts(activities: any[], customerName: string, last30Start: Date, prev30Start: Date, last60Start: Date): CustomerSuccessInsight[] {

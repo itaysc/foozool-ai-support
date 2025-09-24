@@ -85,7 +85,7 @@ export const insightsService = {
    */
   async getCustomerSuccessInsights(customerId: string): Promise<{ success: boolean; data: any[] }>{
     const response = await axios.get(getRoute(`insights/customer-success/${customerId}`));
-    return { success: true, data: response.data.payload || [] };
+    return { success: true, data: response.data.payload?.allInsights || [] };
   }
   ,
   /**

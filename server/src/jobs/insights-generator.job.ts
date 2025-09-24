@@ -2,10 +2,10 @@ import { DBSCAN } from 'density-clustering';
 import QdrantService from '../qdrant/service';
 import { getSummaryFromVector, calculateGrowthRate } from '../services/insights/summary.service';
 import { InsightModel } from '../schemas/insights.schema';
-import { OrganizationModel } from '../schemas/organization.schema';
+import { OrganizationModel, CustomerModel } from '../schemas';
 import AnomalyDetectionService from '../services/anomaly-detection';
 import AnomalyService from '../services/anomaly-detection/anomaly.service';
-import mongoose from 'mongoose';
+import { generateCustomerSuccessInsightsForOrganization } from '../services/insights/customerSuccess.service';
 
 /**
  * Generate insights for all organizations or a specific organization by clustering recent ticket vectors
@@ -151,6 +151,35 @@ export const generateInsightsJob = async (targetOrganizationId?: string, userId?
 
         // 7. Clean up old anomalies (older than 7 days)
         await anomalyService.cleanupOldAnomalies(7);
+
+        // 8. Generate Customer Success Insights for all customers in this organization
+        console.log(`🎯 Generating Customer Success insights for organization ${organization.name}...`);
+        try {
+          // Get all customers for this organization
+          const customers = await CustomerModel.find({ organizationId })
+            .select({ _id: 1, name: 1 })
+            .lean();
+
+          let csSuccessCount = 0;
+          let csErrorCount = 0;
+
+          // Generate insights for each customer
+          for (const customer of customers) {
+            try {
+              console.log(`Generating CS insights for customer: ${customer.name} (${customer._id})`);
+              // Generate insights with organization context (the function will use the organizationId from the customer)
+              await generateCustomerSuccessInsightsForOrganization(String(customer._id), organizationId.toString());
+              csSuccessCount++;
+            } catch (error) {
+              console.error(`Failed to generate CS insights for customer ${customer._id}:`, error);
+              csErrorCount++;
+            }
+          }
+
+          console.log(`✅ Customer Success insights generation completed for organization ${organization.name}. Success: ${csSuccessCount}, Errors: ${csErrorCount}`);
+        } catch (csError) {
+          console.error(`Error generating Customer Success insights for organization ${organization.name}:`, csError);
+        }
 
       } catch (orgError) {
         console.error(`Error processing organization ${organization.name}:`, orgError);
