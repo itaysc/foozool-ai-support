@@ -287,11 +287,13 @@ export class SurveysService {
   }
 
   /**
-   * Get survey insights for an organization
+   * Get survey insights for an organization (optionally filtered by customer)
    */
-  async getSurveyInsights(organizationId: string, surveyType: SurveyType): Promise<SurveyInsights | null> {
+  async getSurveyInsights(organizationId: string, surveyType: SurveyType, customerId?: string): Promise<SurveyInsights | null> {
     try {
-      const cacheKey = `${organizationId}_${surveyType}`;
+      const cacheKey = customerId 
+        ? `${organizationId}_${surveyType}_${customerId}` 
+        : `${organizationId}_${surveyType}`;
       
       // Check memory cache first
       if (this.memoryCache.has(cacheKey)) {
@@ -306,7 +308,7 @@ export class SurveysService {
         }
       }
 
-      const insights = await InsightsManager.getLatestInsights(organizationId, surveyType);
+      const insights = await InsightsManager.getLatestInsights(organizationId, surveyType, customerId);
       
       if (insights && this.hasValidInsights(insights, surveyType)) {
         this.memoryCache.set(cacheKey, insights);

@@ -187,23 +187,28 @@ router.post('/:surveyType/webhook', authenticateJWT, async (req, res) => {
 });
 
 /**
- * Get survey insights
+ * Get survey insights (optionally filtered by customer)
  */
 router.get('/:surveyType/insights', authenticateJWT, async (req, res) => {
   try {
     const { surveyType } = req.params as { surveyType: SurveyType };
+    const { customerId } = req.query;
     const organizationId = req.user!.organization.toString();
     
     if (!['nps', 'csat'].includes(surveyType)) {
       return res.status(400).json({ error: 'Invalid survey type. Must be "nps" or "csat"' });
     }
 
-    const insights = await surveysService.getSurveyInsights(organizationId, surveyType);
+    const insights = await surveysService.getSurveyInsights(
+      organizationId, 
+      surveyType,
+      customerId as string | undefined
+    );
     
     res.json({
       success: true,
       data: insights,
-      message: `${surveyType.toUpperCase()} insights retrieved successfully`
+      message: `${surveyType.toUpperCase()} insights retrieved successfully${customerId ? ` for customer ${customerId}` : ''}`
     });
   } catch (error) {
     console.error('Get insights error:', error);

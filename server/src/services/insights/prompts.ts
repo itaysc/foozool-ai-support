@@ -49,7 +49,7 @@ export interface InsightData {
 /**
  * Generate comprehensive meeting prep prompt
  */
-export function generateMeetingPrepPrompt(customer: CustomerData, insights: InsightData[], csatInsights?: any): string {
+export function generateMeetingPrepPrompt(customer: CustomerData, insights: InsightData[], csatInsights?: any, customerNews?: any): string {
   return `Generate a comprehensive customer meeting preparation document for ${customer.name || 'this customer'}.
 
 CUSTOMER PROFILE:
@@ -102,30 +102,65 @@ ${csatInsights.recommendations && csatInsights.recommendations.length > 0 ? csat
 
 Score Distribution:
 ${csatInsights.scoreDistribution ? Object.entries(csatInsights.scoreDistribution).map(([score, count]) => `- ${score}: ${count} responses`).join('\n') : 'No distribution data available'}
-` : 'No CSAT data available'}
+` : 'No CSAT data available for this specific customer'}
 
-MARKET CONTEXT:
-Search for recent news and market developments relevant to ${customer.name || 'this customer'} in the ${customer.industry || 'technology'} industry. Focus on:
-- Recent company announcements, partnerships, or product launches
-- Industry trends and market developments
-- Competitor activities and market positioning
-- Regulatory changes or market disruptions
-- Financial performance and business updates
+RECENT NEWS ABOUT ${customer.name?.toUpperCase() || 'THE CUSTOMER'}:
+${customerNews && customerNews.news && customerNews.news.length > 0 ? `
+Real-time news and developments about the customer's company:
+
+${customerNews.news
+  .filter((item: any) => item.relevance === 'high' || item.relevance === 'medium')
+  .slice(0, 8)
+  .map((item: any, idx: number) => `
+${idx + 1}. [${item.impact.toUpperCase()} IMPACT | ${item.relevance.toUpperCase()} RELEVANCE]
+   Title: ${item.title}
+   Published: ${new Date(item.pubDate).toLocaleDateString()}
+   Source: ${item.source}
+   Summary: ${item.contentSnippet}
+   Link: ${item.link}
+   Categories: ${item.categories?.join(', ') || 'General'}
+`).join('\n')}
+
+News Summary:
+${customerNews.summary || 'No summary available'}
+
+${customerNews.actionItems && customerNews.actionItems.length > 0 ? `
+CS Team Action Items Based on News:
+${customerNews.actionItems.map((action: any) => `
+- [${action.priority.toUpperCase()} PRIORITY] ${action.title}
+  ${action.description}
+  Impact: ${action.impact}
+  Category: ${action.category}
+  Suggested Talking Points:
+  ${action.suggestedActions?.map((a: string) => `  • ${a}`).join('\n') || '  • No specific actions'}
+`).join('\n')}
+` : ''}
+` : `No recent news available about ${customer.name || 'this customer'}. The company may be private, not actively in the news, or our news search didn't find relevant articles.`}
 
 INSTRUCTIONS:
 Create a detailed meeting prep document with these sections:
-1. EXECUTIVE SUMMARY
-2. CUSTOMER HEALTH ASSESSMENT  
-3. STRATEGIC OPPORTUNITIES
-4. RISK MITIGATION
-5. TALKING POINTS
-6. QUESTIONS TO ASK
-7. RECOMMENDATIONS
-8. MARKET CONTEXT
-9. SUCCESS METRICS
-10. FOLLOW-UP ACTIONS
+1. EXECUTIVE SUMMARY - Include highlights from recent news about the customer
+2. CUSTOMER HEALTH ASSESSMENT - Reference CSAT data and recent insights
+3. STRATEGIC OPPORTUNITIES - Connect news events to potential opportunities
+4. RISK MITIGATION - Flag any concerning news or trends
+5. TALKING POINTS - Use news as conversation starters to build rapport
+6. QUESTIONS TO ASK - Probe how recent events affect their needs and priorities
+7. RECOMMENDATIONS - Provide actionable next steps
+8. MARKET CONTEXT - Analyze how their recent news fits into industry trends
+9. SUCCESS METRICS - Define what success looks like for this relationship
+10. FOLLOW-UP ACTIONS - Specific tasks to complete before/after the meeting
 
-Make each section detailed and actionable. Use specific data from the customer profile, customer success insights, and CSAT insights. Pay special attention to customer satisfaction trends and recommendations when discussing customer health and strategic opportunities. For market context, search for and include relevant recent news about the customer and their industry. End with "END OF DOCUMENT" to signal completion.`;
+KEY GUIDELINES:
+- Use the ACTUAL recent news provided above - this is real-time data, not examples
+- In TALKING POINTS, reference specific news articles to show you're paying attention to their company
+- Show empathy for challenges (layoffs, losses) and enthusiasm for wins (funding, growth)
+- Connect their company news to how your product/service can help
+- If there's negative news (layoffs, financial troubles), approach with sensitivity
+- If there's positive news (funding, expansion), identify growth opportunities
+- Use specific dates, numbers, and details from the news provided
+- Make the document conversational and human, not robotic
+
+Make each section detailed, specific, and actionable. End with "END OF DOCUMENT" to signal completion.`;
 }
 
 /**

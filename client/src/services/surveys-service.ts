@@ -9,18 +9,24 @@ export type SurveyType = 'nps' | 'csat';
 
 export const surveysService = {
   /**
-   * Get NPS insights for the organization
+   * Get NPS insights for the organization (optionally filtered by customer)
    */
-  async getNPSInsights(): Promise<NPSInsights | null> {
-    const response = await axios.get(getRoute('surveys/nps/insights'));
+  async getNPSInsights(customerId?: string): Promise<NPSInsights | null> {
+    const url = customerId 
+      ? getRoute(`surveys/nps/insights?customerId=${customerId}`)
+      : getRoute('surveys/nps/insights');
+    const response = await axios.get(url);
     return response.data.data;
   },
 
   /**
-   * Get CSAT insights for the organization
+   * Get CSAT insights for the organization (optionally filtered by customer)
    */
-  async getCSATInsights(): Promise<any | null> {
-    const response = await axios.get(getRoute('surveys/csat/insights'));
+  async getCSATInsights(customerId?: string): Promise<any | null> {
+    const url = customerId 
+      ? getRoute(`surveys/csat/insights?customerId=${customerId}`)
+      : getRoute('surveys/csat/insights');
+    const response = await axios.get(url);
     return response.data.data;
   },
 

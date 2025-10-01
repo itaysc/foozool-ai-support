@@ -325,20 +325,30 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
   // Get customer success insights
   const insights = await generateCustomerSuccessInsights(customerId);
 
-  // Get CSAT insights for the organization
+  // Get CUSTOMER-SPECIFIC CSAT insights (not organization-wide)
   let csatInsights: any = null;
   try {
     const { SurveysService } = await import('../surveys');
     const surveysService = SurveysService.getInstance();
-    csatInsights = await surveysService.getSurveyInsights(organizationId, 'csat');
+    csatInsights = await surveysService.getSurveyInsights(organizationId, 'csat', customerId);
   } catch (error) {
-    console.log('CSAT insights not available for meeting prep:', error);
+    console.log('CSAT insights not available for customer:', error);
+  }
+
+  // Get news about the customer company
+  let customerNews: any = null;
+  try {
+    const { newsService } = await import('../news');
+    customerNews = await newsService.getNewsForCustomer(customerId);
+    console.log(`📰 Fetched ${customerNews?.news?.length || 0} news items about ${customer.name}`);
+  } catch (error) {
+    console.log('Customer news not available for meeting prep:', error);
   }
 
   // Generate comprehensive meeting prep document using LLM
   const customerData: CustomerData = customer;
   const insightData: InsightData[] = insights;
-  const meetingPrepPrompt = generateMeetingPrepPrompt(customerData, insightData, csatInsights);
+  const meetingPrepPrompt = generateMeetingPrepPrompt(customerData, insightData, csatInsights, customerNews);
 
   // Get userId from user context (guaranteed by middleware)
   const userId = UserContextManager.getCurrentUserId();

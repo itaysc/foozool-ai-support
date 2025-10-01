@@ -114,19 +114,54 @@ export class InsightsManager {
    */
   static async saveInsights(processedData: ProcessedSurveyData, organizationId: string): Promise<void> {
     try {
-      const clusterId = `survey_${processedData.surveyType}_${organizationId}_${Date.now()}`;
+      // Extract customerId from responses (if all responses are from the same customer)
+      const customerIds = processedData.responses
+        .map(r => r.customerId)
+        .filter((id): id is string => !!id);
+      
+      const uniqueCustomerIds = [...new Set(customerIds)];
+      const customerId = uniqueCustomerIds.length === 1 ? uniqueCustomerIds[0] : undefined;
+      
+      // If we have a customerId, try to get the customer name
+      let customerName: string | undefined;
+      if (customerId) {
+        try {
+          const { CustomerModel } = await import('../../schemas');
+          const customer = await CustomerModel.findOne({ 
+            _id: customerId, 
+            organizationId 
+          }).select('name').lean();
+          customerName = customer?.name;
+        } catch (error) {
+          console.log(`Could not fetch customer name for customerId ${customerId}`);
+        }
+      }
+      
+      const clusterId = customerId 
+        ? `survey_${processedData.surveyType}_${organizationId}_${customerId}_${Date.now()}`
+        : `survey_${processedData.surveyType}_${organizationId}_${Date.now()}`;
       
       const insightData: any = {
         clusterId,
         organizationId,
         insightType: processedData.surveyType === 'nps' ? 'nps_analysis' : 'customer_satisfaction',
-        issueDescription: `${processedData.surveyType.toUpperCase()} Survey Analysis`,
+        issueDescription: customerName 
+          ? `${processedData.surveyType.toUpperCase()} Survey Analysis for ${customerName}`
+          : `${processedData.surveyType.toUpperCase()} Survey Analysis`,
         ticketVolume: processedData.responses.length,
         growthRate: 0, // Could be calculated based on previous data
         firstDetectedAt: new Date(),
         lastUpdatedAt: new Date(),
         metadata: processedData.metadata
       };
+      
+      // Add customerId and customerName if available
+      if (customerId) {
+        insightData.customerId = customerId;
+      }
+      if (customerName) {
+        insightData.customerName = customerName;
+      }
 
       // Add survey-specific data
       if (processedData.surveyType === 'nps') {
@@ -136,7 +171,7 @@ export class InsightsManager {
       }
 
       await InsightModel.create(insightData);
-      console.log(`✅ Saved ${processedData.surveyType.toUpperCase()} insights to database`);
+      console.log(`✅ Saved ${processedData.surveyType.toUpperCase()} insights to database${customerId ? ` for customer ${customerName || customerId}` : ''}`);
     } catch (error) {
       console.error(`Error saving ${processedData.surveyType.toUpperCase()} insights:`, error);
       throw error;
@@ -144,16 +179,24 @@ export class InsightsManager {
   }
 
   /**
-   * Get latest insights for organization
+   * Get latest insights for organization (optionally filtered by customer)
    */
-  static async getLatestInsights(organizationId: string, surveyType: SurveyType): Promise<SurveyInsights | null> {
+  static async getLatestInsights(organizationId: string, surveyType: SurveyType, customerId?: string): Promise<SurveyInsights | null> {
     try {
       const insightType = surveyType === 'nps' ? 'nps_analysis' : 'customer_satisfaction';
       
-      const insight = await InsightModel.findOne({
+      const query: any = {
         organizationId,
         insightType
-      }).sort({ lastUpdatedAt: -1 }).lean();
+      };
+      
+      // Add customerId filter if provided
+      if (customerId) {
+        query.customerId = customerId;
+      }
+      
+      const insight = await InsightModel.findOne(query)
+        .sort({ lastUpdatedAt: -1 }).lean();
 
       if (!insight) {
         return null;
