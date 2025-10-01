@@ -68,16 +68,15 @@ router.post('/customer-meeting-prep/:customerId', authenticateJWT, hasPermission
 });
 
 /**
- * GET /insights/:organizationId
- * Get insights for a specific organization
+ * GET /insights
+ * Get insights for the current organization
  */
-router.get('/:organizationId', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
+router.get('/', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   try {
-    const { organizationId } = req.params;
     const { fromDate, toDate } = req.query;
     
     const dateFilter = fromDate || toDate ? { fromDate: fromDate as string, toDate: toDate as string } : undefined;
-    const result = await getInsightsByOrganization(organizationId, dateFilter);
+    const result = await getInsightsByOrganization(dateFilter);
     
     res.status(200).json(result);
   } catch (error: any) {
@@ -91,16 +90,15 @@ router.get('/:organizationId', authenticateJWT, hasPermission('insights:read'), 
 });
 
 /**
- * GET /insights/:organizationId/summary
- * Get summary statistics for insights of a specific organization
+ * GET /insights/summary
+ * Get summary statistics for insights of the current organization
  */
-router.get('/:organizationId/summary', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
+router.get('/summary', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
   try {
-    const { organizationId } = req.params;
     const { fromDate, toDate } = req.query;
     
     const dateFilter = fromDate || toDate ? { fromDate: fromDate as string, toDate: toDate as string } : undefined;
-    const result = await getInsightsSummary(organizationId, dateFilter);
+    const result = await getInsightsSummary(dateFilter);
     
     res.status(200).json(result);
   } catch (error: any) {
@@ -130,5 +128,9 @@ router.get('/', authenticateJWT, hasPermission('insights:read'), async (req, res
     });
   }
 });
+
+// Import and use the new data intelligence routes
+import dataIntelligenceRoutes from './dataIntelligence';
+router.use('/', dataIntelligenceRoutes);
 
 export default router;

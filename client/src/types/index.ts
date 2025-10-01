@@ -15,6 +15,7 @@ export * from './response';
 export * from './webhook';
 export * from './insight';
 export * from './prediction';
+export * from './dataIntelligence';
 export * from './LLMPrice';
 export * from './agentSuggestion';
 export * from './esTicket';

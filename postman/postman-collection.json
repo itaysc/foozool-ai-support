@@ -1464,6 +1464,101 @@
             "description": "Generate insights for an organization"
           },
           "response": []
+        },
+        {
+          "name": "Get Data Intelligence Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/data-intelligence",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "data-intelligence"]
+            },
+            "description": "Get comprehensive data intelligence metrics for the organization including portfolio overview, support intelligence, predictive insights, and business impact"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Data Intelligence",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/data-intelligence/customer/{{customer_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "data-intelligence", "customer", "{{customer_id}}"]
+            },
+            "description": "Get customer-specific data intelligence including health score, ticket analytics, predictive insights, and recommendations"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Health Score",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/health-score/{{customer_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "health-score", "{{customer_id}}"]
+            },
+            "description": "Get comprehensive health score for a specific customer with support health, engagement health, business health, and actionable insights"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Customer Health Scores",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/health-scores",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "health-scores"]
+            },
+            "description": "Get health scores for all customers in the organization with summary statistics and sorted by health score (lowest first for attention)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Predictive Insights",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/predictive",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "predictive"]
+            },
+            "description": "Get predictive insights for the organization including escalation risk, CSAT risk, resolution time predictions, and recent predictions analysis"
+          },
+          "response": []
             },
     {
       "name": "🚨 Anomaly Detection",

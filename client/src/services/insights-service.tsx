@@ -10,10 +10,10 @@ const getRoute = (endpoint: string) => {
 
 export const insightsService = {
   /**
-   * Get insights for a specific organization
+   * Get insights for the current organization
    */
-  async getInsightsByOrganization(organizationId: string, dateFilter?: DateFilterState): Promise<InsightsResponse> {
-    let url = getRoute(`insights/${organizationId}`);
+  async getInsightsByOrganization(dateFilter?: DateFilterState): Promise<InsightsResponse> {
+    let url = getRoute('insights');
     
     // Add date filter parameters if provided
     if (dateFilter && (dateFilter.fromDate || dateFilter.toDate)) {
@@ -32,10 +32,10 @@ export const insightsService = {
   },
 
   /**
-   * Get insights summary for a specific organization
+   * Get insights summary for the current organization
    */
-  async getInsightsSummary(organizationId: string): Promise<InsightSummaryResponse> {
-    const response = await axios.get(getRoute(`insights/${organizationId}/summary`));
+  async getInsightsSummary(): Promise<InsightSummaryResponse> {
+    const response = await axios.get(getRoute('insights/summary'));
     return response.data;
   },
 
@@ -110,6 +110,47 @@ export const insightsService = {
     const response = await axios.post(getRoute(`insights/customer-meeting-prep/${customerId}`), {}, {
       responseType: 'blob'
     });
+    return response.data;
+  },
+
+  // Data Intelligence Methods
+  /**
+   * Get comprehensive data intelligence metrics for the organization
+   */
+  async getDataIntelligenceMetrics(): Promise<any> {
+    const response = await axios.get(getRoute('insights/data-intelligence'));
+    return response.data;
+  },
+
+  /**
+   * Get customer-specific data intelligence
+   */
+  async getCustomerDataIntelligence(customerId: string): Promise<any> {
+    const response = await axios.get(getRoute(`insights/data-intelligence/customer/${customerId}`));
+    return response.data;
+  },
+
+  /**
+   * Get health score for a specific customer
+   */
+  async getCustomerHealthScore(customerId: string): Promise<any> {
+    const response = await axios.get(getRoute(`insights/health-score/${customerId}`));
+    return response.data;
+  },
+
+  /**
+   * Get health scores for all customers
+   */
+  async getAllCustomerHealthScores(): Promise<any> {
+    const response = await axios.get(getRoute('insights/health-scores'));
+    return response.data;
+  },
+
+  /**
+   * Get predictive insights for the organization
+   */
+  async getPredictiveInsights(): Promise<any> {
+    const response = await axios.get(getRoute('insights/predictive'));
     return response.data;
   }
 };

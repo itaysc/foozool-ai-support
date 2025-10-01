@@ -1,0 +1,357 @@
+import mongoose from 'mongoose';
+import QdrantService from '../../qdrant/service';
+import { CustomerModel } from '../../schemas/customer.schema';
+import { PredictionModel } from '../../schemas/prediction.schema';
+
+export interface HealthScoreFactors {
+  // Support Health (40% weight)
+  supportHealth: {
+    score: number;
+    factors: {
+      ticketVolume: number;
+      avgSentiment: number;
+      escalationRate: number;
+      resolutionTime: number;
+      csatRisk: number;
+    };
+  };
+  
+  // Engagement Health (30% weight)
+  engagementHealth: {
+    score: number;
+    factors: {
+      stakeholderEngagement: number;
+      meetingFrequency: number;
+      featureAdoption: number;
+      responseTime: number;
+    };
+  };
+  
+  // Business Health (30% weight)
+  businessHealth: {
+    score: number;
+    factors: {
+      contractValue: number;
+      usageGrowth: number;
+      renewalRisk: number;
+      expansionOpportunity: number;
+    };
+  };
+  
+  // Overall Health Score
+  overallScore: number;
+  trend: 'improving' | 'stable' | 'declining';
+  lastUpdated: Date;
+}
+
+export class HealthScoreService {
+  private qdrantService: QdrantService;
+
+  constructor() {
+    this.qdrantService = new QdrantService();
+  }
+
+  /**
+   * Calculate comprehensive health score for a customer
+   */
+  async calculateHealthScore(customerId: string, organizationId: string): Promise<HealthScoreFactors> {
+    console.log(`[Health Score] 🏥 Calculating health score for customer ${customerId}`);
+
+    // Organization ID is already validated as string in user context
+
+    // Get customer data
+    const customer = await CustomerModel.findOne({ 
+      _id: customerId, 
+      organizationId: organizationId 
+    });
+
+    if (!customer) {
+      throw new Error(`Customer ${customerId} not found`);
+    }
+
+    // Get ticket statistics
+    const ticketStats = await this.qdrantService.getCustomerTicketStats(customerId);
+    
+    // Get recent predictions
+    const recentPredictions = await PredictionModel.find({
+      organizationId,
+      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
+    }).sort({ createdAt: -1 }).limit(100);
+
+    // Calculate Support Health (40% weight)
+    const supportHealth = await this.calculateSupportHealth(ticketStats, recentPredictions);
+    
+    // Calculate Engagement Health (30% weight)
+    const engagementHealth = await this.calculateEngagementHealth(customer);
+    
+    // Calculate Business Health (30% weight)
+    const businessHealth = await this.calculateBusinessHealth(customer, ticketStats);
+
+    // Calculate overall score
+    const overallScore = Math.round(
+      (supportHealth.score * 0.4) + 
+      (engagementHealth.score * 0.3) + 
+      (businessHealth.score * 0.3)
+    );
+
+    // Determine trend
+    const trend = await this.calculateTrend(customerId, overallScore);
+
+    return {
+      supportHealth,
+      engagementHealth,
+      businessHealth,
+      overallScore,
+      trend,
+      lastUpdated: new Date()
+    };
+  }
+
+  /**
+   * Calculate Support Health Score (0-100)
+   */
+  private async calculateSupportHealth(ticketStats: any, predictions: any[]): Promise<HealthScoreFactors['supportHealth']> {
+    let score = 50; // Start with neutral score
+    const factors: any = {};
+
+    // Ticket Volume Factor (0-20 points)
+    const ticketVolume = ticketStats.totalTickets;
+    if (ticketVolume === 0) {
+      factors.ticketVolume = 20; // No tickets = good
+    } else if (ticketVolume <= 5) {
+      factors.ticketVolume = 15; // Low volume = good
+    } else if (ticketVolume <= 15) {
+      factors.ticketVolume = 10; // Medium volume = neutral
+    } else if (ticketVolume <= 30) {
+      factors.ticketVolume = 5; // High volume = concerning
+    } else {
+      factors.ticketVolume = 0; // Very high volume = bad
+    }
+
+    // Sentiment Factor (0-20 points)
+    const avgSentiment = ticketStats.avgSentiment;
+    if (avgSentiment >= 0.3) {
+      factors.avgSentiment = 20; // Very positive
+    } else if (avgSentiment >= 0.1) {
+      factors.avgSentiment = 15; // Positive
+    } else if (avgSentiment >= -0.1) {
+      factors.avgSentiment = 10; // Neutral
+    } else if (avgSentiment >= -0.3) {
+      factors.avgSentiment = 5; // Negative
+    } else {
+      factors.avgSentiment = 0; // Very negative
+    }
+
+    // Escalation Risk Factor (0-20 points)
+    const highEscalationCount = predictions.filter(p => 
+      p.predictedEscalation?.risk === 'High'
+    ).length;
+    const escalationRate = predictions.length > 0 ? highEscalationCount / predictions.length : 0;
+    
+    if (escalationRate <= 0.1) {
+      factors.escalationRate = 20; // Low escalation risk
+    } else if (escalationRate <= 0.3) {
+      factors.escalationRate = 10; // Medium escalation risk
+    } else {
+      factors.escalationRate = 0; // High escalation risk
+    }
+
+    // Resolution Time Factor (0-20 points)
+    const longResolutionCount = predictions.filter(p => 
+      p.longResolutionPredicted === true
+    ).length;
+    const longResolutionRate = predictions.length > 0 ? longResolutionCount / predictions.length : 0;
+    
+    if (longResolutionRate <= 0.2) {
+      factors.resolutionTime = 20; // Fast resolution
+    } else if (longResolutionRate <= 0.5) {
+      factors.resolutionTime = 10; // Medium resolution time
+    } else {
+      factors.resolutionTime = 0; // Slow resolution
+    }
+
+    // CSAT Risk Factor (0-20 points)
+    const highCsatRiskCount = predictions.filter(p => 
+      p.predictedCSAT?.risk === 'High'
+    ).length;
+    const csatRiskRate = predictions.length > 0 ? highCsatRiskCount / predictions.length : 0;
+    
+    if (csatRiskRate <= 0.1) {
+      factors.csatRisk = 20; // Low CSAT risk
+    } else if (csatRiskRate <= 0.3) {
+      factors.csatRisk = 10; // Medium CSAT risk
+    } else {
+      factors.csatRisk = 0; // High CSAT risk
+    }
+
+    // Calculate total support health score
+    const supportScore = Math.round(
+      factors.ticketVolume + 
+      factors.avgSentiment + 
+      factors.escalationRate + 
+      factors.resolutionTime + 
+      factors.csatRisk
+    );
+
+    return {
+      score: supportScore,
+      factors: {
+        ticketVolume: factors.ticketVolume,
+        avgSentiment: factors.avgSentiment,
+        escalationRate: factors.escalationRate,
+        resolutionTime: factors.resolutionTime,
+        csatRisk: factors.csatRisk
+      }
+    };
+  }
+
+  /**
+   * Calculate Engagement Health Score (0-100)
+   */
+  private async calculateEngagementHealth(customer: any): Promise<HealthScoreFactors['engagementHealth']> {
+    let score = 50; // Start with neutral score
+    const factors: any = {};
+
+    // Stakeholder Engagement (0-25 points)
+    const stakeholderCount = customer.stakeholders?.length || 0;
+    const activeStakeholders = customer.stakeholders?.filter((s: any) => 
+      s.engagementLevel === 'high' || s.engagementLevel === 'medium'
+    ).length || 0;
+    
+    const engagementRate = stakeholderCount > 0 ? activeStakeholders / stakeholderCount : 0;
+    factors.stakeholderEngagement = Math.round(engagementRate * 25);
+
+    // Meeting Frequency (0-25 points)
+    // This would need to be calculated based on actual meeting data
+    // For now, using a placeholder based on customer segment
+    const meetingFrequency = customer.segment === 'Enterprise' ? 25 : 
+                           customer.segment === 'Mid-Market' ? 20 :
+                           customer.segment === 'SMB' ? 15 : 10;
+    factors.meetingFrequency = meetingFrequency;
+
+    // Feature Adoption (0-25 points)
+    // This would need to be calculated based on actual usage data
+    // For now, using a placeholder
+    factors.featureAdoption = 15; // Placeholder
+
+    // Response Time (0-25 points)
+    // This would need to be calculated based on actual response data
+    factors.responseTime = 15; // Placeholder
+
+    const engagementScore = Math.round(
+      factors.stakeholderEngagement + 
+      factors.meetingFrequency + 
+      factors.featureAdoption + 
+      factors.responseTime
+    );
+
+    return {
+      score: engagementScore,
+      factors: {
+        stakeholderEngagement: factors.stakeholderEngagement,
+        meetingFrequency: factors.meetingFrequency,
+        featureAdoption: factors.featureAdoption,
+        responseTime: factors.responseTime
+      }
+    };
+  }
+
+  /**
+   * Calculate Business Health Score (0-100)
+   */
+  private async calculateBusinessHealth(customer: any, ticketStats: any): Promise<HealthScoreFactors['businessHealth']> {
+    let score = 50; // Start with neutral score
+    const factors: any = {};
+
+    // Contract Value Factor (0-25 points)
+    const contractValue = customer.contractValue || 0;
+    if (contractValue >= 100000) {
+      factors.contractValue = 25; // High value
+    } else if (contractValue >= 50000) {
+      factors.contractValue = 20; // Medium-high value
+    } else if (contractValue >= 25000) {
+      factors.contractValue = 15; // Medium value
+    } else if (contractValue >= 10000) {
+      factors.contractValue = 10; // Low-medium value
+    } else {
+      factors.contractValue = 5; // Low value
+    }
+
+    // Usage Growth Factor (0-25 points)
+    // This would need to be calculated based on actual usage trends
+    factors.usageGrowth = 15; // Placeholder
+
+    // Renewal Risk Factor (0-25 points)
+    // This would need to be calculated based on contract renewal data
+    factors.renewalRisk = 15; // Placeholder
+
+    // Expansion Opportunity Factor (0-25 points)
+    // This would need to be calculated based on expansion signals
+    factors.expansionOpportunity = 15; // Placeholder
+
+    const businessScore = Math.round(
+      factors.contractValue + 
+      factors.usageGrowth + 
+      factors.renewalRisk + 
+      factors.expansionOpportunity
+    );
+
+    return {
+      score: businessScore,
+      factors: {
+        contractValue: factors.contractValue,
+        usageGrowth: factors.usageGrowth,
+        renewalRisk: factors.renewalRisk,
+        expansionOpportunity: factors.expansionOpportunity
+      }
+    };
+  }
+
+  /**
+   * Calculate trend based on historical health scores
+   */
+  private async calculateTrend(customerId: string, currentScore: number): Promise<'improving' | 'stable' | 'declining'> {
+    // This would need to store historical health scores
+    // For now, return stable as placeholder
+    return 'stable';
+  }
+
+  /**
+   * Get health score insights and recommendations
+   */
+  async getHealthScoreInsights(healthScore: HealthScoreFactors): Promise<string[]> {
+    const insights: string[] = [];
+
+    // Support Health Insights
+    if (healthScore.supportHealth.score < 40) {
+      insights.push(`🚨 Critical: Support health is very low (${healthScore.supportHealth.score}/100). Immediate intervention required.`);
+    } else if (healthScore.supportHealth.score < 60) {
+      insights.push(`⚠️ Warning: Support health is below average (${healthScore.supportHealth.score}/100). Consider proactive support measures.`);
+    }
+
+    // Engagement Health Insights
+    if (healthScore.engagementHealth.score < 40) {
+      insights.push(`📞 Low Engagement: Customer engagement is concerning (${healthScore.engagementHealth.score}/100). Schedule check-in calls.`);
+    }
+
+    // Business Health Insights
+    if (healthScore.businessHealth.score > 80) {
+      insights.push(`💎 High Value: Excellent business health (${healthScore.businessHealth.score}/100). Consider expansion opportunities.`);
+    }
+
+    // Overall Insights
+    if (healthScore.overallScore >= 80) {
+      insights.push(`✅ Excellent: Customer is in great health (${healthScore.overallScore}/100). Maintain current engagement level.`);
+    } else if (healthScore.overallScore >= 60) {
+      insights.push(`👍 Good: Customer health is satisfactory (${healthScore.overallScore}/100). Monitor for any changes.`);
+    } else if (healthScore.overallScore >= 40) {
+      insights.push(`⚠️ At Risk: Customer health needs attention (${healthScore.overallScore}/100). Implement retention strategies.`);
+    } else {
+      insights.push(`🚨 Critical: Customer is at high risk (${healthScore.overallScore}/100). Immediate action required.`);
+    }
+
+    return insights;
+  }
+}
+
+export default HealthScoreService;

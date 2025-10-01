@@ -109,7 +109,7 @@ const InsightsPage: React.FC = () => {
         setError(null);
 
         // Load insights with date filter
-        const insightsRes = await insightsService.getInsightsByOrganization(effectiveOrgId, dateFilter);
+        const insightsRes = await insightsService.getInsightsByOrganization(dateFilter);
         setInsights(insightsRes.data || []);
         setInsightSummary(null); // Will be loaded separately if needed
 

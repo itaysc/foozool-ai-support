@@ -3,6 +3,8 @@ import { CustomerModel } from '../../schemas';
 import mongoose from 'mongoose';
 import { UserContextManager } from '../../context/userContext';
 import { generateCustomerSuccessInsights, getSavedStakeholderInsights, getAllSavedCustomerSuccessInsights } from './customerSuccess.service';
+import { HealthScoreService } from './healthScore.service';
+import { DataIntelligenceService } from './dataIntelligence.service';
 import { callLLM } from '../llm';
 import { generateMeetingPrepPdf, MeetingPrepData } from '../pdf/meetingPrepPdf.service';
 import { 
@@ -62,17 +64,18 @@ export interface MeetingPrepResult {
  * Get insights for a specific organization with optional date filtering
  */
 export async function getInsightsByOrganization(
-  organizationId: string, 
   dateFilter?: DateFilter
 ): Promise<InsightsQueryResult> {
-  // Validate organization ID format
-  if (!mongoose.Types.ObjectId.isValid(organizationId)) {
-    throw new Error('INVALID_ORGANIZATION_ID');
+  // Get organization ID from user context
+  const organizationId = UserContextManager.getCurrentOrganizationId();
+  
+  if (!organizationId) {
+    throw new Error('Organization ID not found in user context');
   }
 
   // Build query filter
   const queryFilter: any = { 
-    organizationId: new mongoose.Types.ObjectId(organizationId) 
+    organizationId: organizationId 
   };
 
   // Add date filtering if provided
@@ -121,17 +124,17 @@ export async function getInsightsByOrganization(
  * Get insights summary for a specific organization with optional date filtering
  */
 export async function getInsightsSummary(
-  organizationId: string, 
   dateFilter?: DateFilter
 ): Promise<InsightsSummaryResult> {
-  if (!mongoose.Types.ObjectId.isValid(organizationId)) {
-    throw new Error('INVALID_ORGANIZATION_ID');
+  // Get organization ID from user context
+  const organizationId = UserContextManager.getCurrentOrganizationId();
+  
+  if (!organizationId) {
+    throw new Error('Organization ID not found in user context');
   }
-
-  const orgObjectId = new mongoose.Types.ObjectId(organizationId);
   
   // Build match filter for aggregation
-  const matchFilter: any = { organizationId: orgObjectId };
+  const matchFilter: any = { organizationId: organizationId };
   
   // Add date filtering if provided
   if (dateFilter?.fromDate || dateFilter?.toDate) {
