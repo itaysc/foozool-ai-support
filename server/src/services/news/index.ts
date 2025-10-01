@@ -37,7 +37,7 @@ export class NewsService {
   }
 }
 
-export const newsService = new NewsService();
+export const newsService = new NewsService(); 
 
 // Export types and services for direct use if needed
 export * from './types';

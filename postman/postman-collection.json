@@ -2877,6 +2877,33 @@
             "description": "Create a fake Zendesk ticket for testing"
           },
           "response": []
+        },
+        {
+          "name": "Generate Qdrant Tickets",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organizationId\": \"{{organization_id}}\",\n  \"customerId\": \"{{customer_id}}\",\n  \"numTickets\": 25\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/faker/generate-qdrant-tickets",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "faker", "generate-qdrant-tickets"]
+            },
+            "description": "Generate realistic support tickets for a customer based on their activities and insert them into Qdrant collection. Requires model:train permission."
+          },
+          "response": []
         }
       ]
     },
