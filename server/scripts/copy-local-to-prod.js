@@ -94,7 +94,11 @@ class DatabaseMigration {
         'crmconfigs',
         'insights',
         'bot_performance_metrics',
-        'processedstubs'
+        'processedstubs',
+        'anomalies',
+        'uploads',
+        'useractivities',
+        'bots'
       ],
       batchSize: 1000,
       dryRun: process.env.DRY_RUN === 'true'
