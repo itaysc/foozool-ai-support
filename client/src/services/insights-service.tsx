@@ -95,6 +95,17 @@ export const insightsService = {
     const response = await axios.get(getRoute(`insights/customer-success`));
     return { success: true, data: response.data.payload };
   },
+
+  /**
+   * Get all unified insights (NPS, CSAT, and Customer Success) for the organization
+   */
+  async getAllUnifiedInsights(customerId?: string): Promise<{ success: boolean; data: any[] }> {
+    const url = customerId 
+      ? getRoute(`insights/unified?customerId=${customerId}`)
+      : getRoute('insights/unified');
+    const response = await axios.get(url);
+    return { success: true, data: response.data.data };
+  },
   /**
    * Get top active users in the organization (last 30 days, limit 10)
    */

@@ -4,10 +4,8 @@ import { Box, CircularProgress, Alert } from '@mui/material';
 import { BugReport, Analytics, Assessment, Dashboard } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
 import { Prediction, PredictionSummary, AccuracyAnalysis } from '@/types/prediction';
-import { NPSInsights } from '@/types/nps';
 import { CustomerSuccessInsight } from '@/types';
 import { insightsService } from '@/services/insights-service';
-import { surveysService } from '@/services/surveys-service';
 import { useAuth } from '@/context/auth.context';
 import customersStore from '@/stores/customers.store';
 import botsService from '@/services/bots-service';
@@ -16,8 +14,8 @@ import { DateFilter, DateFilterState } from '@/components/insights/DateFilter';
 import { 
   TicketInsightsTab, 
   PredictionsTab, 
-  NPSInsightsTab, 
-  CustomerSuccessTab 
+  CustomerSuccessTab,
+  HealthScoreTab
 } from './tabs';
 
 const InsightsPage: React.FC = () => {
@@ -27,7 +25,7 @@ const InsightsPage: React.FC = () => {
   // State management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('ticket');
+  const [activeTab, setActiveTab] = useState<string>('insights');
   
   // Data state
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -35,9 +33,7 @@ const InsightsPage: React.FC = () => {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [predictionSummary, setPredictionSummary] = useState<PredictionSummary | null>(null);
   const [accuracyAnalysis, setAccuracyAnalysis] = useState<AccuracyAnalysis | null>(null);
-  const [npsInsights, setNpsInsights] = useState<NPSInsights | null>(null);
-  const [csatInsights, setCsatInsights] = useState<any | null>(null);
-  const [csInsights, setCsInsights] = useState<CustomerSuccessInsight[]>([]);
+  const [unifiedInsights, setUnifiedInsights] = useState<CustomerSuccessInsight[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [dateFilter, setDateFilter] = useState<DateFilterState>({ fromDate: null, toDate: null });
@@ -78,36 +74,20 @@ const InsightsPage: React.FC = () => {
     loadCustomers();
   }, [effectiveOrgId, selectedCustomer]);
 
-  // Fetch customer success insights
-  const fetchCustomerSuccessInsights = async (customerId: string | null) => {
+  // Fetch unified insights (NPS, CSAT, and Customer Success)
+  const fetchUnifiedInsights = async (customerId: string | null) => {
     try {
-      if (customerId) {
-        // Fetch insights for specific customer
-        const res = await insightsService.getCustomerSuccessInsights(customerId);
-        setCsInsights(res.data || []);
-      } else {
-        // Fetch insights for all customers
-        const res = await insightsService.getAllCustomerSuccessInsights();
-        console.log('All customer success insights response:', res);
-        // Flatten the insights from all customers into a single array
-        const allInsights = res.data.flatMap((customerData: any) => 
-          customerData.insights.map((insight: any) => ({
-            ...insight,
-            customerId: customerData.customerId,
-            customerName: customerData.customerName
-          }))
-        );
-        console.log('Flattened all insights:', allInsights);
-        setCsInsights(allInsights);
-      }
+      const res = await insightsService.getAllUnifiedInsights(customerId || undefined);
+      console.log('Unified insights response:', res);
+      setUnifiedInsights(res.data || []);
     } catch (err) {
-      console.error('Error fetching customer success insights:', err);
+      console.error('Error fetching unified insights:', err);
     }
   };
 
-  // Load customer success insights when customer changes
+  // Load unified insights when customer changes
   useEffect(() => {
-    fetchCustomerSuccessInsights(selectedCustomer);
+    fetchUnifiedInsights(selectedCustomer);
   }, [selectedCustomer]);
 
   // Main data loading
@@ -133,23 +113,8 @@ const InsightsPage: React.FC = () => {
         setPredictionSummary(null); // Will be loaded separately if needed
         setAccuracyAnalysis(null); // Will be loaded separately if needed
 
-        // Load NPS insights
-        try {
-          const npsRes = await surveysService.getNPSInsights();
-          setNpsInsights(npsRes);
-        } catch (npsErr) {
-          console.warn('NPS insights not available:', npsErr);
-          setNpsInsights(null);
-        }
-
-        // Load CSAT insights
-        try {
-          const csatRes = await surveysService.getCSATInsights();
-          setCsatInsights(csatRes);
-        } catch (csatErr) {
-          console.warn('CSAT insights not available:', csatErr);
-          setCsatInsights(null);
-        }
+        // Load unified insights (NPS, CSAT, and Customer Success)
+        await fetchUnifiedInsights(selectedCustomer);
 
       } catch (err) {
         console.error('Error loading insights data:', err);
@@ -168,8 +133,8 @@ const InsightsPage: React.FC = () => {
       if (!effectiveOrgId) return;
       
       try {
-        // Only reload insights that are stored in DB (ticket cluster insights, NPS, CSAT)
-        if (activeTab === 'ticket' || activeTab === 'nps') {
+        // Only reload insights that are stored in DB (ticket cluster insights)
+        if (activeTab === 'ticket') {
           const insightsRes = await insightsService.getInsightsByOrganization(dateFilter);
           setInsights(insightsRes.data || []);
         }
@@ -185,8 +150,8 @@ const InsightsPage: React.FC = () => {
   const navItems: NavItem[] = [
     { id: 'ticket', label: 'Ticket Insights', icon: <BugReport />, visible: true },
     { id: 'pred', label: 'Predictions', icon: <Analytics />, visible: true },
-    { id: 'nps', label: 'NPS Insights', icon: <Assessment />, visible: true },
-    { id: 'cs', label: 'Customer Success', icon: <Dashboard />, visible: true }
+    { id: 'insights', label: 'Insights', icon: <Dashboard />, visible: true },
+    { id: 'health', label: 'Customer Health', icon: <Assessment />, visible: true }
   ];
 
   // Tab change handler
@@ -223,16 +188,9 @@ const InsightsPage: React.FC = () => {
       setPredictionSummary(null);
       setAccuracyAnalysis(null);
 
-      try {
-        const npsRes = await surveysService.getNPSInsights();
-        setNpsInsights(npsRes);
-      } catch (npsErr) {
-        console.warn('NPS insights not available:', npsErr);
-        setNpsInsights(null);
-      }
 
-      // Refresh customer success insights
-      await fetchCustomerSuccessInsights(selectedCustomer);
+      // Refresh unified insights
+      await fetchUnifiedInsights(selectedCustomer);
 
     } catch (err) {
       console.error('Error refreshing insights:', err);
@@ -290,10 +248,10 @@ const InsightsPage: React.FC = () => {
         overflow: 'auto'
       }}>
         {/* Date Filter - only show for tabs with stored insights */}
-        {(activeTab === 'ticket' || activeTab === 'nps') && (
+        {activeTab === 'ticket' && (
           <DateFilter
             onFilterChange={handleDateFilterChange}
-            label={`Filter ${activeTab === 'ticket' ? 'Ticket Cluster' : 'NPS'} Insights by Date`}
+            label="Filter Ticket Cluster Insights by Date"
           />
         )}
         {activeTab === 'ticket' && (
@@ -317,19 +275,21 @@ const InsightsPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'nps' && (
-          <NPSInsightsTab
-            npsInsights={npsInsights}
+        {activeTab === 'insights' && (
+          <CustomerSuccessTab
+            csInsights={unifiedInsights}
+            csatInsights={null}
+            selectedCustomer={selectedCustomer}
+            customers={customers}
             loading={loading}
             error={error}
             onRefresh={refreshInsights}
+            onCustomerChange={handleCustomerChange}
           />
         )}
 
-        {activeTab === 'cs' && (
-          <CustomerSuccessTab
-            csInsights={csInsights}
-            csatInsights={csatInsights}
+        {activeTab === 'health' && (
+          <HealthScoreTab
             selectedCustomer={selectedCustomer}
             customers={customers}
             loading={loading}

@@ -9,7 +9,8 @@ import {
   getAllCustomerSuccessInsights,
   generateCustomerMeetingPrep,
   updateInsightAssignee,
-  updateInsightStatus
+  updateInsightStatus,
+  getAllUnifiedInsights
 } from '../../../services/insights';
 
 const router = express.Router();
@@ -165,6 +166,25 @@ router.get('/', authenticateJWT, hasPermission('insights:read'), async (req, res
     res.status(status).json({ 
       message: status === 400 ? 'Invalid organization ID format' : 'Error fetching insights',
       error: status === 400 ? 'INVALID_ORGANIZATION_ID' : 'INTERNAL_SERVER_ERROR'
+    });
+  }
+});
+
+/**
+ * GET /insights/unified
+ * Get all insights (NPS, CSAT, and Customer Success) for the current organization
+ */
+router.get('/unified', authenticateJWT, hasPermission('insights:read'), async (req, res) => {
+  try {
+    const { customerId } = req.query;
+    const result = await getAllUnifiedInsights(customerId as string | undefined);
+    
+    res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Error fetching unified insights:', error);
+    res.status(500).json({ 
+      message: 'Error fetching unified insights',
+      error: 'INTERNAL_SERVER_ERROR'
     });
   }
 });

@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Alert, Card, CardContent, Button, Select, MenuItem, FormControl, InputLabel, Paper, Divider, Chip, CircularProgress, Tabs, Tab } from '@mui/material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
-import { DataIntelligenceMetrics, HealthScoreFactors, HealthScoresResponse, PredictiveInsights, CustomerDataIntelligence } from '@/types/dataIntelligence';
+import { PredictiveInsights } from '@/types/dataIntelligence';
 import PageHeader from '@/components/insights/PageHeader';
-import DataIntelligenceDashboard from '@/components/insights/DataIntelligenceDashboard';
-import HealthScoreCard from '@/components/insights/HealthScoreCard';
-import HealthScoresList from '@/components/insights/HealthScoresList';
 import PredictiveInsightsCard from '@/components/insights/PredictiveInsightsCard';
 import { EnhancedInsightsView } from '@/components/insights';
-import { Description, Download, Dashboard, HealthAndSafety, Psychology, Analytics } from '@mui/icons-material';
+import { Description, Download, Psychology, Analytics } from '@mui/icons-material';
 import { insightsService } from '@/services/insights-service';
 import { surveysService } from '@/services/surveys-service';
 import CustomerMeetingPrepModal from '@/components/insights/CustomerMeetingPrepModal';
@@ -37,81 +34,34 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
   const [meetingPrepModalOpen, setMeetingPrepModalOpen] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState(0);
   
-  // Data Intelligence State
-  const [dataIntelligenceMetrics, setDataIntelligenceMetrics] = useState<DataIntelligenceMetrics | null>(null);
-  const [customerHealthScore, setCustomerHealthScore] = useState<HealthScoreFactors | null>(null);
-  const [allHealthScores, setAllHealthScores] = useState<HealthScoresResponse | null>(null);
+  // Predictive Insights State
   const [predictiveInsights, setPredictiveInsights] = useState<PredictiveInsights | null>(null);
-  const [customerDataIntelligence, setCustomerDataIntelligence] = useState<CustomerDataIntelligence | null>(null);
-  const [dataIntelligenceLoading, setDataIntelligenceLoading] = useState(false);
-  const [dataIntelligenceError, setDataIntelligenceError] = useState<string | null>(null);
+  const [predictiveInsightsLoading, setPredictiveInsightsLoading] = useState(false);
+  const [predictiveInsightsError, setPredictiveInsightsError] = useState<string | null>(null);
   
   // Customer-specific CSAT insights (separate from org-level insights passed as prop)
   const [customerCsatInsights, setCustomerCsatInsights] = useState<any | null>(null);
 
-  // Load Data Intelligence Metrics
-  const loadDataIntelligenceMetrics = async () => {
+  // Load Predictive Insights
+  const loadPredictiveInsights = async () => {
     try {
-      setDataIntelligenceLoading(true);
-      setDataIntelligenceError(null);
+      setPredictiveInsightsLoading(true);
+      setPredictiveInsightsError(null);
       
-      const [metricsRes, healthScoresRes, predictiveRes] = await Promise.all([
-        insightsService.getDataIntelligenceMetrics(),
-        insightsService.getAllCustomerHealthScores(),
-        insightsService.getPredictiveInsights()
-      ]);
-      
-      setDataIntelligenceMetrics(metricsRes.data);
-      setAllHealthScores(healthScoresRes.data);
+      const predictiveRes = await insightsService.getPredictiveInsights();
       setPredictiveInsights(predictiveRes.data);
     } catch (error) {
-      console.error('Error loading data intelligence metrics:', error);
-      setDataIntelligenceError('Failed to load data intelligence metrics');
+      console.error('Error loading predictive insights:', error);
+      setPredictiveInsightsError('Failed to load predictive insights');
     } finally {
-      setDataIntelligenceLoading(false);
+      setPredictiveInsightsLoading(false);
     }
   };
 
-  // Load Customer-Specific Data Intelligence
-  const loadCustomerDataIntelligence = async (customerId: string) => {
-    try {
-      setDataIntelligenceLoading(true);
-      setDataIntelligenceError(null);
-      
-      const [healthScoreRes, dataIntelligenceRes, csatRes] = await Promise.all([
-        insightsService.getCustomerHealthScore(customerId),
-        insightsService.getCustomerDataIntelligence(customerId),
-        surveysService.getCSATInsights(customerId).catch(err => {
-          console.warn('CSAT insights not available for customer:', err);
-          return null;
-        })
-      ]);
-      
-      setCustomerHealthScore(healthScoreRes.data.healthScore);
-      setCustomerDataIntelligence(dataIntelligenceRes.data);
-      setCustomerCsatInsights(csatRes);
-    } catch (error) {
-      console.error('Error loading customer data intelligence:', error);
-      setDataIntelligenceError('Failed to load customer data intelligence');
-    } finally {
-      setDataIntelligenceLoading(false);
-    }
-  };
-
-  // Load data intelligence on component mount
+  // Load predictive insights on component mount
   useEffect(() => {
-    loadDataIntelligenceMetrics();
+    loadPredictiveInsights();
   }, []);
-
-  // Load customer-specific data when customer changes
-  useEffect(() => {
-    if (selectedCustomer) {
-      loadCustomerDataIntelligence(selectedCustomer);
-    } else {
-      setCustomerHealthScore(null);
-      setCustomerDataIntelligence(null);
-    }
-  }, [selectedCustomer]);
 
   const handleOpenMeetingPrepModal = () => {
     setMeetingPrepModalOpen(true);
@@ -157,13 +107,10 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
       <PageHeader
         title="Customer Success Insights"
         subtitle="AI-powered customer success analysis and data intelligence"
-        loading={loading || dataIntelligenceLoading}
+        loading={loading || predictiveInsightsLoading}
         onRefresh={() => {
           onRefresh();
-          loadDataIntelligenceMetrics();
-          if (selectedCustomer) {
-            loadCustomerDataIntelligence(selectedCustomer);
-          }
+          loadPredictiveInsights();
         }}
         actionButton={
           <Button
@@ -193,18 +140,6 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
             sx={{ textTransform: 'none', fontWeight: 500 }}
           />
           <Tab 
-            icon={<Dashboard />} 
-            label="Data Intelligence" 
-            iconPosition="start"
-            sx={{ textTransform: 'none', fontWeight: 500 }}
-          />
-          <Tab 
-            icon={<HealthAndSafety />} 
-            label="Health Scores" 
-            iconPosition="start"
-            sx={{ textTransform: 'none', fontWeight: 500 }}
-          />
-          <Tab 
             icon={<Psychology />} 
             label="Predictive Insights" 
             iconPosition="start"
@@ -223,16 +158,6 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
             </Alert>
           ) : (
             <Box>
-              {dataIntelligenceError && (
-                <Alert severity="error" sx={{ mb: 3 }}>
-                  {dataIntelligenceError}
-                </Alert>
-              )}
-              {dataIntelligenceLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress size={60} />
-                </Box>
-              ) : (
                 <Box>
                   {/* Enhanced Customer Success Insights */}
                   <EnhancedInsightsView
@@ -299,7 +224,6 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
                     </Box>
                   )}
                 </Box>
-              )}
             </Box>
           )}
         </Box>
@@ -307,104 +231,12 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
 
       {activeSubTab === 1 && (
         <Box>
-          {dataIntelligenceError && (
+          {predictiveInsightsError && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              {dataIntelligenceError}
+              {predictiveInsightsError}
             </Alert>
           )}
-          {dataIntelligenceLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={60} />
-            </Box>
-          ) : dataIntelligenceMetrics ? (
-            <DataIntelligenceDashboard metrics={dataIntelligenceMetrics} />
-          ) : (
-            <Alert severity="info">
-              No data intelligence metrics available. Please try refreshing the page.
-            </Alert>
-          )}
-        </Box>
-      )}
-
-      {activeSubTab === 2 && (
-        <Box>
-          {dataIntelligenceError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {dataIntelligenceError}
-            </Alert>
-          )}
-          {dataIntelligenceLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={60} />
-            </Box>
-          ) : (
-            <Box>
-              {/* All Customers Health Scores Table */}
-              {allHealthScores && (
-                <Box sx={{ mb: 4 }}>
-                  <HealthScoresList healthScores={allHealthScores} />
-                </Box>
-              )}
-
-              {/* Customer Selection for Detailed Health Score */}
-              {allHealthScores && (
-                <Box sx={{ mb: 4 }}>
-                  <Card sx={{ p: 3, backgroundColor: '#f8fafc' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                      View Detailed Health Score
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      Select a customer to view their detailed health score breakdown
-                    </Typography>
-                    <FormControl fullWidth sx={{ maxWidth: 400 }}>
-                      <InputLabel>Select Customer</InputLabel>
-                      <Select
-                        value={selectedCustomer || ''}
-                        onChange={(e) => onCustomerChange(e.target.value)}
-                        label="Select Customer"
-                      >
-                        {customers.map((customer) => (
-                          <MenuItem key={customer._id} value={customer._id}>
-                            {customer.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Card>
-                </Box>
-              )}
-
-              {/* Individual Customer Health Score */}
-              {selectedCustomer && customerHealthScore && (
-                <Box>
-                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
-                    {customers.find(c => c._id === selectedCustomer)?.name} - Detailed Health Score
-                  </Typography>
-                  <HealthScoreCard 
-                    healthScore={customerHealthScore} 
-                    customerName={customers.find(c => c._id === selectedCustomer)?.name}
-                  />
-                </Box>
-              )}
-
-              {!allHealthScores && !customerHealthScore && (
-                <Alert severity="info">
-                  No health scores available. Please try refreshing the page.
-                </Alert>
-              )}
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {activeSubTab === 3 && (
-        <Box>
-          {dataIntelligenceError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {dataIntelligenceError}
-            </Alert>
-          )}
-          {dataIntelligenceLoading ? (
+          {predictiveInsightsLoading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress size={60} />
             </Box>

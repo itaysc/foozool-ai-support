@@ -28,7 +28,11 @@ export interface CustomerSuccessInsight {
         'user_adoption' | 'power_users' | 'solution_adoption' | 'role_engagement' | 'session_engagement' |
         'activity_trend_decline' | 'feature_discovery' | 'usage_pattern_anomaly' |
         // Health score risk insights
-        'health_score_at_risk';
+        'health_score_at_risk' |
+        // NPS insights
+        'nps_insight' | 'nps_recommendation' |
+        // CSAT insights
+        'csat_insight' | 'csat_recommendation';
   message: string;
   severity: 'red' | 'yellow' | 'info';
   category: 'risk' | 'upsell' | 'customer_success' | 'strategic' | 'financial_risk' | 'opportunity';
@@ -38,6 +42,7 @@ export interface CustomerSuccessInsight {
   createdAt?: string; // Creation date in ISO string format
   customerId?: string; // Customer ID this insight belongs to
   customerName?: string; // Customer name for display
+  insightType?: 'customer_success' | 'nps_analysis' | 'customer_satisfaction'; // Type of insight source
 }
 
 export interface CustomerSuccessInsightsResponse {
