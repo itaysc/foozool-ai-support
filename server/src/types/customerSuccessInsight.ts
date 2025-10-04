@@ -1,5 +1,6 @@
 // Customer Success Insight types
 export interface CustomerSuccessInsight {
+  id?: string; // Database ID of the insight
   type: 'declining_activity' | 'inactive_customer' | 'low_utilization' | 'one_solution_dependency' | 
         'high_utilization' | 'solution_gap' | 'increasing_usage' | 'top_solution' | 'adoption_milestones' | 
         'seasonality' | 'correlation_to_value' | 'renewal_warning' |
@@ -25,9 +26,14 @@ export interface CustomerSuccessInsight {
         'payment_delay' | 'revenue_growth' |
         // User engagement insights
         'user_adoption' | 'power_users' | 'solution_adoption' | 'role_engagement' | 'session_engagement' |
-        'activity_trend_decline' | 'feature_discovery' | 'usage_pattern_anomaly';
+        'activity_trend_decline' | 'feature_discovery' | 'usage_pattern_anomaly' |
+        // Health score risk insights
+        'health_score_at_risk';
   message: string;
   severity: 'red' | 'yellow' | 'info';
   category: 'risk' | 'upsell' | 'customer_success' | 'strategic' | 'financial_risk' | 'opportunity';
   meta?: Record<string, any>;
+  assignee?: string; // Optional user ID assigned to handle this insight
+  status?: 'new' | 'in_progress' | 'resolved' | 'closed' | 'reopened'; // Jira-like status
+  createdAt?: string; // Creation date in ISO string format
 }

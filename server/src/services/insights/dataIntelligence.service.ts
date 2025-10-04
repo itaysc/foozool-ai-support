@@ -87,6 +87,19 @@ export class DataIntelligenceService {
             customer._id.toString(), 
             organizationId
           );
+          
+          // Generate health score risk insights if customer is at risk
+          try {
+            const healthScoreRiskInsights = await this.healthScoreService.generateHealthScoreRiskInsights(
+              customer._id.toString(), 
+              organizationId, 
+              healthScore
+            );
+            console.log(`[Data Intelligence] Generated ${healthScoreRiskInsights.length} health score risk insights for customer ${customer._id}`);
+          } catch (error) {
+            console.error(`[Data Intelligence] Error generating health score risk insights for customer ${customer._id}:`, error);
+          }
+          
           return {
             customerId: customer._id.toString(),
             healthScore: healthScore.overallScore,
@@ -254,6 +267,18 @@ export class DataIntelligenceService {
   }> {
     // Get health score
     const healthScore = await this.healthScoreService.calculateHealthScore(customerId, organizationId);
+    
+    // Generate health score risk insights if customer is at risk
+    try {
+      const healthScoreRiskInsights = await this.healthScoreService.generateHealthScoreRiskInsights(
+        customerId, 
+        organizationId, 
+        healthScore
+      );
+      console.log(`[Customer Data Intelligence] Generated ${healthScoreRiskInsights.length} health score risk insights for customer ${customerId}`);
+    } catch (error) {
+      console.error(`[Customer Data Intelligence] Error generating health score risk insights for customer ${customerId}:`, error);
+    }
     
     // Get ticket analytics
     const ticketStats = await this.qdrantService.getCustomerTicketStats(customerId);

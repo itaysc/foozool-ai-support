@@ -84,6 +84,18 @@ router.get('/health-score/:customerId', authenticateJWT, hasPermission('insights
     const healthScore = await healthScoreService.calculateHealthScore(customerId, organizationId);
     const insights = await healthScoreService.getHealthScoreInsights(healthScore);
     
+    // Generate health score risk insights if customer is at risk
+    try {
+      const healthScoreRiskInsights = await healthScoreService.generateHealthScoreRiskInsights(
+        customerId, 
+        organizationId, 
+        healthScore
+      );
+      console.log(`[Health Score Route] Generated ${healthScoreRiskInsights.length} health score risk insights for customer ${customerId}`);
+    } catch (error) {
+      console.error(`[Health Score Route] Error generating health score risk insights for customer ${customerId}:`, error);
+    }
+    
     res.status(200).json({
       status: 200,
       data: {
@@ -129,6 +141,19 @@ router.get('/health-scores', authenticateJWT, hasPermission('insights:read'), as
             customer._id.toString(), 
             organizationId
           );
+          
+          // Generate health score risk insights if customer is at risk
+          try {
+            const healthScoreRiskInsights = await healthScoreService.generateHealthScoreRiskInsights(
+              customer._id.toString(), 
+              organizationId, 
+              healthScore
+            );
+            console.log(`[Health Score Route] Generated ${healthScoreRiskInsights.length} health score risk insights for customer ${customer._id}`);
+          } catch (error) {
+            console.error(`[Health Score Route] Error generating health score risk insights for customer ${customer._id}:`, error);
+          }
+          
           return {
             customerId: customer._id.toString(),
             customerName: customer.name,

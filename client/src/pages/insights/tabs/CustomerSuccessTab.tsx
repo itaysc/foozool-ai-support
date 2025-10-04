@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Alert, Card, CardContent, Button, Select, MenuItem, FormControl, InputLabel, Paper, Divider, Chip, CircularProgress, Tabs, Tab } from '@mui/material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
 import { DataIntelligenceMetrics, HealthScoreFactors, HealthScoresResponse, PredictiveInsights, CustomerDataIntelligence } from '@/types/dataIntelligence';
-import MetricCard from '@/components/insights/MetricCard';
-import InsightCard from '@/components/insights/InsightCard';
 import PageHeader from '@/components/insights/PageHeader';
 import DataIntelligenceDashboard from '@/components/insights/DataIntelligenceDashboard';
 import HealthScoreCard from '@/components/insights/HealthScoreCard';
 import HealthScoresList from '@/components/insights/HealthScoresList';
 import PredictiveInsightsCard from '@/components/insights/PredictiveInsightsCard';
+import { EnhancedInsightsView } from '@/components/insights';
 import { Description, Download, Dashboard, HealthAndSafety, Psychology, Analytics } from '@mui/icons-material';
 import { insightsService } from '@/services/insights-service';
 import { surveysService } from '@/services/surveys-service';
@@ -152,13 +151,6 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
     );
   }
 
-  const categories = ['risk', 'upsell', 'customer_success', 'strategic'];
-  const categoryLabels = {
-    'risk': '🔴 Risk & Red Alerts',
-    'upsell': '🟢 Upsell & Expansion',
-    'customer_success': '🔵 Customer Success & Prep',
-    'strategic': '🟣 Strategic & Predictive'
-  };
 
   return (
     <Box>
@@ -195,6 +187,12 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={activeSubTab} onChange={handleSubTabChange} aria-label="customer success tabs">
           <Tab 
+            icon={<Analytics />} 
+            label="Customer Insights" 
+            iconPosition="start"
+            sx={{ textTransform: 'none', fontWeight: 500 }}
+          />
+          <Tab 
             icon={<Dashboard />} 
             label="Data Intelligence" 
             iconPosition="start"
@@ -212,105 +210,12 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
             iconPosition="start"
             sx={{ textTransform: 'none', fontWeight: 500 }}
           />
-          <Tab 
-            icon={<Analytics />} 
-            label="Customer Insights" 
-            iconPosition="start"
-            sx={{ textTransform: 'none', fontWeight: 500 }}
-          />
         </Tabs>
       </Box>
 
-      {/* Customer Selection - only show for customer-specific tabs */}
-      {(activeSubTab === 2 || activeSubTab === 3) && (
-        <Card sx={{ mb: 4 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-              Select Customer
-            </Typography>
-            <FormControl fullWidth>
-              <InputLabel>Choose a customer</InputLabel>
-              <Select
-                value={selectedCustomer || ''}
-                onChange={(e) => onCustomerChange(e.target.value)}
-                label="Choose a customer"
-              >
-                {customers.map((customer) => (
-                  <MenuItem key={customer._id} value={customer._id}>
-                    {customer.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Tab Content */}
       {activeSubTab === 0 && (
-        <Box>
-          {dataIntelligenceError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {dataIntelligenceError}
-            </Alert>
-          )}
-          {dataIntelligenceLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={60} />
-            </Box>
-          ) : dataIntelligenceMetrics ? (
-            <DataIntelligenceDashboard metrics={dataIntelligenceMetrics} />
-          ) : (
-            <Alert severity="info">
-              No data intelligence metrics available. Please try refreshing the page.
-            </Alert>
-          )}
-        </Box>
-      )}
-
-      {activeSubTab === 1 && (
-        <Box>
-          {dataIntelligenceError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {dataIntelligenceError}
-            </Alert>
-          )}
-          {dataIntelligenceLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={60} />
-            </Box>
-          ) : allHealthScores ? (
-            <HealthScoresList healthScores={allHealthScores} />
-          ) : (
-            <Alert severity="info">
-              No health scores available. Please try refreshing the page.
-            </Alert>
-          )}
-        </Box>
-      )}
-
-      {activeSubTab === 2 && (
-        <Box>
-          {dataIntelligenceError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {dataIntelligenceError}
-            </Alert>
-          )}
-          {dataIntelligenceLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={60} />
-            </Box>
-          ) : predictiveInsights ? (
-            <PredictiveInsightsCard insights={predictiveInsights} />
-          ) : (
-            <Alert severity="info">
-              No predictive insights available. Please try refreshing the page.
-            </Alert>
-          )}
-        </Box>
-      )}
-
-      {activeSubTab === 3 && (
         <Box>
           {!selectedCustomer ? (
             <Alert severity="info">
@@ -329,160 +234,15 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
                 </Box>
               ) : (
                 <Box>
-                  {/* Customer Health Score */}
-                  {customerHealthScore && (
-                    <Box sx={{ mb: 4 }}>
-                      <HealthScoreCard 
-                        healthScore={customerHealthScore} 
-                        customerName={customers.find(c => c._id === selectedCustomer)?.name}
-                      />
-                    </Box>
-                  )}
-
-                  {/* Customer Success Insights */}
-                  {csInsights.length > 0 && (
-                    <Box sx={{ mb: 4 }}>
-                      <Typography variant="h5" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
-                        Customer Success Insights
-                      </Typography>
-                      
-                      {categories.map((category) => {
-                        const categoryInsights = csInsights.filter(insight => insight.category === category);
-                        if (categoryInsights.length === 0) return null;
-                        
-                        // Get category color
-                        const categoryColor = category === 'risk' ? '#f44336' : 
-                                             category === 'upsell' ? '#4caf50' :
-                                             category === 'customer_success' ? '#2196f3' : '#9c27b0';
-                        
-                        return (
-                          <Box key={category} sx={{ 
-                            mb: 2,
-                            position: 'relative',
-                            border: `1px solid ${categoryColor}`,
-                            borderRadius: 1,
-                            backgroundColor: 'white',
-                            p: 1.5,
-                            '&:hover': {
-                              boxShadow: 1
-                            }
-                          }}>
-                            {/* Floating label on top border */}
-                            <Typography variant="caption" sx={{
-                              position: 'absolute',
-                              top: -8,
-                              left: 8,
-                              backgroundColor: 'white',
-                              px: 1,
-                              fontSize: '0.7rem',
-                              fontWeight: 500,
-                              color: categoryColor
-                            }}>
-                              {categoryLabels[category as keyof typeof categoryLabels]}
-                            </Typography>
-                            
-                            {/* Insights content */}
-                            {categoryInsights.map((insight, index) => (
-                              <Box key={`${insight.type}-${index}`} sx={{ 
-                                mb: index < categoryInsights.length - 1 ? 1 : 0,
-                                p: 1,
-                                backgroundColor: 'grey.50',
-                                borderRadius: 0.5,
-                                border: '1px solid',
-                                borderColor: 'grey.200'
-                              }}>
-                                {/* Main content row */}
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                                    <Typography variant="subtitle2" sx={{ 
-                                      fontWeight: 600, 
-                                      textTransform: 'capitalize',
-                                      fontSize: '0.8rem',
-                                      mr: 1
-                                    }}>
-                                      {insight.type.replace(/_/g, ' ')}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ 
-                                      fontSize: '0.75rem',
-                                      flex: 1
-                                    }}>
-                                      {insight.message}
-                                    </Typography>
-                                  </Box>
-                                  <Chip 
-                                    label={insight.severity.toUpperCase()}
-                                    color={insight.severity === 'red' ? 'error' : insight.severity === 'yellow' ? 'warning' : 'info'}
-                                    size="small"
-                                    sx={{ ml: 1, fontSize: '0.65rem', height: '18px' }}
-                                  />
-                                </Box>
-                                
-                                {/* Meta data if available */}
-                                {insight.meta && Object.keys(insight.meta).length > 0 && (
-                                  <Box sx={{ 
-                                    backgroundColor: 'white', 
-                                    p: 0.75, 
-                                    borderRadius: 0.5, 
-                                    border: '1px solid',
-                                    borderColor: 'grey.300',
-                                    mt: 0.5
-                                  }}>
-                                    {Object.entries(insight.meta).map(([key, value]) => {
-                                      // Debug logging
-                                      if (key === 'stakeholders') {
-                                        console.log('Stakeholder data:', value);
-                                      }
-                                      
-                                      // Handle different value types properly
-                                      const formatValue = (val: any): string => {
-                                        if (val === null || val === undefined) return 'N/A';
-                                        if (typeof val === 'object') {
-                                          if (Array.isArray(val)) {
-                                            if (val.length === 0) return 'None';
-                                            // Handle array of objects (like stakeholders)
-                                            return val.map(item => {
-                                              if (typeof item === 'object') {
-                                                // Special handling for influencer expansion opportunity - show name, title and department
-                                                if (key === 'stakeholders' && insight.type === 'influencer_expansion_opportunity') {
-                                                  const name = item.name || 'Unknown Name';
-                                                  const title = item.title || 'Unknown Title';
-                                                  const department = item.department || 'Unknown Dept';
-                                                  return `${name} ${title} (${department})`;
-                                                }
-                                                // Default behavior for other cases
-                                                return Object.entries(item)
-                                                  .map(([k, v]) => `${k}: ${v}`)
-                                                  .join(', ');
-                                              }
-                                              return String(item);
-                                            }).join(' | ');
-                                          }
-                                          // For objects, show key-value pairs
-                                          return Object.entries(val)
-                                            .map(([k, v]) => `${k}: ${v}`)
-                                            .join(', ');
-                                        }
-                                        return String(val);
-                                      };
-
-                                      return (
-                                        <Typography key={key} variant="caption" color="text.secondary" sx={{ 
-                                          fontSize: '0.65rem',
-                                          display: 'block'
-                                        }}>
-                                          <strong>{key.replace(/_/g, ' ')}:</strong> {formatValue(value)}
-                                        </Typography>
-                                      );
-                                    })}
-                                  </Box>
-                                )}
-                              </Box>
-                            ))}
-                          </Box>
-                        );
-                      })}
-                    </Box>
-                  )}
+                  {/* Enhanced Customer Success Insights */}
+                  <EnhancedInsightsView
+                    insights={csInsights}
+                    loading={loading}
+                    onRefresh={onRefresh}
+                    selectedCustomer={selectedCustomer}
+                    customers={customers}
+                    onCustomerChange={onCustomerChange}
+                  />
 
                   {/* CSAT Insights Section */}
                   {customerCsatInsights && (
@@ -517,78 +277,143 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
                         </CardContent>
                       </Card>
 
-                      {/* CSAT Insights */}
-                      {customerCsatInsights.insights && customerCsatInsights.insights.length > 0 && (
-                        <Card sx={{ mb: 3, border: '1px solid #2196f3' }}>
+                      {customerCsatInsights.recentFeedback && customerCsatInsights.recentFeedback.length > 0 && (
+                        <Card sx={{ border: '1px solid #e0e0e0' }}>
                           <CardContent>
-                            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#2196f3' }}>
-                              Key Insights
+                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                              Recent Feedback
                             </Typography>
-                            {customerCsatInsights.insights.map((insight: string, index: number) => (
-                              <Box key={index} sx={{ mb: 1, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-                                <Typography variant="body2">
-                                  • {insight}
+                            {customerCsatInsights.recentFeedback.map((feedback, index) => (
+                              <Box key={index} sx={{ mb: 2, p: 2, backgroundColor: '#f8f9fa', borderRadius: 1 }}>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                  "{feedback.comment}"
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  Score: {feedback.score}/5 | {new Date(feedback.date).toLocaleDateString()}
                                 </Typography>
                               </Box>
                             ))}
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* CSAT Recommendations */}
-                      {customerCsatInsights.recommendations && customerCsatInsights.recommendations.length > 0 && (
-                        <Card sx={{ mb: 3, border: '1px solid #4caf50' }}>
-                          <CardContent>
-                            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: '#4caf50' }}>
-                              Recommendations
-                            </Typography>
-                            {customerCsatInsights.recommendations.map((recommendation: string, index: number) => (
-                              <Box key={index} sx={{ mb: 1, p: 1, backgroundColor: '#f1f8e9', borderRadius: 1 }}>
-                                <Typography variant="body2">
-                                  • {recommendation}
-                                </Typography>
-                              </Box>
-                            ))}
-                          </CardContent>
-                        </Card>
-                      )}
-
-                      {/* Score Distribution */}
-                      {customerCsatInsights.scoreDistribution && (
-                        <Card sx={{ mb: 3 }}>
-                          <CardContent>
-                            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                              Score Distribution
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                              {Object.entries(customerCsatInsights.scoreDistribution).map(([score, count]) => {
-                                const countValue = typeof count === 'number' ? count : 0;
-                                return (
-                                  <Box key={score} sx={{ textAlign: 'center', minWidth: '60px' }}>
-                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                      {countValue}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      Score {score}
-                                    </Typography>
-                                  </Box>
-                                );
-                              })}
-                            </Box>
                           </CardContent>
                         </Card>
                       )}
                     </Box>
                   )}
-
-                  {csInsights.length === 0 && !customerCsatInsights && !customerHealthScore && (
-                    <Alert severity="info">
-                      No customer success insights available for the selected customer. Generate insights to see AI-powered analysis.
-                    </Alert>
-                  )}
                 </Box>
               )}
             </Box>
+          )}
+        </Box>
+      )}
+
+      {activeSubTab === 1 && (
+        <Box>
+          {dataIntelligenceError && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {dataIntelligenceError}
+            </Alert>
+          )}
+          {dataIntelligenceLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={60} />
+            </Box>
+          ) : dataIntelligenceMetrics ? (
+            <DataIntelligenceDashboard metrics={dataIntelligenceMetrics} />
+          ) : (
+            <Alert severity="info">
+              No data intelligence metrics available. Please try refreshing the page.
+            </Alert>
+          )}
+        </Box>
+      )}
+
+      {activeSubTab === 2 && (
+        <Box>
+          {dataIntelligenceError && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {dataIntelligenceError}
+            </Alert>
+          )}
+          {dataIntelligenceLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={60} />
+            </Box>
+          ) : (
+            <Box>
+              {/* All Customers Health Scores Table */}
+              {allHealthScores && (
+                <Box sx={{ mb: 4 }}>
+                  <HealthScoresList healthScores={allHealthScores} />
+                </Box>
+              )}
+
+              {/* Customer Selection for Detailed Health Score */}
+              {allHealthScores && (
+                <Box sx={{ mb: 4 }}>
+                  <Card sx={{ p: 3, backgroundColor: '#f8fafc' }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                      View Detailed Health Score
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Select a customer to view their detailed health score breakdown
+                    </Typography>
+                    <FormControl fullWidth sx={{ maxWidth: 400 }}>
+                      <InputLabel>Select Customer</InputLabel>
+                      <Select
+                        value={selectedCustomer || ''}
+                        onChange={(e) => onCustomerChange(e.target.value)}
+                        label="Select Customer"
+                      >
+                        {customers.map((customer) => (
+                          <MenuItem key={customer._id} value={customer._id}>
+                            {customer.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Card>
+                </Box>
+              )}
+
+              {/* Individual Customer Health Score */}
+              {selectedCustomer && customerHealthScore && (
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+                    {customers.find(c => c._id === selectedCustomer)?.name} - Detailed Health Score
+                  </Typography>
+                  <HealthScoreCard 
+                    healthScore={customerHealthScore} 
+                    customerName={customers.find(c => c._id === selectedCustomer)?.name}
+                  />
+                </Box>
+              )}
+
+              {!allHealthScores && !customerHealthScore && (
+                <Alert severity="info">
+                  No health scores available. Please try refreshing the page.
+                </Alert>
+              )}
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {activeSubTab === 3 && (
+        <Box>
+          {dataIntelligenceError && (
+            <Alert severity="error" sx={{ mb: 3 }}>
+              {dataIntelligenceError}
+            </Alert>
+          )}
+          {dataIntelligenceLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={60} />
+            </Box>
+          ) : predictiveInsights ? (
+            <PredictiveInsightsCard insights={predictiveInsights} />
+          ) : (
+            <Alert severity="info">
+              No predictive insights available. Please try refreshing the page.
+            </Alert>
           )}
         </Box>
       )}

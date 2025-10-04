@@ -152,6 +152,34 @@ export const insightsService = {
   async getPredictiveInsights(): Promise<any> {
     const response = await axios.get(getRoute('insights/predictive'));
     return response.data;
+  },
+
+  /**
+   * Update assignee for a specific insight
+   */
+  async updateInsightAssignee(insightId: string, assignee: string | null): Promise<any> {
+    const response = await axios.patch(getRoute(`insights/${insightId}/assignee`), {
+      assignee
+    });
+    return response.data;
+  },
+
+  /**
+   * Get all users in the organization
+   */
+  async getUsers(): Promise<{ success: boolean; data: Array<{ _id: string; firstName: string; lastName: string; email: string; fullName: string }> }> {
+    const response = await axios.get(getRoute('users'));
+    return { success: true, data: response.data };
+  },
+
+  /**
+   * Update status for a specific insight
+   */
+  async updateInsightStatus(insightId: string, status: string): Promise<any> {
+    const response = await axios.patch(getRoute(`insights/${insightId}/status`), {
+      status
+    });
+    return response.data;
   }
 };
 

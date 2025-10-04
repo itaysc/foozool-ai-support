@@ -36,11 +36,15 @@ export async function getSavedStakeholderInsights(customerId: string): Promise<C
     }).sort({ lastUpdatedAt: -1 }).lean();
 
     return savedInsights.map(insight => ({
+      id: insight._id.toString(),
       type: insight.metadata?.type as CustomerSuccessInsight['type'],
       message: insight.issueDescription,
       severity: insight.metadata?.severity as CustomerSuccessInsight['severity'],
       category: insight.metadata?.category as CustomerSuccessInsight['category'],
-      meta: insight.metadata?.meta || {}
+      meta: insight.metadata?.meta || {},
+      assignee: insight.assignee?.toString(),
+      status: insight.status || 'new',
+      createdAt: insight.firstDetectedAt?.toISOString() || insight.lastUpdatedAt?.toISOString()
     }));
   } catch (error) {
     console.error('[CS Insights] ❌ failed to fetch saved stakeholder insights:', error);
@@ -65,11 +69,15 @@ export async function getAllSavedCustomerSuccessInsights(customerId: string): Pr
     }).sort({ lastUpdatedAt: -1 }).lean();
 
     return savedInsights.map(insight => ({
+      id: insight._id.toString(),
       type: insight.metadata?.type as CustomerSuccessInsight['type'],
       message: insight.issueDescription,
       severity: insight.metadata?.severity as CustomerSuccessInsight['severity'],
       category: insight.metadata?.category as CustomerSuccessInsight['category'],
-      meta: insight.metadata?.meta || {}
+      meta: insight.metadata?.meta || {},
+      assignee: insight.assignee?.toString(),
+      status: insight.status || 'new',
+      createdAt: insight.firstDetectedAt?.toISOString() || insight.lastUpdatedAt?.toISOString()
     }));
   } catch (error) {
     console.error('[CS Insights] ❌ failed to fetch all saved customer success insights:', error);
@@ -193,6 +201,28 @@ export async function generateCustomerSuccessInsightsForOrganization(customerId:
 }
 
 /**
+ * Generate a deterministic cluster ID for deduplication
+ */
+function generateClusterId(insight: CustomerSuccessInsight, customerId: string, prefix: string): string {
+  // Create a hash based on insight content for deduplication
+  const contentHash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify({
+      type: insight.type,
+      message: insight.message,
+      severity: insight.severity,
+      category: insight.category,
+      customerId: customerId,
+      // Include relevant meta data for more precise deduplication
+      meta: insight.meta ? JSON.stringify(insight.meta) : ''
+    }))
+    .digest('hex')
+    .substring(0, 12); // Use first 12 characters for shorter IDs
+  
+  return `${prefix}:${contentHash}`;
+}
+
+/**
  * Persist stakeholder insights to database
  */
 async function persistStakeholderInsights(organizationId: string, customerId: string, customerName: string, insights: CustomerSuccessInsight[]): Promise<void> {
@@ -200,7 +230,7 @@ async function persistStakeholderInsights(organizationId: string, customerId: st
   const custObjId = new ObjectId(customerId);
 
   for (const insight of insights) {
-    const clusterId = `stakeholder:${crypto.randomBytes(8).toString('hex')}`;
+    const clusterId = generateClusterId(insight, customerId, 'stakeholder');
     
     await InsightModel.findOneAndUpdate(
       {
@@ -222,6 +252,8 @@ async function persistStakeholderInsights(organizationId: string, customerId: st
           category: insight.category,
           meta: insight.meta
         },
+        assignee: insight.assignee ? new ObjectId(insight.assignee) : undefined,
+        status: insight.status || 'new',
         lastUpdatedAt: new Date()
       },
       { upsert: true, new: true }
@@ -237,7 +269,7 @@ async function persistCustomerSuccessInsights(organizationId: string, customerId
   const custObjId = new ObjectId(customerId);
 
   for (const insight of insights) {
-    const clusterId = `cs:${crypto.randomBytes(8).toString('hex')}`;
+    const clusterId = generateClusterId(insight, customerId, 'cs');
     
     await InsightModel.findOneAndUpdate(
       {
@@ -259,6 +291,8 @@ async function persistCustomerSuccessInsights(organizationId: string, customerId
           category: insight.category,
           meta: insight.meta
         },
+        assignee: insight.assignee ? new ObjectId(insight.assignee) : undefined,
+        status: insight.status || 'new',
         lastUpdatedAt: new Date()
       },
       { upsert: true, new: true }

@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { createUser } from '../../../services/users/v1';
+import { createUser, getUsersByOrganization } from '../../../services/users/v1';
 import { validateRequest } from '../../../middleware/validateRequest';
 import { createUserSchema } from './validations';
 import { authenticateJWT } from '../../../middleware/authenticate';
@@ -17,5 +17,17 @@ router.post('/', authenticateJWT, hasPermission('users:create'), validateRequest
   }
 });
 
+/**
+ * GET /users
+ * Get all users in the current organization
+ */
+router.get('/', authenticateJWT, hasPermission('users:read'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const usersRes = await getUsersByOrganization();
+    res.status(usersRes.status).json(usersRes.payload);
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 export default router;

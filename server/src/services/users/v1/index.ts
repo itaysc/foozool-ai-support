@@ -3,6 +3,7 @@ import { UserModel, OrganizationModel } from '../../../schemas';
 import { IUser, IResponse, IOrganization } from '../../../types';
 import ElasticsearchService from '../../../elasticsearch/service';
 import mongoose from 'mongoose';
+import { UserContextManager } from '../../../context/userContext';
 
 export async function getUserByEmail({ email }) : Promise<IResponse> {
   try {
@@ -105,4 +106,32 @@ export async function createUser2(user: IUser, createdBy: IUser) : Promise<IResp
     status: 201,
     payload: savedUser,
   };
+}
+
+export async function getUsersByOrganization(): Promise<IResponse> {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!organizationId) {
+      return {
+        status: 400,
+        payload: { error: 'Organization ID not found in user context' },
+      };
+    }
+
+    const users = await UserModel.find({ organization: organizationId })
+      .select('_id firstName lastName email fullName')
+      .lean();
+
+    return {
+      status: 200,
+      payload: users,
+    };
+  } catch (error) {
+    console.error('Error in getUsersByOrganization:', error);
+    return {
+      status: 500,
+      payload: { error: 'Failed to fetch users' },
+    };
+  }
 }

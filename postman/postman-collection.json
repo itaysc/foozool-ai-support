@@ -1273,6 +1273,60 @@
           "response": []
         },
         {
+          "name": "Update Insight Assignee",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assignee\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}/assignee",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}", "assignee"]
+            },
+            "description": "Update the assignee for a specific insight. Set assignee to null to unassign."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Insight Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}/status",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}", "status"]
+            },
+            "description": "Update the status for a specific insight. Valid statuses: new, in_progress, resolved, closed, reopened."
+          },
+          "response": []
+        },
+        {
           "name": "Get Insights Summary",
           "request": {
             "method": "GET",

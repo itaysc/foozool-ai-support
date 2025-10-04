@@ -12,7 +12,8 @@ export interface IInsight extends Document {
   lastUpdatedAt: Date;
   customerId?: mongoose.Types.ObjectId | string;
   customerName?: string;
-  // NPS-specific fields
+  assignee?: mongoose.Types.ObjectId | string;
+  status?: 'new' | 'in_progress' | 'resolved' | 'closed' | 'reopened';
   npsData?: {
     currentNPS: number;
     npsChange: number;
@@ -80,6 +81,14 @@ const InsightSchema: Schema = new Schema({
   // Optional linkage to a specific customer for customer success insights
   customerId: { type: Schema.Types.ObjectId, ref: 'Customer' },
   customerName: { type: String },
+  // Optional user assigned to handle this insight
+  assignee: { type: Schema.Types.ObjectId, ref: 'User' },
+  // Status of the insight (Jira-like workflow)
+  status: { 
+    type: String, 
+    enum: ['new', 'in_progress', 'resolved', 'closed', 'reopened'], 
+    default: 'new' 
+  },
   // NPS-specific fields
   npsData: {
     currentNPS: { type: Number },
@@ -137,5 +146,7 @@ InsightSchema.index({ organizationId: 1, lastUpdatedAt: -1 });
 InsightSchema.index({ clusterId: 1 });
 InsightSchema.index({ insightType: 1, lastUpdatedAt: -1 });
 InsightSchema.index({ organizationId: 1, customerId: 1, insightType: 1, lastUpdatedAt: -1 });
+InsightSchema.index({ assignee: 1, insightType: 1, lastUpdatedAt: -1 }); // For finding insights assigned to a user
+InsightSchema.index({ status: 1, insightType: 1, lastUpdatedAt: -1 }); // For finding insights by status
 
 export const InsightModel = mongoose.model<IInsight>('Insight', InsightSchema);

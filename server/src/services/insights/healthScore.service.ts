@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 import QdrantService from '../../qdrant/service';
 import { CustomerModel } from '../../schemas/customer.schema';
 import { PredictionModel } from '../../schemas/prediction.schema';
+import { InsightModel } from '../../schemas/insights.schema';
+import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
+import crypto from 'crypto';
 
 export interface HealthScoreFactors {
   // Support Health (40% weight)
@@ -351,6 +354,245 @@ export class HealthScoreService {
     }
 
     return insights;
+  }
+
+  /**
+   * Generate health score risk insights and save to database with weekly deduplication
+   */
+  async generateHealthScoreRiskInsights(
+    customerId: string, 
+    organizationId: string, 
+    healthScore: HealthScoreFactors
+  ): Promise<CustomerSuccessInsight[]> {
+    console.log(`[Health Score Insights] 🚨 Generating health score risk insights for customer ${customerId}`);
+    
+    const insights: CustomerSuccessInsight[] = [];
+    const currentDate = new Date();
+    
+    // Determine if customer is at risk based on overall health score
+    if (healthScore.overallScore < 60) {
+      const severity = healthScore.overallScore < 40 ? 'red' : 'yellow';
+      const riskLevel = healthScore.overallScore < 40 ? 'Critical' : 'At Risk';
+      
+      const insight: CustomerSuccessInsight = {
+        type: 'health_score_at_risk',
+        message: `Customer health score is ${riskLevel.toLowerCase()} (${healthScore.overallScore}/100). ${this.getHealthScoreRiskMessage(healthScore)}`,
+        severity: severity,
+        category: 'risk',
+        meta: {
+          healthScore: healthScore.overallScore,
+          supportHealth: healthScore.supportHealth.score,
+          engagementHealth: healthScore.engagementHealth.score,
+          businessHealth: healthScore.businessHealth.score,
+          trend: healthScore.trend,
+          riskFactors: this.getRiskFactors(healthScore),
+          lastUpdated: healthScore.lastUpdated
+        },
+        status: 'new',
+        createdAt: currentDate.toISOString()
+      };
+      
+      insights.push(insight);
+    }
+    
+    // Save insights to database with weekly deduplication
+    if (insights.length > 0) {
+      await this.persistHealthScoreRiskInsights(organizationId, customerId, insights);
+    }
+    
+    return insights;
+  }
+
+  /**
+   * Get detailed risk message based on health score factors
+   */
+  private getHealthScoreRiskMessage(healthScore: HealthScoreFactors): string {
+    const messages: string[] = [];
+    
+    if (healthScore.supportHealth.score < 40) {
+      messages.push('Support health is critically low');
+    } else if (healthScore.supportHealth.score < 60) {
+      messages.push('Support health needs attention');
+    }
+    
+    if (healthScore.engagementHealth.score < 40) {
+      messages.push('Customer engagement is concerning');
+    }
+    
+    if (healthScore.businessHealth.score < 40) {
+      messages.push('Business health indicators are poor');
+    }
+    
+    if (healthScore.trend === 'declining') {
+      messages.push('Health score is declining');
+    }
+    
+    if (messages.length === 0) {
+      return 'Multiple health indicators require attention';
+    }
+    
+    return messages.join(', ') + '.';
+  }
+
+  /**
+   * Get specific risk factors for the insight metadata
+   */
+  private getRiskFactors(healthScore: HealthScoreFactors): string[] {
+    const riskFactors: string[] = [];
+    
+    // Support health risk factors
+    if (healthScore.supportHealth.factors.ticketVolume < 10) {
+      riskFactors.push('High ticket volume');
+    }
+    if (healthScore.supportHealth.factors.avgSentiment < 10) {
+      riskFactors.push('Negative sentiment trend');
+    }
+    if (healthScore.supportHealth.factors.escalationRate < 10) {
+      riskFactors.push('High escalation rate');
+    }
+    if (healthScore.supportHealth.factors.resolutionTime < 10) {
+      riskFactors.push('Slow resolution times');
+    }
+    if (healthScore.supportHealth.factors.csatRisk < 10) {
+      riskFactors.push('High CSAT risk');
+    }
+    
+    // Engagement health risk factors
+    if (healthScore.engagementHealth.factors.stakeholderEngagement < 15) {
+      riskFactors.push('Low stakeholder engagement');
+    }
+    if (healthScore.engagementHealth.factors.meetingFrequency < 15) {
+      riskFactors.push('Infrequent meetings');
+    }
+    if (healthScore.engagementHealth.factors.featureAdoption < 15) {
+      riskFactors.push('Low feature adoption');
+    }
+    if (healthScore.engagementHealth.factors.responseTime < 15) {
+      riskFactors.push('Slow response times');
+    }
+    
+    // Business health risk factors
+    if (healthScore.businessHealth.factors.contractValue < 15) {
+      riskFactors.push('Low contract value');
+    }
+    if (healthScore.businessHealth.factors.usageGrowth < 15) {
+      riskFactors.push('Declining usage growth');
+    }
+    if (healthScore.businessHealth.factors.renewalRisk < 15) {
+      riskFactors.push('High renewal risk');
+    }
+    if (healthScore.businessHealth.factors.expansionOpportunity < 15) {
+      riskFactors.push('Limited expansion opportunity');
+    }
+    
+    return riskFactors;
+  }
+
+  /**
+   * Generate deterministic cluster ID for weekly deduplication
+   */
+  private generateHealthScoreClusterId(customerId: string, weekYear: string): string {
+    const contentHash = crypto
+      .createHash('sha256')
+      .update(JSON.stringify({
+        type: 'health_score_at_risk',
+        customerId: customerId,
+        weekYear: weekYear
+      }))
+      .digest('hex')
+      .substring(0, 12);
+    
+    return `hs:${contentHash}`;
+  }
+
+  /**
+   * Get week and year string (e.g., "W33-2025")
+   */
+  private getWeekYear(date: Date): string {
+    const year = date.getFullYear();
+    const startOfYear = new Date(year, 0, 1);
+    const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    return `W${weekNumber}-${year}`;
+  }
+
+  /**
+   * Persist health score risk insights with weekly deduplication
+   */
+  private async persistHealthScoreRiskInsights(
+    organizationId: string, 
+    customerId: string, 
+    insights: CustomerSuccessInsight[]
+  ): Promise<void> {
+    const orgObjId = new mongoose.Types.ObjectId(organizationId);
+    const custObjId = new mongoose.Types.ObjectId(customerId);
+    const currentDate = new Date();
+    const weekYear = this.getWeekYear(currentDate);
+
+    for (const insight of insights) {
+      const clusterId = this.generateHealthScoreClusterId(customerId, weekYear);
+      
+      // Check if insight already exists for this week
+      const existingInsight = await InsightModel.findOne({
+        organizationId: orgObjId,
+        customerId: custObjId,
+        insightType: 'customer_success',
+        clusterId: clusterId
+      });
+
+      if (existingInsight) {
+        console.log(`[Health Score Insights] ⚠️ Insight already exists for customer ${customerId} in week ${weekYear}, updating instead of creating duplicate`);
+        
+        // Update existing insight with new health score data
+        await InsightModel.findOneAndUpdate(
+          { _id: existingInsight._id },
+          {
+            issueDescription: insight.message,
+            metadata: {
+              type: insight.type,
+              severity: insight.severity,
+              category: insight.category,
+              meta: insight.meta
+            },
+            status: insight.status || 'new',
+            lastUpdatedAt: currentDate
+          }
+        );
+      } else {
+        // Create new insight
+        await InsightModel.findOneAndUpdate(
+          {
+            organizationId: orgObjId,
+            customerId: custObjId,
+            insightType: 'customer_success',
+            clusterId: clusterId
+          },
+          {
+            organizationId: orgObjId,
+            customerId: custObjId,
+            customerName: '', // Will be populated by the calling function
+            insightType: 'customer_success',
+            clusterId: clusterId,
+            issueDescription: insight.message,
+            ticketVolume: 0, // Not applicable for health score insights
+            growthRate: 0, // Not applicable for health score insights
+            metadata: {
+              type: insight.type,
+              severity: insight.severity,
+              category: insight.category,
+              meta: insight.meta
+            },
+            assignee: insight.assignee ? new mongoose.Types.ObjectId(insight.assignee) : undefined,
+            status: insight.status || 'new',
+            firstDetectedAt: insight.createdAt ? new Date(insight.createdAt) : currentDate,
+            lastUpdatedAt: currentDate
+          },
+          { upsert: true, new: true }
+        );
+        
+        console.log(`[Health Score Insights] ✅ Created new health score risk insight for customer ${customerId} in week ${weekYear}`);
+      }
+    }
   }
 }
 

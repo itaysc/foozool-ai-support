@@ -7,7 +7,9 @@ import {
   getAllInsights,
   getCustomerSuccessInsights,
   getAllCustomerSuccessInsights,
-  generateCustomerMeetingPrep
+  generateCustomerMeetingPrep,
+  updateInsightAssignee,
+  updateInsightStatus
 } from '../../../services/insights';
 
 const router = express.Router();
@@ -63,6 +65,84 @@ router.post('/customer-meeting-prep/:customerId', authenticateJWT, hasPermission
     const status = err.message === 'Customer not found' ? 404 : 
                    err.message === 'Organization ID not found in user context' ? 400 :
                    err.message === 'User ID is required for LLM operations' ? 400 : 500;
+    return res.status(status).json({ status, error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * PATCH /insights/:insightId/assignee
+ * Update the assignee for a specific insight
+ */
+router.patch('/:insightId/assignee', authenticateJWT, hasPermission('insights:write'), async (req, res) => {
+  try {
+    const { insightId } = req.params;
+    const { assignee } = req.body;
+    
+    // Validate insightId format
+    if (!insightId || !/^[0-9a-fA-F]{24}$/.test(insightId)) {
+      return res.status(400).json({ 
+        status: 400, 
+        error: 'Invalid insight ID format' 
+      });
+    }
+    
+    // Validate assignee format if provided (should be a valid ObjectId or null/undefined)
+    if (assignee && !/^[0-9a-fA-F]{24}$/.test(assignee)) {
+      return res.status(400).json({ 
+        status: 400, 
+        error: 'Invalid assignee ID format' 
+      });
+    }
+    
+    const result = await updateInsightAssignee(insightId, assignee);
+    return res.status(result.status).json(result);
+  } catch (err: any) {
+    console.error('Error updating insight assignee:', err);
+    const status = err.message === 'Insight not found' ? 404 : 
+                   err.message === 'Organization ID not found in user context' ? 400 : 500;
+    return res.status(status).json({ status, error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * PATCH /insights/:insightId/status
+ * Update the status for a specific insight
+ */
+router.patch('/:insightId/status', authenticateJWT, hasPermission('insights:write'), async (req, res) => {
+  try {
+    const { insightId } = req.params;
+    const { status } = req.body;
+    
+    // Validate insightId format
+    if (!insightId || !/^[0-9a-fA-F]{24}$/.test(insightId)) {
+      return res.status(400).json({ 
+        status: 400, 
+        error: 'Invalid insight ID format' 
+      });
+    }
+    
+    // Validate status
+    if (!status) {
+      return res.status(400).json({ 
+        status: 400, 
+        error: 'Status is required' 
+      });
+    }
+    
+    const validStatuses = ['new', 'in_progress', 'resolved', 'closed', 'reopened'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ 
+        status: 400, 
+        error: 'Invalid status. Must be one of: ' + validStatuses.join(', ') 
+      });
+    }
+    
+    const result = await updateInsightStatus(insightId, status);
+    return res.status(result.status).json(result);
+  } catch (err: any) {
+    console.error('Error updating insight status:', err);
+    const status = err.message === 'Insight not found' ? 404 : 
+                   err.message === 'Organization ID not found in user context' ? 400 : 500;
     return res.status(status).json({ status, error: err.message || 'Internal server error' });
   }
 });
