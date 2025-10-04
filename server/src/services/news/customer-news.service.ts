@@ -27,6 +27,20 @@ export class CustomerNewsService {
     // Add company name (in quotes for exact match)
     if (customer.name) {
       searchTerms.push(`"${customer.name}"`);
+      
+      // Add common variations for major companies
+      const companyName = customer.name.toLowerCase();
+      if (companyName.includes('amazon web services') || companyName.includes('aws')) {
+        searchTerms.push('"Amazon Web Services"', '"AWS"', '"Amazon"');
+      } else if (companyName.includes('microsoft')) {
+        searchTerms.push('"Microsoft"', '"MSFT"');
+      } else if (companyName.includes('google')) {
+        searchTerms.push('"Google"', '"Alphabet"', '"GOOGL"');
+      } else if (companyName.includes('apple')) {
+        searchTerms.push('"Apple"', '"AAPL"');
+      } else if (companyName.includes('meta') || companyName.includes('facebook')) {
+        searchTerms.push('"Meta"', '"Facebook"', '"META"');
+      }
     }
     
     // Add ticker symbol for public companies
@@ -45,7 +59,13 @@ export class CustomerNewsService {
     const country = customer.hq?.country || 'United States';
     const countryCode = this.rssFetcher.getCountryCode(country);
     
-    return this.rssFetcher.generateRSSUrl(query, countryCode);
+    console.log(`📰 Generated news search query for ${customer.name}:`, query);
+    console.log(`📰 Country: ${country} (${countryCode})`);
+    
+    const rssUrl = this.rssFetcher.generateRSSUrl(query, countryCode);
+    console.log(`📰 Generated RSS URL:`, rssUrl);
+    
+    return rssUrl;
   }
 
   /**
@@ -77,16 +97,36 @@ export class CustomerNewsService {
       // Generate customer-specific RSS URL
       const rssUrl = this.generateCustomerNewsRSSUrl(customer);
       
-      // Fetch news
-      const newsItems = await this.rssFetcher.fetchNewsFromRSS(rssUrl);
+      // Try multiple RSS URLs for better coverage
+      const alternativeUrls = this.rssFetcher.generateAlternativeRSSUrls(
+        rssUrl.split('q=')[1]?.split('&')[0] || '', 
+        customer.hq?.country || 'United States'
+      );
+      
+      console.log(`📰 Trying ${alternativeUrls.length} RSS URLs for better coverage`);
+      
+      let newsItems: any[] = [];
+      let successfulUrl = '';
+      
+      // Try each URL until we get results
+      for (const url of alternativeUrls) {
+        console.log(`📰 Trying RSS URL: ${url}`);
+        const items = await this.rssFetcher.fetchNewsFromRSS(url);
+        if (items.length > 0) {
+          newsItems = items;
+          successfulUrl = url;
+          console.log(`📰 Successfully fetched ${items.length} items from: ${url}`);
+          break;
+        }
+      }
       
       if (newsItems.length === 0) {
-        console.log(`No news found for ${customer.name}`);
+        console.log(`📰 No news found for ${customer.name} from any RSS source`);
         return {
           news: [],
-          summary: `No recent news found about ${customer.name}.`,
+          summary: `No recent news found about ${customer.name}. This could be due to limited news coverage or RSS feed issues.`,
           actionItems: [],
-          rssUrl
+          rssUrl: successfulUrl || rssUrl
         };
       }
       
@@ -103,7 +143,7 @@ export class CustomerNewsService {
         news: processedNews,
         summary,
         actionItems,
-        rssUrl
+        rssUrl: successfulUrl || rssUrl
       };
       
       // Cache for 6 hours

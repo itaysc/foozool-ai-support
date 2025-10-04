@@ -15,6 +15,8 @@ import {
   CustomerData,
   InsightData
 } from './prompts';
+import { RiskAssessmentService } from '../customers/riskAssessment.service';
+import { EnhancedMeetingPrepPromptGenerator } from '../customers/enhancedMeetingPrepPrompt.service';
 
 export interface DateFilter {
   fromDate?: string;
@@ -325,6 +327,10 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
   // Get customer success insights
   const insights = await generateCustomerSuccessInsights(customerId);
 
+  // Get comprehensive health score
+  const healthScoreService = new HealthScoreService();
+  const healthScore = await healthScoreService.calculateHealthScore(customerId, organizationId);
+
   // Get CUSTOMER-SPECIFIC CSAT insights (not organization-wide)
   let csatInsights: any = null;
   try {
@@ -341,14 +347,51 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
     const { newsService } = await import('../news');
     customerNews = await newsService.getNewsForCustomer(customerId);
     console.log(`📰 Fetched ${customerNews?.news?.length || 0} news items about ${customer.name}`);
+    console.log('📰 News data structure:', {
+      hasNews: !!customerNews?.news,
+      newsLength: customerNews?.news?.length || 0,
+      hasSummary: !!customerNews?.summary,
+      hasActionItems: !!customerNews?.actionItems,
+      actionItemsLength: customerNews?.actionItems?.length || 0
+    });
   } catch (error) {
     console.log('Customer news not available for meeting prep:', error);
+    console.log('Customer data for news generation:', {
+      name: customer.name,
+      hasPublicListing: !!customer.publicListing,
+      ticker: customer.publicListing?.ticker,
+      hasHq: !!customer.hq,
+      country: customer.hq?.country
+    });
   }
 
-  // Generate comprehensive meeting prep document using LLM
+  // Get ticket data for enhanced analysis
+  let ticketData: any = null;
+  try {
+    const qdrantService = new (await import('../../qdrant/service')).default();
+    ticketData = await qdrantService.getCustomerTicketStats(customerId);
+  } catch (error) {
+    console.log('Ticket data not available for meeting prep:', error);
+  }
+
+  // Perform risk assessment (after we have all the data)
+  const riskAssessmentService = new RiskAssessmentService();
+  const risks = await riskAssessmentService.assessCustomerRisks(customerId, healthScore, insights, customerNews);
+
+  // Generate enhanced meeting prep document using new system
   const customerData: CustomerData = customer;
   const insightData: InsightData[] = insights;
-  const meetingPrepPrompt = generateMeetingPrepPrompt(customerData, insightData, csatInsights, customerNews);
+  
+  const enhancedPromptGenerator = new EnhancedMeetingPrepPromptGenerator();
+  const meetingPrepPrompt = enhancedPromptGenerator.generateEnhancedMeetingPrepPrompt(
+    customerData,
+    healthScore,
+    risks,
+    insightData,
+    csatInsights,
+    customerNews,
+    ticketData
+  );
 
   // Get userId from user context (guaranteed by middleware)
   const userId = UserContextManager.getCurrentUserId();
@@ -412,9 +455,16 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
   console.log('Insights count:', insights.length);
   console.log('Document content length:', meetingPrepDocument.length);
   console.log('Document content preview:', meetingPrepDocument.substring(0, 1000));
+  console.log('Customer news data:', {
+    hasCustomerNews: !!customerNews,
+    newsCount: customerNews?.news?.length || 0,
+    hasSummary: !!customerNews?.summary,
+    hasActionItems: !!customerNews?.actionItems,
+    actionItemsCount: customerNews?.actionItems?.length || 0
+  });
   console.log('=== END DEBUG ===');
 
-  // Generate PDF document
+  // Generate PDF document with enhanced data
   const pdfData: MeetingPrepData = {
     customer: {
       name: customer.name || 'Unknown Customer',
@@ -424,7 +474,7 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
       contractValue: customer.contractValue ? `$${customer.contractValue.toLocaleString()}` : undefined,
       startDate: customer.startDate ? new Date(customer.startDate).toLocaleDateString() : undefined,
       accountManager: customer.accountManager,
-      healthScore: customer.healthScore?.toString(),
+      healthScore: healthScore.overallScore.toString(),
       operatingRegions: customer.operatingRegions,
       countriesServed: customer.countriesServed,
       languages: customer.languages,
@@ -447,7 +497,12 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
     insights,
     documentContent: meetingPrepDocument,
     generatedAt: new Date(),
-    generatedBy: UserContextManager.getCurrentUserId() || 'System'
+    generatedBy: UserContextManager.getCurrentUserId() || 'System',
+    // Add risk assessment data for PDF
+    riskAssessment: risks,
+    healthScore: healthScore,
+    // Add customer news data for PDF
+    customerNews: customerNews
   };
 
   const pdfDoc = generateMeetingPrepPdf(pdfData);

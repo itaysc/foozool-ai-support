@@ -1,5 +1,8 @@
 import PDFDocument from 'pdfkit';
 import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
+import { RiskAssessment } from '../customers/riskAssessment.service';
+import { HealthScoreFactors } from '../insights/healthScore.service';
+import { NewsResult } from '../news/types';
 
 export interface CustomerData {
   name: string;
@@ -40,6 +43,9 @@ export interface MeetingPrepData {
   documentContent: string;
   generatedAt: Date;
   generatedBy: string;
+  riskAssessment?: RiskAssessment;
+  healthScore?: HealthScoreFactors;
+  customerNews?: NewsResult;
 }
 
 export class MeetingPrepPdfGenerator {
@@ -58,13 +64,18 @@ export class MeetingPrepPdfGenerator {
         bottom: this.margin,
         left: this.margin,
         right: this.margin
-      }
+      },
+      font: 'Helvetica',
+      autoFirstPage: true
     });
   }
 
   generatePdf(data: MeetingPrepData): any {
     this.addHeader(data.customer.name, data.generatedAt);
     this.addCustomerProfile(data.customer);
+    this.addHealthScore(data.healthScore);
+    this.addRiskAssessment(data.riskAssessment);
+    this.addCustomerNews(data.customerNews);
     this.addInsights(data.insights);
     this.addDocumentContent(data.documentContent);
     this.addFooter(data.generatedBy);
@@ -76,48 +87,48 @@ export class MeetingPrepPdfGenerator {
   }
 
   private addHeader(customerName: string, generatedAt: Date): void {
-    // Title
+    // Main title - make it more prominent
     this.doc
-      .fontSize(24)
+      .fontSize(28)
       .font('Helvetica-Bold')
       .fillColor('#1a365d')
       .text('Customer Meeting Preparation', this.margin, this.margin, {
         align: 'center'
       });
 
-    this.currentY = this.margin + 40;
+    this.currentY = this.margin + 45;
 
-    // Customer name
+    // Customer name - larger and more prominent
     this.doc
-      .fontSize(18)
+      .fontSize(22)
       .font('Helvetica-Bold')
       .fillColor('#2d3748')
       .text(customerName, this.margin, this.currentY, {
         align: 'center'
       });
 
-    this.currentY += 30;
+    this.currentY += 35;
 
     // Generated date
     this.doc
-      .fontSize(10)
+      .fontSize(11)
       .font('Helvetica')
       .fillColor('#718096')
       .text(`Generated on ${generatedAt.toLocaleDateString()} at ${generatedAt.toLocaleTimeString()}`, this.margin, this.currentY, {
         align: 'center'
       });
 
-    this.currentY += 40;
+    this.currentY += 45;
 
-    // Divider line
+    // Thicker divider line
     this.doc
-      .strokeColor('#e2e8f0')
-      .lineWidth(1)
+      .strokeColor('#cbd5e0')
+      .lineWidth(2)
       .moveTo(this.margin, this.currentY)
       .lineTo(this.pageWidth - this.margin, this.currentY)
       .stroke();
 
-    this.currentY += 20;
+    this.currentY += 25;
   }
 
   private addCustomerProfile(customer: CustomerData): void {
@@ -151,6 +162,329 @@ export class MeetingPrepPdfGenerator {
 
     if (customer.usageData) {
       this.addUsageData(customer.usageData);
+    }
+  }
+
+  private addHealthScore(healthScore?: HealthScoreFactors): void {
+    if (!healthScore) return;
+
+    this.addSectionTitle('Customer Health Score');
+
+    // Overall health score with color coding
+    const overallColor = this.getHealthScoreColor(healthScore.overallScore);
+    this.doc
+      .fontSize(16)
+      .font('Helvetica-Bold')
+      .fillColor(overallColor)
+      .text(`Overall Health Score: ${healthScore.overallScore}/100`, this.margin, this.currentY);
+    
+    this.currentY += 20;
+
+    // Health score breakdown
+    const healthData = [
+      { label: 'Support Health', score: healthScore.supportHealth.score, color: this.getHealthScoreColor(healthScore.supportHealth.score) },
+      { label: 'Engagement Health', score: healthScore.engagementHealth.score, color: this.getHealthScoreColor(healthScore.engagementHealth.score) },
+      { label: 'Business Health', score: healthScore.businessHealth.score, color: this.getHealthScoreColor(healthScore.businessHealth.score) }
+    ];
+
+    healthData.forEach(item => {
+      this.doc
+        .fontSize(10)
+        .font('Helvetica-Bold')
+        .fillColor('#4a5568')
+        .text(`${item.label}:`, this.margin, this.currentY);
+      
+      this.doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor(item.color)
+        .text(`${item.score}/100`, this.margin + 120, this.currentY);
+      
+      this.currentY += 15;
+    });
+
+    this.currentY += 10;
+  }
+
+  private addRiskAssessment(riskAssessment?: RiskAssessment): void {
+    if (!riskAssessment) return;
+
+    this.addSectionTitle('Risk Assessment');
+
+    // Overall risk alert
+    const overallRiskColor = this.getRiskColor(riskAssessment.overallRisk.level);
+    this.doc
+      .fontSize(16)
+      .font('Helvetica-Bold')
+      .fillColor(overallRiskColor)
+      .text(`Overall Risk Level: ${riskAssessment.overallRisk.level.toUpperCase()} (${riskAssessment.overallRisk.score}/100)`, this.margin, this.currentY);
+    
+    this.currentY += 20;
+
+    // Risk breakdown
+    const risks = [
+      { 
+        name: 'Churn Risk', 
+        risk: riskAssessment.churnRisk,
+        icon: '[CHURN]'
+      },
+      { 
+        name: 'Satisfaction Risk', 
+        risk: riskAssessment.satisfactionRisk,
+        icon: '[SATISFACTION]'
+      },
+      { 
+        name: 'Engagement Risk', 
+        risk: riskAssessment.engagementRisk,
+        icon: '[ENGAGEMENT]'
+      }
+    ];
+
+    risks.forEach(riskItem => {
+      if (riskItem.risk.level === 'high' || riskItem.risk.level === 'critical') {
+        const riskColor = this.getRiskColor(riskItem.risk.level);
+        
+        this.doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .fillColor(riskColor)
+          .text(`${riskItem.icon} ${riskItem.name}: ${riskItem.risk.level.toUpperCase()}`, this.margin, this.currentY);
+        
+        this.currentY += 15;
+
+        // Evidence
+        if (riskItem.risk.evidence.length > 0) {
+          this.doc
+            .fontSize(9)
+            .font('Helvetica')
+            .fillColor('#4a5568')
+            .text('Evidence:', this.margin + 20, this.currentY);
+          
+          this.currentY += 12;
+          
+          riskItem.risk.evidence.forEach(evidence => {
+            this.doc
+              .fontSize(8)
+              .font('Helvetica')
+              .fillColor('#718096')
+              .text(`• ${evidence}`, this.margin + 30, this.currentY, {
+                width: this.contentWidth - 30
+              });
+            this.currentY += 12;
+          });
+        }
+
+        // Recommendations
+        if (riskItem.risk.recommendations.length > 0) {
+          this.doc
+            .fontSize(9)
+            .font('Helvetica-Bold')
+            .fillColor('#2d3748')
+            .text('Recommended Actions:', this.margin + 20, this.currentY);
+          
+          this.currentY += 12;
+          
+          riskItem.risk.recommendations.slice(0, 3).forEach(rec => {
+            this.doc
+              .fontSize(8)
+              .font('Helvetica')
+              .fillColor('#4a5568')
+              .text(`• ${rec}`, this.margin + 30, this.currentY, {
+                width: this.contentWidth - 30
+              });
+            this.currentY += 12;
+          });
+        }
+
+        this.currentY += 10;
+      }
+    });
+  }
+
+  private addCustomerNews(customerNews?: NewsResult): void {
+    console.log('PDF: addCustomerNews called with:', {
+      hasCustomerNews: !!customerNews,
+      hasNewsArray: !!customerNews?.news,
+      newsLength: customerNews?.news?.length || 0,
+      hasSummary: !!customerNews?.summary,
+      hasActionItems: !!customerNews?.actionItems,
+      actionItemsLength: customerNews?.actionItems?.length || 0
+    });
+
+    // Always add the section title, even if no news
+    this.addSectionTitle('Recent Company News');
+
+    if (!customerNews || !customerNews.news || customerNews.news.length === 0) {
+      console.log('PDF: No customer news to display - showing fallback message');
+      
+      this.doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#718096')
+        .text('No recent news items found for this customer. This could be due to:', this.margin, this.currentY, {
+          width: this.contentWidth
+        });
+      
+      this.currentY += 15;
+      
+      this.doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#a0aec0')
+        .text('• Customer name not available for news search', this.margin + 20, this.currentY);
+      
+      this.currentY += 12;
+      
+      this.doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#a0aec0')
+        .text('• No recent news articles found', this.margin + 20, this.currentY);
+      
+      this.currentY += 12;
+      
+      this.doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#a0aec0')
+        .text('• News service temporarily unavailable', this.margin + 20, this.currentY);
+      
+      this.currentY += 20;
+      return;
+    }
+
+    console.log('PDF: Adding customer news section with', customerNews.news.length, 'items');
+
+    // News summary
+    if (customerNews.summary) {
+      this.doc
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .fillColor('#2d3748')
+        .text('Summary:', this.margin, this.currentY);
+      
+      this.currentY += 15;
+      
+      this.doc
+        .fontSize(9)
+        .font('Helvetica')
+        .fillColor('#4a5568')
+        .text(this.cleanTextForPdf(customerNews.summary), this.margin, this.currentY, {
+          width: this.contentWidth
+        });
+      
+      this.currentY += 20;
+    }
+
+    // Individual news items
+    const relevantNews = customerNews.news.filter(item => 
+      item.relevance === 'high' || item.relevance === 'medium'
+    ).slice(0, 5); // Limit to top 5 most relevant items
+
+    if (relevantNews.length > 0) {
+      this.doc
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .fillColor('#2d3748')
+        .text('Key News Items:', this.margin, this.currentY);
+      
+      this.currentY += 15;
+
+      relevantNews.forEach((item, index) => {
+        this.checkPageBreak(60);
+        
+        // News title
+        this.doc
+          .fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('#1a365d')
+          .text(`${index + 1}. ${this.cleanTextForPdf(item.title)}`, this.margin, this.currentY, {
+            width: this.contentWidth
+          });
+        
+        this.currentY += 15;
+
+        // News metadata (date, source, relevance, impact)
+        const metadata = [
+          `Date: ${new Date(item.pubDate).toLocaleDateString()}`,
+          `Source: ${item.source}`,
+          `Relevance: ${item.relevance.toUpperCase()}`,
+          `Impact: ${item.impact.toUpperCase()}`
+        ].join(' | ');
+
+        this.doc
+          .fontSize(8)
+          .font('Helvetica')
+          .fillColor('#718096')
+          .text(metadata, this.margin, this.currentY);
+        
+        this.currentY += 12;
+
+        // News summary or content snippet
+        const content = item.summary || item.contentSnippet || item.content;
+        if (content) {
+          const truncatedContent = content.length > 200 ? content.substring(0, 200) + '...' : content;
+          
+          this.doc
+            .fontSize(9)
+            .font('Helvetica')
+            .fillColor('#4a5568')
+            .text(this.cleanTextForPdf(truncatedContent), this.margin, this.currentY, {
+              width: this.contentWidth
+            });
+          
+          this.currentY += 20;
+        }
+
+        // Categories if available
+        if (item.categories && item.categories.length > 0) {
+          this.doc
+            .fontSize(8)
+            .font('Helvetica-Bold')
+            .fillColor('#805ad5')
+            .text(`Categories: ${item.categories.join(', ')}`, this.margin, this.currentY);
+          
+          this.currentY += 15;
+        }
+
+        this.currentY += 10;
+      });
+    }
+
+    // Action items from news if available
+    if (customerNews.actionItems && customerNews.actionItems.length > 0) {
+      this.doc
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .fillColor('#2d3748')
+        .text('News-Based Action Items:', this.margin, this.currentY);
+      
+      this.currentY += 15;
+
+      customerNews.actionItems.slice(0, 3).forEach((actionItem, index) => {
+        this.checkPageBreak(40);
+        
+        const priorityColor = actionItem.priority === 'high' ? '#e53e3e' : 
+                             actionItem.priority === 'medium' ? '#dd6b20' : '#38a169';
+        
+        this.doc
+          .fontSize(9)
+          .font('Helvetica-Bold')
+          .fillColor(priorityColor)
+          .text(`${index + 1}. [${actionItem.priority.toUpperCase()}] ${this.cleanTextForPdf(actionItem.title)}`, this.margin, this.currentY);
+        
+        this.currentY += 12;
+        
+        this.doc
+          .fontSize(8)
+          .font('Helvetica')
+          .fillColor('#4a5568')
+          .text(this.cleanTextForPdf(actionItem.description), this.margin, this.currentY, {
+            width: this.contentWidth
+          });
+        
+        this.currentY += 15;
+      });
     }
   }
 
@@ -218,28 +552,41 @@ export class MeetingPrepPdfGenerator {
   }
 
   private addSectionTitle(title: string): void {
-    this.checkPageBreak(30);
+    this.checkPageBreak(40);
+    
+    // Add some spacing before the title
+    this.currentY += 10;
     
     this.doc
-      .fontSize(16)
+      .fontSize(18)
       .font('Helvetica-Bold')
-      .fillColor('#2d3748')
+      .fillColor('#1a365d')
       .text(title, this.margin, this.currentY);
     
-    this.currentY += 25;
+    this.currentY += 30;
+    
+    // Add a subtle underline
+    this.doc
+      .strokeColor('#e2e8f0')
+      .lineWidth(1)
+      .moveTo(this.margin, this.currentY - 5)
+      .lineTo(this.pageWidth - this.margin, this.currentY - 5)
+      .stroke();
+    
+    this.currentY += 15;
   }
 
   private addCategoryTitle(category: string): void {
-    this.checkPageBreak(25);
+    this.checkPageBreak(30);
     
     const categoryTitle = category.replace(/_/g, ' ').toUpperCase();
     this.doc
-      .fontSize(12)
+      .fontSize(14)
       .font('Helvetica-Bold')
-      .fillColor('#4a5568')
+      .fillColor('#2d3748')
       .text(categoryTitle, this.margin, this.currentY);
     
-    this.currentY += 20;
+    this.currentY += 25;
   }
 
   private addTwoColumnData(leftData: Array<{label: string, value: string}>, rightData: Array<{label: string, value: string}>): void {
@@ -360,30 +707,42 @@ export class MeetingPrepPdfGenerator {
   }
 
   private addDocumentSection(title: string, content: string): void {
-    this.checkPageBreak(30);
+    this.checkPageBreak(40);
     
-    // Section title
+    // Section title (clean for PDF) - make it more prominent
+    const cleanTitle = this.cleanTextForPdf(title);
     this.doc
-      .fontSize(12)
+      .fontSize(16)
       .font('Helvetica-Bold')
-      .fillColor('#2d3748')
-      .text(title, this.margin, this.currentY);
+      .fillColor('#1a365d')
+      .text(cleanTitle, this.margin, this.currentY);
     
-    this.currentY += 20;
+    this.currentY += 25;
     
-    // Section content
+    // Add a subtle line under the title
+    this.doc
+      .strokeColor('#e2e8f0')
+      .lineWidth(0.5)
+      .moveTo(this.margin, this.currentY - 5)
+      .lineTo(this.pageWidth - this.margin, this.currentY - 5)
+      .stroke();
+    
+    this.currentY += 15;
+    
+    // Section content (clean for PDF)
+    const cleanContent = this.cleanTextForPdf(content);
     this.doc
       .fontSize(10)
       .font('Helvetica')
       .fillColor('#4a5568')
-      .text(content, this.margin, this.currentY, {
+      .text(cleanContent, this.margin, this.currentY, {
         width: this.contentWidth,
         align: 'justify'
       });
     
-    this.currentY += this.doc.heightOfString(content, {
+    this.currentY += this.doc.heightOfString(cleanContent, {
       width: this.contentWidth
-    }) + 15;
+    }) + 20;
   }
 
   private parseDocumentSections(content: string): Array<{title: string, content: string}> {
@@ -391,13 +750,18 @@ export class MeetingPrepPdfGenerator {
     const lines = content.split('\n');
     let currentSection = { title: '', content: '' };
     
-    for (const line of lines) {
+    console.log('PDF: Parsing document sections, total lines:', lines.length);
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
       const trimmedLine = line.trim();
       
-      // More flexible section header detection
+      // Enhanced section header detection for the new format
       const isSectionHeader = 
-        // Numbered sections (1. EXECUTIVE SUMMARY)
-        trimmedLine.match(/^\d+\.\s+[A-Z\s]+$/) ||
+        // Numbered sections (1. CRITICAL RISK ALERTS) - prioritize this format
+        trimmedLine.match(/^\d+\.\s+[A-Z\s]+/) ||
+        // New format with brackets [CRITICAL] CRITICAL RISK ALERTS
+        trimmedLine.match(/^\[[A-Z\s]+\]\s+[A-Z\s]+/) ||
         // All caps sections (EXECUTIVE SUMMARY)
         (trimmedLine.length > 3 && trimmedLine === trimmedLine.toUpperCase() && trimmedLine.match(/^[A-Z\s]+$/)) ||
         // Bold sections (**EXECUTIVE SUMMARY**)
@@ -406,17 +770,23 @@ export class MeetingPrepPdfGenerator {
         trimmedLine.match(/^#\s+[A-Z\s]+$/);
       
       if (isSectionHeader) {
+        console.log(`PDF: Found section header at line ${i}: "${trimmedLine}"`);
+        
         // Save previous section if it exists
         if (currentSection.title) {
           sections.push({ ...currentSection });
+          console.log(`PDF: Saved section: "${currentSection.title}"`);
         }
         
-        // Clean up the title (remove markdown formatting)
+        // Clean up the title (remove markdown formatting and brackets)
         let cleanTitle = trimmedLine
-          .replace(/^\d+\.\s+/, '') // Remove numbering
+          .replace(/^\d+\.\s+/, '') // Remove numbering first
+          .replace(/^\[[A-Z\s]+\]\s+/, '') // Remove [CRITICAL] prefix
           .replace(/^\*\*/, '').replace(/\*\*$/, '') // Remove bold markers
           .replace(/^#\s+/, '') // Remove hash
           .trim();
+        
+        console.log(`PDF: Clean title: "${cleanTitle}"`);
         
         // Start new section
         currentSection = {
@@ -435,24 +805,27 @@ export class MeetingPrepPdfGenerator {
     // Add the last section
     if (currentSection.title) {
       sections.push(currentSection);
+      console.log(`PDF: Saved final section: "${currentSection.title}"`);
     }
     
+    console.log('PDF: Total sections parsed:', sections.length);
     return sections;
   }
 
   private addRawContent(content: string): void {
     this.checkPageBreak(50);
     
+    const cleanContent = this.cleanTextForPdf(content);
     this.doc
       .fontSize(10)
       .font('Helvetica')
       .fillColor('#4a5568')
-      .text(content, this.margin, this.currentY, {
+      .text(cleanContent, this.margin, this.currentY, {
         width: this.contentWidth,
         align: 'left'
       });
     
-    this.currentY += this.doc.heightOfString(content, {
+    this.currentY += this.doc.heightOfString(cleanContent, {
       width: this.contentWidth
     }) + 20;
   }
@@ -464,6 +837,59 @@ export class MeetingPrepPdfGenerator {
       case 'info': return '#3182ce';
       default: return '#4a5568';
     }
+  }
+
+  private getHealthScoreColor(score: number): string {
+    if (score >= 80) return '#38a169'; // Green
+    if (score >= 60) return '#d69e2e'; // Yellow
+    if (score >= 40) return '#ed8936'; // Orange
+    return '#e53e3e'; // Red
+  }
+
+  private getRiskColor(level: string): string {
+    switch (level) {
+      case 'critical': return '#e53e3e'; // Red
+      case 'high': return '#ed8936'; // Orange
+      case 'medium': return '#d69e2e'; // Yellow
+      case 'low': return '#38a169'; // Green
+      default: return '#4a5568'; // Gray
+    }
+  }
+
+  /**
+   * Clean text for PDF generation by replacing emojis and special characters
+   */
+  private cleanTextForPdf(text: string): string {
+    if (!text) return '';
+    
+    return text
+      // Replace emojis with text equivalents
+      .replace(/🚨/g, '[CRITICAL]')
+      .replace(/⚠️/g, '[WARNING]')
+      .replace(/🔄/g, '[CHURN]')
+      .replace(/😞/g, '[SATISFACTION]')
+      .replace(/📞/g, '[ENGAGEMENT]')
+      .replace(/📰/g, '[NEWS]')
+      .replace(/📊/g, '[HEALTH]')
+      .replace(/💬/g, '[TALKING POINTS]')
+      .replace(/📋/g, '[ACTIONS]')
+      .replace(/❓/g, '[QUESTIONS]')
+      .replace(/🎯/g, '[OPPORTUNITIES]')
+      .replace(/📈/g, '[METRICS]')
+      .replace(/🔄/g, '[FOLLOW-UP]')
+      .replace(/💎/g, '[HIGH VALUE]')
+      .replace(/✅/g, '[EXCELLENT]')
+      .replace(/👍/g, '[GOOD]')
+      .replace(/🔍/g, '[INSIGHTS]')
+      .replace(/🚀/g, '[GROWTH]')
+      .replace(/💻/g, '[USAGE]')
+      .replace(/🏥/g, '[HEALTH SCORE]')
+      .replace(/🔍/g, '[RISK ASSESSMENT]')
+      // Remove any remaining problematic Unicode characters
+      .replace(/[^\x00-\x7F]/g, '')
+      // Clean up extra spaces
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private checkPageBreak(requiredSpace: number): void {

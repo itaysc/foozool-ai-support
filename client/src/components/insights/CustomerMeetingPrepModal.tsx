@@ -62,7 +62,7 @@ const CustomerMeetingPrepModal: React.FC<CustomerMeetingPrepModalProps> = ({
     <Modal
       open={open}
       onClose={handleClose}
-      title="Generate Meeting Prep Document"
+      title={loading ? "Generating Document..." : "Generate Meeting Prep Document"}
       maxWidth="sm"
       actions={
         <>
@@ -96,20 +96,37 @@ const CustomerMeetingPrepModal: React.FC<CustomerMeetingPrepModalProps> = ({
       }
     >
       <Box sx={{ minHeight: 120, py: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Select a customer to generate a comprehensive meeting preparation document with insights, health scores, and recent news.
-        </Typography>
-        
-        <Select
-          value={selectedCustomer}
-          onChange={(val) => setSelectedCustomer(String(val))}
-          label="Select Customer"
-          options={customerOptions}
-          searchable={true}
-          placeholder="Choose a customer..."
-          fullWidth={true}
-          size="medium"
-        />
+        {loading ? (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <CircularProgress size={40} sx={{ mb: 2 }} />
+            <Typography variant="h6" color="primary" sx={{ mb: 1 }}>
+              Generating Meeting Prep Document...
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              This may take a few moments while we analyze customer data, health scores, and recent news.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Please don't close this window during generation.
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Select a customer to generate a comprehensive meeting preparation document with insights, health scores, and recent news.
+            </Typography>
+            
+            <Select
+              value={selectedCustomer}
+              onChange={(val) => setSelectedCustomer(String(val))}
+              label="Select Customer"
+              options={customerOptions}
+              searchable={true}
+              placeholder="Choose a customer..."
+              fullWidth={true}
+              size="medium"
+            />
+          </>
+        )}
       </Box>
     </Modal>
   );
