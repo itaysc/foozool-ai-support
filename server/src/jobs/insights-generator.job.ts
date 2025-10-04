@@ -5,7 +5,7 @@ import { InsightModel } from '../schemas/insights.schema';
 import { OrganizationModel, CustomerModel } from '../schemas';
 import AnomalyDetectionService from '../services/anomaly-detection';
 import AnomalyService from '../services/anomaly-detection/anomaly.service';
-import { generateCustomerSuccessInsightsForOrganization } from '../services/insights/customerSuccess.service';
+import { generateCustomerSuccessInsightsForOrganization } from '../services/insights/customer-success';
 
 /**
  * Generate insights for all organizations or a specific organization by clustering recent ticket vectors

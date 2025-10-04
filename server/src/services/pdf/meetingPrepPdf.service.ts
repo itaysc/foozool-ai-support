@@ -15,6 +15,25 @@ export interface CustomerData {
   healthScore?: string;
   operatingRegions?: string[];
   countriesServed?: string[];
+  financialMetrics?: {
+    contractValue?: number;
+    annualRecurringRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    contractRenewalDate?: string | Date;
+    paymentHistory?: Array<{
+      date: string | Date;
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    creditScore?: number;
+    paymentTerms?: 'net15' | 'net30' | 'net60' | 'net90' | 'prepaid' | 'monthly' | 'annual';
+    lastPaymentDate?: string | Date;
+    outstandingBalance?: number;
+    averagePaymentDays?: number;
+    paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
+  };
   languages?: string[];
   exchange?: string;
   ticker?: string;

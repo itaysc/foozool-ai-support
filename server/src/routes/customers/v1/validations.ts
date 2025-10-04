@@ -5,7 +5,6 @@ export const createCustomerSchema = z.object({
   name: z.string().min(1, 'Customer name is required'),
   industry: z.string().optional(),
   companySize: z.enum(['1-10', '11-50', '51-200', '201-500', '500+']).optional(),
-  contractValue: z.coerce.number().min(0).optional(),
   startDate: z.string().datetime().optional(),
   accountManager: z.string().optional(),
   healthScore: z.coerce.number().min(1).max(10).optional(),
@@ -45,13 +44,32 @@ export const createCustomerSchema = z.object({
     note: z.string().optional(),
   })).optional(),
   mediaLookbackDaysDefault: z.coerce.number().min(1).optional(),
+  // Financial & Business Metrics
+  financialMetrics: z.object({
+    annualRecurringRevenue: z.coerce.number().min(0).optional(),
+    monthlyRecurringRevenue: z.coerce.number().min(0).optional(),
+    contractRenewalDate: z.string().datetime().optional(),
+    contractValue: z.coerce.number().min(0).optional(),
+    paymentHistory: z.array(z.object({
+      date: z.string().datetime(),
+      amount: z.coerce.number().min(0),
+      status: z.enum(['paid', 'overdue', 'pending', 'failed']),
+      method: z.string().optional(),
+      invoiceNumber: z.string().optional(),
+    })).optional(),
+    creditScore: z.coerce.number().min(300).max(850).optional(),
+    paymentTerms: z.enum(['net15', 'net30', 'net60', 'net90', 'prepaid', 'monthly', 'annual']).optional(),
+    lastPaymentDate: z.string().datetime().optional(),
+    outstandingBalance: z.coerce.number().min(0).optional(),
+    averagePaymentDays: z.coerce.number().min(0).optional(),
+    paymentReliability: z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
+  }).optional(),
 });
 
 export const updateCustomerSchema = z.object({
   name: z.string().min(1).optional(),
   industry: z.string().optional(),
   companySize: z.enum(['1-10', '11-50', '51-200', '201-500', '500+']).optional(),
-  contractValue: z.coerce.number().min(0).optional(),
   startDate: z.string().datetime().optional(),
   accountManager: z.string().optional(),
   healthScore: z.coerce.number().min(1).max(10).optional(),
@@ -90,12 +108,32 @@ export const updateCustomerSchema = z.object({
     note: z.string().optional(),
   })).optional(),
   mediaLookbackDaysDefault: z.coerce.number().min(1).optional(),
+  // Financial & Business Metrics
+  financialMetrics: z.object({
+    annualRecurringRevenue: z.coerce.number().min(0).optional(),
+    monthlyRecurringRevenue: z.coerce.number().min(0).optional(),
+    contractRenewalDate: z.string().datetime().optional(),
+    contractValue: z.coerce.number().min(0).optional(),
+    paymentHistory: z.array(z.object({
+      date: z.string().datetime(),
+      amount: z.coerce.number().min(0),
+      status: z.enum(['paid', 'overdue', 'pending', 'failed']),
+      method: z.string().optional(),
+      invoiceNumber: z.string().optional(),
+    })).optional(),
+    creditScore: z.coerce.number().min(300).max(850).optional(),
+    paymentTerms: z.enum(['net15', 'net30', 'net60', 'net90', 'prepaid', 'monthly', 'annual']).optional(),
+    lastPaymentDate: z.string().datetime().optional(),
+    outstandingBalance: z.coerce.number().min(0).optional(),
+    averagePaymentDays: z.coerce.number().min(0).optional(),
+    paymentReliability: z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
+  }).optional(),
 });
 
 export const getCustomersQuerySchema = z.object({
   page: z.string().transform(val => parseInt(val)).pipe(z.number().min(1)).optional(),
   limit: z.string().transform(val => parseInt(val)).pipe(z.number().min(1).max(100)).optional(),
-  sortBy: z.enum(['name', 'healthScore', 'contractValue', 'startDate', 'createdAt', 'updatedAt']).optional(),
+  sortBy: z.enum(['name', 'healthScore', 'startDate', 'createdAt', 'updatedAt']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
   industry: z.string().optional(),
   companySize: z.enum(['1-10', '11-50', '51-200', '201-500', '500+']).optional(),

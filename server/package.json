@@ -16,6 +16,7 @@
     "lint": "tsc --noEmit && eslint \"src/**/*.{tsx,ts,js}\"",
     "start-mcp": "nodemon -r dotenv/config --ext ts --exec 'node -r ts-node/register -r tsconfig-paths/register' src/mcp/index.ts",
     "test-mcp": "npx @modelcontextprotocol/inspector node dist/server/src/mcp/index.js",
+    "generate-user-activities": "node -r dotenv/config scripts/generate-user-activities.js 68485e9d1b8bc528969fee61 68bf380892aa6032eb66826e 100",
     "build": "tsc -p tsconfig.json"
   },
   "author": "Itay Schmidt",

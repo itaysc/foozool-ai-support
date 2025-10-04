@@ -133,7 +133,7 @@ router.get('/health-scores', authenticateJWT, hasPermission('insights:read'), as
             customerId: customer._id.toString(),
             customerName: customer.name,
             segment: customer.segment,
-            contractValue: customer.contractValue,
+            contractValue: customer.financialMetrics?.contractValue,
             healthScore: healthScore.overallScore,
             trend: healthScore.trend,
             lastUpdated: healthScore.lastUpdated
@@ -144,7 +144,7 @@ router.get('/health-scores', authenticateJWT, hasPermission('insights:read'), as
             customerId: customer._id.toString(),
             customerName: customer.name,
             segment: customer.segment,
-            contractValue: customer.contractValue,
+            contractValue: customer.financialMetrics?.contractValue,
             healthScore: 50, // Default neutral score
             trend: 'stable' as const,
             lastUpdated: new Date()

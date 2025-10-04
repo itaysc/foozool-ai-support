@@ -90,7 +90,7 @@ export class DataIntelligenceService {
           return {
             customerId: customer._id.toString(),
             healthScore: healthScore.overallScore,
-            contractValue: customer.contractValue || 0,
+            contractValue: customer.financialMetrics?.contractValue || 0,
             segment: customer.segment
           };
         } catch (error) {
@@ -98,7 +98,7 @@ export class DataIntelligenceService {
           return {
             customerId: customer._id.toString(),
             healthScore: 50, // Default neutral score
-            contractValue: customer.contractValue || 0,
+            contractValue: customer.financialMetrics?.contractValue || 0,
             segment: customer.segment
           };
         }

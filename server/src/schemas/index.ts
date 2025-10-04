@@ -14,6 +14,7 @@ import { CRMModel } from './crm.schema';
 import { ThresholdMissModel } from './thresholdMiss.schema';
 import { CustomerModel } from './customer.schema';
 import { CustomerActivityModel } from './customerActivity.schema';
+import { UserActivityModel } from './userActivity.schema';
 import { IndustryModel } from './industry.schema';
 import { RoleModel } from './role.schema';
 import { PermissionModel } from './permission.schema';
@@ -35,6 +36,7 @@ export {
   ThresholdMissModel,
   CustomerModel,
   CustomerActivityModel,
+  UserActivityModel,
   IndustryModel,
   RoleModel,
   PermissionModel,

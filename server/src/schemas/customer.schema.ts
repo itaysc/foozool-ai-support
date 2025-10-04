@@ -26,11 +26,6 @@ const CustomerSchema: Schema = new Schema<ICustomer>({
     enum: ['SMB', 'Mid-Market', 'Enterprise', 'Other'],
     index: true,
   },
-  contractValue: {
-    type: Number,
-    min: 0,
-    index: true,
-  },
   startDate: {
     type: Date,
     index: true,
@@ -120,6 +115,39 @@ const CustomerSchema: Schema = new Schema<ICustomer>({
     updatedAt: { type: Date, default: Date.now }
   }],
   // featureUsage moved to separate collection (FeatureUsage)
+  
+  // Financial & Business Metrics
+  financialMetrics: {
+    annualRecurringRevenue: { type: Number, min: 0 },
+    monthlyRecurringRevenue: { type: Number, min: 0 },
+    contractRenewalDate: { type: Date, index: true },
+    contractValue: { type: Number, min: 0 }, // This might duplicate existing field
+    paymentHistory: [{
+      date: { type: Date, required: true },
+      amount: { type: Number, required: true },
+      status: { 
+        type: String, 
+        enum: ['paid', 'overdue', 'pending', 'failed'],
+        required: true 
+      },
+      method: { type: String }, // 'credit_card', 'bank_transfer', 'check', etc.
+      invoiceNumber: { type: String }
+    }],
+    creditScore: { type: Number, min: 300, max: 850 },
+    paymentTerms: { 
+      type: String, 
+      enum: ['net15', 'net30', 'net60', 'net90', 'prepaid', 'monthly', 'annual'],
+      default: 'net30'
+    },
+    lastPaymentDate: { type: Date },
+    outstandingBalance: { type: Number, min: 0, default: 0 },
+    averagePaymentDays: { type: Number, min: 0 }, // Days to pay invoices
+    paymentReliability: { 
+      type: String, 
+      enum: ['excellent', 'good', 'fair', 'poor'],
+      default: 'good'
+    }
+  }
 }, {
   timestamps: true,
 });
@@ -135,5 +163,10 @@ CustomerSchema.index({ organizationId: 1, 'stakeholders.role': 1 }); // For role
 CustomerSchema.index({ organizationId: 1, 'stakeholders.engagement.level': 1 }); // For engagement filtering
 CustomerSchema.index({ organizationId: 1, 'stakeholders.department': 1 }); // For department filtering
 CustomerSchema.index({ organizationId: 1, 'stakeholders.stakeholderType': 1 }); // For stakeholder type filtering
+
+// Financial metrics indexes
+CustomerSchema.index({ organizationId: 1, 'financialMetrics.contractRenewalDate': 1 }); // For renewal tracking
+CustomerSchema.index({ organizationId: 1, 'financialMetrics.paymentReliability': 1 }); // For payment analysis
+CustomerSchema.index({ 'financialMetrics.outstandingBalance': -1 }); // For outstanding balance tracking
 
 export const CustomerModel = mongoose.model<ICustomer>('Customer', CustomerSchema);

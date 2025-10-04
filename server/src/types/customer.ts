@@ -30,7 +30,6 @@ export interface ICustomer {
   industry?: string;
   companySize?: string; // e.g., "1-10", "11-50", "51-200", "201-500", "500+"
   segment?: string; // e.g., SMB, Mid-Market, Enterprise
-  contractValue?: number;
   startDate?: Date;
   accountManager?: string; // Name of the account manager/CSM
   healthScore?: number; // 1-10 scale
@@ -86,6 +85,28 @@ export interface ICustomer {
     createdAt?: Date;
     updatedAt?: Date;
   }>;
+  
+  // Financial & Business Metrics
+  financialMetrics?: {
+    annualRecurringRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    contractRenewalDate?: Date;
+    contractValue?: number;
+    paymentHistory?: Array<{
+      date: Date;
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    creditScore?: number;
+    paymentTerms?: 'net15' | 'net30' | 'net60' | 'net90' | 'prepaid' | 'monthly' | 'annual';
+    lastPaymentDate?: Date;
+    outstandingBalance?: number;
+    averagePaymentDays?: number;
+    paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
+  };
+  
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -95,7 +116,6 @@ export interface CreateCustomerRequest {
   industry?: string;
   companySize?: string;
   segment?: string;
-  contractValue?: number;
   startDate?: string; // ISO date string
   accountManager?: string;
   healthScore?: number;
@@ -124,6 +144,27 @@ export interface CreateCustomerRequest {
   contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
   mediaLookbackDaysDefault?: number;
   stakeholders?: StakeholderData[];
+  
+  // Financial & Business Metrics
+  financialMetrics?: {
+    annualRecurringRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    contractRenewalDate?: string; // ISO date string
+    contractValue?: number;
+    paymentHistory?: Array<{
+      date: string; // ISO date string
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    creditScore?: number;
+    paymentTerms?: 'net15' | 'net30' | 'net60' | 'net90' | 'prepaid' | 'monthly' | 'annual';
+    lastPaymentDate?: string; // ISO date string
+    outstandingBalance?: number;
+    averagePaymentDays?: number;
+    paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
+  };
 }
 
 export interface UpdateCustomerRequest {
@@ -131,7 +172,6 @@ export interface UpdateCustomerRequest {
   industry?: string;
   companySize?: string;
   segment?: string;
-  contractValue?: number;
   startDate?: string; // ISO date string
   accountManager?: string;
   healthScore?: number;
@@ -160,4 +200,25 @@ export interface UpdateCustomerRequest {
   contentSources?: Array<{ type: 'rss' | 'twitter' | 'news' | 'custom'; handleOrUrl: string; note?: string }>;
   mediaLookbackDaysDefault?: number;
   stakeholders?: StakeholderData[];
+  
+  // Financial & Business Metrics
+  financialMetrics?: {
+    annualRecurringRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    contractRenewalDate?: string; // ISO date string
+    contractValue?: number;
+    paymentHistory?: Array<{
+      date: string; // ISO date string
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    creditScore?: number;
+    paymentTerms?: 'net15' | 'net30' | 'net60' | 'net90' | 'prepaid' | 'monthly' | 'annual';
+    lastPaymentDate?: string; // ISO date string
+    outstandingBalance?: number;
+    averagePaymentDays?: number;
+    paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
+  };
 }

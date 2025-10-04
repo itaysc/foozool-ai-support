@@ -19,9 +19,15 @@ export interface CustomerSuccessInsight {
         // Departmental health analysis
         'department_engagement_health' | 'department_adoption_gaps' | 'cross_department_silos' |
         // Role-based insights
-        'role_engagement_patterns' | 'role_adoption_barriers' | 'role_influence_distribution';
+        'role_engagement_patterns' | 'role_adoption_barriers' | 'role_influence_distribution' |
+        // Financial risk insights
+        'outstanding_balance' | 'payment_reliability' | 'contract_renewal' | 'credit_score' | 
+        'payment_delay' | 'revenue_growth' |
+        // User engagement insights
+        'user_adoption' | 'power_users' | 'solution_adoption' | 'role_engagement' | 'session_engagement' |
+        'activity_trend_decline' | 'feature_discovery' | 'usage_pattern_anomaly';
   message: string;
   severity: 'red' | 'yellow' | 'info';
-  category: 'risk' | 'upsell' | 'customer_success' | 'strategic';
+  category: 'risk' | 'upsell' | 'customer_success' | 'strategic' | 'financial_risk' | 'opportunity';
   meta?: Record<string, any>;
 }

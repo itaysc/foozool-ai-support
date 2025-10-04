@@ -33,7 +33,14 @@ CUSTOMER PROFILE:
 - Name: ${customer.name || 'N/A'}
 - Industry: ${customer.industry || 'N/A'}
 - Company Size: ${customer.companySize || 'N/A'}
-- Contract Value: ${customer.contractValue || 'N/A'}
+- Contract Value: ${customer.financialMetrics?.contractValue ? `$${customer.financialMetrics.contractValue.toLocaleString()}` : 'N/A'}
+- Annual Recurring Revenue: ${customer.financialMetrics?.annualRecurringRevenue ? `$${customer.financialMetrics.annualRecurringRevenue.toLocaleString()}` : 'N/A'}
+- Monthly Recurring Revenue: ${customer.financialMetrics?.monthlyRecurringRevenue ? `$${customer.financialMetrics.monthlyRecurringRevenue.toLocaleString()}` : 'N/A'}
+- Contract Renewal Date: ${customer.financialMetrics?.contractRenewalDate ? new Date(customer.financialMetrics.contractRenewalDate).toLocaleDateString() : 'N/A'}
+- Payment Terms: ${customer.financialMetrics?.paymentTerms || 'N/A'}
+- Payment Reliability: ${customer.financialMetrics?.paymentReliability || 'N/A'}
+- Outstanding Balance: ${customer.financialMetrics?.outstandingBalance ? `$${customer.financialMetrics.outstandingBalance.toLocaleString()}` : 'N/A'}
+- Credit Score: ${customer.financialMetrics?.creditScore || 'N/A'}
 - Health Score: ${healthScore.overallScore}/100 (${healthScore.trend})
 - Account Manager: ${customer.accountManager || 'N/A'}
 
@@ -195,6 +202,46 @@ Generate detailed, actionable content that will help the CS team have a producti
       points.push(`  • Are there features you'd like to explore more?`);
     }
 
+    // Financial talking points
+    if (customer.financialMetrics) {
+      points.push(`\n💰 FINANCIAL DISCUSSION POINTS:`);
+      
+      // Contract renewal
+      if (customer.financialMetrics.contractRenewalDate) {
+        const renewalDate = new Date(customer.financialMetrics.contractRenewalDate);
+        const daysToRenewal = Math.ceil((renewalDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysToRenewal <= 90 && daysToRenewal > 0) {
+          points.push(`  • Contract renewal coming up in ${daysToRenewal} days - let's discuss your plans`);
+          points.push(`  • What are your thoughts on renewing and any potential changes?`);
+        }
+      }
+      
+      // Outstanding balance
+      if (customer.financialMetrics.outstandingBalance && customer.financialMetrics.outstandingBalance > 0) {
+        points.push(`  • I notice there's an outstanding balance of $${customer.financialMetrics.outstandingBalance.toLocaleString()}`);
+        points.push(`  • Let's discuss payment arrangements and any concerns you might have`);
+      }
+      
+      // Payment reliability
+      if (customer.financialMetrics.paymentReliability && customer.financialMetrics.paymentReliability !== 'excellent') {
+        points.push(`  • I'd like to discuss our payment terms and see if we can improve the process`);
+        points.push(`  • Are there any challenges with our current payment arrangements?`);
+      }
+      
+      // Revenue growth opportunity
+      if (customer.financialMetrics.annualRecurringRevenue && customer.financialMetrics.monthlyRecurringRevenue) {
+        points.push(`  • Your ARR is $${customer.financialMetrics.annualRecurringRevenue.toLocaleString()} - great growth!`);
+        points.push(`  • What are your expansion plans for the coming year?`);
+      }
+      
+      // Credit score discussion
+      if (customer.financialMetrics.creditScore && customer.financialMetrics.creditScore < 700) {
+        points.push(`  • I'd like to understand your financial health and see how we can support you`);
+        points.push(`  • Are there any financial challenges we should be aware of?`);
+      }
+    }
+
     return points.join('\n');
   }
 
@@ -284,6 +331,41 @@ Generate detailed, actionable content that will help the CS team have a producti
             questions.push(`  • What support do you need during this challenging time?`);
           }
         });
+      }
+    }
+
+    // Financial questions
+    if (customer.financialMetrics) {
+      questions.push(`\n💰 FINANCIAL QUESTIONS:`);
+      
+      // Contract renewal questions
+      if (customer.financialMetrics.contractRenewalDate) {
+        const renewalDate = new Date(customer.financialMetrics.contractRenewalDate);
+        const daysToRenewal = Math.ceil((renewalDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysToRenewal <= 90 && daysToRenewal > 0) {
+          questions.push(`  • What are your plans for contract renewal?`);
+          questions.push(`  • Are you considering any changes to your current plan?`);
+          questions.push(`  • What factors will influence your renewal decision?`);
+        }
+      }
+      
+      // Payment and billing questions
+      if (customer.financialMetrics.outstandingBalance && customer.financialMetrics.outstandingBalance > 0) {
+        questions.push(`  • What's the best way to resolve the outstanding balance?`);
+        questions.push(`  • Are there any billing or payment issues we should address?`);
+      }
+      
+      if (customer.financialMetrics.paymentReliability && customer.financialMetrics.paymentReliability !== 'excellent') {
+        questions.push(`  • How can we make the payment process smoother for you?`);
+        questions.push(`  • Would different payment terms work better for your business?`);
+      }
+      
+      // Revenue and growth questions
+      if (customer.financialMetrics.annualRecurringRevenue) {
+        questions.push(`  • What's driving your revenue growth this year?`);
+        questions.push(`  • How can we support your expansion plans?`);
+        questions.push(`  • Are there additional services that would add value?`);
       }
     }
 

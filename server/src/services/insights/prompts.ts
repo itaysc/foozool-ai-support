@@ -8,12 +8,30 @@ export interface CustomerData {
   industry?: string;
   companySize?: string;
   segment?: string;
-  contractValue?: string | number;
   startDate?: string | Date;
   accountManager?: string;
   healthScore?: string | number;
   operatingRegions?: string[];
   countriesServed?: string[];
+  financialMetrics?: {
+    contractValue?: number;
+    annualRecurringRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    contractRenewalDate?: string | Date;
+    paymentHistory?: Array<{
+      date: string | Date;
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    creditScore?: number;
+    paymentTerms?: 'net15' | 'net30' | 'net60' | 'net90' | 'prepaid' | 'monthly' | 'annual';
+    lastPaymentDate?: string | Date;
+    outstandingBalance?: number;
+    averagePaymentDays?: number;
+    paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
+  };
   languages?: string[];
   publicListing?: {
     exchange?: string;
@@ -57,7 +75,7 @@ CUSTOMER PROFILE:
 - Industry: ${customer.industry || 'N/A'}
 - Company Size: ${customer.companySize || 'N/A'}
 - Segment: ${customer.segment || 'N/A'}
-- Contract Value: ${customer.contractValue || 'N/A'}
+- Contract Value: ${customer.financialMetrics?.contractValue ? `$${customer.financialMetrics.contractValue.toLocaleString()}` : 'N/A'}
 - Start Date: ${customer.startDate || 'N/A'}
 - Account Manager: ${customer.accountManager || 'N/A'}
 - Health Score: ${customer.healthScore || 'N/A'}
@@ -172,7 +190,7 @@ export function generateSimpleMeetingPrepPrompt(customer: CustomerData, insights
 CUSTOMER DETAILS:
 - Industry: ${customer.industry || 'N/A'}
 - Company Size: ${customer.companySize || 'N/A'}
-- Contract Value: ${customer.contractValue || 'N/A'}
+- Contract Value: ${customer.financialMetrics?.contractValue ? `$${customer.financialMetrics.contractValue.toLocaleString()}` : 'N/A'}
 - Health Score: ${customer.healthScore || 'N/A'}
 - Account Manager: ${customer.accountManager || 'N/A'}
 - Competitors: ${customer.competitorNames?.join(', ') || 'N/A'}

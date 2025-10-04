@@ -264,7 +264,7 @@ export class HealthScoreService {
     const factors: any = {};
 
     // Contract Value Factor (0-25 points)
-    const contractValue = customer.contractValue || 0;
+    const contractValue = customer.financialMetrics?.contractValue || 0;
     if (contractValue >= 100000) {
       factors.contractValue = 25; // High value
     } else if (contractValue >= 50000) {

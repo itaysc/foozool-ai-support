@@ -5,7 +5,6 @@ export interface ICustomer {
   industry?: string;
   companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
   segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
-  contractValue?: number;
   startDate?: string;
   accountManager?: string;
   healthScore?: number;
@@ -27,6 +26,26 @@ export interface ICustomer {
     activeUsersCount?: number;
     seatsPurchased?: number;
     seatsUsed?: number;
+  };
+  // Financial & Business Metrics
+  financialMetrics?: {
+    annualRecurringRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    contractRenewalDate?: string; // ISO date string
+    contractValue?: number;
+    paymentHistory?: Array<{
+      date: string; // ISO date string
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    creditScore?: number;
+    paymentTerms?: 'net15' | 'net30' | 'net60' | 'net90' | 'prepaid' | 'monthly' | 'annual';
+    lastPaymentDate?: string; // ISO date string
+    outstandingBalance?: number;
+    averagePaymentDays?: number;
+    paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
   };
   stakeholders?: Array<{
     _id?: string;
@@ -64,7 +83,6 @@ export interface CreateCustomerRequest {
   industry?: string;
   companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
   segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
-  contractValue?: number;
   startDate?: string;
   accountManager?: string;
   healthScore?: number;
@@ -87,6 +105,26 @@ export interface CreateCustomerRequest {
     seatsPurchased?: number;
     seatsUsed?: number;
   };
+  // Financial & Business Metrics
+  financialMetrics?: {
+    annualRecurringRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    contractRenewalDate?: string; // ISO date string
+    contractValue?: number;
+    paymentHistory?: Array<{
+      date: string; // ISO date string
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    creditScore?: number;
+    paymentTerms?: 'net15' | 'net30' | 'net60' | 'net90' | 'prepaid' | 'monthly' | 'annual';
+    lastPaymentDate?: string; // ISO date string
+    outstandingBalance?: number;
+    averagePaymentDays?: number;
+    paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
+  };
 }
 
 export interface UpdateCustomerRequest {
@@ -94,7 +132,6 @@ export interface UpdateCustomerRequest {
   industry?: string;
   companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
   segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
-  contractValue?: number;
   startDate?: string;
   accountManager?: string;
   healthScore?: number;
@@ -116,6 +153,26 @@ export interface UpdateCustomerRequest {
     activeUsersCount?: number;
     seatsPurchased?: number;
     seatsUsed?: number;
+  };
+  // Financial & Business Metrics
+  financialMetrics?: {
+    annualRecurringRevenue?: number;
+    monthlyRecurringRevenue?: number;
+    contractRenewalDate?: string; // ISO date string
+    contractValue?: number;
+    paymentHistory?: Array<{
+      date: string; // ISO date string
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    creditScore?: number;
+    paymentTerms?: 'net15' | 'net30' | 'net60' | 'net90' | 'prepaid' | 'monthly' | 'annual';
+    lastPaymentDate?: string; // ISO date string
+    outstandingBalance?: number;
+    averagePaymentDays?: number;
+    paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
   };
 }
 
@@ -137,7 +194,7 @@ export interface CustomerStats {
 export interface CustomerFilters {
   page?: number;
   limit?: number;
-  sortBy?: 'name' | 'healthScore' | 'contractValue' | 'startDate' | 'createdAt' | 'updatedAt';
+  sortBy?: 'name' | 'healthScore' | 'startDate' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
   industry?: string;
   companySize?: string;

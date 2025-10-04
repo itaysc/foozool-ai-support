@@ -2,7 +2,7 @@ import { InsightModel } from '../../schemas/insights.schema';
 import { CustomerModel } from '../../schemas';
 import mongoose from 'mongoose';
 import { UserContextManager } from '../../context/userContext';
-import { generateCustomerSuccessInsights, getSavedStakeholderInsights, getAllSavedCustomerSuccessInsights } from './customerSuccess.service';
+import { generateCustomerSuccessInsights, getSavedStakeholderInsights, getAllSavedCustomerSuccessInsights } from './customer-success';
 import { HealthScoreService } from './healthScore.service';
 import { DataIntelligenceService } from './dataIntelligence.service';
 import { callLLM } from '../llm';
@@ -471,7 +471,7 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
       industry: customer.industry,
       companySize: customer.companySize,
       segment: customer.segment,
-      contractValue: customer.contractValue ? `$${customer.contractValue.toLocaleString()}` : undefined,
+      contractValue: customer.financialMetrics?.contractValue ? `$${customer.financialMetrics.contractValue.toLocaleString()}` : undefined,
       startDate: customer.startDate ? new Date(customer.startDate).toLocaleDateString() : undefined,
       accountManager: customer.accountManager,
       healthScore: healthScore.overallScore.toString(),
