@@ -79,11 +79,27 @@ const InsightsPage: React.FC = () => {
   }, [effectiveOrgId, selectedCustomer]);
 
   // Fetch customer success insights
-  const fetchCustomerSuccessInsights = async (customerId: string) => {
-    if (!customerId) return;
+  const fetchCustomerSuccessInsights = async (customerId: string | null) => {
     try {
-      const res = await insightsService.getCustomerSuccessInsights(customerId);
-      setCsInsights(res.data || []);
+      if (customerId) {
+        // Fetch insights for specific customer
+        const res = await insightsService.getCustomerSuccessInsights(customerId);
+        setCsInsights(res.data || []);
+      } else {
+        // Fetch insights for all customers
+        const res = await insightsService.getAllCustomerSuccessInsights();
+        console.log('All customer success insights response:', res);
+        // Flatten the insights from all customers into a single array
+        const allInsights = res.data.flatMap((customerData: any) => 
+          customerData.insights.map((insight: any) => ({
+            ...insight,
+            customerId: customerData.customerId,
+            customerName: customerData.customerName
+          }))
+        );
+        console.log('Flattened all insights:', allInsights);
+        setCsInsights(allInsights);
+      }
     } catch (err) {
       console.error('Error fetching customer success insights:', err);
     }
@@ -91,9 +107,7 @@ const InsightsPage: React.FC = () => {
 
   // Load customer success insights when customer changes
   useEffect(() => {
-    if (selectedCustomer) {
-      fetchCustomerSuccessInsights(selectedCustomer);
-    }
+    fetchCustomerSuccessInsights(selectedCustomer);
   }, [selectedCustomer]);
 
   // Main data loading
@@ -156,7 +170,7 @@ const InsightsPage: React.FC = () => {
       try {
         // Only reload insights that are stored in DB (ticket cluster insights, NPS, CSAT)
         if (activeTab === 'ticket' || activeTab === 'nps') {
-          const insightsRes = await insightsService.getInsightsByOrganization(effectiveOrgId, dateFilter);
+          const insightsRes = await insightsService.getInsightsByOrganization(dateFilter);
           setInsights(insightsRes.data || []);
         }
       } catch (err) {
@@ -182,7 +196,8 @@ const InsightsPage: React.FC = () => {
 
   // Customer change handler
   const handleCustomerChange = (customerId: string) => {
-    setSelectedCustomer(customerId);
+    // Handle empty string (when clear button is clicked) by setting to null
+    setSelectedCustomer(customerId === '' ? null : customerId);
   };
 
   // Date filter change handler
@@ -199,7 +214,7 @@ const InsightsPage: React.FC = () => {
       setError(null);
 
       // Reload all data with current date filter
-      const insightsRes = await insightsService.getInsightsByOrganization(effectiveOrgId, dateFilter);
+      const insightsRes = await insightsService.getInsightsByOrganization(dateFilter);
       setInsights(insightsRes.data || []);
       setInsightSummary(null);
 
@@ -216,10 +231,8 @@ const InsightsPage: React.FC = () => {
         setNpsInsights(null);
       }
 
-      // Refresh customer success insights if customer is selected
-      if (selectedCustomer) {
-        await fetchCustomerSuccessInsights(selectedCustomer);
-      }
+      // Refresh customer success insights
+      await fetchCustomerSuccessInsights(selectedCustomer);
 
     } catch (err) {
       console.error('Error refreshing insights:', err);

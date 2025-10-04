@@ -389,7 +389,9 @@ export class HealthScoreService {
           lastUpdated: healthScore.lastUpdated
         },
         status: 'new',
-        createdAt: currentDate.toISOString()
+        createdAt: currentDate.toISOString(),
+        customerId: customerId,
+        customerName: '' // Will be populated when saving to database
       };
       
       insights.push(insight);
@@ -529,6 +531,16 @@ export class HealthScoreService {
     const currentDate = new Date();
     const weekYear = this.getWeekYear(currentDate);
 
+    // Get customer name
+    let customerName = '';
+    try {
+      const customer = await CustomerModel.findOne({ _id: custObjId, organizationId: orgObjId });
+      customerName = customer?.name || 'Unknown Customer';
+    } catch (error) {
+      console.error('[Health Score Insights] Error fetching customer name:', error);
+      customerName = 'Unknown Customer';
+    }
+
     for (const insight of insights) {
       const clusterId = this.generateHealthScoreClusterId(customerId, weekYear);
       
@@ -570,7 +582,7 @@ export class HealthScoreService {
           {
             organizationId: orgObjId,
             customerId: custObjId,
-            customerName: '', // Will be populated by the calling function
+            customerName: customerName,
             insightType: 'customer_success',
             clusterId: clusterId,
             issueDescription: insight.message,

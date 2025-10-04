@@ -36,6 +36,8 @@ export interface CustomerSuccessInsight {
   assignee?: string; // Optional user ID assigned to handle this insight
   status?: 'new' | 'in_progress' | 'resolved' | 'closed' | 'reopened'; // Jira-like status
   createdAt?: string; // Creation date in ISO string format
+  customerId?: string; // Customer ID this insight belongs to
+  customerName?: string; // Customer name for display
 }
 
 export interface CustomerSuccessInsightsResponse {

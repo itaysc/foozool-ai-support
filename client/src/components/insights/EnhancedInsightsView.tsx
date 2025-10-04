@@ -108,7 +108,16 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
 
   // Filter insights based on current filters
   const filteredInsights = useMemo(() => {
-    return insights.filter(insight => {
+    console.log('Filtering insights:', { 
+      totalInsights: insights.length, 
+      selectedCustomer, 
+      filters: filters.severity 
+    });
+    
+    const filtered = insights.filter(insight => {
+      // Check customer filter
+      if (selectedCustomer && insight.customerId !== selectedCustomer) return false;
+      
       // Check severity filter
       if (!filters.severity.includes(insight.severity)) return false;
       
@@ -125,19 +134,28 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
       
       return true;
     });
-  }, [insights, filters]);
+    
+    console.log('Filtered insights result:', { 
+      filteredCount: filtered.length,
+      customerIds: [...new Set(filtered.map(i => i.customerId))],
+      customerNames: [...new Set(filtered.map(i => i.customerName))]
+    });
+    
+    return filtered;
+  }, [insights, filters, selectedCustomer]);
 
-  // Calculate summary statistics (always from all insights, not filtered)
+  // Calculate summary statistics (from filtered insights when customer is selected, all insights otherwise)
   const summaryStats = useMemo(() => {
+    const insightsToCount = selectedCustomer ? filteredInsights : insights;
     const stats = {
-      total: insights.length,
-      critical: insights.filter(i => i.severity === 'red').length,
-      warning: insights.filter(i => i.severity === 'yellow').length,
-      info: insights.filter(i => i.severity === 'info').length
+      total: insightsToCount.length,
+      critical: insightsToCount.filter(i => i.severity === 'red').length,
+      warning: insightsToCount.filter(i => i.severity === 'yellow').length,
+      info: insightsToCount.filter(i => i.severity === 'info').length
     };
     
     return stats;
-  }, [insights]);
+  }, [insights, filteredInsights, selectedCustomer]);
 
   const handleInsightSelect = (insight: CustomerSuccessInsight) => {
     setSelectedInsight(insight);

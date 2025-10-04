@@ -44,7 +44,9 @@ export async function getSavedStakeholderInsights(customerId: string): Promise<C
       meta: insight.metadata?.meta || {},
       assignee: insight.assignee?.toString(),
       status: insight.status || 'new',
-      createdAt: insight.firstDetectedAt?.toISOString() || insight.lastUpdatedAt?.toISOString()
+      createdAt: insight.firstDetectedAt?.toISOString() || insight.lastUpdatedAt?.toISOString(),
+      customerId: insight.customerId?.toString(),
+      customerName: insight.customerName
     }));
   } catch (error) {
     console.error('[CS Insights] ❌ failed to fetch saved stakeholder insights:', error);
@@ -77,7 +79,9 @@ export async function getAllSavedCustomerSuccessInsights(customerId: string): Pr
       meta: insight.metadata?.meta || {},
       assignee: insight.assignee?.toString(),
       status: insight.status || 'new',
-      createdAt: insight.firstDetectedAt?.toISOString() || insight.lastUpdatedAt?.toISOString()
+      createdAt: insight.firstDetectedAt?.toISOString() || insight.lastUpdatedAt?.toISOString(),
+      customerId: insight.customerId?.toString(),
+      customerName: insight.customerName
     }));
   } catch (error) {
     console.error('[CS Insights] ❌ failed to fetch all saved customer success insights:', error);

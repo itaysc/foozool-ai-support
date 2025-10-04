@@ -294,9 +294,18 @@ export async function getAllCustomerSuccessInsights(): Promise<AllCustomerSucces
     for (const c of customers) {
       // DB-only fetch: all saved customer success insights per customer (no on-demand generation)
       const insights = await getAllSavedCustomerSuccessInsights(String(c._id));
-      results.push({ customerId: String(c._id), customerName: c.name, insights });
+      console.log(`Customer ${c.name} (${c._id}) has ${insights.length} insights`);
+      // Ensure each insight has the customer information
+      const insightsWithCustomerInfo = insights.map(insight => ({
+        ...insight,
+        customerId: String(c._id),
+        customerName: c.name
+      }));
+      results.push({ customerId: String(c._id), customerName: c.name, insights: insightsWithCustomerInfo });
     }
 
+    console.log(`Total customers with insights: ${results.length}`);
+    console.log(`Total insights across all customers: ${results.reduce((sum, r) => sum + r.insights.length, 0)}`);
     return { status: 200, payload: results };
   } catch (err) {
     console.error('Error generating CS insights for all customers:', err);
