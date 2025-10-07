@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Alert, Card, CardContent, Button, Select, MenuItem, FormControl, InputLabel, Paper, Divider, Chip, CircularProgress, Tabs, Tab } from '@mui/material';
+import { Box, Typography, Alert, Card, CardContent, Chip } from '@mui/material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
-import { PredictiveInsights } from '@/types/dataIntelligence';
-import PageHeader from '@/components/insights/PageHeader';
-import PredictiveInsightsCard from '@/components/insights/PredictiveInsightsCard';
 import { EnhancedInsightsView } from '@/components/insights';
-import { Description, Download, Psychology, Analytics } from '@mui/icons-material';
 import { insightsService } from '@/services/insights-service';
 import { surveysService } from '@/services/surveys-service';
 import CustomerMeetingPrepModal from '@/components/insights/CustomerMeetingPrepModal';
@@ -32,36 +28,11 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
   onCustomerChange
 }) => {
   const [meetingPrepModalOpen, setMeetingPrepModalOpen] = useState(false);
-  const [activeSubTab, setActiveSubTab] = useState(0);
-  
-  // Predictive Insights State
-  const [predictiveInsights, setPredictiveInsights] = useState<PredictiveInsights | null>(null);
-  const [predictiveInsightsLoading, setPredictiveInsightsLoading] = useState(false);
-  const [predictiveInsightsError, setPredictiveInsightsError] = useState<string | null>(null);
   
   // Customer-specific CSAT insights (separate from org-level insights passed as prop)
   const [customerCsatInsights, setCustomerCsatInsights] = useState<any | null>(null);
 
-  // Load Predictive Insights
-  const loadPredictiveInsights = async () => {
-    try {
-      setPredictiveInsightsLoading(true);
-      setPredictiveInsightsError(null);
-      
-      const predictiveRes = await insightsService.getPredictiveInsights();
-      setPredictiveInsights(predictiveRes.data);
-    } catch (error) {
-      console.error('Error loading predictive insights:', error);
-      setPredictiveInsightsError('Failed to load predictive insights');
-    } finally {
-      setPredictiveInsightsLoading(false);
-    }
-  };
 
-  // Load predictive insights on component mount
-  useEffect(() => {
-    loadPredictiveInsights();
-  }, []);
 
   const handleOpenMeetingPrepModal = () => {
     setMeetingPrepModalOpen(true);
@@ -89,9 +60,6 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
     window.URL.revokeObjectURL(url);
   };
 
-  const handleSubTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveSubTab(newValue);
-  };
 
   if (error) {
     return (
@@ -104,54 +72,7 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
 
   return (
     <Box>
-      <PageHeader
-        title="Customer Success Insights"
-        subtitle="AI-powered customer success analysis and data intelligence"
-        loading={loading || predictiveInsightsLoading}
-        onRefresh={() => {
-          onRefresh();
-          loadPredictiveInsights();
-        }}
-        actionButton={
-          <Button
-            variant="contained"
-            startIcon={<Description />}
-            onClick={handleOpenMeetingPrepModal}
-            sx={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-              }
-            }}
-          >
-            Meeting Prep
-          </Button>
-        }
-      />
-
-      {/* Sub-tabs for different views */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeSubTab} onChange={handleSubTabChange} aria-label="customer success tabs">
-          <Tab 
-            icon={<Analytics />} 
-            label="Customer Insights" 
-            iconPosition="start"
-            sx={{ textTransform: 'none', fontWeight: 500 }}
-          />
-          <Tab 
-            icon={<Psychology />} 
-            label="Predictive Insights" 
-            iconPosition="start"
-            sx={{ textTransform: 'none', fontWeight: 500 }}
-          />
-        </Tabs>
-      </Box>
-
-
-      {/* Tab Content */}
-      {activeSubTab === 0 && (
-        <Box>
+      <Box>
           {!selectedCustomer ? (
             <Alert severity="info">
               Please select a customer to view their specific insights and health score.
@@ -167,6 +88,7 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
                     selectedCustomer={selectedCustomer}
                     customers={customers}
                     onCustomerChange={onCustomerChange}
+                    onMeetingPrepClick={handleOpenMeetingPrepModal}
                   />
 
                   {/* CSAT Insights Section */}
@@ -227,28 +149,6 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
             </Box>
           )}
         </Box>
-      )}
-
-      {activeSubTab === 1 && (
-        <Box>
-          {predictiveInsightsError && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {predictiveInsightsError}
-            </Alert>
-          )}
-          {predictiveInsightsLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress size={60} />
-            </Box>
-          ) : predictiveInsights ? (
-            <PredictiveInsightsCard insights={predictiveInsights} />
-          ) : (
-            <Alert severity="info">
-              No predictive insights available. Please try refreshing the page.
-            </Alert>
-          )}
-        </Box>
-      )}
 
       {/* Meeting Prep Modal */}
       <CustomerMeetingPrepModal

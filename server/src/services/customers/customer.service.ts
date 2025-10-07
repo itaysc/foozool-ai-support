@@ -1,5 +1,5 @@
 import { CustomerModel } from '../../schemas/customer.schema';
-import { CreateCustomerRequest, UpdateCustomerRequest, ICustomer } from '../../types/customer';
+import { CreateCustomerRequest, UpdateCustomerRequest, ICustomer, CustomerStats } from '../../types/customer';
 
 export interface CustomerQueryOptions {
   page?: number;
@@ -18,13 +18,6 @@ export interface CustomerQueryOptions {
   };
 }
 
-export interface CustomerStats {
-  total: number;
-  byIndustry: Record<string, number>;
-  bySize: Record<string, number>;
-  bySegment: Record<string, number>;
-  averageHealthScore: number;
-}
 
     export class CustomerService {
   /**
@@ -93,12 +86,9 @@ export interface CustomerStats {
 
     return {
       customers,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
-      }
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
     };
   }
 
@@ -156,7 +146,7 @@ export interface CustomerStats {
           averageHealthScore: { $avg: '$healthScore' },
           industries: { $push: '$industry' },
           sizes: { $push: '$companySize' },
-          segments: { $push: '$segment' }
+          healthScores: { $push: '$healthScore' }
         }
       }
     ];
@@ -165,36 +155,55 @@ export interface CustomerStats {
     
     if (!result) {
       return {
-        total: 0,
-        byIndustry: {},
-        bySize: {},
-        bySegment: {},
-        averageHealthScore: 0
+        totalCustomers: 0,
+        averageHealthScore: 0,
+        customersByIndustry: [],
+        customersBySize: [],
+        healthScoreDistribution: []
       };
     }
 
-    // Count occurrences
-    const byIndustry = result.industries.reduce((acc: Record<string, number>, industry: string) => {
-      acc[industry] = (acc[industry] || 0) + 1;
+    // Count occurrences and convert to arrays
+    const industryCounts = result.industries.reduce((acc: Record<string, number>, industry: string) => {
+      if (industry) {
+        acc[industry] = (acc[industry] || 0) + 1;
+      }
       return acc;
     }, {});
 
-    const bySize = result.sizes.reduce((acc: Record<string, number>, size: string) => {
-      acc[size] = (acc[size] || 0) + 1;
+    const sizeCounts = result.sizes.reduce((acc: Record<string, number>, size: string) => {
+      if (size) {
+        acc[size] = (acc[size] || 0) + 1;
+      }
       return acc;
     }, {});
 
-    const bySegment = result.segments.reduce((acc: Record<string, number>, segment: string) => {
-      acc[segment] = (acc[segment] || 0) + 1;
+    const healthScoreCounts = result.healthScores.reduce((acc: Record<number, number>, score: number) => {
+      if (score) {
+        acc[score] = (acc[score] || 0) + 1;
+      }
       return acc;
     }, {});
+
+    // Convert to arrays and sort by count (descending)
+    const customersByIndustry = Object.entries(industryCounts)
+      .map(([industry, count]) => ({ industry, count: count as number }))
+      .sort((a, b) => b.count - a.count);
+
+    const customersBySize = Object.entries(sizeCounts)
+      .map(([size, count]) => ({ size, count: count as number }))
+      .sort((a, b) => b.count - a.count);
+
+    const healthScoreDistribution = Object.entries(healthScoreCounts)
+      .map(([score, count]) => ({ score: Number(score), count: count as number }))
+      .sort((a, b) => a.score - b.score);
 
     return {
-      total: result.total,
-      byIndustry,
-      bySize,
-      bySegment,
-      averageHealthScore: result.averageHealthScore || 0
+      totalCustomers: result.total,
+      averageHealthScore: result.averageHealthScore || 0,
+      customersByIndustry,
+      customersBySize,
+      healthScoreDistribution
     };
   }
 }

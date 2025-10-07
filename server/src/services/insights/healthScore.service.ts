@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import QdrantService from '../../qdrant/service';
 import { CustomerModel } from '../../schemas/customer.schema';
-import { PredictionModel } from '../../schemas/prediction.schema';
 import { InsightModel } from '../../schemas/insights.schema';
 import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
 import crypto from 'crypto';
@@ -75,11 +74,9 @@ export class HealthScoreService {
     // Get ticket statistics
     const ticketStats = await this.qdrantService.getCustomerTicketStats(customerId);
     
-    // Get recent predictions
-    const recentPredictions = await PredictionModel.find({
-      organizationId,
-      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
-    }).sort({ createdAt: -1 }).limit(100);
+    // Get recent predictions from insights collection
+    const { getPredictionInsights } = await import('./index');
+    const recentPredictions = await getPredictionInsights(organizationId, customerId, 100);
 
     // Calculate Support Health (40% weight)
     const supportHealth = await this.calculateSupportHealth(ticketStats, recentPredictions);
@@ -147,7 +144,7 @@ export class HealthScoreService {
 
     // Escalation Risk Factor (0-20 points)
     const highEscalationCount = predictions.filter(p => 
-      p.predictedEscalation?.risk === 'High'
+      p.escalationRisk === 'High'
     ).length;
     const escalationRate = predictions.length > 0 ? highEscalationCount / predictions.length : 0;
     
@@ -175,7 +172,7 @@ export class HealthScoreService {
 
     // CSAT Risk Factor (0-20 points)
     const highCsatRiskCount = predictions.filter(p => 
-      p.predictedCSAT?.risk === 'High'
+      p.csatRisk === 'High'
     ).length;
     const csatRiskRate = predictions.length > 0 ? highCsatRiskCount / predictions.length : 0;
     

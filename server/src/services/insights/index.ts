@@ -17,6 +17,7 @@ import {
 } from './prompts';
 import { RiskAssessmentService } from '../customers/riskAssessment.service';
 import { EnhancedMeetingPrepPromptGenerator } from '../customers/enhancedMeetingPrepPrompt.service';
+import { PredictionInsightsService } from './predictions.service';
 
 export interface DateFilter {
   fromDate?: string;
@@ -862,4 +863,64 @@ function convertCSATInsightsToUnified(csatInsights: any, customerId: string, cus
   }
 
   return insights;
+}
+
+
+/**
+ * Get prediction insights for an organization
+ */
+export async function getPredictionInsights(organizationId: string, customerId?: string, limit: number = 20) {
+  return await PredictionInsightsService.getPredictionInsightsByOrganization(organizationId, customerId, limit);
+}
+
+/**
+ * Get prediction summary for an organization
+ */
+export async function getPredictionSummary(organizationId: string, customerId?: string) {
+  return await PredictionInsightsService.getPredictionSummary(organizationId, customerId);
+}
+
+/**
+ * Get high-risk prediction insights for an organization
+ */
+export async function getHighRiskPredictionInsights(organizationId: string, customerId?: string, limit: number = 50) {
+  return await PredictionInsightsService.getHighRiskPredictionInsights(organizationId, customerId, limit);
+}
+
+/**
+ * Get accuracy analysis for predictions
+ */
+export async function getPredictionAccuracyAnalysis(organizationId: string, days: number = 30) {
+  return await PredictionInsightsService.getAccuracyAnalysis(organizationId, days);
+}
+
+/**
+ * Save prediction as insight
+ */
+export async function savePredictionAsInsight(
+  ticketId: string,
+  organizationId: string,
+  customerId: string | null,
+  customerName: string | null,
+  prediction: {
+    predictedEscalation: { risk: "Low" | "Medium" | "High"; confidence: number };
+    predictedCSAT: { risk: "Low" | "Medium" | "High"; confidence: number };
+    longResolutionPredicted?: boolean;
+    predictionConfidence?: number;
+  }
+) {
+  return await PredictionInsightsService.savePredictionAsInsight(
+    ticketId,
+    organizationId,
+    customerId,
+    customerName,
+    prediction
+  );
+}
+
+/**
+ * Migrate existing predictions to insights
+ */
+export async function migratePredictionsToInsights(organizationId: string) {
+  return await PredictionInsightsService.migratePredictionsToInsights(organizationId);
 }

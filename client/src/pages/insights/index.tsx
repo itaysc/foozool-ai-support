@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { BugReport, Analytics, Assessment, Dashboard } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
-import { Prediction, PredictionSummary, AccuracyAnalysis } from '@/types/prediction';
 import { CustomerSuccessInsight } from '@/types';
 import { insightsService } from '@/services/insights-service';
 import { useAuth } from '@/context/auth.context';
@@ -13,7 +12,6 @@ import { SideBar, NavItem } from '@/components/sideBar';
 import { DateFilter, DateFilterState } from '@/components/insights/DateFilter';
 import { 
   TicketInsightsTab, 
-  PredictionsTab, 
   CustomerSuccessTab,
   HealthScoreTab
 } from './tabs';
@@ -30,9 +28,6 @@ const InsightsPage: React.FC = () => {
   // Data state
   const [insights, setInsights] = useState<Insight[]>([]);
   const [insightSummary, setInsightSummary] = useState<InsightSummary | null>(null);
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [predictionSummary, setPredictionSummary] = useState<PredictionSummary | null>(null);
-  const [accuracyAnalysis, setAccuracyAnalysis] = useState<AccuracyAnalysis | null>(null);
   const [unifiedInsights, setUnifiedInsights] = useState<CustomerSuccessInsight[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -107,11 +102,6 @@ const InsightsPage: React.FC = () => {
         setInsights(insightsRes.data || []);
         setInsightSummary(null); // Will be loaded separately if needed
 
-        // Load predictions
-        const predictionsRes = await insightsService.getPredictions(20);
-        setPredictions(predictionsRes.data || []);
-        setPredictionSummary(null); // Will be loaded separately if needed
-        setAccuracyAnalysis(null); // Will be loaded separately if needed
 
         // Load unified insights (NPS, CSAT, and Customer Success)
         await fetchUnifiedInsights(selectedCustomer);
@@ -149,7 +139,6 @@ const InsightsPage: React.FC = () => {
   // Determine visible navigation items based on data or configured bots
   const navItems: NavItem[] = [
     { id: 'ticket', label: 'Ticket Insights', icon: <BugReport />, visible: true },
-    { id: 'pred', label: 'Predictions', icon: <Analytics />, visible: true },
     { id: 'insights', label: 'Insights', icon: <Dashboard />, visible: true },
     { id: 'health', label: 'Customer Health', icon: <Assessment />, visible: true }
   ];
@@ -183,10 +172,6 @@ const InsightsPage: React.FC = () => {
       setInsights(insightsRes.data || []);
       setInsightSummary(null);
 
-      const predictionsRes = await insightsService.getPredictions(20);
-      setPredictions(predictionsRes.data || []);
-      setPredictionSummary(null);
-      setAccuracyAnalysis(null);
 
 
       // Refresh unified insights
@@ -206,7 +191,7 @@ const InsightsPage: React.FC = () => {
     setActiveTab(validTabs[0]);
   }
 
-  if (loading && !insights.length && !predictions.length) {
+  if (loading && !insights.length) {
     return (
       <Box sx={{ 
         display: 'flex', 
@@ -219,7 +204,7 @@ const InsightsPage: React.FC = () => {
     );
   }
 
-  if (error && !insights.length && !predictions.length) {
+  if (error && !insights.length) {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error">{error}</Alert>
@@ -264,16 +249,6 @@ const InsightsPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'pred' && (
-          <PredictionsTab
-            predictions={predictions}
-            predictionSummary={predictionSummary}
-            accuracyAnalysis={accuracyAnalysis}
-            loading={loading}
-            error={error}
-            onRefresh={refreshInsights}
-          />
-        )}
 
         {activeTab === 'insights' && (
           <CustomerSuccessTab

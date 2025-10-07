@@ -134,8 +134,12 @@ class CustomersStore {
       const response: CustomerListResponse = await customersService.getAll(updatedFilters);
       
       runInAction(() => {
-        this.setCustomers(response.customers);
-        this.setPagination(response.page, response.totalPages, response.total);
+        this.setCustomers(response.customers || []);
+        this.setPagination(
+          response.page || 1, 
+          response.totalPages || 0, 
+          response.total || 0
+        );
         this.setFilters(updatedFilters);
         this.setLastUpdated(new Date());
       });

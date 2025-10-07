@@ -157,13 +157,6 @@ export const insightsService = {
     return response.data;
   },
 
-  /**
-   * Get predictive insights for the organization
-   */
-  async getPredictiveInsights(): Promise<any> {
-    const response = await axios.get(getRoute('insights/predictive'));
-    return response.data;
-  },
 
   /**
    * Update assignee for a specific insight

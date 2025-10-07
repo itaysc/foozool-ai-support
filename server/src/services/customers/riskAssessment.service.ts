@@ -1,7 +1,6 @@
 import { HealthScoreFactors } from '../insights/healthScore.service';
 import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
 import QdrantService from '../../qdrant/service';
-import { PredictionModel } from '../../schemas/prediction.schema';
 import { UserContextManager } from '../../context/userContext';
 
 export interface RiskAssessment {
@@ -60,11 +59,9 @@ export class RiskAssessmentService {
     // Get ticket statistics for deeper analysis
     const ticketStats = await this.qdrantService.getCustomerTicketStats(customerId);
     
-    // Get recent predictions
-    const recentPredictions = await PredictionModel.find({
-      organizationId,
-      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
-    }).sort({ createdAt: -1 }).limit(50);
+    // Get recent predictions from insights collection
+    const { getPredictionInsights } = await import('../insights');
+    const recentPredictions = await getPredictionInsights(organizationId, customerId, 50);
 
     // Assess each type of risk
     const churnRisk = await this.assessChurnRisk(healthScore, ticketStats, recentPredictions, insights, customerNews);
@@ -178,7 +175,7 @@ export class RiskAssessmentService {
 
     // CSAT predictions (40% weight)
     const highCsatRiskCount = predictions.filter(p => 
-      p.predictedCSAT?.risk === 'High'
+      p.csatRisk === 'High'
     ).length;
     const csatRiskRate = predictions.length > 0 ? highCsatRiskCount / predictions.length : 0;
     
@@ -213,7 +210,7 @@ export class RiskAssessmentService {
 
     // Escalation patterns (10% weight)
     const highEscalationCount = predictions.filter(p => 
-      p.predictedEscalation?.risk === 'High'
+      p.escalationRisk === 'High'
     ).length;
     const escalationRate = predictions.length > 0 ? highEscalationCount / predictions.length : 0;
     

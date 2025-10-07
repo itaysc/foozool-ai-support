@@ -220,46 +220,31 @@ router.get('/predictive', authenticateJWT, hasPermission('insights:read'), async
       });
     }
 
-    // Get recent predictions
-    const { PredictionModel } = require('../../../schemas/prediction.schema');
-    const recentPredictions = await PredictionModel.find({
-      organizationId: organizationId,
-      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
-    }).sort({ createdAt: -1 }).limit(100);
-
-    // Analyze predictions
-    const escalationPredictions = recentPredictions.filter(p => 
-      p.predictedEscalation?.risk === 'High'
-    );
-    
-    const csatPredictions = recentPredictions.filter(p => 
-      p.predictedCSAT?.risk === 'High'
-    );
-    
-    const longResolutionPredictions = recentPredictions.filter(p => 
-      p.longResolutionPredicted === true
-    );
+    // Get prediction insights from insights collection
+    const { getPredictionInsights, getPredictionSummary } = await import('../../../services/insights');
+    const recentPredictions = await getPredictionInsights(organizationId, undefined, 100);
+    const summary = await getPredictionSummary(organizationId);
 
     const insights = {
-      totalPredictions: recentPredictions.length,
+      totalPredictions: summary.totalPredictions,
       escalationRisk: {
-        high: escalationPredictions.length,
-        percentage: recentPredictions.length > 0 ? Math.round((escalationPredictions.length / recentPredictions.length) * 100) : 0
+        high: summary.highEscalationRisk,
+        percentage: summary.escalationRiskPercentage
       },
       csatRisk: {
-        high: csatPredictions.length,
-        percentage: recentPredictions.length > 0 ? Math.round((csatPredictions.length / recentPredictions.length) * 100) : 0
+        high: summary.highCSATRisk,
+        percentage: summary.csatRiskPercentage
       },
       resolutionTime: {
-        longResolution: longResolutionPredictions.length,
-        percentage: recentPredictions.length > 0 ? Math.round((longResolutionPredictions.length / recentPredictions.length) * 100) : 0
+        longResolution: summary.longResolutionPredictions,
+        percentage: summary.longResolutionPercentage
       },
       recentPredictions: recentPredictions.slice(0, 10).map(p => ({
         ticketId: p.ticketId,
-        escalationRisk: p.predictedEscalation?.risk,
-        csatRisk: p.predictedCSAT?.risk,
+        escalationRisk: p.escalationRisk,
+        csatRisk: p.csatRisk,
         longResolution: p.longResolutionPredicted,
-        confidence: p.predictionConfidence,
+        confidence: p.confidence,
         createdAt: p.createdAt
       }))
     };

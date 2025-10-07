@@ -2,7 +2,7 @@ import express from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { UserContextManager } from '../../../context/userContext';
 import { generateInsightsJob } from '../../../jobs/insights-generator.job';
-import { generateAndSaveCustomerSuccessInsights } from '../../../services/insights';
+import { generateCustomerInsightsJob, migratePredictionsToInsightsJob } from '../../../jobs/customer-insights-generator.job';
 import { createTicket } from '../../../services/faker/create-ticket';
 import { hasPermission } from '../../../middleware/permissions';
 
@@ -38,78 +38,47 @@ const availableJobs = {
         organizationId 
       };
     }
-  }
-  ,
-  'customer-success-generate': {
-    name: 'Generate Customer Success Insights (by customer)',
-    description: 'Generates and saves Customer Success insights for a specific customer',
+  },
+  'customer-insights-generate': {
+    name: 'Generate Comprehensive Customer Insights (by customer)',
+    description: 'Generates all types of customer insights including Customer Success, Health Score Risk, and Prediction insights for a specific customer',
     requiresOrganization: true,
     execute: async (organizationId?: string, userId?: string, params?: { customerId?: string }) => {
+      if (!organizationId) {
+        throw new Error('organizationId is required');
+      }
       if (!params?.customerId) {
         throw new Error('customerId is required');
       }
-      const result = await generateAndSaveCustomerSuccessInsights(params.customerId);
-      return { message: 'Customer Success insights generated', customerId: params.customerId, result };
+      
+      const result = await generateCustomerInsightsJob(organizationId, params.customerId, userId);
+      return result;
     }
   },
-  'customer-success-generate-all': {
-    name: 'Generate Customer Success Insights (all customers)',
-    description: 'Generates and saves Customer Success insights for all customers in the organization',
+  'customer-insights-generate-all': {
+    name: 'Generate Comprehensive Customer Insights (all customers)',
+    description: 'Generates all types of customer insights including Customer Success, Health Score Risk, and Prediction insights for all customers in the organization',
     requiresOrganization: true,
     execute: async (organizationId?: string, userId?: string) => {
       if (!organizationId) {
         throw new Error('organizationId is required');
       }
       
-      // Import CustomerModel to get all customers
-      const { CustomerModel } = await import('../../../schemas');
-      
-      // Get all customers for the organization
-      const customers = await CustomerModel.find({ organizationId })
-        .select({ _id: 1, name: 1 })
-        .lean();
-
-      const results: Array<{
-        customerId: string;
-        customerName?: string;
-        success: boolean;
-        insightsCount?: number;
-        error?: string;
-      }> = [];
-      let successCount = 0;
-      let errorCount = 0;
-
-      // Generate insights for each customer
-      for (const customer of customers) {
-        try {
-          console.log(`Generating CS insights for customer: ${customer.name} (${customer._id})`);
-          const result = await generateAndSaveCustomerSuccessInsights(String(customer._id));
-          results.push({
-            customerId: String(customer._id),
-            customerName: customer.name,
-            success: true,
-            insightsCount: result.payload?.allInsights?.length || 0
-          });
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to generate insights for customer ${customer._id}:`, error);
-          results.push({
-            customerId: String(customer._id),
-            customerName: customer.name,
-            success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
-          });
-          errorCount++;
-        }
+      const result = await generateCustomerInsightsJob(organizationId, undefined, userId);
+      return result;
+    }
+  },
+  'migrate-predictions-to-insights': {
+    name: 'Migrate Predictions to Insights',
+    description: 'Migrates existing predictions from the predictions collection to the insights collection',
+    requiresOrganization: true,
+    execute: async (organizationId?: string, userId?: string) => {
+      if (!organizationId) {
+        throw new Error('organizationId is required');
       }
-
-      return {
-        message: 'Customer Success insights generation completed',
-        totalCustomers: customers.length,
-        successCount,
-        errorCount,
-        results
-      };
+      
+      const result = await migratePredictionsToInsightsJob(organizationId, userId);
+      return result;
     }
   }
 };

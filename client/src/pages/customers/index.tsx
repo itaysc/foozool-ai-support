@@ -541,9 +541,9 @@ const CustomersPage: React.FC = () => {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25, 50]}
           component="div"
-          count={customersStore.totalCustomers}
-          rowsPerPage={customersStore.rowsPerPage}
-          page={customersStore.currentPage - 1}
+          count={customersStore.totalCustomers || 0}
+          rowsPerPage={customersStore.rowsPerPage || 10}
+          page={Math.max(0, (customersStore.currentPage || 1) - 1)}
           onPageChange={handlePageChange}
           onRowsPerPageChange={handleRowsPerPageChange}
         />

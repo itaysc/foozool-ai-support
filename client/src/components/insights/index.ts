@@ -12,6 +12,5 @@ export { default as PageHeader } from './PageHeader';
 export { default as HealthScoreCard } from './HealthScoreCard';
 export { default as HealthScoresList } from './HealthScoresList';
 export { default as DataIntelligenceDashboard } from './DataIntelligenceDashboard';
-export { default as PredictiveInsightsCard } from './PredictiveInsightsCard';
 export { default as CustomerMeetingPrepModal } from './CustomerMeetingPrepModal';
 export { default as DateFilter } from './DateFilter';

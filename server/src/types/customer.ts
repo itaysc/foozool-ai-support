@@ -222,3 +222,11 @@ export interface UpdateCustomerRequest {
     paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
   };
 }
+
+export interface CustomerStats {
+  totalCustomers: number;
+  averageHealthScore: number;
+  customersByIndustry: Array<{ industry: string; count: number }>;
+  customersBySize: Array<{ size: string; count: number }>;
+  healthScoreDistribution: Array<{ score: number; count: number }>;
+}

@@ -11,7 +11,7 @@ import {
   alpha,
   Paper
 } from '@mui/material';
-import { FilterList, Refresh, TrendingUp, Analytics } from '@mui/icons-material';
+import { FilterList, Refresh, TrendingUp, Analytics, Description } from '@mui/icons-material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
 import InsightSummaryCard from './InsightSummaryCard';
 import InsightFilterPanel from './InsightFilterPanel';
@@ -26,6 +26,7 @@ interface EnhancedInsightsViewProps {
   selectedCustomer?: string | null;
   customers?: any[];
   onCustomerChange?: (customerId: string) => void;
+  onMeetingPrepClick?: () => void;
 }
 
 const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
@@ -34,7 +35,8 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
   onRefresh,
   selectedCustomer,
   customers = [],
-  onCustomerChange
+  onCustomerChange,
+  onMeetingPrepClick
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -262,40 +264,66 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
               fontWeight: 700,
               fontSize: '1.5rem'
             }}>
-              Insights Overview
+              Customer Insights Overview
             </Typography>
           </Box>
           
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
-            <IconButton 
-              onClick={() => setFilterPanelOpen(!filterPanelOpen)}
-              size="small"
-              sx={{ 
-                backgroundColor: filterPanelOpen ? alpha('#ffffff', 0.2) : alpha('#ffffff', 0.1),
-                color: 'white',
-                '&:hover': {
-                  backgroundColor: alpha('#ffffff', 0.2)
-                }
-              }}
-            >
-              <FilterList sx={{ fontSize: 18 }} />
-            </IconButton>
-            
-            {onRefresh && (
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {onMeetingPrepClick && (
+              <Button
+                variant="contained"
+                startIcon={<Description />}
+                onClick={onMeetingPrepClick}
+                size="small"
+                sx={{
+                  background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                  color: '#495057',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  px: 2,
+                  py: 0.5,
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #ffffff 0%, #f1f3f4 100%)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  }
+                }}
+              >
+                Meeting Prep
+              </Button>
+            )}
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
               <IconButton 
-                onClick={onRefresh}
+                onClick={() => setFilterPanelOpen(!filterPanelOpen)}
                 size="small"
                 sx={{ 
-                  backgroundColor: alpha('#ffffff', 0.1),
+                  backgroundColor: filterPanelOpen ? alpha('#ffffff', 0.2) : alpha('#ffffff', 0.1),
                   color: 'white',
                   '&:hover': {
                     backgroundColor: alpha('#ffffff', 0.2)
                   }
                 }}
               >
-                <Refresh sx={{ fontSize: 18 }} />
+                <FilterList sx={{ fontSize: 18 }} />
               </IconButton>
-            )}
+              
+              {onRefresh && (
+                <IconButton 
+                  onClick={onRefresh}
+                  size="small"
+                  sx={{ 
+                    backgroundColor: alpha('#ffffff', 0.1),
+                    color: 'white',
+                    '&:hover': {
+                      backgroundColor: alpha('#ffffff', 0.2)
+                    }
+                  }}
+                >
+                  <Refresh sx={{ fontSize: 18 }} />
+                </IconButton>
+              )}
+            </Box>
           </Box>
         </Box>
       </Paper>

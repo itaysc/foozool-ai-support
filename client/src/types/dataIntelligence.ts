@@ -95,29 +95,6 @@ export interface HealthScoresResponse {
   };
 }
 
-export interface PredictiveInsights {
-  totalPredictions: number;
-  escalationRisk: {
-    high: number;
-    percentage: number;
-  };
-  csatRisk: {
-    high: number;
-    percentage: number;
-  };
-  resolutionTime: {
-    longResolution: number;
-    percentage: number;
-  };
-  recentPredictions: Array<{
-    ticketId: string;
-    escalationRisk: string;
-    csatRisk: string;
-    longResolution: boolean;
-    confidence: number;
-    createdAt: string;
-  }>;
-}
 
 export interface CustomerDataIntelligence {
   healthScore: HealthScoreFactors;

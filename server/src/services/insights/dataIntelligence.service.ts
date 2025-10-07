@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 import { HealthScoreService } from '../../services/insights/healthScore.service';
 import QdrantService from '../../qdrant/service';
 import { CustomerModel } from '../../schemas/customer.schema';
-import { PredictionModel } from '../../schemas/prediction.schema';
 import { UserContextManager } from '../../context/userContext';
 
 export interface DataIntelligenceMetrics {
@@ -163,15 +162,13 @@ export class DataIntelligenceService {
    * Calculate support intelligence metrics
    */
   private async calculateSupportIntelligence(organizationId: string): Promise<DataIntelligenceMetrics['supportIntelligence']> {
-    // Get recent predictions for support metrics
-    const recentPredictions = await PredictionModel.find({
-      organizationId,
-      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } // Last 30 days
-    });
+    // Get recent predictions for support metrics from insights collection
+    const { getPredictionInsights } = await import('./index');
+    const recentPredictions = await getPredictionInsights(organizationId, undefined, 100);
 
     const totalTickets = recentPredictions.length;
     const escalatedTickets = recentPredictions.filter(p => 
-      p.predictedEscalation?.risk === 'High'
+      p.escalationRisk === 'High'
     ).length;
     const escalationRate = totalTickets > 0 ? escalatedTickets / totalTickets : 0;
 
@@ -283,11 +280,9 @@ export class DataIntelligenceService {
     // Get ticket analytics
     const ticketStats = await this.qdrantService.getCustomerTicketStats(customerId);
     
-    // Get predictive insights
-    const recentPredictions = await PredictionModel.find({
-      organizationId,
-      createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
-    }).sort({ createdAt: -1 }).limit(10);
+    // Get predictive insights from insights collection
+    const { getPredictionInsights } = await import('./index');
+    const recentPredictions = await getPredictionInsights(organizationId, customerId, 10);
 
     // Generate recommendations
     const recommendations = await this.healthScoreService.getHealthScoreInsights(healthScore);

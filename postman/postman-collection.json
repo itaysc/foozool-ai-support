@@ -2684,20 +2684,170 @@
           "response": []
         },
         {
-          "name": "Run Job by ID - Customer Success (by customer)",
+          "name": "Run Job by ID - Customer Insights (by customer)",
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Authorization", "value": "Bearer {{auth_token}}", "type": "text" },
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"customerId\": \"{{customer_id}}\"\n}" },
-            "url": {
-              "raw": "{{nodejs_base_url}}/api/v1/jobs/run/customer-success-generate",
-              "host": ["{{nodejs_base_url}}"],
-              "path": ["api", "v1", "jobs", "run", "customer-success-generate"]
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customer_id}}\"\n}"
             },
-            "description": "Execute the customer-specific Customer Success insights job using its ID. Include customerId in the request body."
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/run/customer-insights-generate",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "run", "customer-insights-generate"]
+            },
+            "description": "Execute the comprehensive customer insights job for a specific customer using its ID. Include customerId in the request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Job by ID - Customer Insights (all customers)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/run/customer-insights-generate-all",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "run", "customer-insights-generate-all"]
+            },
+            "description": "Execute the comprehensive customer insights job for all customers using its ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Job by ID - Migrate Predictions to Insights",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/run/migrate-predictions-to-insights",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "run", "migrate-predictions-to-insights"]
+            },
+            "description": "Execute the predictions migration job using its ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Comprehensive Customer Insights Job (by customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customer_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/customer-insights-generate/run",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "customer-insights-generate", "run"]
+            },
+            "description": "Generate comprehensive customer insights including Customer Success, Health Score Risk, and Prediction insights for a specific customer. Include customerId in the request body."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Comprehensive Customer Insights Job (all customers)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/customer-insights-generate-all/run",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "customer-insights-generate-all", "run"]
+            },
+            "description": "Generate comprehensive customer insights including Customer Success, Health Score Risk, and Prediction insights for all customers in the organization."
+          },
+          "response": []
+        },
+        {
+          "name": "Migrate Predictions to Insights",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": ""
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/jobs/migrate-predictions-to-insights/run",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "jobs", "migrate-predictions-to-insights", "run"]
+            },
+            "description": "Migrate existing predictions from the predictions collection to the insights collection for the organization."
           },
           "response": []
         }

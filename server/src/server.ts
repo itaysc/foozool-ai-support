@@ -25,7 +25,6 @@ import autonomousAIRoutesV1 from './routes/autonomousAI/v1';
 import insightsRoutesV1 from './routes/insights/v1';
 import analyticsRoutesV1 from './routes/analytics/v1';
 import jobsRoutesV1 from './routes/jobs/v1';
-import predictionsRoutesV1 from './routes/predictions/v1';
 import crmRoutesV1 from './routes/crm/v1';
 import anomaliesRoutesV1 from './routes/anomalies/v1';
 import surveysRoutesV1 from './routes/surveys/v1';
@@ -96,7 +95,6 @@ export default class Server{
       this.app.use('/api/v1/insights', insightsRoutesV1);
       this.app.use('/api/v1/analytics', analyticsRoutesV1);
       this.app.use('/api/v1', jobsRoutesV1);
-      this.app.use('/api/v1', predictionsRoutesV1);
       this.app.use('/api/v1/crm', crmRoutesV1);
       this.app.use('/api/v1/anomalies', anomaliesRoutesV1);
       this.app.use('/api/v1/surveys', surveysRoutesV1);
