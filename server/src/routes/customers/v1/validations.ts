@@ -64,6 +64,11 @@ export const createCustomerSchema = z.object({
     averagePaymentDays: z.coerce.number().min(0).optional(),
     paymentReliability: z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
   }).optional(),
+  slas: z.array(z.object({
+    name: z.string().min(1),
+    amount: z.coerce.number().min(1),
+    unit: z.enum(['minutes', 'hours', 'days'])
+  })).optional(),
 });
 
 export const updateCustomerSchema = z.object({
@@ -128,6 +133,11 @@ export const updateCustomerSchema = z.object({
     averagePaymentDays: z.coerce.number().min(0).optional(),
     paymentReliability: z.enum(['excellent', 'good', 'fair', 'poor']).optional(),
   }).optional(),
+  slas: z.array(z.object({
+    name: z.string().min(1),
+    amount: z.coerce.number().min(1),
+    unit: z.enum(['minutes', 'hours', 'days'])
+  })).optional(),
 });
 
 export const getCustomersQuerySchema = z.object({

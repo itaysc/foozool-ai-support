@@ -3,6 +3,7 @@ import { IOrganization } from '../types/organization';
 
 export interface IInsight extends Document {
   clusterId: string;
+  insightNumber?: string;
   organizationId: mongoose.Types.ObjectId | IOrganization;
   insightType: 'ticket_cluster' | 'nps_analysis' | 'customer_satisfaction' | 'trend_analysis' | 'anomaly_detection' | 'customer_success';
   issueDescription: string;
@@ -66,6 +67,7 @@ export interface IInsight extends Document {
 
 const InsightSchema: Schema = new Schema({
   clusterId: { type: String, required: true, unique: true },
+  insightNumber: { type: String, unique: true, sparse: true },
   organizationId: { type: Schema.Types.ObjectId, ref: 'Organization', required: true, index: true },
   insightType: { 
     type: String, 
@@ -144,6 +146,7 @@ const InsightSchema: Schema = new Schema({
 InsightSchema.index({ organizationId: 1, insightType: 1 });
 InsightSchema.index({ organizationId: 1, lastUpdatedAt: -1 });
 InsightSchema.index({ clusterId: 1 });
+InsightSchema.index({ insightNumber: 1 });
 InsightSchema.index({ insightType: 1, lastUpdatedAt: -1 });
 InsightSchema.index({ organizationId: 1, customerId: 1, insightType: 1, lastUpdatedAt: -1 });
 InsightSchema.index({ assignee: 1, insightType: 1, lastUpdatedAt: -1 }); // For finding insights assigned to a user

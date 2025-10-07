@@ -5,6 +5,7 @@ import {
 } from '../../types/autonomousAI';
 import { ActionThresholdModel, ActionLogModel, CustomerTierModel, TicketModel, OrganizationModel } from '../../schemas';
 import { callLLM } from '../llm';
+import { UserContextManager } from '../../context/userContext';
 import { Types } from 'mongoose';
 
 export class SimpleAutonomousAIService {
@@ -190,7 +191,7 @@ export class SimpleAutonomousAIService {
     `;
 
     const response = await callLLM({
-      userId: 'system',
+      userId: UserContextManager.getCurrentUserId() || '',
       isChat: true,
       systemMsg: 'You are an AI support analyst. Analyze tickets and provide structured insights.',
       prompt,

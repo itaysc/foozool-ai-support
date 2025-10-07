@@ -148,6 +148,13 @@ const CustomerSchema: Schema = new Schema<ICustomer>({
       default: 'good'
     }
   }
+  ,
+  // SLA configurations per customer
+  slas: [{
+    name: { type: String, required: true },
+    amount: { type: Number, required: true, min: 1 },
+    unit: { type: String, enum: ['minutes', 'hours', 'days'], required: true }
+  }]
 }, {
   timestamps: true,
 });

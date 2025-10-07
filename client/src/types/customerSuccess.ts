@@ -1,6 +1,7 @@
 // Customer Success Insight types
 export interface CustomerSuccessInsight {
   id?: string; // Database ID of the insight
+  insightNumber?: string; // Human readable sequential number IN******
   type: 'declining_activity' | 'inactive_customer' | 'low_utilization' | 'one_solution_dependency' | 
         'high_utilization' | 'solution_gap' | 'increasing_usage' | 'top_solution' | 'adoption_milestones' | 
         'seasonality' | 'correlation_to_value' | 'renewal_warning' |

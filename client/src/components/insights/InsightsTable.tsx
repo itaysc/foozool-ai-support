@@ -18,6 +18,7 @@ import {
   Snackbar,
   Alert
 } from '@mui/material';
+import { Tooltip } from '@mui/material';
 import Select from '@/components/base/Select';
 import AssigneeSelector from './AssigneeSelector';
 import StatusSelector from './StatusSelector';
@@ -314,6 +315,16 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
     return Array.from(users);
   };
 
+  const truncateToSentences = (text: string, maxSentences: number = 3) => {
+    if (!text) return '';
+    const parts = text
+      .replace(/\n+/g, ' ')
+      .split(/(?<=[\.!?])\s+/)
+      .filter(Boolean);
+    const truncated = parts.slice(0, maxSentences).join(' ');
+    return parts.length > maxSentences ? `${truncated}` : truncated;
+  };
+
   if (isMobile) {
     return (
       <Box>
@@ -439,10 +450,9 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
         <TableHead>
           <TableRow sx={{ backgroundColor: alpha('#3b82f6', 0.05) }}>
             <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1, width: 40 }}></TableCell>
+            <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1, width: 120 }}>ID</TableCell>
             <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1 }}>Insight</TableCell>
             <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1 }}>Summary</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1 }}>Domain</TableCell>
-            <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1 }}>Customer</TableCell>
             <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1 }}>Assignee</TableCell>
             <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1 }}>Severity</TableCell>
             <TableCell sx={{ fontWeight: 600, color: '#1f2937', fontSize: '0.85rem', py: 1 }}>Status</TableCell>
@@ -482,23 +492,23 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
                 </TableCell>
                 <TableCell sx={{ py: 1 }}>
                   <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
+                    {group.children[0]?.insightNumber || '-'}
+                  </Typography>
+                </TableCell>
+                <TableCell sx={{ py: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
                     {formatTypeName(group.type)}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ py: 1 }}>
-                  <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                    {group.message}
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ py: 1 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                    Customer Success
-                  </Typography>
-                </TableCell>
-                <TableCell sx={{ py: 1 }}>
-                  <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500 }}>
-                    {selectedCustomer ? customers.find(c => c._id === selectedCustomer)?.name || 'Unknown' : 'All Customers'}
-                  </Typography>
+                <TableCell sx={{ py: 1, maxWidth: 420 }}>
+                  <Tooltip title={group.message} placement="top-start" arrow>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ fontSize: '0.8rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                    >
+                      {truncateToSentences(group.message, 3)}
+                    </Typography>
+                  </Tooltip>
                 </TableCell>
                 <TableCell sx={{ py: 1, textAlign: 'center' }}>
                   <AssigneeSelector
@@ -550,7 +560,7 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
               {/* Child Rows with Animation */}
               {group.hasChildren && (
                 <TableRow>
-                  <TableCell colSpan={10} sx={{ p: 0, border: 'none' }}>
+                  <TableCell colSpan={8} sx={{ p: 0, border: 'none' }}>
                     <Box
                       sx={{
                         overflow: 'hidden',
@@ -574,24 +584,24 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
                           <TableCell sx={{ py: 1, width: 40, textAlign: 'center' }}>
                           </TableCell>
                           <TableCell sx={{ py: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
+                              {child.insightNumber || '-'}
+                            </Typography>
+                          </TableCell>
+                          <TableCell sx={{ py: 1 }}>
                             <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
                               {formatTypeName(child.type)}
                             </Typography>
                           </TableCell>
-                          <TableCell sx={{ py: 1 }}>
-                            <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                              {child.message}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ py: 1 }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                              {child.category}
-                            </Typography>
-                          </TableCell>
-                          <TableCell sx={{ py: 1 }}>
-                            <Typography variant="body2" sx={{ fontSize: '0.8rem', fontWeight: 500 }}>
-                              {selectedCustomer ? customers.find(c => c._id === selectedCustomer)?.name || 'Unknown' : 'All Customers'}
-                            </Typography>
+                          <TableCell sx={{ py: 1, maxWidth: 420 }}>
+                            <Tooltip title={child.message} placement="top-start" arrow>
+                              <Typography 
+                                variant="body2" 
+                                sx={{ fontSize: '0.8rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                              >
+                                {truncateToSentences(child.message, 3)}
+                              </Typography>
+                            </Tooltip>
                           </TableCell>
                           <TableCell sx={{ py: 1, textAlign: 'center' }}>
                             <AssigneeSelector

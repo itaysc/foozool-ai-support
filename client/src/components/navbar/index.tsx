@@ -91,7 +91,7 @@ export const Navbar = observer(() => {
   };
 
   const navigationItems = [
-    { path: '/insights', label: 'AI Insights', icon: InsightsIcon },
+    { path: '/insights', label: 'Insights', icon: InsightsIcon },
     { path: '/performance', label: 'Performance', icon: AnalyticsIcon },
     { path: '/anomalies', label: 'Anomalies', icon: WarningIcon },
     { path: '/customers', label: 'Customers', icon: PeopleIcon },

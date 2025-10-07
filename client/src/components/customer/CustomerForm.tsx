@@ -25,6 +25,7 @@ import {
   FinancialTab,
   StakeholdersTab,
   BotsTab,
+  SLATab,
 } from './tabs';
 
 interface CustomerFormProps {
@@ -46,7 +47,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
   const { customerId } = useParams<{ customerId: string }>();
   
   const [customer, setCustomer] = useState<ICustomer | null>(null);
-  const [tab, setTab] = useState<'general' | 'media' | 'geo' | 'features' | 'financial' | 'stakeholders' | 'bots'>('general');
+  const [tab, setTab] = useState<'general' | 'media' | 'geo' | 'features' | 'financial' | 'stakeholders' | 'bots' | 'sla'>('general');
   
   const [formData, setFormData] = useState<CreateCustomerRequest>({
     name: '',
@@ -268,6 +269,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         <Tab label="Media & Signals" value="media" />
         <Tab label="Customer Activity" value="features" />
         <Tab label="Financial" value="financial" />
+        <Tab label="SLA" value="sla" />
         {mode === 'edit' && <Tab label="Stakeholders" value="stakeholders" />}
         {mode === 'edit' && <Tab label="Bots" value="bots" />}
       </Tabs>
@@ -305,6 +307,13 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
 
         {tab === 'financial' && (
           <FinancialTab
+            formData={formData}
+            onInputChange={handleInputChange}
+          />
+        )}
+
+        {tab === 'sla' && (
+          <SLATab
             formData={formData}
             onInputChange={handleInputChange}
           />

@@ -5,3 +5,4 @@ export { default as FeaturesTab } from './FeaturesTab';
 export { default as FinancialTab } from './FinancialTab';
 export { default as StakeholdersTab } from './StakeholdersTab';
 export { default as BotsTab } from './BotsTab';
+export { default as SLATab } from './SLATab';

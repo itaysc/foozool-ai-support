@@ -74,6 +74,7 @@ export interface ICustomer {
     createdAt?: Date;
     updatedAt?: Date;
   }>;
+  slas?: Array<{ name: string; amount: number; unit: 'minutes' | 'hours' | 'days' }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -125,6 +126,7 @@ export interface CreateCustomerRequest {
     averagePaymentDays?: number;
     paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
   };
+  slas?: Array<{ name: string; amount: number; unit: 'minutes' | 'hours' | 'days' }>;
 }
 
 export interface UpdateCustomerRequest {
@@ -174,6 +176,7 @@ export interface UpdateCustomerRequest {
     averagePaymentDays?: number;
     paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
   };
+  slas?: Array<{ name: string; amount: number; unit: 'minutes' | 'hours' | 'days' }>;
 }
 
 export interface CustomerListResponse {

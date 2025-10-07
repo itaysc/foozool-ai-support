@@ -1,7 +1,10 @@
 import mongoose from 'mongoose';
 import QdrantService from '../../qdrant/service';
 import { CustomerModel } from '../../schemas/customer.schema';
+import { callLLM } from '../llm';
+import { UserContextManager } from '../../context/userContext';
 import { InsightModel } from '../../schemas/insights.schema';
+import { assignInsightNumberAtomic } from './insightNumber.service';
 import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
 import crypto from 'crypto';
 
@@ -371,6 +374,26 @@ export class HealthScoreService {
       const severity = healthScore.overallScore < 40 ? 'red' : 'yellow';
       const riskLevel = healthScore.overallScore < 40 ? 'Critical' : 'At Risk';
       
+      // Resolve SLA using customer's SLA definitions via LLM
+      let resolvedSLA: any | undefined = undefined;
+      try {
+        const cust = await CustomerModel.findOne({ _id: customerId, organizationId }).lean();
+        const slas = (cust as any)?.slas || [];
+        if (Array.isArray(slas) && slas.length > 0) {
+          const prompt = `Select the most appropriate SLA for this health risk insight given the customer-defined SLAs.\nInsight: ${JSON.stringify({ type: 'health_score_at_risk', severity, meta: { overall: healthScore.overallScore, support: healthScore.supportHealth.score, engagement: healthScore.engagementHealth.score, business: healthScore.businessHealth.score, trend: healthScore.trend } }).slice(0,4000)}\nSLAs: ${JSON.stringify(slas).slice(0,4000)}\nReturn compact JSON {\"name\": string, \"amount\": number, \"unit\": \"minutes\"|\"hours\"|\"days\"}.`;
+          const currentUserId = UserContextManager.getCurrentUserId();
+          if (!currentUserId) { resolvedSLA = undefined; }
+          else {
+            const res: any = await callLLM({ userId: currentUserId, isChat: false, systemMsg: 'Select SLA', prompt, maxTokens: 200, temperature: 0 });
+            if (res?.data) {
+              try { resolvedSLA = JSON.parse(res.data); } catch {}
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[Health Score Insights] SLA resolution failed:', e);
+      }
+
       const insight: CustomerSuccessInsight = {
         type: 'health_score_at_risk',
         message: `Customer health score is ${riskLevel.toLowerCase()} (${healthScore.overallScore}/100). ${this.getHealthScoreRiskMessage(healthScore)}`,
@@ -383,7 +406,26 @@ export class HealthScoreService {
           businessHealth: healthScore.businessHealth.score,
           trend: healthScore.trend,
           riskFactors: this.getRiskFactors(healthScore),
-          lastUpdated: healthScore.lastUpdated
+          lastUpdated: healthScore.lastUpdated,
+          guidance: {
+            summary: `Overall health ${riskLevel.toLowerCase()} at ${healthScore.overallScore}/100. Focus on top drivers below.`,
+            why: 'Composite leading indicators predict churn risk; addressing contributors improves renewal odds.',
+            signals: [
+              `Support health: ${healthScore.supportHealth.score}/100`,
+              `Engagement health: ${healthScore.engagementHealth.score}/100`,
+              `Business health: ${healthScore.businessHealth.score}/100`,
+              `Trend: ${healthScore.trend}`
+            ],
+            actions: [
+              'Schedule a recovery-plan call with sponsor/champion this week.',
+              'Agree on 3 measurable actions with owners and due dates; target +10 within 30 days.',
+              'Increase weekly check-ins until two consecutive weeks of improvement.'
+            ],
+            considerations: 'Share a short value recap deck before the call to re-anchor ROI.',
+            owner: 'CSM',
+            slaDays: severity === 'red' ? 3 : 5
+          },
+          sla: resolvedSLA
         },
         status: 'new',
         createdAt: currentDate.toISOString(),
@@ -569,7 +611,7 @@ export class HealthScoreService {
         );
       } else {
         // Create new insight
-        await InsightModel.findOneAndUpdate(
+        const created = await InsightModel.findOneAndUpdate(
           {
             organizationId: orgObjId,
             customerId: custObjId,
@@ -598,6 +640,9 @@ export class HealthScoreService {
           },
           { upsert: true, new: true }
         );
+        if (!created.insightNumber) {
+          await assignInsightNumberAtomic(created._id as any);
+        }
         
         console.log(`[Health Score Insights] ✅ Created new health score risk insight for customer ${customerId} in week ${weekYear}`);
       }

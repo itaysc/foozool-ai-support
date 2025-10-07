@@ -247,16 +247,107 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
           {/* Recommended Action */}
           <Paper sx={{ p: 3, mb: 3, borderRadius: 2, backgroundColor: alpha('#10b981', 0.05) }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#10b981' }}>
-              RECOMMENDED ACTION
+              GUIDANCE
             </Typography>
-            <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-              {insight.type.includes('trend') || insight.type.includes('decline') 
-                ? 'Monitor user activity patterns and reach out to users showing declining engagement. Consider offering additional training or support.'
-                : insight.type.includes('feature') || insight.type.includes('discovery')
-                ? 'Schedule training sessions to help users discover and adopt key features they haven\'t used yet.'
-                : 'Review the insight details and take appropriate action based on the specific situation.'
+            {(() => {
+              const guidance: any = (insight as any)?.meta?.guidance || null;
+              if (!guidance) {
+                return (
+                  <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
+                    Guidance is being prepared for this insight.
+                  </Typography>
+                );
               }
-            </Typography>
+
+              return (
+                <Box>
+                  {guidance.summary && (
+                    <Typography variant="body2" sx={{ lineHeight: 1.6, mb: 1.5 }}>
+                      {guidance.summary}
+                    </Typography>
+                  )}
+                  <List dense>
+                    {guidance.why && (
+                      <ListItem sx={{ px: 0, alignItems: 'flex-start' }}>
+                        <ListItemText 
+                          primary="Why this matters"
+                          secondary={guidance.why}
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                          secondaryTypographyProps={{ fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    )}
+                    {guidance.signals && Array.isArray(guidance.signals) && guidance.signals.length > 0 && (
+                      <ListItem sx={{ px: 0, alignItems: 'flex-start' }}>
+                        <ListItemText 
+                          primary="Signals / Evidence"
+                          secondary={
+                            <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                              {guidance.signals.map((s: string, i: number) => (
+                                <li key={i}><Typography variant="body2">{s}</Typography></li>
+                              ))}
+                            </Box>
+                          }
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    )}
+                    {guidance.actions && Array.isArray(guidance.actions) && guidance.actions.length > 0 && (
+                      <ListItem sx={{ px: 0, alignItems: 'flex-start' }}>
+                        <ListItemText 
+                          primary="Suggested Actions"
+                          secondary={
+                            <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                              {guidance.actions.map((a: string, i: number) => (
+                                <li key={i}><Typography variant="body2">{a}</Typography></li>
+                              ))}
+                            </Box>
+                          }
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    )}
+                    {guidance.considerations && (
+                      <ListItem sx={{ px: 0, alignItems: 'flex-start' }}>
+                        <ListItemText 
+                          primary="Considerations"
+                          secondary={guidance.considerations}
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                          secondaryTypographyProps={{ fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    )}
+                    {(guidance.owner || guidance.slaDays) && (
+                      <ListItem sx={{ px: 0 }}>
+                        <ListItemText 
+                          primary="Owner & SLA"
+                          secondary={`${guidance.owner ? `Owner: ${guidance.owner}` : ''}${guidance.owner && guidance.slaDays ? ' • ' : ''}${guidance.slaDays ? `SLA: ${guidance.slaDays}d` : ''}`}
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                          secondaryTypographyProps={{ fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    )}
+                    {guidance.links && Array.isArray(guidance.links) && guidance.links.length > 0 && (
+                      <ListItem sx={{ px: 0, alignItems: 'flex-start' }}>
+                        <ListItemText 
+                          primary="Helpful Links"
+                          secondary={
+                            <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                              {guidance.links.map((l: { label: string; url: string }, i: number) => (
+                                <li key={i}>
+                                  <a href={l.url} target="_blank" rel="noreferrer" style={{ color: '#2563eb' }}>{l.label}</a>
+                                </li>
+                              ))}
+                            </Box>
+                          }
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    )}
+                  </List>
+                </Box>
+              );
+            })()}
           </Paper>
 
           {/* Properties */}

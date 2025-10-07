@@ -1,6 +1,10 @@
 import { InsightModel } from '../../schemas/insights.schema';
+import { assignInsightNumberAtomic } from './insightNumber.service';
 import { PredictionModel } from '../../schemas/prediction.schema';
 import mongoose from 'mongoose';
+import { CustomerModel } from '../../schemas/customer.schema';
+import { callLLM } from '../llm';
+import { UserContextManager } from '../../context/userContext';
 import crypto from 'crypto';
 
 export interface PredictionInsight {
@@ -99,6 +103,27 @@ export class PredictionInsightsService {
       `Escalation risk: ${escalationRisk} (${Math.round(prediction.predictedEscalation.confidence * 100)}% confidence), ` +
       `CSAT risk: ${csatRisk} (${Math.round(prediction.predictedCSAT.confidence * 100)}% confidence)`;
 
+    // Resolve SLA from customer-defined SLAs via LLM (if customer is known)
+    let resolvedSLA: any | undefined = undefined;
+    try {
+      if (customerId) {
+        const cust = await CustomerModel.findOne({ _id: customerId, organizationId }).lean();
+        const slas = (cust as any)?.slas || [];
+        if (Array.isArray(slas) && slas.length > 0) {
+          const prompt = `Select the best SLA for a predicted ticket risk.\nTicket: ${ticketId}\nRisks: escalation=${escalationRisk}, csat=${csatRisk}, longResolution=${isLongResolution}\nSLAs: ${JSON.stringify(slas).slice(0, 4000)}\nReturn JSON {\"name\": string, \"amount\": number, \"unit\": \"minutes\"|\"hours\"|\"days\"}.`;
+          const currentUserId = UserContextManager.getCurrentUserId();
+          if (currentUserId) {
+            const res: any = await callLLM({ userId: currentUserId, isChat: false, systemMsg: 'Select SLA', prompt, maxTokens: 120, temperature: 0 });
+            if (res?.data) {
+              try { resolvedSLA = JSON.parse(res.data); } catch {}
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Predictions Insights] SLA resolution failed:', e);
+    }
+
     const insightData = {
       clusterId,
       organizationId: new mongoose.Types.ObjectId(organizationId),
@@ -121,15 +146,36 @@ export class PredictionInsightsService {
         longResolutionPredicted: prediction.longResolutionPredicted || false,
         predictionConfidence: prediction.predictionConfidence || 0,
         severity,
-        originalPrediction: prediction
+        originalPrediction: prediction,
+        sla: resolvedSLA,
+        guidance: {
+          summary: `Predicted ${escalationRisk === 'High' ? 'high' : escalationRisk.toLowerCase()} escalation/CSAT risk on ticket ${ticketId}.`,
+          why: 'Early action on likely escalations reduces time-to-resolution and impact on satisfaction.',
+          signals: [
+            `Escalation: ${escalationRisk} (${Math.round(prediction.predictedEscalation.confidence * 100)}%)`,
+            `CSAT: ${csatRisk} (${Math.round(prediction.predictedCSAT.confidence * 100)}%)`,
+            `Long resolution predicted: ${isLongResolution ? 'Yes' : 'No'}`
+          ],
+          actions: [
+            'Assign senior agent and add internal watch; set response SLA accordingly.',
+            'Proactively inform customer of ownership and next update time.',
+            'If long resolution predicted, propose workaround or parallel mitigation.'
+          ],
+          considerations: 'Link similar past cases to accelerate troubleshooting.',
+          owner: 'Support Lead',
+          slaDays: severity === 'red' ? 1 : 2
+        }
       }
     };
 
-    await InsightModel.findOneAndUpdate(
+    const saved = await InsightModel.findOneAndUpdate(
       { clusterId },
       insightData,
       { upsert: true, new: true }
     );
+    if (!saved.insightNumber) {
+      await assignInsightNumberAtomic(saved._id as any);
+    }
   }
 
   /**

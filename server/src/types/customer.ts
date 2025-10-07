@@ -107,6 +107,13 @@ export interface ICustomer {
     paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
   };
   
+  // Customer-specific SLAs
+  slas?: Array<{
+    name: string;
+    amount: number;
+    unit: 'minutes' | 'hours' | 'days';
+  }>;
+  
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -165,6 +172,12 @@ export interface CreateCustomerRequest {
     averagePaymentDays?: number;
     paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
   };
+  
+  slas?: Array<{
+    name: string;
+    amount: number;
+    unit: 'minutes' | 'hours' | 'days';
+  }>;
 }
 
 export interface UpdateCustomerRequest {
@@ -221,6 +234,12 @@ export interface UpdateCustomerRequest {
     averagePaymentDays?: number;
     paymentReliability?: 'excellent' | 'good' | 'fair' | 'poor';
   };
+  
+  slas?: Array<{
+    name: string;
+    amount: number;
+    unit: 'minutes' | 'hours' | 'days';
+  }>;
 }
 
 export interface CustomerStats {

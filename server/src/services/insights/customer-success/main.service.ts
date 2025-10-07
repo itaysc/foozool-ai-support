@@ -2,7 +2,9 @@ import { UserContextManager } from '../../../context/userContext';
 import mongoose from 'mongoose';
 import * as crypto from 'crypto';
 import { CustomerModel, CustomerActivityModel } from '../../../schemas';
+import { callLLM } from '../../llm';
 import { InsightModel } from '../../../schemas/insights.schema';
+import { assignInsightNumberAtomic } from '../insightNumber.service';
 import { generateTicketInsights, TicketInsight } from '../ticketInsights.service';
 import { generateStakeholderInsights as generateStakeholderInsightsFromModule } from '../stakeholders';
 import { CustomerSuccessInsight } from '../../../types/customerSuccessInsight';
@@ -16,6 +18,26 @@ import { generateCustomerSuccessPrep } from './success-prep.service';
 import { generateStrategicInsights } from './strategic-insights.service';
 
 const { ObjectId } = mongoose.Types;
+
+// Module-level SLA resolver so it can be used from persistence helpers
+async function resolveSLAForCustomer(
+  organizationId: string,
+  customerId: string,
+  insight: CustomerSuccessInsight
+): Promise<{ name: string; amount: number; unit: 'minutes' | 'hours' | 'days' } | undefined> {
+  try {
+    const cust = await CustomerModel.findOne({ _id: customerId, organizationId }).lean();
+    const slas = (cust as any)?.slas || [];
+    if (!Array.isArray(slas) || slas.length === 0) return undefined;
+    const prompt = `You are a Customer Success Assistant. Given the following insight and a list of customer-defined SLAs, choose the most appropriate SLA by name, amount and unit. If none match exactly, pick the closest match and explain in one sentence.\nInsight JSON: ${JSON.stringify({ type: insight.type, category: insight.category, severity: insight.severity, message: insight.message, meta: insight.meta }).slice(0, 4000)}\nAvailable SLAs: ${JSON.stringify(slas).slice(0, 4000)}\nReturn ONLY compact JSON: {"name": string, "amount": number, "unit": "minutes"|"hours"|"days"}.`;
+    const res: any = await callLLM({ userId: UserContextManager.getCurrentUserId() || '', isChat: false, systemMsg: 'Select appropriate SLA.', prompt, maxTokens: 200, temperature: 0 });
+    if (!res?.data) return undefined;
+    try { return JSON.parse(res.data); } catch { return undefined; }
+  } catch (e) {
+    console.warn('[CS Insights] SLA resolution failed:', e);
+    return undefined;
+  }
+}
 
 export async function getSavedStakeholderInsights(customerId: string): Promise<CustomerSuccessInsight[]> {
   const organizationId = UserContextManager.getCurrentOrganizationId();
@@ -37,6 +59,7 @@ export async function getSavedStakeholderInsights(customerId: string): Promise<C
 
     return savedInsights.map(insight => ({
       id: insight._id.toString(),
+      insightNumber: insight.insightNumber,
       type: insight.metadata?.type as CustomerSuccessInsight['type'],
       message: insight.issueDescription,
       severity: insight.metadata?.severity as CustomerSuccessInsight['severity'],
@@ -72,6 +95,7 @@ export async function getAllSavedCustomerSuccessInsights(customerId: string): Pr
 
     return savedInsights.map(insight => ({
       id: insight._id.toString(),
+      insightNumber: insight.insightNumber,
       type: insight.metadata?.type as CustomerSuccessInsight['type'],
       message: insight.issueDescription,
       severity: insight.metadata?.severity as CustomerSuccessInsight['severity'],
@@ -139,6 +163,27 @@ export async function generateCustomerSuccessInsightsForOrganization(customerId:
   }).sort({ activityDate: -1, createdAt: -1 }).lean();
 
   console.log(`[CS Insights] 📊 activities | count=${activities.length}`);
+
+  // Helper: choose SLA via LLM based on customer-defined SLAs and insight context
+  async function resolveSLA(insight: CustomerSuccessInsight): Promise<any | undefined> {
+    try {
+      const cust = await CustomerModel.findOne({ _id: customerId, organizationId }).lean();
+      const slas = (cust as any)?.slas || [];
+      if (!Array.isArray(slas) || slas.length === 0) return undefined;
+      const prompt = `You are a Customer Success Assistant. Given the following insight and a list of customer-defined SLAs, choose the most appropriate SLA by name, amount and unit. If none match, select the closest.
+Insight JSON: ${JSON.stringify({ type: insight.type, category: insight.category, severity: insight.severity, message: insight.message, meta: insight.meta }).slice(0, 4000)}
+Available SLAs: ${JSON.stringify(slas).slice(0, 4000)}
+Return ONLY a JSON object with fields {"name": string, "amount": number, "unit": "minutes"|"hours"|"days"}.`;
+      const currentUserId = UserContextManager.getCurrentUserId();
+      if (!currentUserId) return undefined;
+      const res: any = await callLLM({ userId: currentUserId, isChat: false, systemMsg: 'Select appropriate SLA.', prompt, maxTokens: 200, temperature: 0 });
+      if (!res?.data) return undefined;
+      try { return JSON.parse(res.data); } catch { return undefined; }
+    } catch (e) {
+      console.warn('[CS Insights] SLA resolution failed:', e);
+      return undefined;
+    }
+  }
 
   // Get activities for comparison (same organization, different customers)
   const orgActivities = await CustomerActivityModel.find({ 
@@ -236,32 +281,115 @@ async function persistStakeholderInsights(organizationId: string, customerId: st
   for (const insight of insights) {
     const clusterId = generateClusterId(insight, customerId, 'stakeholder');
     
-    await InsightModel.findOneAndUpdate(
+    const attrs: any = {
+      organizationId: orgObjId,
+      customerId: custObjId,
+      customerName: customerName,
+      insightType: 'customer_success',
+      clusterId: clusterId,
+      issueDescription: insight.message,
+      metadata: {
+        type: insight.type,
+        severity: insight.severity,
+        category: insight.category,
+        meta: { ...(insight.meta || {}), guidance: (() => {
+          const base: any = {
+            owner: 'CSM',
+            slaDays: insight.severity === 'red' ? 2 : insight.severity === 'yellow' ? 5 : 7
+          };
+          switch (insight.type) {
+            case 'activity_trend_decline':
+              return {
+                summary: `User activity declined ${insight.meta?.declinePercent ?? 'significantly'} in the last period at ${customerName}.`,
+                why: 'Sustained activity decline is a leading indicator of churn risk and unmet value.',
+                signals: [
+                  `Active users change: ${insight.meta?.activeUsersPrev ?? '-'} → ${insight.meta?.activeUsersCurr ?? '-'}`,
+                  `Sessions change: ${insight.meta?.sessionsPrev ?? '-'} → ${insight.meta?.sessionsCurr ?? '-'}`
+                ],
+                actions: [
+                  'Identify cohorts with the steepest decline (roles/teams) and contact champions.',
+                  'Offer a 20-minute enablement focusing on top-value workflows used before the decline.',
+                  'Set a 2-week follow-up to confirm recovery (target +15% WoW).'
+                ],
+                considerations: 'Coordinate with Support if there were incidents in the same period that may explain the decline.',
+                ...base
+              };
+            case 'feature_discovery':
+              return {
+                summary: `Low discovery of key feature(s) impacting value realization at ${customerName}.`,
+                why: 'Under-used value drivers reduce perceived ROI and renewal likelihood.',
+                signals: [
+                  `Features with <10% seat usage: ${(insight.meta?.featuresUnderused || []).join(', ') || 'N/A'}`
+                ],
+                actions: [
+                  'Send a targeted how-to with short video to relevant roles.',
+                  'Schedule an enablement session; include 2-3 customer-specific use cases.',
+                  'Add in-app guide for the feature entry point.'
+                ],
+                considerations: 'Align messaging with the customer’s stated objectives from the success plan.',
+                ...base
+              };
+            case 'usage_pattern_anomaly':
+              return {
+                summary: `Detected anomalous usage pattern requiring investigation at ${customerName}.`,
+                why: 'Anomalies can point to integration issues, user confusion, or adoption blockers.',
+                signals: [
+                  `Anomaly score: ${insight.meta?.anomalyScore ?? '-'}`,
+                  `Impacted workflow: ${insight.meta?.workflow ?? '-'}`
+                ],
+                actions: [
+                  'Validate recent releases/incidents; check error logs and support tickets.',
+                  'Interview 2 power users to understand friction; document steps.',
+                  'Open follow-up task for product/ops if systemic.'
+                ],
+                considerations: 'If systemic, communicate mitigation timeline to the customer.',
+                ...base
+              };
+            case 'health_score_at_risk':
+              return {
+                summary: `Customer health is at risk (overall score ${insight.meta?.healthScore?.overallScore ?? '-'}/100).`,
+                why: 'Composite leading indicators predict increased churn probability.',
+                signals: [
+                  `Engagement: ${insight.meta?.engagementHealth ?? '-'}`,
+                  `Support: ${insight.meta?.supportHealth ?? '-'}`,
+                  `Business: ${insight.meta?.businessHealth ?? '-'}`
+                ],
+                actions: [
+                  'Schedule a recovery plan call this week with sponsor and champion.',
+                  'Agree on 3 measurable actions (owner, due date) to move score +10 within 30 days.',
+                  'Increase cadence to weekly until recovery is sustained for 2 weeks.'
+                ],
+                considerations: 'Share a short value recap deck to re-anchor ROI.',
+                owner: 'CSM',
+                slaDays: 5
+              };
+            default:
+              return {
+                summary: `Action recommended for ${String(insight.type).replace(/_/g,' ')} at ${customerName}.`,
+                why: 'Signal crossed an actionable threshold based on trends and benchmarks.',
+                actions: ['Review the signals and contact the stakeholder to define next steps.'],
+                ...base
+              };
+          }
+        })(), sla: await resolveSLAForCustomer(String(organizationId), String(customerId), insight) }
+      },
+      assignee: insight.assignee ? new ObjectId(insight.assignee) : undefined,
+      status: insight.status || 'new',
+      lastUpdatedAt: new Date()
+    };
+    const saved = await InsightModel.findOneAndUpdate(
       {
         organizationId: orgObjId,
         customerId: custObjId,
         insightType: 'customer_success',
         clusterId: clusterId
       },
-      {
-        organizationId: orgObjId,
-        customerId: custObjId,
-        customerName: customerName,
-        insightType: 'customer_success',
-        clusterId: clusterId,
-        issueDescription: insight.message,
-        metadata: {
-          type: insight.type,
-          severity: insight.severity,
-          category: insight.category,
-          meta: insight.meta
-        },
-        assignee: insight.assignee ? new ObjectId(insight.assignee) : undefined,
-        status: insight.status || 'new',
-        lastUpdatedAt: new Date()
-      },
+      attrs,
       { upsert: true, new: true }
     );
+    if (!saved.insightNumber) {
+      await assignInsightNumberAtomic(saved._id as any);
+    }
   }
 }
 
@@ -275,7 +403,7 @@ async function persistCustomerSuccessInsights(organizationId: string, customerId
   for (const insight of insights) {
     const clusterId = generateClusterId(insight, customerId, 'cs');
     
-    await InsightModel.findOneAndUpdate(
+    const savedChild = await InsightModel.findOneAndUpdate(
       {
         organizationId: orgObjId,
         customerId: custObjId,
@@ -293,7 +421,86 @@ async function persistCustomerSuccessInsights(organizationId: string, customerId
           type: insight.type,
           severity: insight.severity,
           category: insight.category,
-          meta: insight.meta
+          meta: { ...(insight.meta || {}), guidance: (() => {
+            const base: any = {
+              owner: 'CSM',
+              slaDays: insight.severity === 'red' ? 2 : insight.severity === 'yellow' ? 5 : 7
+            };
+            switch (insight.type) {
+              case 'activity_trend_decline':
+                return {
+                  summary: `User activity declined ${insight.meta?.declinePercent ?? 'significantly'} in the last period at ${customerName}.`,
+                  why: 'Sustained activity decline is a leading indicator of churn risk and unmet value.',
+                  signals: [
+                    `Active users change: ${insight.meta?.activeUsersPrev ?? '-'} → ${insight.meta?.activeUsersCurr ?? '-'}`,
+                    `Sessions change: ${insight.meta?.sessionsPrev ?? '-'} → ${insight.meta?.sessionsCurr ?? '-'}`
+                  ],
+                  actions: [
+                    'Identify cohorts with the steepest decline (roles/teams) and contact champions.',
+                    'Offer a 20-minute enablement focusing on top-value workflows used before the decline.',
+                    'Set a 2-week follow-up to confirm recovery (target +15% WoW).'
+                  ],
+                  considerations: 'Coordinate with Support if there were incidents in the same period that may explain the decline.',
+                  ...base
+                };
+              case 'feature_discovery':
+                return {
+                  summary: `Low discovery of key feature(s) impacting value realization at ${customerName}.`,
+                  why: 'Under-used value drivers reduce perceived ROI and renewal likelihood.',
+                  signals: [
+                    `Features with <10% seat usage: ${(insight.meta?.featuresUnderused || []).join(', ') || 'N/A'}`
+                  ],
+                  actions: [
+                    'Send a targeted how-to with short video to relevant roles.',
+                    'Schedule an enablement session; include 2-3 customer-specific use cases.',
+                    'Add in-app guide for the feature entry point.'
+                  ],
+                  considerations: 'Align messaging with the customer’s stated objectives from the success plan.',
+                  ...base
+                };
+              case 'usage_pattern_anomaly':
+                return {
+                  summary: `Detected anomalous usage pattern requiring investigation at ${customerName}.`,
+                  why: 'Anomalies can point to integration issues, user confusion, or adoption blockers.',
+                  signals: [
+                    `Anomaly score: ${insight.meta?.anomalyScore ?? '-'}`,
+                    `Impacted workflow: ${insight.meta?.workflow ?? '-'}`
+                  ],
+                  actions: [
+                    'Validate recent releases/incidents; check error logs and support tickets.',
+                    'Interview 2 power users to understand friction; document steps.',
+                    'Open follow-up task for product/ops if systemic.'
+                  ],
+                  considerations: 'If systemic, communicate mitigation timeline to the customer.',
+                  ...base
+                };
+              case 'health_score_at_risk':
+                return {
+                  summary: `Customer health is at risk (overall score ${insight.meta?.healthScore?.overallScore ?? '-'}/100).`,
+                  why: 'Composite leading indicators predict increased churn probability.',
+                  signals: [
+                    `Engagement: ${insight.meta?.engagementHealth ?? '-'}`,
+                    `Support: ${insight.meta?.supportHealth ?? '-'}`,
+                    `Business: ${insight.meta?.businessHealth ?? '-'}`
+                  ],
+                  actions: [
+                    'Schedule a recovery plan call this week with sponsor and champion.',
+                    'Agree on 3 measurable actions (owner, due date) to move score +10 within 30 days.',
+                    'Increase cadence to weekly until recovery is sustained for 2 weeks.'
+                  ],
+                  considerations: 'Share a short value recap deck to re-anchor ROI.',
+                  owner: 'CSM',
+                  slaDays: 5
+                };
+              default:
+                return {
+                  summary: `Action recommended for ${String(insight.type).replace(/_/g,' ')} at ${customerName}.`,
+                  why: 'Signal crossed an actionable threshold based on trends and benchmarks.',
+                  actions: ['Review the signals and contact the stakeholder to define next steps.'],
+                  ...base
+                };
+            }
+          })(), sla: await resolveSLAForCustomer(String(organizationId), String(customerId), insight) }
         },
         assignee: insight.assignee ? new ObjectId(insight.assignee) : undefined,
         status: insight.status || 'new',
@@ -301,5 +508,8 @@ async function persistCustomerSuccessInsights(organizationId: string, customerId
       },
       { upsert: true, new: true }
     );
+    if (!savedChild.insightNumber) {
+      await assignInsightNumberAtomic(savedChild._id as any);
+    }
   }
 }

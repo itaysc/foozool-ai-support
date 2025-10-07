@@ -3,6 +3,7 @@
  */
 
 import { callLLM } from '../llm';
+import { UserContextManager } from '../../context/userContext';
 import { summarizeTickets } from '../call-python';
 import { NewsItem, ProcessedNewsItem, ActionItem } from './types';
 import {
@@ -33,7 +34,7 @@ export class NewsAnalyzer {
         );
         
         const analysisResponse = await callLLM({
-          userId: 'system',
+          userId: UserContextManager.getCurrentUserId() || '',
           prompt: analysisPrompt,
           maxTokens: 300,
           temperature: 0.3,
@@ -204,7 +205,7 @@ export class NewsAnalyzer {
       );
       
       const actionItemsResponse = await callLLM({
-        userId: 'system',
+        userId: UserContextManager.getCurrentUserId() || '',
         prompt: actionItemsPrompt,
         maxTokens: 1000,
         temperature: 0.3,
