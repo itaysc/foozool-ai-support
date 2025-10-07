@@ -38,6 +38,7 @@ interface InsightsTableProps {
   selectedCustomer?: string | null;
   customers?: any[];
   onCustomerChange?: (customerId: string) => void;
+  onInsightUpdate?: (insightId: string, updates: Partial<CustomerSuccessInsight>) => void;
 }
 
 interface GroupedInsight {
@@ -55,7 +56,8 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
   onInsightSelect,
   selectedCustomer,
   customers = [],
-  onCustomerChange
+  onCustomerChange,
+  onInsightUpdate
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -147,6 +149,7 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
           : insight
       )
     );
+    if (onInsightUpdate) onInsightUpdate(insightId, updates);
   };
 
   // Helper function to revert insight changes
@@ -189,7 +192,7 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
     // Add to updating set
     setUpdatingInsights(prev => new Set(prev).add(insightId));
     
-    // Optimistically update the UI immediately
+    // Optimistically update the UI immediately and notify parent for drawer sync
     updateInsightOptimistically(insightId, { assignee: assignee || undefined });
     
     try {
@@ -226,7 +229,7 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
     // Add to updating set
     setUpdatingInsights(prev => new Set(prev).add(insightId));
     
-    // Optimistically update the UI immediately
+    // Optimistically update the UI immediately and notify parent for drawer sync
     updateInsightOptimistically(insightId, { status: status as any });
     
     try {

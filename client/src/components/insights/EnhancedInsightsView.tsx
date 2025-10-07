@@ -410,12 +410,20 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
         ) : (
           <Box>
             <InsightsTable
-                insights={filteredInsights}
-                onInsightSelect={handleInsightSelect}
-                selectedCustomer={selectedCustomer}
-                customers={customers}
-                onCustomerChange={onCustomerChange}
-              />
+              insights={filteredInsights}
+              onInsightSelect={handleInsightSelect}
+              selectedCustomer={selectedCustomer}
+              customers={customers}
+              onCustomerChange={onCustomerChange}
+              onInsightUpdate={(insightId, updates) => {
+                // If the open drawer shows this insight, sync its fields
+                setSelectedInsight(prev => {
+                  if (!prev) return prev;
+                  if (prev.id !== insightId) return prev;
+                  return { ...prev, ...updates } as CustomerSuccessInsight;
+                });
+              }}
+            />
           </Box>
         )}
       </Box>
@@ -434,6 +442,13 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
         open={detailDrawerOpen}
         onClose={handleCloseDetailDrawer}
         insight={selectedInsight}
+        onInsightUpdate={(insightId, updates) => {
+          // Update the selected insight in the drawer
+          setSelectedInsight(prev => {
+            if (!prev || prev.id !== insightId) return prev;
+            return { ...prev, ...updates } as CustomerSuccessInsight;
+          });
+        }}
       />
     </Box>
   );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Drawer,
   Box,
@@ -13,7 +13,11 @@ import {
   ListItemText,
   alpha,
   Paper,
-  Slide
+  Slide,
+  Popper,
+  ClickAwayListener,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import { 
   Close, 
@@ -23,21 +27,62 @@ import {
   Email,
   Schedule,
   Download,
-  Person
+  Person,
+  Search,
+  Check
 } from '@mui/icons-material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
+import { insightsService } from '@/services/insights-service';
 
 interface InsightDetailDrawerProps {
   open: boolean;
   onClose: () => void;
   insight: CustomerSuccessInsight | null;
+  onInsightUpdate?: (insightId: string, updates: Partial<CustomerSuccessInsight>) => void;
 }
 
 const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
   open,
   onClose,
-  insight
+  insight,
+  onInsightUpdate
 }) => {
+  const [users, setUsers] = useState<Array<{ _id: string; name: string; email: string }>>([]);
+  const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [updating, setUpdating] = useState(false);
+
+  // Fetch users on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await insightsService.getUsers();
+        if (response.success) {
+          const formattedUsers = response.data.map(user => ({
+            _id: user._id,
+            name: user.fullName || `${user.firstName} ${user.lastName}`,
+            email: user.email
+          }));
+          setUsers(formattedUsers);
+        }
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Reset assignee dropdown state when drawer closes
+  useEffect(() => {
+    if (!open) {
+      setAssigneeDropdownOpen(false);
+      setStatusDropdownOpen(false);
+      setSearchTerm('');
+    }
+  }, [open]);
+
   if (!insight) return null;
 
   const getSeverityConfig = (severity: string) => {
@@ -87,8 +132,89 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
     return Array.from(users);
   };
 
+  const getAssigneeUser = () => {
+    if (!insight.assignee) return null;
+    return users.find(user => user._id === insight.assignee);
+  };
+
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const getAvatarColor = (name: string) => {
+    // Generate a consistent color based on the name
+    const colors = [
+      '#f56565', '#ed8936', '#ecc94b', '#48bb78', '#38b2ac',
+      '#4299e1', '#9f7aea', '#ed64a6', '#f687b3', '#4fd1c7'
+    ];
+    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[index % colors.length];
+  };
+
+  const handleAssigneeChange = async (assigneeId: string | null) => {
+    if (!insight.id || !onInsightUpdate) return;
+    
+    setUpdating(true);
+    try {
+      await insightsService.updateInsightAssignee(insight.id, assigneeId);
+      onInsightUpdate(insight.id, { assignee: assigneeId || undefined });
+      setAssigneeDropdownOpen(false);
+    } catch (error) {
+      console.error('Failed to update assignee:', error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleStatusChange = async (status: string) => {
+    if (!insight.id || !onInsightUpdate) return;
+    
+    setUpdating(true);
+    try {
+      await insightsService.updateInsightStatus(insight.id, status);
+      onInsightUpdate(insight.id, { status: status as any });
+      setStatusDropdownOpen(false);
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'new':
+        return { color: '#6b7280', label: 'New' };
+      case 'in_progress':
+        return { color: '#3b82f6', label: 'In Progress' };
+      case 'resolved':
+        return { color: '#10b981', label: 'Resolved' };
+      case 'closed':
+        return { color: '#6b7280', label: 'Closed' };
+      case 'reopened':
+        return { color: '#f59e0b', label: 'Reopened' };
+      default:
+        return { color: '#6b7280', label: 'Unknown' };
+    }
+  };
+
+  const statusOptions = [
+    { value: 'new', label: 'New' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'resolved', label: 'Resolved' },
+    { value: 'closed', label: 'Closed' },
+    { value: 'reopened', label: 'Reopened' }
+  ];
+
+  const filteredUsers = users.filter(user => 
+    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const affectedUsers = getAffectedUsers();
   const config = getSeverityConfig(insight.severity);
+  const assigneeUser = getAssigneeUser();
+  const statusConfig = getStatusConfig(insight.status || 'new');
 
   const getActionButtons = () => {
     const buttons = [];
@@ -212,17 +338,211 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
               {formatTypeName(insight.type)}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {/* Assignee Avatar */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, position: 'relative' }}>
+                <Box 
+                  data-assignee-selector
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1, 
+                    cursor: 'pointer',
+                    opacity: updating ? 0.6 : 1,
+                    '&:hover': { opacity: 0.8 }
+                  }}
+                  onClick={() => !updating && setAssigneeDropdownOpen(!assigneeDropdownOpen)}
+                >
+                  <Avatar sx={{ width: 32, height: 32, backgroundColor: assigneeUser ? getAvatarColor(assigneeUser.name) : alpha('#6b7280', 0.2), color: assigneeUser ? 'white' : '#6b7280' }}>
+                    {assigneeUser ? getInitials(assigneeUser.name) : <Person sx={{ fontSize: 18 }} />}
+                  </Avatar>
+                </Box>
+                
+                {/* Assignee Dropdown */}
+                <Popper
+                  open={assigneeDropdownOpen}
+                  anchorEl={document.querySelector('[data-assignee-selector]')}
+                  placement="bottom-start"
+                  style={{ zIndex: 1300 }}
+                >
+                  <ClickAwayListener onClickAway={() => setAssigneeDropdownOpen(false)}>
+                    <Paper sx={{ 
+                      mt: 1, 
+                      minWidth: 250, 
+                      maxHeight: 300, 
+                      overflow: 'hidden',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      borderRadius: 2
+                    }}>
+                      <Box sx={{ p: 1 }}>
+                        <TextField
+                          size="small"
+                          placeholder="Search users..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Search sx={{ fontSize: 16 }} />
+                              </InputAdornment>
+                            ),
+                          }}
+                          sx={{ mb: 1 }}
+                        />
+                      </Box>
+                      <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                        <Box
+                          sx={{
+                            px: 1,
+                            py: 0.5,
+                            cursor: 'pointer',
+                            borderRadius: 1,
+                            '&:hover': { backgroundColor: alpha('#3b82f6', 0.1) },
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1
+                          }}
+                          onClick={() => handleAssigneeChange(null)}
+                        >
+                          <Avatar sx={{ width: 24, height: 24, backgroundColor: alpha('#ef4444', 0.1), color: '#ef4444' }}>
+                            <Person sx={{ fontSize: 14 }} />
+                          </Avatar>
+                          <Typography variant="body2">Unassigned</Typography>
+                          {!insight.assignee && <Check sx={{ fontSize: 16, ml: 'auto' }} />}
+                        </Box>
+                        {filteredUsers.map((user) => (
+                          <Box
+                            key={user._id}
+                            sx={{
+                              px: 1,
+                              py: 0.5,
+                              cursor: 'pointer',
+                              borderRadius: 1,
+                              '&:hover': { backgroundColor: alpha('#3b82f6', 0.1) },
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1
+                            }}
+                            onClick={() => handleAssigneeChange(user._id)}
+                          >
+                            <Avatar sx={{ width: 24, height: 24, backgroundColor: getAvatarColor(user.name), color: 'white' }}>
+                              {getInitials(user.name)}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2">{user.name}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {user.email}
+                              </Typography>
+                            </Box>
+                            {insight.assignee === user._id && <Check sx={{ fontSize: 16, ml: 'auto' }} />}
+                          </Box>
+                        ))}
+                      </Box>
+                    </Paper>
+                  </ClickAwayListener>
+                </Popper>
+              </Box>
+              
+              {/* Severity Badge */}
               <Chip 
                 label={config.label}
+                size="small"
                 sx={{
                   backgroundColor: config.color,
                   color: 'white',
-                  fontWeight: 600
+                  fontWeight: 600,
+                  fontSize: '0.7rem',
+                  height: 24,
+                  minWidth: 80,
+                  width: 80,
+                  justifyContent: 'center'
                 }}
               />
-              <Avatar sx={{ width: 32, height: 32 }}>
-                <Person sx={{ fontSize: 18 }} />
-              </Avatar>
+              
+              {/* Status Selector */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, position: 'relative' }}>
+                <Box 
+                  data-status-selector
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1, 
+                    cursor: 'pointer',
+                    opacity: updating ? 0.6 : 1,
+                    '&:hover': { opacity: 0.8 }
+                  }}
+                  onClick={() => !updating && setStatusDropdownOpen(!statusDropdownOpen)}
+                >
+                  <Chip 
+                    label={statusConfig.label}
+                    size="small"
+                    sx={{
+                      backgroundColor: statusConfig.color,
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '0.7rem',
+                      height: 24,
+                      minWidth: 80,
+                      width: 80,
+                      justifyContent: 'center'
+                    }}
+                  />
+                </Box>
+                
+                {/* Status Dropdown */}
+                <Popper
+                  open={statusDropdownOpen}
+                  anchorEl={document.querySelector('[data-status-selector]')}
+                  placement="bottom-start"
+                  style={{ zIndex: 1300 }}
+                >
+                  <ClickAwayListener onClickAway={() => setStatusDropdownOpen(false)}>
+                    <Paper sx={{ 
+                      mt: 1, 
+                      minWidth: 200, 
+                      overflow: 'hidden',
+                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                      borderRadius: 2
+                    }}>
+                      <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                        {statusOptions.map((option) => {
+                          const optionConfig = getStatusConfig(option.value);
+                          return (
+                            <Box
+                              key={option.value}
+                              sx={{
+                                px: 2,
+                                py: 1,
+                                cursor: 'pointer',
+                                '&:hover': { backgroundColor: alpha('#3b82f6', 0.1) },
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 1
+                              }}
+                              onClick={() => handleStatusChange(option.value)}
+                            >
+                              <Chip 
+                                label={optionConfig.label}
+                                size="small"
+                                sx={{
+                                  backgroundColor: optionConfig.color,
+                                  color: 'white',
+                                  fontWeight: 600,
+                                  fontSize: '0.7rem',
+                                  height: 20,
+                                  minWidth: 70,
+                                  width: 70,
+                                  justifyContent: 'center'
+                                }}
+                              />
+                              {insight.status === option.value && <Check sx={{ fontSize: 16, ml: 'auto' }} />}
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </Paper>
+                  </ClickAwayListener>
+                </Popper>
+              </Box>
             </Box>
           </Box>
           <IconButton onClick={onClose} size="small">
@@ -436,45 +756,45 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
               </List>
             </Paper>
           )}
-        </Box>
 
-        {/* Comments Section */}
-        <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-          <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#374151' }}>
-            COMMENTS
-          </Typography>
-          <Box sx={{ 
-            minHeight: 120, 
-            border: '1px solid #e5e7eb', 
-            borderRadius: 1, 
-            p: 2,
-            backgroundColor: '#f9fafb',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-              No comments yet. Add a comment to track progress and discussions.
+          {/* Comments Section */}
+          <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#374151' }}>
+              COMMENTS
             </Typography>
-          </Box>
-          <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
-            <Button 
-              variant="outlined" 
-              size="small"
-              startIcon={<Email />}
-              sx={{ fontSize: '0.8rem' }}
-            >
-              Add Comment
-            </Button>
-            <Button 
-              variant="outlined" 
-              size="small"
-              sx={{ fontSize: '0.8rem' }}
-            >
-              View All
-            </Button>
-          </Box>
-        </Paper>
+            <Box sx={{ 
+              minHeight: 120, 
+              border: '1px solid #e5e7eb', 
+              borderRadius: 1, 
+              p: 2,
+              backgroundColor: '#f9fafb',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                No comments yet. Add a comment to track progress and discussions.
+              </Typography>
+            </Box>
+            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+              <Button 
+                variant="outlined" 
+                size="small"
+                startIcon={<Email />}
+                sx={{ fontSize: '0.8rem' }}
+              >
+                Add Comment
+              </Button>
+              <Button 
+                variant="outlined" 
+                size="small"
+                sx={{ fontSize: '0.8rem' }}
+              >
+                View All
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
 
         {/* Action Buttons */}
         <Box sx={{ mt: 3, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
