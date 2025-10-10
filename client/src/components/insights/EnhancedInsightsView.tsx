@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -46,6 +46,7 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
   const [selectedInsight, setSelectedInsight] = useState<CustomerSuccessInsight | null>(null);
   const [users, setUsers] = useState<Array<{ _id: string; name: string; email: string }>>([]);
   const [selectedSummaryCard, setSelectedSummaryCard] = useState<'critical' | 'warning' | 'info' | 'total' | null>('total');
+  const tableRef = useRef<{ updateInsightOptimistically: (insightId: string, updates: Partial<CustomerSuccessInsight>, skipCallback?: boolean) => void }>(null);
   
   const [filters, setFilters] = useState({
     severity: ['red', 'yellow', 'info'],
@@ -167,6 +168,23 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
   const handleCloseDetailDrawer = () => {
     setDetailDrawerOpen(false);
     setSelectedInsight(null);
+  };
+
+  // Shared callback for insight updates from both table and drawer
+  const handleInsightUpdate = (insightId: string, updates: Partial<CustomerSuccessInsight>) => {
+    // Update the selected insight if it matches (for drawer sync)
+    setSelectedInsight(prev => {
+      if (!prev || prev.id !== insightId) {
+        return prev;
+      }
+      const updated = { ...prev, ...updates } as CustomerSuccessInsight;
+      return updated;
+    });
+    
+    // Also update the table's local state if the table ref is available
+    if (tableRef.current) {
+      tableRef.current.updateInsightOptimistically(insightId, updates, true); // skipCallback = true to prevent recursion
+    }
   };
 
   // Helper function to determine card selection states
@@ -410,19 +428,13 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
         ) : (
           <Box>
             <InsightsTable
+              ref={tableRef}
               insights={filteredInsights}
               onInsightSelect={handleInsightSelect}
               selectedCustomer={selectedCustomer}
               customers={customers}
               onCustomerChange={onCustomerChange}
-              onInsightUpdate={(insightId, updates) => {
-                // If the open drawer shows this insight, sync its fields
-                setSelectedInsight(prev => {
-                  if (!prev) return prev;
-                  if (prev.id !== insightId) return prev;
-                  return { ...prev, ...updates } as CustomerSuccessInsight;
-                });
-              }}
+              onInsightUpdate={handleInsightUpdate}
             />
           </Box>
         )}
@@ -442,13 +454,7 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
         open={detailDrawerOpen}
         onClose={handleCloseDetailDrawer}
         insight={selectedInsight}
-        onInsightUpdate={(insightId, updates) => {
-          // Update the selected insight in the drawer
-          setSelectedInsight(prev => {
-            if (!prev || prev.id !== insightId) return prev;
-            return { ...prev, ...updates } as CustomerSuccessInsight;
-          });
-        }}
+        onInsightUpdate={handleInsightUpdate}
       />
     </Box>
   );

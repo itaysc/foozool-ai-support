@@ -15,6 +15,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  define: {
+    global: 'globalThis',
+  },
   server: {
     port: 3001,
   },

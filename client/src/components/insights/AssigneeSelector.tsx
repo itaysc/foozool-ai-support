@@ -24,6 +24,8 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
 interface AssigneeSelectorProps {
@@ -55,10 +57,10 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     if (!searchQuery.trim()) return users;
     
     const query = searchQuery.toLowerCase();
-    return users.filter(user => 
-      user.name.toLowerCase().includes(query) ||
-      user.email.toLowerCase().includes(query)
-    );
+    return users.filter(user => {
+      const name = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim();
+      return name.toLowerCase().includes(query) || user.email.toLowerCase().includes(query);
+    });
   }, [users, searchQuery]);
 
   const getAvatarSize = () => {
@@ -106,8 +108,11 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     onAssigneeChange(null);
   };
 
-  const getInitials = (name: string) => {
-    return name
+  const getInitials = (user: User) => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    }
+    return user.name
       .split(' ')
       .map(word => word.charAt(0))
       .join('')
@@ -115,7 +120,15 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
       .slice(0, 2);
   };
 
-  const getAvatarColor = (name: string) => {
+  const getUserDisplayName = (user: User) => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user.name;
+  };
+
+  const getAvatarColor = (user: User) => {
+    const name = getUserDisplayName(user);
     // Generate a consistent color based on the name
     const colors = [
       '#f56565', '#ed8936', '#ecc94b', '#48bb78', '#38b2ac',
@@ -146,20 +159,20 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
         onClick={handleAvatarClick}
       >
         {currentUser ? (
-          <Tooltip title={`${currentUser.name} (${currentUser.email})`} arrow>
+          <Tooltip title={`${getUserDisplayName(currentUser)} (${currentUser.email})`} arrow>
             <Avatar
               className="assignee-avatar"
               sx={{
                 width: getAvatarSize(),
                 height: getAvatarSize(),
                 fontSize: getFontSize(),
-                backgroundColor: getAvatarColor(currentUser.name),
+                backgroundColor: getAvatarColor(currentUser),
                 transition: 'all 0.2s ease-in-out',
                 position: 'relative'
               }}
               src={currentUser.avatar}
             >
-              {!currentUser.avatar && getInitials(currentUser.name)}
+              {!currentUser.avatar && getInitials(currentUser)}
             </Avatar>
           </Tooltip>
         ) : (
@@ -301,49 +314,58 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
               </ListItem>
 
               {/* User list */}
-              {filteredUsers.map((user) => (
-                <ListItem key={user._id} disablePadding>
-                  <ListItemButton
-                    onClick={(event) => handleUserSelect(user._id, event)}
-                    selected={assignee === user._id}
-                    sx={{
-                      py: 0.5,
-                      '&.Mui-selected': {
-                        backgroundColor: alpha('#3b82f6', 0.1),
+              {filteredUsers.map((user) => {
+                const isSelected = assignee === user._id;
+                return (
+                  <ListItem key={user._id} disablePadding>
+                    <ListItemButton
+                      onClick={(event) => handleUserSelect(user._id, event)}
+                      selected={isSelected}
+                      sx={{
+                        py: 0.5,
+                        backgroundColor: isSelected ? alpha('#3b82f6', 0.1) : 'transparent',
+                        '&.Mui-selected': {
+                          backgroundColor: alpha('#3b82f6', 0.1),
+                          '&:hover': {
+                            backgroundColor: alpha('#3b82f6', 0.15)
+                          }
+                        },
                         '&:hover': {
-                          backgroundColor: alpha('#3b82f6', 0.15)
+                          backgroundColor: isSelected ? alpha('#3b82f6', 0.15) : alpha('#3b82f6', 0.1)
                         }
-                      }
-                    }}
-                  >
-                    <ListItemAvatar>
-                      <Avatar
-                        sx={{
-                          width: 24,
-                          height: 24,
-                          fontSize: '0.7rem',
-                          backgroundColor: getAvatarColor(user.name)
+                      }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar
+                          sx={{
+                            width: 24,
+                            height: 24,
+                            fontSize: '0.7rem',
+                            backgroundColor: getAvatarColor(user)
+                          }}
+                          src={user.avatar}
+                        >
+                          {!user.avatar && getInitials(user)}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={getUserDisplayName(user)}
+                        secondary={user.email}
+                        primaryTypographyProps={{
+                          fontSize: '0.8rem',
+                          fontWeight: isSelected ? 600 : 500,
+                          color: isSelected ? '#3b82f6' : 'inherit'
                         }}
-                        src={user.avatar}
-                      >
-                        {!user.avatar && getInitials(user.name)}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={user.name}
-                      secondary={user.email}
-                      primaryTypographyProps={{
-                        fontSize: '0.8rem',
-                        fontWeight: 500
-                      }}
-                      secondaryTypographyProps={{
-                        fontSize: '0.7rem',
-                        color: 'text.secondary'
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
+                        secondaryTypographyProps={{
+                          fontSize: '0.65rem',
+                          color: 'text.secondary',
+                          lineHeight: 1.2
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                );
+              })}
 
               {filteredUsers.length === 0 && (
                 <ListItem>

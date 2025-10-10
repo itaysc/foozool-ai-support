@@ -13,6 +13,9 @@ import {
   getAllUnifiedInsights
 } from '../../../services/insights';
 
+// Import comment routes
+import commentsRouter from './comments';
+
 const router = express.Router();
 
 /**
@@ -228,6 +231,9 @@ router.get('/', authenticateJWT, hasPermission('insights:read'), async (req, res
     });
   }
 });
+
+// Mount comment routes before dataIntelligence routes
+router.use('/', commentsRouter);
 
 // Import and use the new data intelligence routes
 import dataIntelligenceRoutes from './dataIntelligence';

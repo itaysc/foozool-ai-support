@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useImperativeHandle } from 'react';
 import {
   Box,
   Typography,
@@ -51,14 +51,17 @@ interface GroupedInsight {
   hasChildren: boolean;
 }
 
-const InsightsTable: React.FC<InsightsTableProps> = ({
+const InsightsTable = React.forwardRef<
+  { updateInsightOptimistically: (insightId: string, updates: Partial<CustomerSuccessInsight>, skipCallback?: boolean) => void },
+  InsightsTableProps
+>(({
   insights,
   onInsightSelect,
   selectedCustomer,
   customers = [],
   onCustomerChange,
   onInsightUpdate
-}) => {
+}, ref) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -71,6 +74,28 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
     message: '',
     severity: 'success'
   });
+
+  // Add CSS animation keyframes
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Sync local insights with props
   useEffect(() => {
@@ -141,7 +166,7 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
   };
 
   // Helper function to update insight optimistically
-  const updateInsightOptimistically = (insightId: string, updates: Partial<CustomerSuccessInsight>) => {
+  const updateInsightOptimistically = (insightId: string, updates: Partial<CustomerSuccessInsight>, skipCallback = false) => {
     setLocalInsights(prevInsights => 
       prevInsights.map(insight => 
         insight.id === insightId 
@@ -149,8 +174,14 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
           : insight
       )
     );
-    if (onInsightUpdate) onInsightUpdate(insightId, updates);
+    // Only call onInsightUpdate if skipCallback is false (for table-initiated updates)
+    if (!skipCallback && onInsightUpdate) onInsightUpdate(insightId, updates);
   };
+
+  // Expose updateInsightOptimistically via ref
+  useImperativeHandle(ref, () => ({
+    updateInsightOptimistically
+  }));
 
   // Helper function to revert insight changes
   const revertInsightChange = (insightId: string) => {
@@ -561,29 +592,17 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
               </TableRow>
 
               {/* Child Rows with Animation */}
-              {group.hasChildren && (
-                <TableRow>
-                  <TableCell colSpan={8} sx={{ p: 0, border: 'none' }}>
-                    <Box
-                      sx={{
-                        overflow: 'hidden',
-                        transition: 'max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out 0.1s, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        maxHeight: expandedRows.has(group.id) ? '1000px' : '0px',
-                        opacity: expandedRows.has(group.id) ? 1 : 0,
-                        transform: expandedRows.has(group.id) ? 'translateY(0)' : 'translateY(-10px)',
-                        willChange: 'max-height, opacity, transform'
-                      }}
-                    >
-                      {group.children.map((child, index) => (
-                        <TableRow 
-                          key={`${group.id}-child-${index}`}
-                          sx={{ 
-                            cursor: 'pointer',
-                            backgroundColor: alpha('#f8fafc', 0.3),
-                            '&:hover': { backgroundColor: alpha('#3b82f6', 0.05) }
-                          }}
-                          onClick={(event) => handleRowClick(group, child, event)}
-                        >
+              {group.hasChildren && expandedRows.has(group.id) && group.children.map((child, index) => (
+                <TableRow 
+                  key={`${group.id}-child-${index}`}
+                  sx={{ 
+                    cursor: 'pointer',
+                    backgroundColor: alpha('#f8fafc', 0.3),
+                    '&:hover': { backgroundColor: alpha('#3b82f6', 0.05) },
+                    animation: 'fadeIn 0.3s ease-in-out'
+                  }}
+                  onClick={(event) => handleRowClick(group, child, event)}
+                >
                           <TableCell sx={{ py: 1, width: 40, textAlign: 'center' }}>
                           </TableCell>
                           <TableCell sx={{ py: 1 }}>
@@ -653,10 +672,6 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
                           </TableCell>
                         </TableRow>
                       ))}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              )}
             </React.Fragment>
           ))}
         </TableBody>
@@ -679,6 +694,6 @@ const InsightsTable: React.FC<InsightsTableProps> = ({
       </Snackbar>
     </TableContainer>
   );
-};
+});
 
 export default InsightsTable;

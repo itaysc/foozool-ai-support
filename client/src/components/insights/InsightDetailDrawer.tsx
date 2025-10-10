@@ -15,9 +15,7 @@ import {
   Paper,
   Slide,
   Popper,
-  ClickAwayListener,
-  TextField,
-  InputAdornment
+  ClickAwayListener
 } from '@mui/material';
 import { 
   Close, 
@@ -27,12 +25,18 @@ import {
   Email,
   Schedule,
   Download,
-  Person,
-  Search,
-  Check
+  Check,
+  FiberManualRecord,
+  PlayArrow,
+  CheckCircle,
+  Cancel,
+  Refresh
 } from '@mui/icons-material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
 import { insightsService } from '@/services/insights-service';
+import { insightCommentService, InsightComment, CreateCommentInput } from '@/services/insightCommentService';
+import CommentDescriptionField from './CommentDescriptionField';
+import AssigneeSelector from './AssigneeSelector';
 
 interface InsightDetailDrawerProps {
   open: boolean;
@@ -47,11 +51,17 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
   insight,
   onInsightUpdate
 }) => {
-  const [users, setUsers] = useState<Array<{ _id: string; name: string; email: string }>>([]);
-  const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
+  const [users, setUsers] = useState<Array<{ _id: string; firstName: string; lastName: string; email: string; name: string }>>([]);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [updating, setUpdating] = useState(false);
+  
+  // Comments state
+  const [comments, setComments] = useState<InsightComment[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [showAddComment, setShowAddComment] = useState(false);
+  const [newComment, setNewComment] = useState({ title: '', description: '' });
+  const [creatingComment, setCreatingComment] = useState(false);
+
 
   // Fetch users on component mount
   useEffect(() => {
@@ -61,8 +71,10 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
         if (response.success) {
           const formattedUsers = response.data.map(user => ({
             _id: user._id,
-            name: user.fullName || `${user.firstName} ${user.lastName}`,
-            email: user.email
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            email: user.email,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim()
           }));
           setUsers(formattedUsers);
         }
@@ -77,11 +89,109 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
   // Reset assignee dropdown state when drawer closes
   useEffect(() => {
     if (!open) {
-      setAssigneeDropdownOpen(false);
       setStatusDropdownOpen(false);
-      setSearchTerm('');
+      // Clear comment form when drawer closes
+      setShowAddComment(false);
+      setNewComment({ title: '', description: '' });
     }
   }, [open]);
+
+  // Fetch comments when insight changes
+  useEffect(() => {
+    if (insight?.id) {
+      fetchComments();
+    }
+  }, [insight?.id]);
+
+  const convertUserIdsToNames = (description: string, users: any[]) => {
+    if (!description || !users.length) return description;
+    
+    const userMap = new Map<string, { name: string; email: string }>();
+    users.forEach(user => {
+      userMap.set(user._id, {
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email
+      });
+    });
+    
+    return insightCommentService.replaceUserIdsWithNames(description, userMap);
+  };
+
+  const fetchComments = async () => {
+    if (!insight?.id) return;
+    
+    setLoadingComments(true);
+    try {
+      const commentsData = await insightCommentService.getCommentsByInsight(insight.id);
+      
+      // Convert @[userId] to user names for display
+      const displayComments = (commentsData || []).map(comment => ({
+        ...comment,
+        description: convertUserIdsToNames(comment.description, users)
+      }));
+      
+      setComments(displayComments);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      setComments([]);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const handleCreateComment = async () => {
+    if (!insight?.id || !newComment.description.trim()) return;
+    
+    setCreatingComment(true);
+    try {
+      // Create user map for name/ID conversion
+      const userMap = new Map<string, string>();
+      users.forEach(user => {
+        const fullName = `${user.firstName} ${user.lastName}`.trim();
+        userMap.set(fullName, user._id);
+        userMap.set(user.email, user._id);
+        // Also add individual names for partial matching
+        userMap.set(user.firstName, user._id);
+        userMap.set(user.lastName, user._id);
+      });
+
+      console.log('Original description:', newComment.description);
+      console.log('User map:', Array.from(userMap.entries()));
+
+      // Replace user names with IDs in description
+      const processedDescription = insightCommentService.replaceUserNamesWithIds(newComment.description, userMap);
+      
+      console.log('Processed description:', processedDescription);
+      
+      const taggedUserIds = insightCommentService.parseTaggedUsers(processedDescription);
+      console.log('Tagged user IDs:', taggedUserIds);
+      
+      const commentInput: CreateCommentInput = {
+        title: '', // No title required
+        description: processedDescription,
+        insightId: insight.id,
+        taggedUserIds: taggedUserIds
+      };
+
+      console.log('Comment input:', commentInput);
+
+      const createdComment = await insightCommentService.createComment(commentInput);
+      
+      // Convert @[userId] back to user names for display
+      const displayComment = {
+        ...createdComment,
+        description: convertUserIdsToNames(createdComment.description, users)
+      };
+      
+      setComments(prev => [...prev, displayComment]);
+      setNewComment({ title: '', description: '' });
+      setShowAddComment(false);
+    } catch (error) {
+      console.error('Error creating comment:', error);
+    } finally {
+      setCreatingComment(false);
+    }
+  };
 
   if (!insight) return null;
 
@@ -132,35 +242,99 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
     return Array.from(users);
   };
 
-  const getAssigneeUser = () => {
-    if (!insight.assignee) return null;
-    return users.find(user => user._id === insight.assignee);
-  };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-  };
-
-  const getAvatarColor = (name: string) => {
-    // Generate a consistent color based on the name
-    const colors = [
-      '#f56565', '#ed8936', '#ecc94b', '#48bb78', '#38b2ac',
-      '#4299e1', '#9f7aea', '#ed64a6', '#f687b3', '#4fd1c7'
-    ];
-    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return colors[index % colors.length];
+  // Function to render comment description with user mentions as badges
+  const renderCommentDescription = (description: string, taggedUsers: any[]) => {
+    if (!description) return '';
+    
+    // Create a more sophisticated approach to handle multi-word names
+    // First, find all possible mentions by trying to match against tagged users
+    let result = description;
+    
+    if (taggedUsers && taggedUsers.length > 0) {
+      // Sort by name length (longest first) to match longer names before shorter ones
+      const sortedUsers = [...taggedUsers].sort((a, b) => {
+        const nameA = `${a.firstName} ${a.lastName}`;
+        const nameB = `${b.firstName} ${b.lastName}`;
+        return nameB.length - nameA.length;
+      });
+      
+      // Replace each user mention with a placeholder
+      sortedUsers.forEach((user, userIndex) => {
+        const fullName = `${user.firstName} ${user.lastName}`;
+        const patterns = [
+          `@[${user._id}]`, // New format: @[userId]
+          `@${user._id}`,   // Old format: @userId (for backward compatibility)
+          `@${fullName}`,
+          `@${user.email}`,
+          `@${user.firstName} ${user.lastName}`,
+          `@${user.firstName}`,
+          `@${user.lastName}`
+        ];
+        
+        patterns.forEach(pattern => {
+          const regex = new RegExp(`\\b${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+          result = result.replace(regex, `__MENTION_${userIndex}__`);
+        });
+      });
+      
+      // Split by placeholders and reconstruct with badges
+      const parts = result.split(/(__MENTION_\d+__)/g);
+      
+      return parts.map((part, index) => {
+        const mentionMatch = part.match(/^__MENTION_(\d+)__$/);
+        if (mentionMatch) {
+          const userIndex = parseInt(mentionMatch[1]);
+          const user = sortedUsers[userIndex];
+          
+          if (user) {
+            return (
+              <Chip
+                key={index}
+                label={`@${user.firstName} ${user.lastName}`}
+                size="small"
+              sx={{
+                height: 20,
+                fontSize: '0.7rem',
+                backgroundColor: '#f5f5f5',
+                color: '#666666',
+                border: '1px solid #e0e0e0',
+                mx: 0.5,
+                display: 'inline-flex',
+                verticalAlign: 'middle',
+                '& .MuiChip-label': {
+                  px: 1
+                }
+              }}
+              />
+            );
+          }
+        }
+        return <span key={index}>{part}</span>;
+      });
+    }
+    
+    // Fallback: return original text if no tagged users
+    return <span>{description}</span>;
   };
 
   const handleAssigneeChange = async (assigneeId: string | null) => {
     if (!insight.id || !onInsightUpdate) return;
     
+    // Store original assignee for potential rollback
+    const originalAssignee = insight.assignee;
+    
+    // Optimistically update the UI immediately
+    const updates = { assignee: assigneeId || undefined };
+    onInsightUpdate(insight.id, updates);
+    
     setUpdating(true);
     try {
       await insightsService.updateInsightAssignee(insight.id, assigneeId);
-      onInsightUpdate(insight.id, { assignee: assigneeId || undefined });
-      setAssigneeDropdownOpen(false);
     } catch (error) {
       console.error('Failed to update assignee:', error);
+      // Revert the optimistic update on failure
+      onInsightUpdate(insight.id, { assignee: originalAssignee });
     } finally {
       setUpdating(false);
     }
@@ -169,33 +343,65 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
   const handleStatusChange = async (status: string) => {
     if (!insight.id || !onInsightUpdate) return;
     
+    // Store original status for potential rollback
+    const originalStatus = insight.status;
+    
+    // Optimistically update the UI immediately
+    onInsightUpdate(insight.id, { status: status as any });
+    setStatusDropdownOpen(false);
+    
     setUpdating(true);
     try {
       await insightsService.updateInsightStatus(insight.id, status);
-      onInsightUpdate(insight.id, { status: status as any });
-      setStatusDropdownOpen(false);
     } catch (error) {
       console.error('Failed to update status:', error);
+      // Revert the optimistic update on failure
+      onInsightUpdate(insight.id, { status: originalStatus as any });
     } finally {
       setUpdating(false);
     }
   };
 
   const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'new':
-        return { color: '#6b7280', label: 'New' };
-      case 'in_progress':
-        return { color: '#3b82f6', label: 'In Progress' };
-      case 'resolved':
-        return { color: '#10b981', label: 'Resolved' };
-      case 'closed':
-        return { color: '#6b7280', label: 'Closed' };
-      case 'reopened':
-        return { color: '#f59e0b', label: 'Reopened' };
-      default:
-        return { color: '#6b7280', label: 'Unknown' };
-    }
+    const configs = {
+      new: { 
+        label: 'New',
+        color: '#6b7280', 
+        bgColor: alpha('#6b7280', 0.1),
+        icon: FiberManualRecord
+      },
+      in_progress: { 
+        label: 'In Progress',
+        color: '#3b82f6', 
+        bgColor: alpha('#3b82f6', 0.1),
+        icon: PlayArrow
+      },
+      resolved: { 
+        label: 'Resolved',
+        color: '#10b981', 
+        bgColor: alpha('#10b981', 0.1),
+        icon: CheckCircle
+      },
+      closed: { 
+        label: 'Closed',
+        color: '#6b7280', 
+        bgColor: alpha('#6b7280', 0.1),
+        icon: Cancel
+      },
+      reopened: { 
+        label: 'Reopened',
+        color: '#f59e0b', 
+        bgColor: alpha('#f59e0b', 0.1),
+        icon: Refresh
+      }
+    };
+    return configs[status as keyof typeof configs] || configs.new;
+  };
+
+  const getStatusIcon = (statusKey: string) => {
+    const config = getStatusConfig(statusKey);
+    const IconComponent = config.icon;
+    return <IconComponent sx={{ fontSize: 14 }} />;
   };
 
   const statusOptions = [
@@ -206,14 +412,9 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
     { value: 'reopened', label: 'Reopened' }
   ];
 
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const affectedUsers = getAffectedUsers();
   const config = getSeverityConfig(insight.severity);
-  const assigneeUser = getAssigneeUser();
   const statusConfig = getStatusConfig(insight.status || 'new');
 
   const getActionButtons = () => {
@@ -338,109 +539,15 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
               {formatTypeName(insight.type)}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              {/* Assignee Avatar */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, position: 'relative' }}>
-                <Box 
-                  data-assignee-selector
-                  sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 1, 
-                    cursor: 'pointer',
-                    opacity: updating ? 0.6 : 1,
-                    '&:hover': { opacity: 0.8 }
-                  }}
-                  onClick={() => !updating && setAssigneeDropdownOpen(!assigneeDropdownOpen)}
-                >
-                  <Avatar sx={{ width: 32, height: 32, backgroundColor: assigneeUser ? getAvatarColor(assigneeUser.name) : alpha('#6b7280', 0.2), color: assigneeUser ? 'white' : '#6b7280' }}>
-                    {assigneeUser ? getInitials(assigneeUser.name) : <Person sx={{ fontSize: 18 }} />}
-                  </Avatar>
-                </Box>
-                
-                {/* Assignee Dropdown */}
-                <Popper
-                  open={assigneeDropdownOpen}
-                  anchorEl={document.querySelector('[data-assignee-selector]')}
-                  placement="bottom-start"
-                  style={{ zIndex: 1300 }}
-                >
-                  <ClickAwayListener onClickAway={() => setAssigneeDropdownOpen(false)}>
-                    <Paper sx={{ 
-                      mt: 1, 
-                      minWidth: 250, 
-                      maxHeight: 300, 
-                      overflow: 'hidden',
-                      boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                      borderRadius: 2
-                    }}>
-                      <Box sx={{ p: 1 }}>
-                        <TextField
-                          size="small"
-                          placeholder="Search users..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <Search sx={{ fontSize: 16 }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{ mb: 1 }}
-                        />
-                      </Box>
-                      <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
-                        <Box
-                          sx={{
-                            px: 1,
-                            py: 0.5,
-                            cursor: 'pointer',
-                            borderRadius: 1,
-                            '&:hover': { backgroundColor: alpha('#3b82f6', 0.1) },
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1
-                          }}
-                          onClick={() => handleAssigneeChange(null)}
-                        >
-                          <Avatar sx={{ width: 24, height: 24, backgroundColor: alpha('#ef4444', 0.1), color: '#ef4444' }}>
-                            <Person sx={{ fontSize: 14 }} />
-                          </Avatar>
-                          <Typography variant="body2">Unassigned</Typography>
-                          {!insight.assignee && <Check sx={{ fontSize: 16, ml: 'auto' }} />}
-                        </Box>
-                        {filteredUsers.map((user) => (
-                          <Box
-                            key={user._id}
-                            sx={{
-                              px: 1,
-                              py: 0.5,
-                              cursor: 'pointer',
-                              borderRadius: 1,
-                              '&:hover': { backgroundColor: alpha('#3b82f6', 0.1) },
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1
-                            }}
-                            onClick={() => handleAssigneeChange(user._id)}
-                          >
-                            <Avatar sx={{ width: 24, height: 24, backgroundColor: getAvatarColor(user.name), color: 'white' }}>
-                              {getInitials(user.name)}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2">{user.name}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {user.email}
-                              </Typography>
-                            </Box>
-                            {insight.assignee === user._id && <Check sx={{ fontSize: 16, ml: 'auto' }} />}
-                          </Box>
-                        ))}
-                      </Box>
-                    </Paper>
-                  </ClickAwayListener>
-                </Popper>
-              </Box>
+              {/* Assignee Selector */}
+              <AssigneeSelector
+                assignee={insight.assignee}
+                users={users}
+                onAssigneeChange={handleAssigneeChange}
+                size="medium"
+                disabled={updating}
+                updating={updating}
+              />
               
               {/* Severity Badge */}
               <Chip 
@@ -450,8 +557,8 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
                   backgroundColor: config.color,
                   color: 'white',
                   fontWeight: 600,
-                  fontSize: '0.7rem',
-                  height: 24,
+                  fontSize: '0.65rem',
+                  height: 20,
                   minWidth: 80,
                   width: 80,
                   justifyContent: 'center'
@@ -475,15 +582,26 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
                   <Chip 
                     label={statusConfig.label}
                     size="small"
+                    icon={getStatusIcon(insight.status || 'new')}
                     sx={{
-                      backgroundColor: statusConfig.color,
-                      color: 'white',
+                      backgroundColor: statusConfig.bgColor,
+                      color: statusConfig.color,
                       fontWeight: 600,
-                      fontSize: '0.7rem',
-                      height: 24,
+                      fontSize: '0.65rem',
+                      height: 20,
                       minWidth: 80,
                       width: 80,
-                      justifyContent: 'center'
+                      justifyContent: 'center',
+                      transition: 'all 0.2s ease-in-out',
+                      '& .MuiChip-label': {
+                        whiteSpace: 'nowrap',
+                        overflow: 'visible',
+                        textOverflow: 'unset'
+                      },
+                      '& .MuiChip-icon': {
+                        color: statusConfig.color,
+                        fontSize: 14
+                      }
                     }}
                   />
                 </Box>
@@ -506,6 +624,7 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
                       <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
                         {statusOptions.map((option) => {
                           const optionConfig = getStatusConfig(option.value);
+                          const isSelected = insight.status === option.value;
                           return (
                             <Box
                               key={option.value}
@@ -513,28 +632,30 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
                                 px: 2,
                                 py: 1,
                                 cursor: 'pointer',
-                                '&:hover': { backgroundColor: alpha('#3b82f6', 0.1) },
+                                backgroundColor: isSelected ? alpha(optionConfig.color, 0.1) : 'transparent',
+                                '&:hover': { 
+                                  backgroundColor: isSelected ? alpha(optionConfig.color, 0.15) : alpha(optionConfig.color, 0.1) 
+                                },
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 1
                               }}
                               onClick={() => handleStatusChange(option.value)}
                             >
-                              <Chip 
-                                label={optionConfig.label}
-                                size="small"
+                              <Box sx={{ color: optionConfig.color }}>
+                                {getStatusIcon(option.value)}
+                              </Box>
+                              <Typography
                                 sx={{
-                                  backgroundColor: optionConfig.color,
-                                  color: 'white',
-                                  fontWeight: 600,
-                                  fontSize: '0.7rem',
-                                  height: 20,
-                                  minWidth: 70,
-                                  width: 70,
-                                  justifyContent: 'center'
+                                  fontSize: '0.8rem',
+                                  fontWeight: isSelected ? 600 : 500,
+                                  color: optionConfig.color,
+                                  flex: 1
                                 }}
-                              />
-                              {insight.status === option.value && <Check sx={{ fontSize: 16, ml: 'auto' }} />}
+                              >
+                                {optionConfig.label}
+                              </Typography>
+                              {isSelected && <Check sx={{ fontSize: 16, color: optionConfig.color }} />}
                             </Box>
                           );
                         })}
@@ -743,56 +864,210 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
                 DETAILED METADATA
               </Typography>
               <List dense>
-                {Object.entries(insight.meta).map(([key, value]) => (
-                  <ListItem key={key} sx={{ px: 0 }}>
-                    <ListItemText 
-                      primary={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      secondary={String(value)}
-                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
-                      secondaryTypographyProps={{ fontSize: '0.9rem' }}
-                    />
-                  </ListItem>
-                ))}
+                {Object.entries(insight.meta)
+                  .filter(([key, value]) => {
+                    // Hide SLA if it's null or empty, and hide it completely since we show it in guidance
+                    if (key.toLowerCase() === 'sla') {
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map(([key, value]) => {
+                    // Special handling for guidance object
+                    if (key === 'guidance' && typeof value === 'object' && value !== null) {
+                      const guidance = value as any;
+                      return (
+                        <ListItem key={key} sx={{ px: 0, alignItems: 'flex-start' }}>
+                          <ListItemText 
+                            primary={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            secondary={
+                              <Box>
+                                {guidance.summary && (
+                                  <Typography variant="body2" sx={{ mb: 2, fontStyle: 'italic', color: '#666' }}>
+                                    {guidance.summary}
+                                  </Typography>
+                                )}
+                                {guidance.why && (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                      Why this matters:
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: '#666' }}>
+                                      {guidance.why}
+                                    </Typography>
+                                  </Box>
+                                )}
+                                {guidance.actions && Array.isArray(guidance.actions) && guidance.actions.length > 0 && (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                      Suggested Actions:
+                                    </Typography>
+                                    <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                      {guidance.actions.map((action: string, index: number) => (
+                                        <li key={index}>
+                                          <Typography variant="body2" sx={{ color: '#666' }}>
+                                            {action}
+                                          </Typography>
+                                        </li>
+                                      ))}
+                                    </Box>
+                                  </Box>
+                                )}
+                                {(guidance.owner || guidance.slaDays) && (
+                                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                    {guidance.owner && (
+                                      <Chip 
+                                        label={`Owner: ${guidance.owner}`}
+                                        size="small"
+                                        sx={{ backgroundColor: '#e3f2fd', color: '#1976d2' }}
+                                      />
+                                    )}
+                                    {guidance.slaDays && (
+                                      <Chip 
+                                        label={`SLA: ${guidance.slaDays}d`}
+                                        size="small"
+                                        sx={{ backgroundColor: '#f3e5f5', color: '#7b1fa2' }}
+                                      />
+                                    )}
+                                  </Box>
+                                )}
+                              </Box>
+                            }
+                            primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                            secondaryTypographyProps={{ fontSize: '0.9rem' }}
+                          />
+                        </ListItem>
+                      );
+                    }
+                    
+                    // Default handling for other fields
+                    return (
+                      <ListItem key={key} sx={{ px: 0 }}>
+                        <ListItemText 
+                          primary={key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          secondary={typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                          secondaryTypographyProps={{ fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    );
+                  })}
               </List>
             </Paper>
           )}
 
           {/* Comments Section */}
           <Paper sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, color: '#374151' }}>
-              COMMENTS
-            </Typography>
-            <Box sx={{ 
-              minHeight: 120, 
-              border: '1px solid #e5e7eb', 
-              borderRadius: 1, 
-              p: 2,
-              backgroundColor: '#f9fafb',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                No comments yet. Add a comment to track progress and discussions.
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#374151' }}>
+                COMMENTS ({comments && Array.isArray(comments) ? comments.length : 0})
               </Typography>
-            </Box>
-            <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
               <Button 
                 variant="outlined" 
                 size="small"
                 startIcon={<Email />}
+                onClick={() => setShowAddComment(!showAddComment)}
                 sx={{ fontSize: '0.8rem' }}
               >
                 Add Comment
               </Button>
-              <Button 
-                variant="outlined" 
-                size="small"
-                sx={{ fontSize: '0.8rem' }}
-              >
-                View All
-              </Button>
             </Box>
+
+            {/* Add Comment Form */}
+            {showAddComment && (
+              <Box sx={{ mb: 3, p: 2, border: '1px solid #e5e7eb', borderRadius: 1, backgroundColor: '#f9fafb' }}>
+                <CommentDescriptionField
+                  value={newComment.description}
+                  onChange={(value) => setNewComment(prev => ({ ...prev, description: value }))}
+                  users={users}
+                  placeholder="Describe your comment. Use @username to tag users."
+                  multiline={true}
+                  rows={3}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                  <Button 
+                    size="small" 
+                    onClick={() => {
+                      setShowAddComment(false);
+                      setNewComment({ title: '', description: '' });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    size="small" 
+                    variant="contained"
+                    onClick={handleCreateComment}
+                    disabled={creatingComment || !newComment.description.trim()}
+                  >
+                    {creatingComment ? 'Creating...' : 'Add Comment'}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+
+            {/* Comments List */}
+            {loadingComments ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Loading comments...
+                </Typography>
+              </Box>
+            ) : !comments || !Array.isArray(comments) || comments.length === 0 ? (
+              <Box sx={{ 
+                minHeight: 120, 
+                border: '1px solid #e5e7eb', 
+                borderRadius: 1, 
+                p: 2,
+                backgroundColor: '#f9fafb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                  No comments yet. Add a comment to track progress and discussions.
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ maxHeight: 400, overflow: 'auto' }}>
+                {comments && Array.isArray(comments) && comments.map((comment) => (
+                  <Box key={comment._id} sx={{ mb: 2, p: 2, border: '1px solid #e5e7eb', borderRadius: 1, backgroundColor: 'white' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', mb: 1 }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                    {new Date(comment.createdAt).toISOString().split('T')[0]} {new Date(comment.createdAt).toLocaleTimeString()}
+                  </Typography>
+                    </Box>
+                    <Box sx={{ mb: 1, lineHeight: 1.5, fontSize: '0.875rem' }}>
+                      {renderCommentDescription(comment.description, comment.taggedUsers || [])}
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar sx={{ width: 20, height: 20, fontSize: '0.7rem' }}>
+                          {comment.createdBy.firstName?.charAt(0).toUpperCase() || 'U'}
+                        </Avatar>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, fontSize: '0.65rem' }}>
+                          {comment.createdBy.firstName} {comment.createdBy.lastName}
+                        </Typography>
+                      </Box>
+                      {comment.taggedUsers.length > 0 && (
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          {comment.taggedUsers.map((user) => (
+                            <Chip 
+                              key={user._id}
+                              label={`${user.firstName} ${user.lastName}`}
+                              size="small"
+                              sx={{ fontSize: '0.6rem', height: 20 }}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </Paper>
         </Box>
 

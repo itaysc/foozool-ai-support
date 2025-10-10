@@ -49,6 +49,30 @@
       "description": "ID of an NPS upload to test with (get from upload responses)"
     },
     {
+      "key": "insight_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of an insight to test with (get from Get All Insights response)"
+    },
+    {
+      "key": "comment_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a comment to test with (get from Create Insight Comment response)"
+    },
+    {
+      "key": "insight_number",
+      "value": "",
+      "type": "string",
+      "description": "Insight number to test with (e.g., IN000001)"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a user to test with (get from Get All Users response)"
+    },
+    {
       "key": "customer_id",
       "value": "",
       "type": "string",
@@ -1611,6 +1635,155 @@
               "path": ["api", "v1", "insights", "predictive"]
             },
             "description": "Get predictive insights for the organization including escalation risk, CSAT risk, resolution time predictions, and recent predictions analysis"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Insight Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Comment Title\",\n  \"description\": \"This is a comment description. Use @username to tag users.\",\n  \"taggedUserIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}/comment",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}", "comment"]
+            },
+            "description": "Create a new comment for an insight. Use @username in description to tag users."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Insight Comments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}/comments",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}", "comments"]
+            },
+            "description": "Get all comments for a specific insight"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Comments by Insight Number",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/insight-number/{{insight_number}}/comments",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "insight-number", "{{insight_number}}", "comments"]
+            },
+            "description": "Get all comments for an insight by its insight number (e.g., IN000001)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Comment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}/comments/{{comment_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}", "comments", "{{comment_id}}"]
+            },
+            "description": "Get a single comment by its ID for a specific insight"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Comment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Comment Title\",\n  \"description\": \"Updated comment description. Use @username to tag users.\",\n  \"taggedUserIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}/comments/{{comment_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}", "comments", "{{comment_id}}"]
+            },
+            "description": "Update a comment. Only the comment creator can update it."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/{{insight_id}}/comments/{{comment_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "{{insight_id}}", "comments", "{{comment_id}}"]
+            },
+            "description": "Delete a comment. Only the comment creator can delete it."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Comments by Tagged User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/tagged/{{user_id}}/comments",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "insights", "tagged", "{{user_id}}", "comments"]
+            },
+            "description": "Get all comments where a specific user is tagged"
           },
           "response": []
             },
