@@ -4,7 +4,7 @@ import { CustomerSuccessInsight } from '@/types/customerSuccess';
 import { EnhancedInsightsView } from '@/components/insights';
 import { insightsService } from '@/services/insights-service';
 import { surveysService } from '@/services/surveys-service';
-import CustomerMeetingPrepModal from '@/components/insights/CustomerMeetingPrepModal';
+import CustomerMeetingPrepModal from '@/components/insights/modals/CustomerMeetingPrepModal';
 
 interface CustomerSuccessTabProps {
   csInsights: CustomerSuccessInsight[];

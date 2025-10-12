@@ -2,7 +2,7 @@ import axios from '@/services/axios';
 import config from '@/config';
 import { InsightsResponse, InsightSummaryResponse } from '@/types/insight';
 import { PredictionsResponse, PredictionSummaryResponse, AccuracyAnalysisResponse } from '@/types/prediction';
-import { DateFilterState } from '@/components/insights/DateFilter';
+import { DateFilterState } from '@/components/insights/filters/DateFilter';
 
 const getRoute = (endpoint: string) => {
   return `${config.apiUrl}/${endpoint}`;

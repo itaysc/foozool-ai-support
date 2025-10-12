@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box, Typography, Alert, Card, CardContent, Chip, Paper } from '@mui/material';
 import { Insight, InsightSummary } from '@/types/insight';
-import MetricCard from '@/components/insights/MetricCard';
-import InsightCard from '@/components/insights/InsightCard';
+import MetricCard from '@/components/insights/cards/MetricCard';
+import InsightCard from '@/components/insights/cards/InsightCard';
 import PageHeader from '@/components/insights/PageHeader';
 import { BugReport, Speed, Timeline } from '@mui/icons-material';
 

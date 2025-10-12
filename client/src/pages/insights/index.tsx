@@ -9,7 +9,7 @@ import { useAuth } from '@/context/auth.context';
 import customersStore from '@/stores/customers.store';
 import botsService from '@/services/bots-service';
 import { SideBar, NavItem } from '@/components/sideBar';
-import { DateFilter, DateFilterState } from '@/components/insights/DateFilter';
+import { DateFilter, DateFilterState } from '@/components/insights/filters/DateFilter';
 import { 
   TicketInsightsTab, 
   CustomerSuccessTab,
@@ -73,7 +73,6 @@ const InsightsPage: React.FC = () => {
   const fetchUnifiedInsights = async (customerId: string | null) => {
     try {
       const res = await insightsService.getAllUnifiedInsights(customerId || undefined);
-      console.log('Unified insights response:', res);
       setUnifiedInsights(res.data || []);
     } catch (err) {
       console.error('Error fetching unified insights:', err);

@@ -24,7 +24,6 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
   onInsightUpdate
 }) => {
   const [users, setUsers] = useState<Array<{ _id: string; firstName: string; lastName: string; email: string; name: string }>>([]);
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   
   // Comments state
@@ -57,10 +56,9 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
     fetchUsers();
   }, []);
 
-  // Reset assignee dropdown state when drawer closes
+  // Reset state when drawer closes
   useEffect(() => {
     if (!open) {
-      setStatusDropdownOpen(false);
       // Clear comment form when drawer closes
       setShowAddComment(false);
       setNewComment({ title: '', description: '' });
@@ -130,8 +128,6 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
           insight={insight}
           onInsightUpdate={handleInsightUpdate}
           users={users}
-          statusDropdownOpen={statusDropdownOpen}
-          setStatusDropdownOpen={setStatusDropdownOpen}
           updating={updating}
           setUpdating={setUpdating}
         />

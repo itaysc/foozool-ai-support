@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Typography, Alert, Card, CardContent, LinearProgress, Paper } from '@mui/material';
 import { NPSInsights } from '@/types/nps';
-import MetricCard from '@/components/insights/MetricCard';
+import MetricCard from '@/components/insights/cards/MetricCard';
 import PageHeader from '@/components/insights/PageHeader';
 import { Assessment, TrendingUp, People, ThumbUp } from '@mui/icons-material';
 

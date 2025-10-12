@@ -103,6 +103,57 @@ export interface CustomerQueryOptions {
   }
 
   /**
+   * Get customer dashboard data including insights
+   */
+  static async getCustomerDashboardData(organizationId: string, customerId: string): Promise<any> {
+    // Get customer data
+    const customer = await CustomerModel.findOne({
+      _id: customerId,
+      organizationId
+    }).lean();
+
+    if (!customer) {
+      return null;
+    }
+
+    // Fetch insights for this customer
+    let insights: any[] = [];
+    try {
+      const insightsResponse = await fetch(`${process.env.API_BASE_URL || 'http://localhost:3000'}/api/v1/insights/customer-success/${customerId}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (insightsResponse.ok) {
+        const insightsData = await insightsResponse.json();
+        insights = insightsData.payload?.allInsights || [];
+      }
+    } catch (insightsError) {
+      console.warn('Error fetching insights for dashboard:', insightsError);
+    }
+
+    // Generate chart data
+    const insightsChartData = this.generateInsightsChartData(insights);
+    const insightsStatusChartData = this.generateInsightsStatusChartData(insights);
+
+    return {
+      customer,
+      insights,
+      charts: {
+        insightsByType: insightsChartData,
+        insightsByStatus: insightsStatusChartData
+      },
+      summary: {
+        totalInsights: insights.length,
+        insightsLast8Weeks: insightsChartData.reduce((sum, item) => sum + item.total, 0),
+        mostCommonType: this.getMostCommonInsightType(insights),
+        statusBreakdown: this.getStatusBreakdown(insights)
+      }
+    };
+  }
+
+  /**
    * Update a customer
    */
   static async updateCustomer(organizationId: string, customerId: string, updateData: UpdateCustomerRequest): Promise<ICustomer | null> {
@@ -205,5 +256,121 @@ export interface CustomerQueryOptions {
       customersBySize,
       healthScoreDistribution
     };
+  }
+
+  // Helper methods for dashboard data generation
+  private static getWeekString(date: Date): string {
+    const year = date.getFullYear();
+    const startOfYear = new Date(date.getFullYear(), 0, 1);
+    const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    const week = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    return `${year} W${week.toString().padStart(2, '0')}`;
+  }
+
+  private static generateInsightsChartData(insights: any[]) {
+    if (!insights || insights.length === 0) {
+      return [];
+    }
+
+    const groupedData: { [key: string]: { [key: string]: number } } = {};
+    
+    insights.forEach(insight => {
+      const createdAt = new Date(insight.createdAt || insight.updatedAt);
+      const week = this.getWeekString(createdAt);
+      const type = insight.type || 'other';
+      
+      if (!groupedData[week]) {
+        groupedData[week] = {};
+      }
+      
+      groupedData[week][type] = (groupedData[week][type] || 0) + 1;
+    });
+
+    return Object.entries(groupedData)
+      .map(([period, types]) => {
+        const total = Object.values(types).reduce((sum, count) => sum + count, 0);
+        return {
+          period,
+          ...types,
+          total
+        };
+      })
+      .sort((a, b) => a.period.localeCompare(b.period))
+      .slice(-8);
+  }
+
+  private static generateInsightsStatusChartData(insights: any[]) {
+    if (!insights || insights.length === 0) {
+      return [];
+    }
+
+    const groupedData: { [key: string]: { [key: string]: number } } = {};
+    
+    insights.forEach(insight => {
+      const createdAt = new Date(insight.createdAt || insight.updatedAt);
+      const week = this.getWeekString(createdAt);
+      const status = insight.status || 'new';
+      
+      if (!groupedData[week]) {
+        groupedData[week] = { active: 0, resolved: 0, in_progress: 0, pending: 0 };
+      }
+      
+      let normalizedStatus = 'active';
+      if (status === 'resolved' || status === 'closed') {
+        normalizedStatus = 'resolved';
+      } else if (status === 'in_progress') {
+        normalizedStatus = 'in_progress';
+      } else if (status === 'reopened') {
+        normalizedStatus = 'pending';
+      }
+      
+      groupedData[week][normalizedStatus]++;
+    });
+
+    return Object.entries(groupedData)
+      .map(([period, statuses]) => {
+        const total = Object.values(statuses).reduce((sum, count) => sum + count, 0);
+        return {
+          period,
+          ...statuses,
+          total
+        };
+      })
+      .sort((a, b) => a.period.localeCompare(b.period))
+      .slice(-8);
+  }
+
+  private static getMostCommonInsightType(insights: any[]): string {
+    if (insights.length === 0) return 'None';
+    
+    const typeCounts: { [key: string]: number } = {};
+    insights.forEach(insight => {
+      const type = insight.type || 'other';
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    });
+    
+    const mostCommon = Object.entries(typeCounts)
+      .sort(([,a], [,b]) => b - a)[0];
+    
+    return mostCommon ? mostCommon[0] : 'None';
+  }
+
+  private static getStatusBreakdown(insights: any[]) {
+    const breakdown = { active: 0, resolved: 0, in_progress: 0, pending: 0 };
+    
+    insights.forEach(insight => {
+      const status = insight.status || 'new';
+      if (status === 'resolved' || status === 'closed') {
+        breakdown.resolved++;
+      } else if (status === 'in_progress') {
+        breakdown.in_progress++;
+      } else if (status === 'reopened') {
+        breakdown.pending++;
+      } else {
+        breakdown.active++;
+      }
+    });
+    
+    return breakdown;
   }
 }

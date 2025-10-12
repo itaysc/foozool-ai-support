@@ -45,6 +45,12 @@ const customersService = {
     return response.data.payload;
   },
 
+    // Get customer dashboard data
+  async getDashboardData(id: string): Promise<any> {
+    const response = await axios.get(getRoute(`customers/${id}/dashboard`));
+    return response.data.payload;
+  },
+
   // Create new customer
   async create(data: CreateCustomerRequest): Promise<ICustomer> {
     const response = await axios.post(getRoute('customers'), data);

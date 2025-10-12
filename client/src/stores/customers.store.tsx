@@ -14,6 +14,7 @@ class CustomersStore {
   customers: ICustomer[] = [];
   stats: CustomerStats | null = null;
   currentCustomer: ICustomer | null = null;
+  dashboardData: any = null;
   isLoading = false;
   isSaving = false;
   error: string | null = null;
@@ -60,6 +61,10 @@ class CustomersStore {
 
   setCurrentCustomer = (customer: ICustomer | null) => {
     this.currentCustomer = customer;
+  };
+
+  setDashboardData = (data: any) => {
+    this.dashboardData = data;
   };
 
   setLastUpdated = (date: Date) => {
@@ -180,6 +185,30 @@ class CustomersStore {
         this.setError(err.response?.data?.error || 'Failed to fetch customer');
       });
       console.error('Error fetching customer:', err);
+    } finally {
+      runInAction(() => {
+        this.setLoading(false);
+      });
+    }
+  };
+
+  fetchDashboardData = async (customerId: string) => {
+    try {
+      this.setLoading(true);
+      this.setError(null);
+      
+      const dashboardData = await customersService.getDashboardData(customerId);
+      runInAction(() => {
+        this.setDashboardData(dashboardData);
+        if (dashboardData.customer) {
+          this.setCurrentCustomer(dashboardData.customer);
+        }
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.setError(err.response?.data?.error || 'Failed to fetch dashboard data');
+      });
+      console.error('Error fetching dashboard data:', err);
     } finally {
       runInAction(() => {
         this.setLoading(false);

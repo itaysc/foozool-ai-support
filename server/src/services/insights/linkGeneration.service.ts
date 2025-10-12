@@ -72,7 +72,14 @@ export async function generateInsightLinks(
         break;
     }
     
-    // Always add customer profile link
+    // Always add customer dashboard and profile links
+    links.push({
+      label: 'Customer Dashboard',
+      url: `/customers/${customerId}/dashboard`,
+      type: 'dashboard',
+      description: 'Real-time customer health and performance metrics'
+    });
+    
     links.push({
       label: 'Customer Profile',
       url: `/customers/${customerId}`,
@@ -120,7 +127,7 @@ function generateRecurringProblemsLinks(insight: CustomerSuccessInsight, custome
     if (issue.includes('api') || issue.includes('authentication')) {
       links.push({
         label: 'API Health Dashboard',
-        url: `/dashboard/api-health?customerId=${customerId}`,
+        url: `/customers/${customerId}/dashboard`,
         type: 'dashboard',
         description: 'Monitor API performance and error rates'
       });
@@ -128,7 +135,7 @@ function generateRecurringProblemsLinks(insight: CustomerSuccessInsight, custome
     if (issue.includes('database') || issue.includes('connection')) {
       links.push({
         label: 'Database Monitoring',
-        url: `/dashboard/database?customerId=${customerId}`,
+        url: `/customers/${customerId}/dashboard`,
         type: 'dashboard',
         description: 'Database performance metrics'
       });
@@ -151,7 +158,7 @@ function generateHighTicketVolumeLinks(insight: CustomerSuccessInsight, customer
   
   links.push({
     label: 'Ticket Analytics Dashboard',
-    url: `/dashboard/tickets?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'View ticket trends and analytics'
   });
@@ -178,7 +185,7 @@ function generateSentimentDeclineLinks(insight: CustomerSuccessInsight, customer
   
   links.push({
     label: 'Sentiment Analysis Dashboard',
-    url: `/dashboard/sentiment?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'View sentiment trends over time'
   });
@@ -212,7 +219,7 @@ function generateEscalatingIssuesLinks(insight: CustomerSuccessInsight, customer
   
   links.push({
     label: 'Escalation Dashboard',
-    url: `/dashboard/escalations?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'Track escalation patterns'
   });
@@ -232,7 +239,7 @@ function generateResolutionDelaysLinks(insight: CustomerSuccessInsight, customer
   
   links.push({
     label: 'Resolution Time Dashboard',
-    url: `/dashboard/resolution-time?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'View resolution time metrics'
   });
@@ -260,14 +267,14 @@ function generateFeatureDiscoveryLinks(insight: CustomerSuccessInsight, customer
   
   links.push({
     label: 'Feature Adoption Dashboard',
-    url: `/dashboard/feature-adoption?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'Track feature usage and adoption'
   });
   
   links.push({
     label: 'User Activity Analytics',
-    url: `/analytics/user-activity?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'system',
     description: 'View detailed user engagement metrics'
   });
@@ -297,14 +304,14 @@ function generateLowEngagementLinks(insight: CustomerSuccessInsight, customerId:
   
   links.push({
     label: 'Engagement Analytics',
-    url: `/dashboard/engagement?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'View user engagement metrics'
   });
   
   links.push({
     label: 'Usage Statistics',
-    url: `/analytics/usage?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'system',
     description: 'Detailed usage patterns and trends'
   });
@@ -324,7 +331,7 @@ function generateChurnRiskLinks(insight: CustomerSuccessInsight, customerId: str
   
   links.push({
     label: 'Churn Risk Dashboard',
-    url: `/dashboard/churn-risk?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'View churn risk indicators'
   });
@@ -358,7 +365,7 @@ function generateUpsellOpportunityLinks(insight: CustomerSuccessInsight, custome
   
   links.push({
     label: 'Usage Analytics',
-    url: `/analytics/usage?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'system',
     description: 'View usage patterns for upsell indicators'
   });
@@ -392,7 +399,7 @@ function generateExpansionReadyLinks(insight: CustomerSuccessInsight, customerId
   
   links.push({
     label: 'Account Expansion Dashboard',
-    url: `/dashboard/expansion?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'Expansion readiness metrics'
   });
@@ -419,7 +426,7 @@ function generateHealthScoreDeclineLinks(insight: CustomerSuccessInsight, custom
   
   links.push({
     label: 'Health Score Dashboard',
-    url: `/dashboard/health-score?customerId=${customerId}`,
+    url: `/customers/${customerId}/dashboard`,
     type: 'dashboard',
     description: 'Detailed health score breakdown'
   });

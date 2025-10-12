@@ -787,6 +787,25 @@
           "response": []
         },
         {
+          "name": "Get Customer Dashboard Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/customers/{{customer_id}}/dashboard",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "customers", "{{customer_id}}", "dashboard"]
+            },
+            "description": "Get customer dashboard data including insights charts, status breakdown, and summary statistics"
+          },
+          "response": []
+        },
+        {
           "name": "Update Customer",
           "request": {
             "method": "PUT",

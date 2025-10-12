@@ -31,7 +31,9 @@ interface User {
 interface AssigneeSelectorProps {
   assignee?: string | null;
   users: User[];
-  onAssigneeChange: (userId: string | null) => void;
+  onAssigneeChange?: (userId: string | null) => void;
+  insight?: any; // Support insight-based approach
+  onInsightUpdate?: (insightId: string, updates: any) => void;
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
   updating?: boolean;
@@ -41,6 +43,8 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   assignee,
   users,
   onAssigneeChange,
+  insight,
+  onInsightUpdate,
   size = 'small',
   disabled = false,
   updating = false
@@ -50,7 +54,9 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const avatarRef = useRef<HTMLDivElement>(null);
 
-  const currentUser = users.find(user => user._id === assignee);
+  // Determine current assignee from either direct prop or insight
+  const currentAssignee = assignee || insight?.assignee || insight?.meta?.assignee;
+  const currentUser = users.find(user => user._id === currentAssignee);
 
   // Filter users based on search query
   const filteredUsers = useMemo(() => {
@@ -65,19 +71,19 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
 
   const getAvatarSize = () => {
     switch (size) {
-      case 'small': return 20;
+      case 'small': return 24;
       case 'medium': return 32;
       case 'large': return 40;
-      default: return 20;
+      default: return 24;
     }
   };
 
   const getFontSize = () => {
     switch (size) {
-      case 'small': return '0.6rem';
+      case 'small': return '0.7rem';
       case 'medium': return '0.8rem';
       case 'large': return '1rem';
-      default: return '0.6rem';
+      default: return '0.7rem';
     }
   };
 
@@ -99,13 +105,32 @@ const AssigneeSelector: React.FC<AssigneeSelectorProps> = ({
     if (event) {
       event.stopPropagation();
     }
-    onAssigneeChange(userId);
+    
+    // Handle insight-based approach
+    if (insight && onInsightUpdate) {
+      const insightId = insight.id || insight.meta?.insightId || insight._id;
+      onInsightUpdate(insightId, { assignee: userId });
+    } 
+    // Handle direct assignee approach
+    else if (onAssigneeChange) {
+      onAssigneeChange(userId);
+    }
+    
     handleClose();
   };
 
   const handleUnassign = (event: React.MouseEvent) => {
     event.stopPropagation();
-    onAssigneeChange(null);
+    
+    // Handle insight-based approach
+    if (insight && onInsightUpdate) {
+      const insightId = insight.id || insight.meta?.insightId || insight._id;
+      onInsightUpdate(insightId, { assignee: null });
+    } 
+    // Handle direct assignee approach
+    else if (onAssigneeChange) {
+      onAssigneeChange(null);
+    }
   };
 
   const getInitials = (user: User) => {

@@ -13,6 +13,7 @@ import stakeholderRoutes from './stakeholders';
 
 const router = Router();
 
+
 /**
  * POST /api/v1/customers
  * Create a new customer
@@ -121,6 +122,43 @@ router.get('/stats', authenticateJWT, hasPermission('customers:read'), async (re
     });
   } catch (error) {
     console.error('Error fetching customer stats:', error);
+    res.status(500).json({
+      status: 500,
+      error: 'Internal server error',
+    });
+  }
+});
+
+/**
+ * GET /api/v1/customers/:customerId/dashboard
+ * Get customer dashboard data including insights charts
+ */
+router.get('/:customerId/dashboard', authenticateJWT, hasPermission('customers:read'), async (req: Request, res: Response) => {
+  try {
+    const { customerId } = req.params;
+    const currentOrgId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!currentOrgId) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Organization ID not found in user context',
+      });
+    }
+
+    const dashboardData = await CustomerService.getCustomerDashboardData(currentOrgId, customerId);
+    if (!dashboardData) {
+      return res.status(404).json({
+        status: 404,
+        error: 'Customer not found',
+      });
+    }
+
+    res.status(200).json({
+      status: 200,
+      payload: dashboardData,
+    });
+  } catch (error) {
+    console.error('Error fetching customer dashboard data:', error);
     res.status(500).json({
       status: 500,
       error: 'Internal server error',

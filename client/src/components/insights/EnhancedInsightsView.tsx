@@ -9,15 +9,16 @@ import {
   useTheme,
   Alert,
   alpha,
-  Paper
+  Paper,
+  Snackbar
 } from '@mui/material';
 import { FilterList, Refresh, TrendingUp, Analytics, Description } from '@mui/icons-material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
-import InsightSummaryCard from './InsightSummaryCard';
-import InsightFilterPanel from './InsightFilterPanel';
-import InsightsTable from './InsightsTable';
-import InsightDetailDrawer from './InsightDetailDrawer';
 import { insightsService } from '@/services/insights-service';
+import InsightSummaryCard from './cards/InsightSummaryCard';
+import InsightFilterPanel from './filters/InsightFilterPanel';
+import InsightsTable from './table/InsightsTable';
+import InsightDetailDrawer from './drawer/InsightDetailDrawer';
 
 interface EnhancedInsightsViewProps {
   insights: CustomerSuccessInsight[];
@@ -54,6 +55,13 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
     timeRange: '30d',
     status: ['new', 'in_progress', 'resolved', 'closed', 'reopened'],
     assignee: ['unassigned']
+  });
+
+  // Snackbar state for notifications
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
+    open: false,
+    message: '',
+    severity: 'info'
   });
 
   // Fetch users on component mount
@@ -111,12 +119,6 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
 
   // Filter insights based on current filters
   const filteredInsights = useMemo(() => {
-    console.log('Filtering insights:', { 
-      totalInsights: insights.length, 
-      selectedCustomer, 
-      filters: filters.severity 
-    });
-    
     const filtered = insights.filter(insight => {
       // Check customer filter
       if (selectedCustomer && insight.customerId !== selectedCustomer) return false;
@@ -136,12 +138,6 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
       if (!filters.assignee.includes(insightAssignee)) return false;
       
       return true;
-    });
-    
-    console.log('Filtered insights result:', { 
-      filteredCount: filtered.length,
-      customerIds: [...new Set(filtered.map(i => i.customerId))],
-      customerNames: [...new Set(filtered.map(i => i.customerName))]
     });
     
     return filtered;
@@ -171,19 +167,46 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
   };
 
   // Shared callback for insight updates from both table and drawer
-  const handleInsightUpdate = (insightId: string, updates: Partial<CustomerSuccessInsight>) => {
-    // Update the selected insight if it matches (for drawer sync)
-    setSelectedInsight(prev => {
-      if (!prev || prev.id !== insightId) {
-        return prev;
+  const handleInsightUpdate = async (insightId: string, updates: Partial<CustomerSuccessInsight>) => {
+    try {
+      // Make API call based on what's being updated
+      if (updates.assignee !== undefined) {
+        await insightsService.updateInsightAssignee(insightId, updates.assignee);
+        setSnackbar({
+          open: true,
+          message: 'Assignee updated successfully',
+          severity: 'success'
+        });
+      } else if (updates.status) {
+        await insightsService.updateInsightStatus(insightId, updates.status);
+        setSnackbar({
+          open: true,
+          message: 'Status updated successfully',
+          severity: 'success'
+        });
       }
-      const updated = { ...prev, ...updates } as CustomerSuccessInsight;
-      return updated;
-    });
-    
-    // Also update the table's local state if the table ref is available
-    if (tableRef.current) {
-      tableRef.current.updateInsightOptimistically(insightId, updates, true); // skipCallback = true to prevent recursion
+      
+      // Update the selected insight if it matches (for drawer sync)
+      setSelectedInsight(prev => {
+        if (!prev || prev.id !== insightId) {
+          return prev;
+        }
+        const updated = { ...prev, ...updates } as CustomerSuccessInsight;
+        return updated;
+      });
+      
+      // Also update the table's local state if the table ref is available
+      if (tableRef.current) {
+        tableRef.current.updateInsightOptimistically(insightId, updates, true); // skipCallback = true to prevent recursion
+      }
+      
+    } catch (error) {
+      console.error('Failed to update insight:', error);
+      setSnackbar({
+        open: true,
+        message: 'Failed to update insight',
+        severity: 'error'
+      });
     }
   };
 
@@ -456,6 +479,22 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
         insight={selectedInsight}
         onInsightUpdate={handleInsightUpdate}
       />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

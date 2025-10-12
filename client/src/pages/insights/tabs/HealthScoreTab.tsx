@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Alert, Card, CardContent, Select, MenuItem, FormControl, InputLabel, CircularProgress, Tabs, Tab } from '@mui/material';
 import { HealthScoreFactors, HealthScoresResponse, DataIntelligenceMetrics, CustomerDataIntelligence } from '@/types/dataIntelligence';
-import HealthScoreCard from '@/components/insights/HealthScoreCard';
-import HealthScoresList from '@/components/insights/HealthScoresList';
-import DataIntelligenceDashboard from '@/components/insights/DataIntelligenceDashboard';
+import HealthScoreCard from '@/components/insights/cards/HealthScoreCard';
+import HealthScoresList from '@/components/insights/cards/HealthScoresList';
+import DataIntelligenceDashboard from '@/components/insights/dashboard/DataIntelligenceDashboard';
 import { Dashboard, HealthAndSafety } from '@mui/icons-material';
 import { insightsService } from '@/services/insights-service';
 import { surveysService } from '@/services/surveys-service';

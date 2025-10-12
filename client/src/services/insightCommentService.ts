@@ -1,4 +1,9 @@
 import axios from './axios';
+import config from '@/config';
+
+const getRoute = (endpoint: string) => {
+  return `${config.apiUrl}/${endpoint}`;
+};
 
 export interface InsightComment {
   _id: string;
@@ -37,13 +42,11 @@ export interface UpdateCommentInput {
 }
 
 class InsightCommentService {
-  private baseURL = '/insights';
-
   /**
    * Create a new comment
    */
   async createComment(input: CreateCommentInput): Promise<InsightComment> {
-    const response = await axios.post(`${this.baseURL}/${input.insightId}/comment`, {
+    const response = await axios.post(getRoute(`insights/${input.insightId}/comment`), {
       title: input.title,
       description: input.description,
       taggedUserIds: input.taggedUserIds
@@ -55,7 +58,7 @@ class InsightCommentService {
    * Get comments by insight ID
    */
   async getCommentsByInsight(insightId: string): Promise<InsightComment[]> {
-    const response = await axios.get(`${this.baseURL}/${insightId}/comments`);
+    const response = await axios.get(getRoute(`insights/${insightId}/comments`));
     return response.data;
   }
 
@@ -63,7 +66,7 @@ class InsightCommentService {
    * Get comments by insight number
    */
   async getCommentsByInsightNumber(insightNumber: string): Promise<InsightComment[]> {
-    const response = await axios.get(`${this.baseURL}/insight-number/${insightNumber}`);
+    const response = await axios.get(getRoute(`insights/insight-number/${insightNumber}`));
     return response.data;
   }
 
@@ -71,7 +74,7 @@ class InsightCommentService {
    * Get a single comment by ID
    */
   async getCommentById(insightId: string, commentId: string): Promise<InsightComment> {
-    const response = await axios.get(`${this.baseURL}/${insightId}/comments/${commentId}`);
+    const response = await axios.get(getRoute(`insights/${insightId}/comments/${commentId}`));
     return response.data;
   }
 
@@ -79,7 +82,7 @@ class InsightCommentService {
    * Update a comment
    */
   async updateComment(insightId: string, commentId: string, updates: UpdateCommentInput): Promise<InsightComment> {
-    const response = await axios.put(`${this.baseURL}/${insightId}/comments/${commentId}`, updates);
+    const response = await axios.put(getRoute(`insights/${insightId}/comments/${commentId}`), updates);
     return response.data;
   }
 
@@ -87,14 +90,14 @@ class InsightCommentService {
    * Delete a comment
    */
   async deleteComment(insightId: string, commentId: string): Promise<void> {
-    await axios.delete(`${this.baseURL}/${insightId}/comments/${commentId}`);
+    await axios.delete(getRoute(`insights/${insightId}/comments/${commentId}`));
   }
 
   /**
    * Get comments where a user is tagged
    */
   async getCommentsByTaggedUser(userId: string): Promise<InsightComment[]> {
-    const response = await axios.get(`${this.baseURL}/tagged/${userId}`);
+    const response = await axios.get(getRoute(`insights/tagged/${userId}`));
     return response.data;
   }
 

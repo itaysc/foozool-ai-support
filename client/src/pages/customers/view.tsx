@@ -256,14 +256,24 @@ const CustomerViewPage: React.FC = () => {
               )}
             </Box>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<Edit />}
-            onClick={() => navigate(`/customers/edit/${customer._id}`)}
-            size="large"
-          >
-            Edit Customer
-          </Button>
+          <Box display="flex" gap={1.5}>
+            <Button
+              variant="outlined"
+              startIcon={<Assessment />}
+              onClick={() => navigate(`/customers/${customer._id}/dashboard`)}
+              size="large"
+            >
+              Dashboard
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Edit />}
+              onClick={() => navigate(`/customers/edit/${customer._id}`)}
+              size="large"
+            >
+              Edit Customer
+            </Button>
+          </Box>
         </Box>
       </Box>
 
