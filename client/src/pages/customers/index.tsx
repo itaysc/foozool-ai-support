@@ -43,6 +43,7 @@ import {
   Business,
   People,
   Assessment,
+  Visibility,
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import { ICustomer, CustomerFilters, CustomerStats } from '@/types';
@@ -512,6 +513,15 @@ const CustomersPage: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>
+                        <Tooltip title="View Customer">
+                          <IconButton
+                            size="medium"
+                            color="primary"
+                            onClick={() => navigate(`/customers/${customer._id}`)}
+                          >
+                            <Visibility sx={{ fontSize: 22 }} />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Edit Customer">
                           <IconButton
                             size="medium"

@@ -39,3 +39,32 @@ export interface CustomerSuccessInsight {
   customerId?: string; // Customer ID this insight belongs to
   customerName?: string; // Customer name for display
 }
+
+// Enhanced guidance interface for better insight actionability
+export interface EnhancedInsightGuidance {
+  summary: string;
+  why: string;
+  signals: string[];
+  actions: string[];
+  considerations: string;
+  owner: string;
+  slaDays: number;
+  investigationPath?: {
+    immediate: string[];
+    rootCause: string[];
+    customerCommunication: string[];
+    longTermSolutions: string[];
+  };
+  evidence?: {
+    ticketReferences: string[];
+    errorPatterns: string[];
+    affectedSystems: string[];
+    timePatterns: string[];
+    links?: Array<{
+      label: string;
+      url: string;
+      type: 'log' | 'dashboard' | 'documentation' | 'ticket' | 'system' | 'other';
+      description?: string;
+    }>;
+  };
+}

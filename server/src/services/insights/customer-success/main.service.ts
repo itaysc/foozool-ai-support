@@ -6,6 +6,8 @@ import { callLLM } from '../../llm';
 import { InsightModel } from '../../../schemas/insights.schema';
 import { assignInsightNumberAtomic } from '../insightNumber.service';
 import { generateTicketInsights, TicketInsight } from '../ticketInsights.service';
+import { generateEnhancedRecurringProblemsInsights } from '../enhancedRecurringProblems';
+import { generateEnhancedGuidance } from '../enhancedGuidance.service';
 import { generateStakeholderInsights as generateStakeholderInsightsFromModule } from '../stakeholders';
 import { CustomerSuccessInsight } from '../../../types/customerSuccessInsight';
 
@@ -201,14 +203,32 @@ Return ONLY a JSON object with fields {"name": string, "amount": number, "unit":
   // Generate stakeholder-specific insights (these are persisted separately)
   const stakeholderInsights = generateStakeholderInsightsFromModule(customer);
 
-  // Generate Ticket Insights
+  // Generate Enhanced Ticket Insights
   let ticketInsights: CustomerSuccessInsight[] = [];
   try {
-    console.log(`[CS Insights] 🎫 generating ticket insights for customer ${customerId}`);
-    ticketInsights = await generateTicketInsights(customerId);
-    console.log(`[CS Insights] ✅ added ${ticketInsights.length} ticket insights`);
+    console.log(`[CS Insights] 🎫 generating enhanced ticket insights for customer ${customerId}`);
+    
+    // Generate enhanced recurring problems insights
+    const enhancedRecurringInsights = await generateEnhancedRecurringProblemsInsights(customerId);
+    console.log(`[CS Insights] ✅ added ${enhancedRecurringInsights.length} enhanced recurring problem insights`);
+    
+    // Generate other ticket insights (excluding recurring problems)
+    const otherTicketInsights = await generateTicketInsights(customerId);
+    const filteredOtherInsights = otherTicketInsights.filter(insight => insight.type !== 'recurring_problems');
+    console.log(`[CS Insights] ✅ added ${filteredOtherInsights.length} other ticket insights`);
+    
+    ticketInsights = [...enhancedRecurringInsights, ...filteredOtherInsights];
+    
   } catch (error) {
-    console.error(`[CS Insights] ❌ failed to generate ticket insights:`, error);
+    console.error(`[CS Insights] ❌ failed to generate enhanced ticket insights:`, error);
+    
+    // Fallback to basic ticket insights
+    try {
+      ticketInsights = await generateTicketInsights(customerId);
+      console.log(`[CS Insights] ✅ fallback: added ${ticketInsights.length} basic ticket insights`);
+    } catch (fallbackError) {
+      console.error(`[CS Insights] ❌ fallback also failed:`, fallbackError);
+    }
   }
 
   // Persist stakeholder insights separately (as they were before)
@@ -282,100 +302,25 @@ async function persistStakeholderInsights(organizationId: string, customerId: st
     const clusterId = generateClusterId(insight, customerId, 'stakeholder');
     
     const attrs: any = {
-      organizationId: orgObjId,
-      customerId: custObjId,
-      customerName: customerName,
-      insightType: 'customer_success',
-      clusterId: clusterId,
-      issueDescription: insight.message,
-      metadata: {
-        type: insight.type,
-        severity: insight.severity,
-        category: insight.category,
-        meta: { ...(insight.meta || {}), guidance: (() => {
-          const base: any = {
-            owner: 'CSM',
-            slaDays: insight.severity === 'red' ? 2 : insight.severity === 'yellow' ? 5 : 7
-          };
-          switch (insight.type) {
-            case 'activity_trend_decline':
-              return {
-                summary: `User activity declined ${insight.meta?.declinePercent ?? 'significantly'} in the last period at ${customerName}.`,
-                why: 'Sustained activity decline is a leading indicator of churn risk and unmet value.',
-                signals: [
-                  `Active users change: ${insight.meta?.activeUsersPrev ?? '-'} → ${insight.meta?.activeUsersCurr ?? '-'}`,
-                  `Sessions change: ${insight.meta?.sessionsPrev ?? '-'} → ${insight.meta?.sessionsCurr ?? '-'}`
-                ],
-                actions: [
-                  'Identify cohorts with the steepest decline (roles/teams) and contact champions.',
-                  'Offer a 20-minute enablement focusing on top-value workflows used before the decline.',
-                  'Set a 2-week follow-up to confirm recovery (target +15% WoW).'
-                ],
-                considerations: 'Coordinate with Support if there were incidents in the same period that may explain the decline.',
-                ...base
-              };
-            case 'feature_discovery':
-              return {
-                summary: `Low discovery of key feature(s) impacting value realization at ${customerName}.`,
-                why: 'Under-used value drivers reduce perceived ROI and renewal likelihood.',
-                signals: [
-                  `Features with <10% seat usage: ${(insight.meta?.featuresUnderused || []).join(', ') || 'N/A'}`
-                ],
-                actions: [
-                  'Send a targeted how-to with short video to relevant roles.',
-                  'Schedule an enablement session; include 2-3 customer-specific use cases.',
-                  'Add in-app guide for the feature entry point.'
-                ],
-                considerations: 'Align messaging with the customer’s stated objectives from the success plan.',
-                ...base
-              };
-            case 'usage_pattern_anomaly':
-              return {
-                summary: `Detected anomalous usage pattern requiring investigation at ${customerName}.`,
-                why: 'Anomalies can point to integration issues, user confusion, or adoption blockers.',
-                signals: [
-                  `Anomaly score: ${insight.meta?.anomalyScore ?? '-'}`,
-                  `Impacted workflow: ${insight.meta?.workflow ?? '-'}`
-                ],
-                actions: [
-                  'Validate recent releases/incidents; check error logs and support tickets.',
-                  'Interview 2 power users to understand friction; document steps.',
-                  'Open follow-up task for product/ops if systemic.'
-                ],
-                considerations: 'If systemic, communicate mitigation timeline to the customer.',
-                ...base
-              };
-            case 'health_score_at_risk':
-              return {
-                summary: `Customer health is at risk (overall score ${insight.meta?.healthScore?.overallScore ?? '-'}/100).`,
-                why: 'Composite leading indicators predict increased churn probability.',
-                signals: [
-                  `Engagement: ${insight.meta?.engagementHealth ?? '-'}`,
-                  `Support: ${insight.meta?.supportHealth ?? '-'}`,
-                  `Business: ${insight.meta?.businessHealth ?? '-'}`
-                ],
-                actions: [
-                  'Schedule a recovery plan call this week with sponsor and champion.',
-                  'Agree on 3 measurable actions (owner, due date) to move score +10 within 30 days.',
-                  'Increase cadence to weekly until recovery is sustained for 2 weeks.'
-                ],
-                considerations: 'Share a short value recap deck to re-anchor ROI.',
-                owner: 'CSM',
-                slaDays: 5
-              };
-            default:
-              return {
-                summary: `Action recommended for ${String(insight.type).replace(/_/g,' ')} at ${customerName}.`,
-                why: 'Signal crossed an actionable threshold based on trends and benchmarks.',
-                actions: ['Review the signals and contact the stakeholder to define next steps.'],
-                ...base
-              };
-          }
-        })(), sla: await resolveSLAForCustomer(String(organizationId), String(customerId), insight) }
+        organizationId: orgObjId,
+        customerId: custObjId,
+        customerName: customerName,
+        insightType: 'customer_success',
+        clusterId: clusterId,
+        issueDescription: insight.message,
+        metadata: {
+          type: insight.type,
+          severity: insight.severity,
+          category: insight.category,
+        meta: { 
+          ...(insight.meta || {}), 
+          guidance: await generateEnhancedGuidance(insight, customerName, String(customerId), String(organizationId)),
+          sla: await resolveSLAForCustomer(String(organizationId), String(customerId), insight) 
+        }
       },
       assignee: insight.assignee ? new ObjectId(insight.assignee) : undefined,
       status: insight.status || 'new',
-      lastUpdatedAt: new Date()
+        lastUpdatedAt: new Date()
     };
     const saved = await InsightModel.findOneAndUpdate(
       {
@@ -421,86 +366,11 @@ async function persistCustomerSuccessInsights(organizationId: string, customerId
           type: insight.type,
           severity: insight.severity,
           category: insight.category,
-          meta: { ...(insight.meta || {}), guidance: (() => {
-            const base: any = {
-              owner: 'CSM',
-              slaDays: insight.severity === 'red' ? 2 : insight.severity === 'yellow' ? 5 : 7
-            };
-            switch (insight.type) {
-              case 'activity_trend_decline':
-                return {
-                  summary: `User activity declined ${insight.meta?.declinePercent ?? 'significantly'} in the last period at ${customerName}.`,
-                  why: 'Sustained activity decline is a leading indicator of churn risk and unmet value.',
-                  signals: [
-                    `Active users change: ${insight.meta?.activeUsersPrev ?? '-'} → ${insight.meta?.activeUsersCurr ?? '-'}`,
-                    `Sessions change: ${insight.meta?.sessionsPrev ?? '-'} → ${insight.meta?.sessionsCurr ?? '-'}`
-                  ],
-                  actions: [
-                    'Identify cohorts with the steepest decline (roles/teams) and contact champions.',
-                    'Offer a 20-minute enablement focusing on top-value workflows used before the decline.',
-                    'Set a 2-week follow-up to confirm recovery (target +15% WoW).'
-                  ],
-                  considerations: 'Coordinate with Support if there were incidents in the same period that may explain the decline.',
-                  ...base
-                };
-              case 'feature_discovery':
-                return {
-                  summary: `Low discovery of key feature(s) impacting value realization at ${customerName}.`,
-                  why: 'Under-used value drivers reduce perceived ROI and renewal likelihood.',
-                  signals: [
-                    `Features with <10% seat usage: ${(insight.meta?.featuresUnderused || []).join(', ') || 'N/A'}`
-                  ],
-                  actions: [
-                    'Send a targeted how-to with short video to relevant roles.',
-                    'Schedule an enablement session; include 2-3 customer-specific use cases.',
-                    'Add in-app guide for the feature entry point.'
-                  ],
-                  considerations: 'Align messaging with the customer’s stated objectives from the success plan.',
-                  ...base
-                };
-              case 'usage_pattern_anomaly':
-                return {
-                  summary: `Detected anomalous usage pattern requiring investigation at ${customerName}.`,
-                  why: 'Anomalies can point to integration issues, user confusion, or adoption blockers.',
-                  signals: [
-                    `Anomaly score: ${insight.meta?.anomalyScore ?? '-'}`,
-                    `Impacted workflow: ${insight.meta?.workflow ?? '-'}`
-                  ],
-                  actions: [
-                    'Validate recent releases/incidents; check error logs and support tickets.',
-                    'Interview 2 power users to understand friction; document steps.',
-                    'Open follow-up task for product/ops if systemic.'
-                  ],
-                  considerations: 'If systemic, communicate mitigation timeline to the customer.',
-                  ...base
-                };
-              case 'health_score_at_risk':
-                return {
-                  summary: `Customer health is at risk (overall score ${insight.meta?.healthScore?.overallScore ?? '-'}/100).`,
-                  why: 'Composite leading indicators predict increased churn probability.',
-                  signals: [
-                    `Engagement: ${insight.meta?.engagementHealth ?? '-'}`,
-                    `Support: ${insight.meta?.supportHealth ?? '-'}`,
-                    `Business: ${insight.meta?.businessHealth ?? '-'}`
-                  ],
-                  actions: [
-                    'Schedule a recovery plan call this week with sponsor and champion.',
-                    'Agree on 3 measurable actions (owner, due date) to move score +10 within 30 days.',
-                    'Increase cadence to weekly until recovery is sustained for 2 weeks.'
-                  ],
-                  considerations: 'Share a short value recap deck to re-anchor ROI.',
-                  owner: 'CSM',
-                  slaDays: 5
-                };
-              default:
-                return {
-                  summary: `Action recommended for ${String(insight.type).replace(/_/g,' ')} at ${customerName}.`,
-                  why: 'Signal crossed an actionable threshold based on trends and benchmarks.',
-                  actions: ['Review the signals and contact the stakeholder to define next steps.'],
-                  ...base
-                };
-            }
-          })(), sla: await resolveSLAForCustomer(String(organizationId), String(customerId), insight) }
+          meta: { 
+            ...(insight.meta || {}), 
+            guidance: await generateEnhancedGuidance(insight, customerName, String(customerId), String(organizationId)),
+            sla: await resolveSLAForCustomer(String(organizationId), String(customerId), insight) 
+          }
         },
         assignee: insight.assignee ? new ObjectId(insight.assignee) : undefined,
         status: insight.status || 'new',

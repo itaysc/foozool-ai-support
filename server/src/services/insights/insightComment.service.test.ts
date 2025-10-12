@@ -50,8 +50,8 @@ export class InsightCommentService {
     await comment.save();
     
     return {
-      _id: comment._id.toString(),
-      title: comment.title,
+      _id: (comment._id as any).toString(),
+      title: comment.title || '',
       description: comment.description,
       insight: comment.insight.toString(),
       insightNumber: comment.insightNumber,

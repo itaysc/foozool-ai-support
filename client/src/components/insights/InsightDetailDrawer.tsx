@@ -45,6 +45,40 @@ interface InsightDetailDrawerProps {
   onInsightUpdate?: (insightId: string, updates: Partial<CustomerSuccessInsight>) => void;
 }
 
+// Helper functions for link styling
+const getLinkColor = (type: string): string => {
+  switch (type) {
+    case 'log': return '#dc2626';
+    case 'dashboard': return '#059669';
+    case 'documentation': return '#2563eb';
+    case 'ticket': return '#7c3aed';
+    case 'system': return '#ea580c';
+    default: return '#6b7280';
+  }
+};
+
+const getChipColor = (type: string): string => {
+  switch (type) {
+    case 'log': return '#fef2f2';
+    case 'dashboard': return '#f0fdf4';
+    case 'documentation': return '#eff6ff';
+    case 'ticket': return '#faf5ff';
+    case 'system': return '#fff7ed';
+    default: return '#f9fafb';
+  }
+};
+
+const getChipTextColor = (type: string): string => {
+  switch (type) {
+    case 'log': return '#dc2626';
+    case 'dashboard': return '#059669';
+    case 'documentation': return '#2563eb';
+    case 'ticket': return '#7c3aed';
+    case 'system': return '#ea580c';
+    default: return '#6b7280';
+  }
+};
+
 const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
   open,
   onClose,
@@ -758,6 +792,172 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
                         />
                       </ListItem>
                     )}
+                    {guidance.investigationPath && (
+                      <ListItem sx={{ px: 0, alignItems: 'flex-start' }}>
+                        <ListItemText 
+                          primary="Investigation Path"
+                          secondary={
+                            <Box>
+                              {guidance.investigationPath.immediate && guidance.investigationPath.immediate.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#dc2626' }}>
+                                    Immediate Actions:
+                                  </Typography>
+                                  <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                    {guidance.investigationPath.immediate.map((action: string, i: number) => (
+                                      <li key={i}><Typography variant="body2">{action}</Typography></li>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                              {guidance.investigationPath.rootCause && guidance.investigationPath.rootCause.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#ea580c' }}>
+                                    Root Cause Analysis:
+                                  </Typography>
+                                  <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                    {guidance.investigationPath.rootCause.map((action: string, i: number) => (
+                                      <li key={i}><Typography variant="body2">{action}</Typography></li>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                              {guidance.investigationPath.customerCommunication && guidance.investigationPath.customerCommunication.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#059669' }}>
+                                    Customer Communication:
+                                  </Typography>
+                                  <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                    {guidance.investigationPath.customerCommunication.map((action: string, i: number) => (
+                                      <li key={i}><Typography variant="body2">{action}</Typography></li>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                              {guidance.investigationPath.longTermSolutions && guidance.investigationPath.longTermSolutions.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, color: '#7c3aed' }}>
+                                    Long-term Solutions:
+                                  </Typography>
+                                  <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                    {guidance.investigationPath.longTermSolutions.map((action: string, i: number) => (
+                                      <li key={i}><Typography variant="body2">{action}</Typography></li>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                            </Box>
+                          }
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    )}
+                    {guidance.evidence && (
+                      <ListItem sx={{ px: 0, alignItems: 'flex-start' }}>
+                        <ListItemText 
+                          primary="Evidence"
+                          secondary={
+                            <Box>
+                              {guidance.evidence.ticketReferences && guidance.evidence.ticketReferences.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                    Ticket References:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {guidance.evidence.ticketReferences.map((ticket: string, i: number) => (
+                                      <Chip key={i} label={ticket} size="small" variant="outlined" />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                              {guidance.evidence.errorPatterns && guidance.evidence.errorPatterns.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                    Error Patterns:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {guidance.evidence.errorPatterns.map((pattern: string, i: number) => (
+                                      <Chip key={i} label={pattern} size="small" color="error" variant="outlined" />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                              {guidance.evidence.affectedSystems && guidance.evidence.affectedSystems.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                    Affected Systems:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {guidance.evidence.affectedSystems.map((system: string, i: number) => (
+                                      <Chip key={i} label={system} size="small" color="warning" variant="outlined" />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                              {guidance.evidence.timePatterns && guidance.evidence.timePatterns.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                    Time Patterns:
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {guidance.evidence.timePatterns.map((pattern: string, i: number) => (
+                                      <Chip key={i} label={pattern} size="small" color="info" variant="outlined" />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                              {guidance.evidence.links && guidance.evidence.links.length > 0 && (
+                                <Box sx={{ mb: 2 }}>
+                                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                    Related Links:
+                                  </Typography>
+                                  <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                    {guidance.evidence.links.map((link: any, i: number) => (
+                                      <li key={i}>
+                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.5 }}>
+                                          <a 
+                                            href={link.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            style={{ 
+                                              color: getLinkColor(link.type),
+                                              textDecoration: 'none',
+                                              fontWeight: 500,
+                                              fontSize: '0.875rem'
+                                            }}
+                                            onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                                            onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+                                          >
+                                            {link.label}
+                                          </a>
+                                          <Chip 
+                                            label={link.type} 
+                                            size="small" 
+                                            variant="outlined"
+                                            sx={{ 
+                                              height: 16, 
+                                              fontSize: '0.7rem',
+                                              backgroundColor: getChipColor(link.type),
+                                              color: getChipTextColor(link.type)
+                                            }}
+                                          />
+                                        </Box>
+                                        {link.description && (
+                                          <Typography variant="body2" sx={{ color: '#666', fontSize: '0.8rem', ml: 2 }}>
+                                            {link.description}
+                                          </Typography>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              )}
+                            </Box>
+                          }
+                          primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                        />
+                      </ListItem>
+                    )}
                     {(guidance.owner || guidance.slaDays) && (
                       <ListItem sx={{ px: 0 }}>
                         <ListItemText 
@@ -911,6 +1111,126 @@ const InsightDetailDrawer: React.FC<InsightDetailDrawerProps> = ({
                                         </li>
                                       ))}
                                     </Box>
+                                  </Box>
+                                )}
+                                {guidance.investigationPath && (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                      Investigation Path:
+                                    </Typography>
+                                    {guidance.investigationPath.immediate && guidance.investigationPath.immediate.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5, color: '#dc2626' }}>
+                                          Immediate:
+                                        </Typography>
+                                        <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                          {guidance.investigationPath.immediate.map((action: string, i: number) => (
+                                            <li key={i}><Typography variant="body2" sx={{ color: '#666' }}>{action}</Typography></li>
+                                          ))}
+                                        </Box>
+                                      </Box>
+                                    )}
+                                    {guidance.investigationPath.rootCause && guidance.investigationPath.rootCause.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5, color: '#ea580c' }}>
+                                          Root Cause:
+                                        </Typography>
+                                        <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                          {guidance.investigationPath.rootCause.map((action: string, i: number) => (
+                                            <li key={i}><Typography variant="body2" sx={{ color: '#666' }}>{action}</Typography></li>
+                                          ))}
+                                        </Box>
+                                      </Box>
+                                    )}
+                                    {guidance.investigationPath.customerCommunication && guidance.investigationPath.customerCommunication.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5, color: '#059669' }}>
+                                          Communication:
+                                        </Typography>
+                                        <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                          {guidance.investigationPath.customerCommunication.map((action: string, i: number) => (
+                                            <li key={i}><Typography variant="body2" sx={{ color: '#666' }}>{action}</Typography></li>
+                                          ))}
+                                        </Box>
+                                      </Box>
+                                    )}
+                                    {guidance.investigationPath.longTermSolutions && guidance.investigationPath.longTermSolutions.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5, color: '#7c3aed' }}>
+                                          Long-term:
+                                        </Typography>
+                                        <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                          {guidance.investigationPath.longTermSolutions.map((action: string, i: number) => (
+                                            <li key={i}><Typography variant="body2" sx={{ color: '#666' }}>{action}</Typography></li>
+                                          ))}
+                                        </Box>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                )}
+                                {guidance.evidence && (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                      Evidence:
+                                    </Typography>
+                                    {guidance.evidence.ticketReferences && guidance.evidence.ticketReferences.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                                          Tickets: {guidance.evidence.ticketReferences.join(', ')}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                    {guidance.evidence.errorPatterns && guidance.evidence.errorPatterns.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                                          Errors: {guidance.evidence.errorPatterns.join(', ')}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                    {guidance.evidence.affectedSystems && guidance.evidence.affectedSystems.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                                          Systems: {guidance.evidence.affectedSystems.join(', ')}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                    {guidance.evidence.timePatterns && guidance.evidence.timePatterns.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                                          Time: {guidance.evidence.timePatterns.join(', ')}
+                                        </Typography>
+                                      </Box>
+                                    )}
+                                    {guidance.evidence.links && guidance.evidence.links.length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                                          Links:
+                                        </Typography>
+                                        <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                                          {guidance.evidence.links.map((link: any, i: number) => (
+                                            <li key={i}>
+                                              <a 
+                                                href={link.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                style={{ 
+                                                  color: getLinkColor(link.type),
+                                                  textDecoration: 'none',
+                                                  fontSize: '0.8rem'
+                                                }}
+                                                onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+                                                onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+                                              >
+                                                {link.label}
+                                              </a>
+                                              <Typography variant="body2" sx={{ color: '#666', fontSize: '0.75rem', ml: 1, display: 'inline' }}>
+                                                ({link.type})
+                                              </Typography>
+                                            </li>
+                                          ))}
+                                        </Box>
+                                      </Box>
+                                    )}
                                   </Box>
                                 )}
                                 {(guidance.owner || guidance.slaDays) && (
