@@ -19,7 +19,6 @@ import {
   StyledForm,
   WrongCredentials,
 } from "./styled";
-import theme from "@/styles/theme";
 import { useMainLayoutContext } from "@/context/mainLayout.context";
 import { useAuth } from "@/context/auth.context";
 

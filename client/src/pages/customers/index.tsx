@@ -37,13 +37,13 @@ import {
   Edit,
   Delete,
   Search,
-  FilterList,
-  Refresh,
+
   TrendingUp,
   Business,
   People,
   Assessment,
   Visibility,
+  Dashboard,
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import { ICustomer, CustomerFilters, CustomerStats } from '@/types';
@@ -513,6 +513,15 @@ const CustomersPage: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Box display="flex" gap={1}>
+                        <Tooltip title="Customer Dashboard">
+                          <IconButton
+                            size="medium"
+                            color="secondary"
+                            onClick={() => navigate(`/customers/${customer._id}/dashboard`)}
+                          >
+                            <Dashboard sx={{ fontSize: 22 }} />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="View Customer">
                           <IconButton
                             size="medium"
