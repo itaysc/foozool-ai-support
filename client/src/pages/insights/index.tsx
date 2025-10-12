@@ -55,9 +55,7 @@ const InsightsPage: React.FC = () => {
         const orgCustomers = customersStore.customers.filter(c => c.organizationId === effectiveOrgId);
         setCustomers(orgCustomers);
         
-        if (orgCustomers.length > 0 && !selectedCustomer) {
-          setSelectedCustomer(orgCustomers[0]._id);
-        }
+        // Don't auto-select first customer - let user choose "All Customers" by default
       } catch (err) {
         console.error('Error loading customers:', err);
         setError('Failed to load customers');

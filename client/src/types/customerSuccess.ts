@@ -43,6 +43,7 @@ export interface CustomerSuccessInsight {
   createdAt?: string; // Creation date in ISO string format
   customerId?: string; // Customer ID this insight belongs to
   customerName?: string; // Customer name for display
+  customerLogo?: string; // Customer logo for display
   insightType?: 'customer_success' | 'nps_analysis' | 'customer_satisfaction'; // Type of insight source
 }
 

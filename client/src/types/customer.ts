@@ -2,6 +2,7 @@ export interface ICustomer {
   _id: string;
   organizationId: string;
   name: string;
+  logo?: string; // Base64 encoded image or URL
   industry?: string;
   companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
   segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';
@@ -81,6 +82,7 @@ export interface ICustomer {
 
 export interface CreateCustomerRequest {
   name: string;
+  logo?: string; // Base64 encoded image or URL
   industry?: string;
   companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
   segment?: 'SMB' | 'Mid-Market' | 'Enterprise' | 'Other';

@@ -288,7 +288,7 @@ export async function getAllCustomerSuccessInsights(): Promise<AllCustomerSucces
 
   try {
     const customers = await CustomerModel.find({ organizationId })
-      .select({ _id: 1, name: 1 })
+      .select({ _id: 1, name: 1, logo: 1 })
       .lean();
 
     const results: Array<{ customerId: string; customerName?: string; insights: any[] }> = [];
@@ -300,7 +300,8 @@ export async function getAllCustomerSuccessInsights(): Promise<AllCustomerSucces
       const insightsWithCustomerInfo = insights.map(insight => ({
         ...insight,
         customerId: String(c._id),
-        customerName: c.name
+        customerName: c.name,
+        customerLogo: c.logo
       }));
       results.push({ customerId: String(c._id), customerName: c.name, insights: insightsWithCustomerInfo });
     }
@@ -668,7 +669,7 @@ export async function getAllUnifiedInsights(customerId?: string): Promise<{ stat
     } else {
       // Get insights for all customers
       const customers = await CustomerModel.find({ organizationId })
-        .select({ _id: 1, name: 1 })
+        .select({ _id: 1, name: 1, logo: 1 })
         .lean();
 
       for (const c of customers) {
@@ -677,6 +678,7 @@ export async function getAllUnifiedInsights(customerId?: string): Promise<{ stat
           ...insight,
           customerId: String(c._id),
           customerName: c.name,
+          customerLogo: c.logo,
           insightType: 'customer_success'
         }));
         unifiedInsights.push(...insightsWithCustomerInfo);

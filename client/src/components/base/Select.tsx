@@ -199,7 +199,16 @@ const Select: React.FC<Props> = ({
       </MuiSelect>
       {isClearVisible && (
         <Box
-          sx={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+          sx={{ 
+            position: 'absolute', 
+            right: 8, 
+            top: '50%', 
+            transform: 'translateY(-50%)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            cursor: 'pointer',
+            color: 'text.primary' // Use theme text color
+          }}
           onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); clearValue(); }}
         >

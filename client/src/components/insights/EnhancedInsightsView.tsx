@@ -19,6 +19,7 @@ import InsightSummaryCard from './cards/InsightSummaryCard';
 import InsightFilterPanel from './filters/InsightFilterPanel';
 import InsightsTable from './table/InsightsTable';
 import InsightDetailDrawer from './drawer/InsightDetailDrawer';
+import Select from '@/components/base/Select';
 
 interface EnhancedInsightsViewProps {
   insights: CustomerSuccessInsight[];
@@ -143,18 +144,17 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
     return filtered;
   }, [insights, filters, selectedCustomer]);
 
-  // Calculate summary statistics (from filtered insights when customer is selected, all insights otherwise)
+  // Calculate summary statistics (always from all insights, not filtered ones)
   const summaryStats = useMemo(() => {
-    const insightsToCount = selectedCustomer ? filteredInsights : insights;
     const stats = {
-      total: insightsToCount.length,
-      critical: insightsToCount.filter(i => i.severity === 'red').length,
-      warning: insightsToCount.filter(i => i.severity === 'yellow').length,
-      info: insightsToCount.filter(i => i.severity === 'info').length
+      total: insights.length,
+      critical: insights.filter(i => i.severity === 'red').length,
+      warning: insights.filter(i => i.severity === 'yellow').length,
+      info: insights.filter(i => i.severity === 'info').length
     };
     
     return stats;
-  }, [insights, filteredInsights, selectedCustomer]);
+  }, [insights]);
 
   const handleInsightSelect = (insight: CustomerSuccessInsight) => {
     setSelectedInsight(insight);
@@ -310,6 +310,57 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
           </Box>
           
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {/* Customer Filter Dropdown */}
+            {customers && customers.length > 0 && onCustomerChange && (
+              <Box sx={{ 
+                width: 280, // Fixed width to accommodate long customer names
+                minWidth: 280,
+                '& .MuiFormControl-root': {
+                  width: '100%',
+                  '& .MuiOutlinedInput-root': {
+                    height: '32px', // Match Meeting Prep button height (size="small" with py: 0.5)
+                    backgroundColor: alpha('#ffffff', 0.9),
+                    color: '#495057',
+                    fontWeight: 500,
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(255, 255, 255, 0.3)',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(255, 255, 255, 0.5)',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(255, 255, 255, 0.7)',
+                    },
+                    '& .MuiSelect-select': {
+                      padding: '6px 12px',
+                      height: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      width: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }
+                  }
+                }
+              }}>
+                <Select
+                  value={selectedCustomer || ''}
+                  onChange={(value) => onCustomerChange(value as string)}
+                  label=""
+                  options={customers.map((customer) => ({
+                    value: customer._id,
+                    label: customer.name
+                  }))}
+                  size="small"
+                  fullWidth={true}
+                  placeholder="All Customers"
+                  searchable={true}
+                  allowClear={true}
+                />
+              </Box>
+            )}
+            
             {onMeetingPrepClick && (
               <Button
                 variant="contained"

@@ -3,6 +3,7 @@ import { z } from 'zod';
 // Validation schemas for customer routes
 export const createCustomerSchema = z.object({
   name: z.string().min(1, 'Customer name is required'),
+  logo: z.string().optional(),
   industry: z.string().optional(),
   companySize: z.enum(['1-10', '11-50', '51-200', '201-500', '500+']).optional(),
   startDate: z.string().datetime().optional(),
@@ -73,6 +74,7 @@ export const createCustomerSchema = z.object({
 
 export const updateCustomerSchema = z.object({
   name: z.string().min(1).optional(),
+  logo: z.string().optional(),
   industry: z.string().optional(),
   companySize: z.enum(['1-10', '11-50', '51-200', '201-500', '500+']).optional(),
   startDate: z.string().datetime().optional(),

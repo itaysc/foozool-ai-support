@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Box,
@@ -45,12 +45,14 @@ interface FormErrors {
 const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
   const navigate = useNavigate();
   const { customerId } = useParams<{ customerId: string }>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [customer, setCustomer] = useState<ICustomer | null>(null);
   const [tab, setTab] = useState<'general' | 'media' | 'geo' | 'features' | 'financial' | 'stakeholders' | 'bots' | 'sla'>('general');
   
   const [formData, setFormData] = useState<CreateCustomerRequest>({
     name: '',
+    logo: '',
     industry: '',
     companySize: undefined,
     startDate: '',
@@ -114,6 +116,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         setCustomer(customerData);
         setFormData({
           name: customerData.name,
+          logo: customerData.logo || '',
           industry: customerData.industry || '',
           companySize: customerData.companySize,
           startDate: customerData.startDate ? customerData.startDate.split('T')[0] : '',
@@ -211,6 +214,16 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
       } : undefined,
     };
 
+    // Debug log to confirm logo is included
+    if (payload.logo) {
+      console.log('Sending customer with logo:', {
+        name: payload.name,
+        hasLogo: !!payload.logo,
+        logoSize: payload.logo.length,
+        logoPreview: payload.logo.substring(0, 50) + '...'
+      });
+    }
+
     try {
       if (mode === 'create') {
         await customersStore.createCustomer(payload);
@@ -230,6 +243,37 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined as any }));
     }
+  };
+
+  const handleLogoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a valid image file (JPEG, PNG, or SVG)');
+      return;
+    }
+
+    // Validate file size (2MB max)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      alert('File size must be less than 2MB');
+      return;
+    }
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      setFormData(prev => ({ ...prev, logo: result }));
+    };
+    reader.readAsDataURL(file);
   };
 
   if (customersStore.isLoading) {
@@ -252,9 +296,68 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         >
           Back to Customers
         </Button>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
-          {mode === 'create' ? 'Add New Customer' : 'Edit Customer'}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Typography variant="h4" component="h1" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
+            {mode === 'create' ? 'Add New Customer' : 'Edit Customer'}
+          </Typography>
+          {/* Customer Logo */}
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 2,
+            mt: 1
+          }}>
+            <Box 
+              onClick={handleLogoClick}
+              sx={{
+                width: 80,
+                height: 80,
+                borderRadius: 2,
+                border: '2px solid #e0e0e0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#f5f5f5',
+                overflow: 'hidden',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  backgroundColor: '#eeeeee',
+                  borderColor: '#bdbdbd'
+                }
+              }}
+            >
+              {formData.logo ? (
+                <img 
+                  src={formData.logo} 
+                  alt={`${formData.name} logo`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
+              ) : (
+                <Typography variant="body2" sx={{ 
+                  color: '#9e9e9e',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  textAlign: 'center'
+                }}>
+                  Add Logo
+                </Typography>
+              )}
+            </Box>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/svg+xml"
+              onChange={handleFileChange}
+              style={{ display: 'none' }}
+            />
+          </Box>
+        </Box>
       </Box>
 
       {customersStore.error && (

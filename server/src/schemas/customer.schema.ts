@@ -12,6 +12,9 @@ const CustomerSchema: Schema = new Schema<ICustomer>({
     required: true,
     index: true,
   },
+  logo: {
+    type: String,
+  },
   industry: {
     type: String,
     index: true,

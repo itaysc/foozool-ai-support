@@ -125,12 +125,14 @@ class InsightCommentService {
   /**
    * Replace user names with user IDs in description for server
    * Format: @userName -> @[userId]
+   * Handles multiple mentions and various formats
    */
   replaceUserNamesWithIds(description: string, userMap: Map<string, string>): string {
     let processedDescription = description;
     
     // Sort user names by length (longest first) to match full names before partial names
     const sortedUserNames = Array.from(userMap.keys()).sort((a, b) => b.length - a.length);
+    
     
     for (const userName of sortedUserNames) {
       // Skip if it's already in the @[userId] format
@@ -140,8 +142,20 @@ class InsightCommentService {
       if (userId) {
         // Create a regex that matches the full name as a word boundary
         const escapedName = userName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`@\\b${escapedName}\\b`, 'gi');
-        processedDescription = processedDescription.replace(regex, `@[${userId}]`);
+        
+        // Try multiple patterns to catch different mention formats
+        const patterns = [
+          new RegExp(`@${escapedName}\\b`, 'gi'),           // @John Doe
+          new RegExp(`@\\b${escapedName}\\b`, 'gi'),        // @ John Doe
+          new RegExp(`@${escapedName.replace(/\s+/g, '\\s+')}`, 'gi'), // @John Doe with flexible spaces
+        ];
+        
+        for (const regex of patterns) {
+          const matches = processedDescription.match(regex);
+          if (matches) {
+            processedDescription = processedDescription.replace(regex, `@[${userId}]`);
+          }
+        }
       }
     }
     

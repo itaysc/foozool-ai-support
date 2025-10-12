@@ -63,15 +63,6 @@ const CommentDescriptionField: React.FC<CommentDescriptionFieldProps> = ({
 
   const [open, setOpen] = useState(false);
   
-  // Debug: Log when open state changes
-  useEffect(() => {
-    console.log('Open state changed to:', open);
-  }, [open]);
-  
-  // Debug: Log suggestions
-  useEffect(() => {
-    console.log('Suggestions:', suggestions);
-  }, [suggestions]);
 
   // Update suggestions when users change
   useEffect(() => {
@@ -86,7 +77,6 @@ const CommentDescriptionField: React.FC<CommentDescriptionFieldProps> = ({
   }, [users]);
 
   const onEditorStateChange = useCallback((newEditorState: EditorState) => {
-    console.log('Editor state changed');
     setEditorState(newEditorState);
     
     // Convert to plain text for the onChange callback
@@ -100,11 +90,8 @@ const CommentDescriptionField: React.FC<CommentDescriptionFieldProps> = ({
     const text = block.getText();
     const cursorPos = selection.getStartOffset();
     
-    console.log('Text:', text, 'Cursor:', cursorPos, 'Char before cursor:', text.charAt(cursorPos - 1));
-    
     // Check if cursor is right after @ symbol
     if (cursorPos > 0 && text.charAt(cursorPos - 1) === '@') {
-      console.log('@ detected, opening suggestions');
       setOpen(true);
     } else {
       // Close suggestions if not typing after @
@@ -119,7 +106,7 @@ const CommentDescriptionField: React.FC<CommentDescriptionFieldProps> = ({
 
   const onAddMention = useCallback((mention: any) => {
     // You can get access to the mention object upon selection
-    console.log('Mention added:', mention);
+    // This callback can be used for additional mention handling if needed
   }, []);
 
   // Handle key binding for multiline support
@@ -167,10 +154,7 @@ const CommentDescriptionField: React.FC<CommentDescriptionFieldProps> = ({
       />
       <MentionSuggestions
         open={open}
-        onOpenChange={(newOpen) => {
-          console.log('MentionSuggestions onOpenChange:', newOpen);
-          setOpen(newOpen);
-        }}
+        onOpenChange={setOpen}
         suggestions={suggestions}
         onSearchChange={onSearchChange}
         onAddMention={onAddMention}

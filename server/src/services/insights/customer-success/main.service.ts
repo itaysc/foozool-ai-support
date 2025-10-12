@@ -89,6 +89,12 @@ export async function getAllSavedCustomerSuccessInsights(customerId: string): Pr
   if (!orgObjId || !custObjId) return [];
 
   try {
+    // Fetch customer data to get logo
+    const customer = await CustomerModel.findOne({
+      _id: custObjId,
+      organizationId: orgObjId
+    }).select({ name: 1, logo: 1 }).lean();
+
     const savedInsights = await InsightModel.find({
       organizationId: orgObjId,
       customerId: custObjId,
@@ -107,7 +113,8 @@ export async function getAllSavedCustomerSuccessInsights(customerId: string): Pr
       status: insight.status || 'new',
       createdAt: insight.firstDetectedAt?.toISOString() || insight.lastUpdatedAt?.toISOString(),
       customerId: insight.customerId?.toString(),
-      customerName: insight.customerName
+      customerName: customer?.name || insight.customerName,
+      customerLogo: customer?.logo
     }));
   } catch (error) {
     console.error('[CS Insights] ❌ failed to fetch all saved customer success insights:', error);

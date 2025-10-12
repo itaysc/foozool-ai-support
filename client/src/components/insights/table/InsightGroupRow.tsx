@@ -1,5 +1,5 @@
 import React from 'react';
-import { TableRow, TableCell, Typography, Chip, IconButton, Box, Collapse } from '@mui/material';
+import { TableRow, TableCell, Typography, Chip, IconButton, Box, Collapse, Tooltip } from '@mui/material';
 import { ExpandMore, ExpandLess, ChevronRight } from '@mui/icons-material';
 import { InsightGroupRowProps } from './types';
 import { 
@@ -86,6 +86,59 @@ const InsightGroupRow: React.FC<InsightGroupRowProps> = ({
               ''
             }
           </Typography>
+        </TableCell>
+
+        {/* Customer */}
+        <TableCell sx={{ py: 1, textAlign: 'center' }}>
+          {group.children.length === 1 ? (
+            group.children[0].customerLogo ? (
+              <Tooltip title={group.children[0].customerName || 'Unknown'} arrow>
+                <Box sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  margin: '0 auto'
+                }}>
+                  <img 
+                    src={group.children[0].customerLogo} 
+                    alt={`${group.children[0].customerName} logo`}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+            ) : (
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  fontWeight: 500,
+                  fontSize: '0.8rem',
+                  color: 'text.primary'
+                }}
+              >
+                {group.children[0].customerName || 'Unknown'}
+              </Typography>
+            )
+          ) : (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 500,
+                fontSize: '0.8rem',
+                color: 'text.primary'
+              }}
+            >
+              Multiple
+            </Typography>
+          )}
         </TableCell>
 
         {/* Insight Type */}
@@ -181,14 +234,6 @@ const InsightGroupRow: React.FC<InsightGroupRowProps> = ({
           )}
         </TableCell>
 
-        {/* Value */}
-        <TableCell sx={{ py: 1, textAlign: 'center' }}>
-          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
-            {group.children.length}
-          </Typography>
-        </TableCell>
-
-
         {/* Created Date */}
         <TableCell sx={{ py: 1, textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
@@ -236,6 +281,46 @@ const InsightGroupRow: React.FC<InsightGroupRowProps> = ({
               >
                 {child.insightNumber || child.id || child.meta?.insightId || ''}
               </Typography>
+            </TableCell>
+
+            {/* Customer */}
+            <TableCell sx={{ py: 0.5, textAlign: 'center' }}>
+              {child.customerLogo ? (
+                <Tooltip title={child.customerName || 'Unknown'} arrow>
+                  <Box sx={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    margin: '0 auto'
+                  }}>
+                    <img 
+                      src={child.customerLogo} 
+                      alt={`${child.customerName} logo`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover'
+                      }}
+                    />
+                  </Box>
+                </Tooltip>
+              ) : (
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 500,
+                    fontSize: '0.8rem',
+                    color: 'text.primary'
+                  }}
+                >
+                  {child.customerName || 'Unknown'}
+                </Typography>
+              )}
             </TableCell>
 
             {/* Insight Type */}
@@ -317,13 +402,6 @@ const InsightGroupRow: React.FC<InsightGroupRowProps> = ({
                 hasPermission={hasPermission}
                 updating={updatingInsights.has(child.id || child.meta?.insightId || `${group.id}-${index}`)}
               />
-            </TableCell>
-
-            {/* Value */}
-            <TableCell sx={{ py: 0.5, textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.8rem' }}>
-                1
-              </Typography>
             </TableCell>
 
             {/* Period */}
