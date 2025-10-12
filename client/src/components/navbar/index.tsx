@@ -133,7 +133,15 @@ export const Navbar = observer(() => {
       <styled.Container drawerOpen={mobileMenuOpen}>
         <styled.LeftSide>
           <Box display="flex" alignItems="center" gap={isSmallScreen ? 1 : 2}>
-            <span style={{color: 'white', fontSize: '1.5rem', fontWeight: 'bold' }}>TKTAI</span>
+            <img 
+              src="/logo/foozool_logo_transparent_bg.png" 
+              alt="Foozool Logo" 
+              style={{ 
+                height: '60px', 
+                width: 'auto',
+                objectFit: 'contain'
+              }} 
+            />
             
             {/* Organization and Environment Info */}
             {organizationName && !isSmallScreen && (

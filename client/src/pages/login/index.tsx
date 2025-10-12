@@ -124,7 +124,17 @@ const Login = () => {
     <Container>
       <ColumnWrapper>
         {/* <Logo src="/logo/logo-transparent-blue.svg" alt="foozool logo" /> */}
-        <h1 style={{ textAlign: 'center', marginBottom: '2rem', color: theme.colors.primary.main }}>TKTAI</h1>
+        <img 
+          src="/logo/foozool_logo_transparent_bg.png" 
+          alt="Foozool Logo" 
+          style={{ 
+            height: '140px', 
+            width: 'auto',
+            objectFit: 'contain',
+            display: 'block',
+            margin: '0 auto 2rem auto'
+          }} 
+        />
         <FormWrapper>
           {/* <Typography variant="h5" align="center" gutterBottom color={theme.colors.primary.main}>
             Login
