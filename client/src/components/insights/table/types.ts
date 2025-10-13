@@ -44,8 +44,17 @@ export interface InsightGroupRowProps {
   hasPermission: boolean;
 }
 
+export type SortField = 'severity' | 'period' | 'status' | 'assignee';
+export type SortOrder = 'asc' | 'desc';
+
+export interface SortConfig {
+  field: SortField;
+  order: SortOrder;
+}
+
 export interface InsightTableHeaderProps {
-  // No props needed for now, but keeping for consistency
+  sortConfig?: SortConfig;
+  onSort?: (field: SortField) => void;
 }
 
 export interface InsightTableBodyProps {

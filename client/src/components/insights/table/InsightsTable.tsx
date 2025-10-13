@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
 import insightsService from '@/services/insights-service';
-import { InsightsTableProps } from './types';
+import { InsightsTableProps, SortConfig, SortField } from './types';
 import { groupInsightsByTypeAndSeverity } from './utils';
 import InsightTableHeader from './InsightTableHeader';
 import InsightTableBody from './InsightTableBody';
@@ -37,6 +37,9 @@ const InsightsTable = React.forwardRef<any, InsightsTableProps>(({
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: '',
@@ -98,8 +101,8 @@ const InsightsTable = React.forwardRef<any, InsightsTableProps>(({
 
   // Group insights by type and severity
   const allGroupedInsights = useMemo(() => {
-    return groupInsightsByTypeAndSeverity(localInsights);
-  }, [localInsights]);
+    return groupInsightsByTypeAndSeverity(localInsights, sortConfig || undefined);
+  }, [localInsights, sortConfig]);
 
   // Paginate grouped insights
   const paginatedGroupedInsights = useMemo(() => {
@@ -200,6 +203,27 @@ const InsightsTable = React.forwardRef<any, InsightsTableProps>(({
     setItemsPerPage(newItemsPerPage);
   };
 
+  // Handle sorting
+  const handleSort = (field: SortField) => {
+    setCurrentPage(1); // Reset to first page when sorting
+    
+    setSortConfig(prevConfig => {
+      // If clicking the same field, toggle order
+      if (prevConfig?.field === field) {
+        return {
+          field,
+          order: prevConfig.order === 'asc' ? 'desc' : 'asc'
+        };
+      }
+      
+      // If clicking a different field, default to ascending
+      return {
+        field,
+        order: 'asc'
+      };
+    });
+  };
+
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
     refresh: () => {
@@ -226,7 +250,10 @@ const InsightsTable = React.forwardRef<any, InsightsTableProps>(({
       <Paper>
         <TableContainer>
           <Table>
-            <InsightTableHeader />
+            <InsightTableHeader 
+              sortConfig={sortConfig || undefined}
+              onSort={handleSort}
+            />
             <InsightTableBody
               groupedInsights={paginatedGroupedInsights}
               expandedGroups={expandedGroups}

@@ -1,5 +1,5 @@
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
-import { GroupedInsight } from './types';
+import { GroupedInsight, SortConfig } from './types';
 
 // Get affected users from insight meta
 export const getAffectedUsers = (insight: CustomerSuccessInsight): string[] => {
@@ -67,7 +67,7 @@ export const getStatusBgColor = (status: string): string => {
 };
 
 // Group insights by type and severity
-export const groupInsightsByTypeAndSeverity = (insights: CustomerSuccessInsight[]): GroupedInsight[] => {
+export const groupInsightsByTypeAndSeverity = (insights: CustomerSuccessInsight[], sortConfig?: SortConfig): GroupedInsight[] => {
   const groups: { [key: string]: GroupedInsight } = {};
   
   insights.forEach(insight => {
@@ -97,7 +97,12 @@ export const groupInsightsByTypeAndSeverity = (insights: CustomerSuccessInsight[
   });
   
   return Object.values(groups).sort((a, b) => {
-    // Sort by severity (red first, then yellow, then info)
+    // Apply custom sorting if provided
+    if (sortConfig) {
+      return sortGroupedInsights(a, b, sortConfig);
+    }
+    
+    // Default sorting: by severity (red first, then yellow, then info)
     const severityOrder = { red: 0, yellow: 1, info: 2 };
     if (severityOrder[a.severity] !== severityOrder[b.severity]) {
       return severityOrder[a.severity] - severityOrder[b.severity];
@@ -106,6 +111,61 @@ export const groupInsightsByTypeAndSeverity = (insights: CustomerSuccessInsight[
     // Then by count (descending)
     return b.count - a.count;
   });
+};
+
+// Sort grouped insights based on sort configuration
+export const sortGroupedInsights = (a: GroupedInsight, b: GroupedInsight, sortConfig: SortConfig): number => {
+  const { field, order } = sortConfig;
+  const multiplier = order === 'asc' ? 1 : -1;
+  
+  switch (field) {
+    case 'severity': {
+      const severityOrder = { red: 0, yellow: 1, info: 2 };
+      return (severityOrder[a.severity] - severityOrder[b.severity]) * multiplier;
+    }
+    
+    case 'period': {
+      // Use the first insight's createdAt field to calculate period for comparison
+      const aPeriod = a.children[0]?.createdAt ? formatWeekYear(a.children[0].createdAt) : '';
+      const bPeriod = b.children[0]?.createdAt ? formatWeekYear(b.children[0].createdAt) : '';
+      return aPeriod.localeCompare(bPeriod) * multiplier;
+    }
+    
+    case 'status': {
+      // Use the most common status in the group, or first insight's status
+      const getMostCommonStatus = (group: GroupedInsight): string => {
+        const statusCounts: { [key: string]: number } = {};
+        group.children.forEach(insight => {
+          const status = insight.status || 'new';
+          statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+        return Object.keys(statusCounts).reduce((a, b) => statusCounts[a] > statusCounts[b] ? a : b);
+      };
+      
+      const aStatus = getMostCommonStatus(a);
+      const bStatus = getMostCommonStatus(b);
+      return aStatus.localeCompare(bStatus) * multiplier;
+    }
+    
+    case 'assignee': {
+      // Use the most common assignee in the group, or first insight's assignee
+      const getMostCommonAssignee = (group: GroupedInsight): string => {
+        const assigneeCounts: { [key: string]: number } = {};
+        group.children.forEach(insight => {
+          const assignee = insight.assignee || 'unassigned';
+          assigneeCounts[assignee] = (assigneeCounts[assignee] || 0) + 1;
+        });
+        return Object.keys(assigneeCounts).reduce((a, b) => assigneeCounts[a] > assigneeCounts[b] ? a : b);
+      };
+      
+      const aAssignee = getMostCommonAssignee(a);
+      const bAssignee = getMostCommonAssignee(b);
+      return aAssignee.localeCompare(bAssignee) * multiplier;
+    }
+    
+    default:
+      return 0;
+  }
 };
 
 // Format insight type for display
