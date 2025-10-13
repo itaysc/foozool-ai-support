@@ -67,6 +67,58 @@ const customersService = {
   async delete(id: string): Promise<void> {
     await axios.delete(getRoute(`customers/${id}`));
   },
+
+  // Get insights analytics for dashboard
+  async getInsightsAnalytics(customerId?: string): Promise<{
+    chartData: Array<{
+      period: string;
+      total: number;
+      [key: string]: any;
+    }>;
+    insightTypes: string[];
+    periods: string[];
+    summary: {
+      totalInsights: number;
+      totalPeriods: number;
+      averageInsightsPerPeriod: number;
+      mostRecentPeriod: string | null;
+      mostRecentTotal: number;
+    };
+  }> {
+    const params = new URLSearchParams();
+    if (customerId) {
+      params.append('customerId', customerId);
+    }
+    const url = getRoute('customers/dashboard/insights-analytics') + (params.toString() ? `?${params.toString()}` : '');
+    const response = await axios.get(url);
+    return response.data.data;
+  },
+
+  // Get payment history for dashboard
+  async getPaymentHistory(customerId: string): Promise<{
+    customerName: string;
+    paymentHistory: Array<{
+      date: string;
+      amount: number;
+      status: 'paid' | 'overdue' | 'pending' | 'failed';
+      method?: string;
+      invoiceNumber?: string;
+    }>;
+    summary: {
+      totalPayments: number;
+      recentPayments: number;
+      lastPaymentDate: string | null;
+      outstandingBalance: number;
+      averagePaymentDays: number;
+      paymentReliability: string;
+    };
+  }> {
+    const params = new URLSearchParams();
+    params.append('customerId', customerId);
+    const url = getRoute('customers/dashboard/payment-history') + `?${params.toString()}`;
+    const response = await axios.get(url);
+    return response.data.data;
+  },
 };
 
 export default customersService;

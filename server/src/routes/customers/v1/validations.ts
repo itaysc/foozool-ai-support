@@ -145,7 +145,7 @@ export const updateCustomerSchema = z.object({
 export const getCustomersQuerySchema = z.object({
   page: z.string().transform(val => parseInt(val)).pipe(z.number().min(1)).optional(),
   limit: z.string().transform(val => parseInt(val)).pipe(z.number().min(1).max(100)).optional(),
-  sortBy: z.enum(['name', 'healthScore', 'startDate', 'createdAt', 'updatedAt']).optional(),
+  sortBy: z.enum(['name', 'healthScore', 'startDate', 'createdAt', 'updatedAt', 'contractValue']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
   industry: z.string().optional(),
   companySize: z.enum(['1-10', '11-50', '51-200', '201-500', '500+']).optional(),

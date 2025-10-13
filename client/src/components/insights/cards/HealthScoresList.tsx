@@ -131,7 +131,7 @@ const HealthScoresList: React.FC<HealthScoresListProps> = ({ healthScores }) => 
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        ${customer.contractValue ? customer.contractValue.toLocaleString() : 'N/A'}
+                        ${customer.financialMetrics?.contractValue ? customer.financialMetrics.contractValue.toLocaleString() : 'N/A'}
                       </Typography>
                     </TableCell>
                     <TableCell>

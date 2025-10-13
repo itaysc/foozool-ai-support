@@ -73,7 +73,13 @@ export interface CustomerQueryOptions {
 
     const skip = (page - 1) * limit;
     const sort: any = {};
-    sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    
+    // Handle nested fields for sorting
+    if (sortBy === 'contractValue') {
+      sort['financialMetrics.contractValue'] = sortOrder === 'asc' ? 1 : -1;
+    } else {
+      sort[sortBy] = sortOrder === 'asc' ? 1 : -1;
+    }
 
     const [customers, total] = await Promise.all([
       CustomerModel.find(query)

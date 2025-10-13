@@ -494,7 +494,7 @@ const CustomersPage: React.FC = () => {
                     <TableCell>{customer.industry || '-'}</TableCell>
                     <TableCell>{customer.companySize || '-'}</TableCell>
                     <TableCell>
-                      {customer.contractValue ? `$${customer.contractValue.toLocaleString()}` : '-'}
+                      {customer.financialMetrics?.contractValue ? `$${customer.financialMetrics.contractValue.toLocaleString()}` : '-'}
                     </TableCell>
                     <TableCell>{customer.accountManager || '-'}</TableCell>
                     <TableCell>

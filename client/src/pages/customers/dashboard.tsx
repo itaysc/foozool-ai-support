@@ -33,6 +33,7 @@ import {
   Person,
   Business,
   Group,
+  Payment,
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -45,9 +46,12 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Line,
+  AreaChart,
+  Area,
 } from 'recharts';
 import { observer } from 'mobx-react';
 import customersStore from '@/stores/customers.store';
+import customersService from '@/services/customers-service';
 import { ICustomer } from '@/types';
 
 const COLORS = {
@@ -58,14 +62,28 @@ const COLORS = {
   info: '#0891b2',
   purple: '#7c3aed',
   pink: '#db2777',
-  // Professional chart colors - muted earthy tones
+  // Traditional muted chart colors - professional and easy on the eyes
   chart: {
-    recurring: '#b0cc9f',      // Light green (like BMW bottom)
-    ticketVolume: '#806650',   // Dark brown/green (like BMW middle)
-    sentiment: '#e09966',      // Light orange/brown (like BMW top)
-    escalating: '#cc6633',     // Dark orange/brown (like Ferrari bottom)
-    resolution: '#b3b3b3',     // Light gray (like Ferrari middle)
-    other: '#f0e6b3',          // Light yellow/cream (like Ferrari top)
+    recurring: '#6b7280',      // Gray-500
+    ticketVolume: '#374151',   // Gray-700
+    sentiment: '#9ca3af',      // Gray-400
+    escalating: '#4b5563',     // Gray-600
+    resolution: '#d1d5db',     // Gray-300
+    other: '#f3f4f6',          // Gray-100
+    churn: '#7c2d12',          // Red-900
+    engagement: '#1e40af',     // Blue-800
+    satisfaction: '#166534',   // Green-800
+    performance: '#92400e',    // Amber-800
+    support: '#991b1b',        // Red-800
+    technical: '#1e3a8a',      // Blue-900
+    billing: '#365314',        // Lime-800
+    feature: '#9a3412',        // Orange-800
+    onboarding: '#be185d',     // Pink-800
+    retention: '#134e4a',      // Teal-800
+    upsell: '#581c87',         // Purple-900
+    compliance: '#374151',     // Gray-700
+    security: '#7f1d1d',       // Red-900
+    integration: '#14532d',    // Green-900
   },
   // Status colors
   status: {
@@ -73,6 +91,13 @@ const COLORS = {
     resolved: '#059669',       // Green for resolved
     in_progress: '#d97706',    // Orange for in progress
     pending: '#0891b2',        // Blue for pending
+  },
+  // Severity colors - matching insights page severity values
+  severity: {
+    red: '#dc2626',           // Red for critical/high severity
+    yellow: '#d97706',        // Yellow/Orange for warning/medium severity  
+    info: '#0891b2',          // Blue for info/low severity
+    green: '#16a34a',         // Green for resolved/good status
   }
 };
 
@@ -81,6 +106,8 @@ const CustomerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [customer, setCustomer] = useState<ICustomer | null>(null);
   const [insights, setInsights] = useState<any[]>([]);
+  const [insightsAnalytics, setInsightsAnalytics] = useState<any>(null);
+  const [paymentHistory, setPaymentHistory] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,9 +127,18 @@ const CustomerDashboardPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      // Load dashboard data using the new route
-      await customersStore.fetchDashboardData(customerId);
-      const dashboardData = customersStore.dashboardData;
+      // Load dashboard data, insights analytics, and payment history in parallel
+      const [dashboardData, analyticsData, paymentData] = await Promise.all([
+        customersStore.fetchDashboardData(customerId).then(() => customersStore.dashboardData),
+        customersService.getInsightsAnalytics(customerId).catch(err => {
+          console.warn('Failed to fetch insights analytics:', err);
+          return null;
+        }),
+        customersService.getPaymentHistory(customerId).catch(err => {
+          console.warn('Failed to fetch payment history:', err);
+          return null;
+        })
+      ]);
       
       if (dashboardData) {
         setCustomer(dashboardData.customer);
@@ -110,6 +146,9 @@ const CustomerDashboardPage: React.FC = () => {
       } else {
         setError('Customer not found');
       }
+      
+      setInsightsAnalytics(analyticsData);
+      setPaymentHistory(paymentData);
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
     } finally {
@@ -180,9 +219,15 @@ const CustomerDashboardPage: React.FC = () => {
 
   const healthScoreColor = getHealthScoreColor(customer.healthScore);
   
-  // Use chart data from the dashboard API response
-  const insightsChartData = customersStore.dashboardData?.charts?.insightsByType || [];
-  const insightsStatusChartData = customersStore.dashboardData?.charts?.insightsByStatus || [];
+  // Use chart data from the insights analytics API response
+  const insightsChartData = insightsAnalytics?.chartData || [];
+  const insightsStatusChartData = insightsAnalytics?.statusChartData || [];
+  const insightsSeverityChartData = insightsAnalytics?.severityChartData || [];
+  
+  // Get insight types, status types, and severity types from analytics data for dynamic chart rendering
+  const insightTypes = insightsAnalytics?.insightTypes || [];
+  const statusTypes = insightsAnalytics?.statusTypes || [];
+  const severityTypes = insightsAnalytics?.severityTypes || [];
 
   return (
     <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
@@ -395,13 +440,15 @@ const CustomerDashboardPage: React.FC = () => {
         </Paper>
       </Box>
 
-      {/* Insights Analytics Chart */}
-      <Paper sx={{ p: 3, mb: 3, boxShadow: 2 }}>
-        <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Lightbulb sx={{ fontSize: 20 }} />
-          Customer Insights Generated Over Time
-        </Typography>
-        <Box sx={{ height: 400, width: '100%' }}>
+      {/* Charts Row 1 - Insights by Type and Status */}
+      <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
+        {/* Insights Analytics Chart */}
+        <Paper sx={{ p: 3, boxShadow: 2, flex: '0 0 calc(50% - 12px)', minWidth: '400px' }}>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Lightbulb sx={{ fontSize: 20 }} />
+            Customer Insights Generated Over Time
+          </Typography>
+          <Box sx={{ height: 250, width: '100%' }}>
           {insightsChartData.length === 0 ? (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
               <Typography variant="h6" color="text.secondary">
@@ -437,36 +484,50 @@ const CustomerDashboardPage: React.FC = () => {
                   border: '1px solid #d1d5db',
                   borderRadius: '8px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  zIndex: 9999
                 }}
                 formatter={(value, name) => [value, getInsightTypeLabel(name as string)]}
                 labelFormatter={(label) => `Period: ${label}`}
               />
-              <Legend 
-                wrapperStyle={{ 
-                  paddingTop: '20px',
-                  fontSize: '14px'
-                }}
-              />
-              <Bar dataKey="recurring_problems" stackId="a" fill={COLORS.chart.recurring} name="Recurring Problems" />
-              <Bar dataKey="high_ticket_volume" stackId="a" fill={COLORS.chart.ticketVolume} name="High Ticket Volume" />
-              <Bar dataKey="sentiment_decline" stackId="a" fill={COLORS.chart.sentiment} name="Sentiment Decline" />
-              <Bar dataKey="escalating_issues" stackId="a" fill={COLORS.chart.escalating} name="Escalating Issues" />
-              <Bar dataKey="resolution_delays" stackId="a" fill={COLORS.chart.resolution} name="Resolution Delays" />
-              <Bar dataKey="other" stackId="a" fill={COLORS.chart.other} name="Other Insights" />
+              {insightTypes.map((type: string, index: number) => {
+                const colorKeys = Object.keys(COLORS.chart);
+                
+                // Try to match insight type to a semantically appropriate color first
+                let colorKey = colorKeys.find(key => 
+                  key.toLowerCase().includes(type.toLowerCase()) ||
+                  type.toLowerCase().includes(key.toLowerCase())
+                );
+                
+                // If no semantic match, use index-based assignment with better distribution
+                if (!colorKey) {
+                  colorKey = colorKeys[index % colorKeys.length];
+                }
+                
+                const color = COLORS.chart[colorKey as keyof typeof COLORS.chart];
+                return (
+                  <Bar 
+                    key={type}
+                    dataKey={type} 
+                    stackId="a" 
+                    fill={color} 
+                    name={getInsightTypeLabel(type)} 
+                  />
+                );
+              })}
             </BarChart>
           </ResponsiveContainer>
           )}
         </Box>
-      </Paper>
+        </Paper>
 
-      {/* Insights Status Chart */}
-      <Paper sx={{ p: 3, mb: 3, boxShadow: 2 }}>
-        <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Assessment sx={{ fontSize: 20 }} />
-          Insights by Status Over Time
-        </Typography>
-        <Box sx={{ height: 400, width: '100%' }}>
+        {/* Insights Status Chart */}
+        <Paper sx={{ p: 3, boxShadow: 2, flex: '0 0 calc(50% - 12px)', minWidth: '400px' }}>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Assessment sx={{ fontSize: 20 }} />
+            Insights by Status Over Time
+          </Typography>
+          <Box sx={{ height: 250, width: '100%' }}>
           {insightsStatusChartData.length === 0 ? (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
               <Typography variant="h6" color="text.secondary">
@@ -502,34 +563,208 @@ const CustomerDashboardPage: React.FC = () => {
                   border: '1px solid #d1d5db',
                   borderRadius: '8px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  fontSize: '14px'
+                  fontSize: '14px',
+                  zIndex: 9999
                 }}
                 formatter={(value, name) => {
-                  const statusLabels: { [key: string]: string } = {
-                    'active': 'Active',
-                    'resolved': 'Resolved', 
-                    'in_progress': 'In Progress',
-                    'pending': 'Pending'
-                  };
-                  return [value, statusLabels[name as string] || name];
+                  const formattedName = (name as string).charAt(0).toUpperCase() + (name as string).slice(1).replace('_', ' ');
+                  return [value, formattedName];
                 }}
                 labelFormatter={(label) => `Period: ${label}`}
               />
-              <Legend 
-                wrapperStyle={{ 
-                  paddingTop: '20px',
-                  fontSize: '14px'
-                }}
-              />
-              <Bar dataKey="active" stackId="a" fill={COLORS.status.active} name="Active" />
-              <Bar dataKey="resolved" stackId="a" fill={COLORS.status.resolved} name="Resolved" />
-              <Bar dataKey="in_progress" stackId="a" fill={COLORS.status.in_progress} name="In Progress" />
-              <Bar dataKey="pending" stackId="a" fill={COLORS.status.pending} name="Pending" />
+              {statusTypes.map((status: string, index: number) => {
+                const statusColorKeys = Object.keys(COLORS.status);
+                const colorKey = statusColorKeys[index % statusColorKeys.length];
+                const color = COLORS.status[colorKey as keyof typeof COLORS.status];
+                return (
+                  <Bar 
+                    key={status}
+                    dataKey={status} 
+                    stackId="a" 
+                    fill={color} 
+                    name={status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')} 
+                  />
+                );
+              })}
             </BarChart>
           </ResponsiveContainer>
           )}
         </Box>
-      </Paper>
+        </Paper>
+      </Box>
+
+      {/* Charts Row 2 - Insights by Severity and Payment */}
+      <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
+        <Paper sx={{ p: 3, boxShadow: 2, flex: '0 0 calc(50% - 12px)', minWidth: '400px' }}>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Warning sx={{ fontSize: 20 }} />
+            Insights by Severity Over Time
+          </Typography>
+        <Box sx={{ height: 250, width: '100%' }}>
+          {insightsSeverityChartData.length === 0 ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
+              <Typography variant="h6" color="text.secondary">
+                No Severity Data Available
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Severity information will appear here once insights are generated.
+              </Typography>
+            </Box>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={insightsSeverityChartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeWidth={0.5} />
+              <XAxis 
+                dataKey="period" 
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                fontSize={12}
+                stroke="#6b7280"
+                tick={{ fill: '#6b7280' }}
+              />
+              <YAxis 
+                stroke="#6b7280"
+                tick={{ fill: '#6b7280' }}
+              />
+              <RechartsTooltip 
+                contentStyle={{ 
+                  backgroundColor: '#fff', 
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  fontSize: '14px',
+                  zIndex: 9999
+                }}
+                formatter={(value, name) => {
+                  const severityLabels: { [key: string]: string } = {
+                    'red': 'Critical',
+                    'yellow': 'Warning',
+                    'info': 'Info',
+                    'green': 'Resolved'
+                  };
+                  return [value, severityLabels[name as string] || (name as string).charAt(0).toUpperCase() + (name as string).slice(1)];
+                }}
+                labelFormatter={(label) => `Period: ${label}`}
+              />
+              {severityTypes.map((severity: string, index: number) => {
+                const severityColorKeys = Object.keys(COLORS.severity);
+                const colorKey = severityColorKeys[index % severityColorKeys.length];
+                const color = COLORS.severity[colorKey as keyof typeof COLORS.severity];
+                return (
+                  <Area 
+                    key={severity}
+                    type="monotone"
+                    dataKey={severity} 
+                    stackId="1"
+                    stroke={color}
+                    fill={color}
+                    fillOpacity={0.6}
+                    name={severity === 'red' ? 'Critical' : 
+                          severity === 'yellow' ? 'Warning' : 
+                          severity === 'info' ? 'Info' : 
+                          severity === 'green' ? 'Resolved' : 
+                          severity.charAt(0).toUpperCase() + severity.slice(1)}
+                  />
+                );
+              })}
+            </AreaChart>
+          </ResponsiveContainer>
+          )}
+        </Box>
+        </Paper>
+        <Paper sx={{ p: 3, boxShadow: 2, flex: '0 0 calc(50% - 12px)', minWidth: '400px' }}>
+          <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Payment sx={{ fontSize: 20 }} />
+            Recent Payment History
+          </Typography>
+          <Box sx={{ height: 300, width: '100%', overflow: 'auto' }}>
+            {!paymentHistory || paymentHistory.paymentHistory?.length === 0 ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="h6" color="text.secondary">
+                  No Payment History Available
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Payment history will appear here once payments are recorded.
+                </Typography>
+              </Box>
+            ) : (
+              <Box>
+                {/* Payment Summary */}
+                <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
+                  <Chip 
+                    label={`Total Payments: ${paymentHistory.summary?.totalPayments || 0}`} 
+                    color="primary" 
+                    variant="outlined" 
+                  />
+                  <Chip 
+                    label={`Outstanding: $${(paymentHistory.summary?.outstandingBalance || 0).toLocaleString()}`} 
+                    color={paymentHistory.summary?.outstandingBalance > 0 ? "error" : "success"}
+                    variant="outlined" 
+                  />
+                  <Chip 
+                    label={`Avg Payment Days: ${paymentHistory.summary?.averagePaymentDays || 0}`} 
+                    color="default" 
+                    variant="outlined" 
+                  />
+                </Box>
+
+                {/* Payment Table */}
+                <Box sx={{ border: '1px solid #e5e7eb', borderRadius: 1, overflow: 'hidden' }}>
+                  <Box sx={{ display: 'flex', bgcolor: '#f9fafb', p: 2, fontWeight: 'bold', fontSize: '0.875rem' }}>
+                    <Box sx={{ flex: 1 }}>Date</Box>
+                    <Box sx={{ flex: 1 }}>Amount</Box>
+                    <Box sx={{ flex: 1 }}>Status</Box>
+                    <Box sx={{ flex: 1 }}>Method</Box>
+                    <Box sx={{ flex: 1 }}>Invoice</Box>
+                  </Box>
+                  {paymentHistory.paymentHistory.map((payment: any, index: number) => (
+                    <Box 
+                      key={index} 
+                      sx={{ 
+                        display: 'flex', 
+                        p: 2, 
+                        borderBottom: index < paymentHistory.paymentHistory.length - 1 ? '1px solid #e5e7eb' : 'none',
+                        '&:hover': { bgcolor: '#f9fafb' }
+                      }}
+                    >
+                      <Box sx={{ flex: 1, fontSize: '0.875rem' }}>
+                        {new Date(payment.date).toLocaleDateString()}
+                      </Box>
+                      <Box sx={{ flex: 1, fontSize: '0.875rem', fontWeight: 500 }}>
+                        ${payment.amount.toLocaleString()}
+                      </Box>
+                      <Box sx={{ flex: 1 }}>
+                        <Chip
+                          label={payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                          size="small"
+                          color={
+                            payment.status === 'paid' ? 'success' :
+                            payment.status === 'overdue' ? 'error' :
+                            payment.status === 'pending' ? 'warning' :
+                            'default'
+                          }
+                          variant="outlined"
+                        />
+                      </Box>
+                      <Box sx={{ flex: 1, fontSize: '0.875rem' }}>
+                        {payment.method || '-'}
+                      </Box>
+                      <Box sx={{ flex: 1, fontSize: '0.875rem' }}>
+                        {payment.invoiceNumber || '-'}
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </Paper>
+      </Box>
+
 
       {/* Insights Summary */}
       <Paper sx={{ p: 3, boxShadow: 1 }}>
@@ -539,18 +774,23 @@ const CustomerDashboardPage: React.FC = () => {
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Chip 
-            label={`Total Insights: ${customersStore.dashboardData?.summary?.totalInsights || 0}`} 
+            label={`Total Insights: ${insightsAnalytics?.summary?.totalInsights || 0}`} 
             color="primary" 
             variant="outlined" 
           />
           <Chip 
-            label={`Last 8 Weeks: ${customersStore.dashboardData?.summary?.insightsLast8Weeks || 0}`} 
+            label={`Total Periods: ${insightsAnalytics?.summary?.totalPeriods || 0}`} 
             color="secondary" 
             variant="outlined" 
           />
           <Chip 
-            label={`Most Common: ${getMostCommonInsightType()}`} 
+            label={`Avg per Period: ${insightsAnalytics?.summary?.averageInsightsPerPeriod || 0}`} 
             color="default" 
+            variant="outlined" 
+          />
+          <Chip 
+            label={`Latest Period: ${insightsAnalytics?.summary?.mostRecentPeriod || 'N/A'}`} 
+            color="info" 
             variant="outlined" 
           />
         </Box>

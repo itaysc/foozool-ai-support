@@ -10,6 +10,7 @@ import {
   getCustomersQuerySchema,
 } from './validations';
 import stakeholderRoutes from './stakeholders';
+import dashboardRoutes from './dashboard';
 
 const router = Router();
 
@@ -279,5 +280,8 @@ router.delete('/:customerId', authenticateJWT, hasPermission('customers:delete')
 
 // Mount stakeholder routes
 router.use('/', stakeholderRoutes);
+
+// Mount dashboard routes
+router.use('/dashboard', dashboardRoutes);
 
 export default router;

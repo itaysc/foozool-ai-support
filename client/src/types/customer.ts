@@ -199,7 +199,7 @@ export interface CustomerStats {
 export interface CustomerFilters {
   page?: number;
   limit?: number;
-  sortBy?: 'name' | 'healthScore' | 'startDate' | 'createdAt' | 'updatedAt';
+  sortBy?: 'name' | 'healthScore' | 'startDate' | 'createdAt' | 'updatedAt' | 'contractValue';
   sortOrder?: 'asc' | 'desc';
   industry?: string;
   companySize?: string;
