@@ -10,6 +10,7 @@ import customersStore from '@/stores/customers.store';
 import botsService from '@/services/bots-service';
 import { SideBar, NavItem } from '@/components/sideBar';
 import { DateFilter, DateFilterState } from '@/components/insights/filters/DateFilter';
+import { useInsightsQueryFilters } from '@/hooks/useInsightsQueryFilters';
 import { 
   TicketInsightsTab, 
   CustomerSuccessTab,
@@ -19,6 +20,7 @@ import {
 const InsightsPage: React.FC = () => {
   const { organizationId: orgIdFromParams } = useParams<{ organizationId: string }>();
   const { user } = useAuth();
+  const { filters, setCustomerFilter } = useInsightsQueryFilters();
   
   // State management
   const [loading, setLoading] = useState(true);
@@ -66,6 +68,24 @@ const InsightsPage: React.FC = () => {
 
     loadCustomers();
   }, [effectiveOrgId, selectedCustomer]);
+
+  // Sync selected customer with URL query params
+  useEffect(() => {
+    if (filters.customerId && customers.length > 0) {
+      // Verify the customer exists in the loaded customers list
+      const customerExists = customers.some(c => c._id === filters.customerId);
+      
+      if (customerExists && selectedCustomer !== filters.customerId) {
+        setSelectedCustomer(filters.customerId);
+      } else if (!customerExists) {
+        // Remove invalid customer ID from URL
+        setCustomerFilter(null);
+      }
+    } else if (!filters.customerId && selectedCustomer !== null) {
+      // Clear selected customer if no filter in URL
+      setSelectedCustomer(null);
+    }
+  }, [filters.customerId, customers]);
 
   // Fetch unified insights (NPS, CSAT, and Customer Success)
   const fetchUnifiedInsights = async (customerId: string | null) => {
@@ -148,7 +168,11 @@ const InsightsPage: React.FC = () => {
   // Customer change handler
   const handleCustomerChange = (customerId: string) => {
     // Handle empty string (when clear button is clicked) by setting to null
-    setSelectedCustomer(customerId === '' ? null : customerId);
+    const newCustomerId = customerId === '' ? null : customerId;
+    setSelectedCustomer(newCustomerId);
+    
+    // Update URL query params using the custom hook
+    setCustomerFilter(newCustomerId);
   };
 
   // Date filter change handler

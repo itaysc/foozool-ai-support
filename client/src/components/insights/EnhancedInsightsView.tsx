@@ -15,6 +15,7 @@ import {
 import { FilterList, Refresh, TrendingUp, Analytics, Description } from '@mui/icons-material';
 import { CustomerSuccessInsight } from '@/types/customerSuccess';
 import { insightsService } from '@/services/insights-service';
+import { useInsightsQueryFilters } from '@/hooks/useInsightsQueryFilters';
 import InsightSummaryCard from './cards/InsightSummaryCard';
 import InsightFilterPanel from './filters/InsightFilterPanel';
 import InsightsTable from './table/InsightsTable';
@@ -42,6 +43,7 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { filters: queryFilters, setInsightFilter } = useInsightsQueryFilters();
   
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
@@ -90,6 +92,24 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
 
     fetchUsers();
   }, []);
+
+  // Check for insight ID in URL query params on mount and when insights change
+  useEffect(() => {
+    if (queryFilters.insightId && insights.length > 0) {
+      // Find the insight by ID or insightNumber
+      const insight = insights.find(
+        i => i.id === queryFilters.insightId || i.insightNumber === queryFilters.insightId || i.meta?.insightId === queryFilters.insightId
+      );
+      
+      if (insight) {
+        setSelectedInsight(insight);
+        setDetailDrawerOpen(true);
+      } else {
+        // Remove invalid insight ID from URL
+        setInsightFilter(null);
+      }
+    }
+  }, [queryFilters.insightId, insights]);
 
   // Sync selected summary card with filter changes
   useEffect(() => {
@@ -159,11 +179,20 @@ const EnhancedInsightsView: React.FC<EnhancedInsightsViewProps> = ({
   const handleInsightSelect = (insight: CustomerSuccessInsight) => {
     setSelectedInsight(insight);
     setDetailDrawerOpen(true);
+    
+    // Add insight ID to URL query params using the custom hook
+    const insightId = insight.id || insight.insightNumber || insight.meta?.insightId;
+    if (insightId) {
+      setInsightFilter(insightId);
+    }
   };
 
   const handleCloseDetailDrawer = () => {
     setDetailDrawerOpen(false);
     setSelectedInsight(null);
+    
+    // Remove insight ID from URL query params using the custom hook
+    setInsightFilter(null);
   };
 
   // Shared callback for insight updates from both table and drawer
