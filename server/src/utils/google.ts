@@ -9,6 +9,6 @@ export const oauth2Client = new google.auth.OAuth2(
 
 export const SCOPES = [
   'https://www.googleapis.com/auth/drive.readonly',
-  'https://www.googleapis.com/auth/documents.readonly',
+  'https://www.googleapis.com/auth/documents',
   'https://www.googleapis.com/auth/spreadsheets.readonly',
 ];

@@ -16,6 +16,7 @@ export const toast = {
     enqueueSnackbar(message, { 
       variant: 'success', 
       autoHideDuration: 3000,
+      persist: false,
       ...options 
     });
   },
@@ -24,6 +25,7 @@ export const toast = {
     enqueueSnackbar(message, { 
       variant: 'error', 
       autoHideDuration: 5000,
+      persist: false,
       ...options 
     });
   },
@@ -32,6 +34,7 @@ export const toast = {
     enqueueSnackbar(message, { 
       variant: 'warning', 
       autoHideDuration: 4000,
+      persist: false,
       ...options 
     });
   },
@@ -40,6 +43,7 @@ export const toast = {
     enqueueSnackbar(message, { 
       variant: 'info', 
       autoHideDuration: 3000,
+      persist: false,
       ...options 
     });
   }

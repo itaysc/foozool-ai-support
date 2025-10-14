@@ -105,7 +105,7 @@ const Login = () => {
     return (
       <Container>
         <ColumnWrapper>
-          <Logo src="/logo/logo-transparent-blue.svg" alt="foozool logo" />
+          <Logo src="/logo/logo-transparent-blue.png" alt="foozool logo" />
           <FormWrapper>
             <div style={{ textAlign: 'center', padding: '2rem' }}>
               <CircularProgress size={40} />

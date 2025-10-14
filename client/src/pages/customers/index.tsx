@@ -20,7 +20,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  
+  Menu,
   Card,
   CardContent,
   Alert,
@@ -30,26 +30,32 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText
+  DialogContentText,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Add,
   Edit,
   Delete,
   Search,
-
   TrendingUp,
   Business,
   People,
   Assessment,
-  Visibility,
   Dashboard,
+  NoteAdd,
+  Description,
+  Create,
 } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import { ICustomer, CustomerFilters, CustomerStats } from '@/types';
 import customersStore from '@/stores/customers.store';
 import SelectBase from '@/components/base/Select';
 import industriesStore from '@/stores/industries.store';
+import googleService from '@/services/google-service';
+import MeetingSummaryModal from '@/components/MeetingSummaryModal';
+import '@/components/MeetingSummaryModal/styles.css';
 
 const companySizeOptions = [
   { value: '1-10', label: '1-10 employees' },
@@ -109,6 +115,13 @@ const CustomersPage: React.FC = () => {
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<ICustomer | null>(null);
+
+  // Meeting summary menu
+  const [meetingSummaryMenuAnchor, setMeetingSummaryMenuAnchor] = useState<null | HTMLElement>(null);
+  const [selectedCustomerForMeeting, setSelectedCustomerForMeeting] = useState<ICustomer | null>(null);
+  
+  // Meeting summary modal
+  const [meetingSummaryModalOpen, setMeetingSummaryModalOpen] = useState(false);
 
   useEffect(() => {
     customersStore.fetchCustomers();
@@ -184,6 +197,108 @@ const CustomersPage: React.FC = () => {
     setCustomerToDelete(customer);
     setDeleteDialogOpen(true);
   };
+
+  const handleMeetingSummaryMenuOpen = (event: React.MouseEvent<HTMLElement>, customer: ICustomer) => {
+    event.stopPropagation();
+    setMeetingSummaryMenuAnchor(event.currentTarget);
+    setSelectedCustomerForMeeting(customer);
+  };
+
+  const handleMeetingSummaryMenuClose = () => {
+    setMeetingSummaryMenuAnchor(null);
+    setSelectedCustomerForMeeting(null);
+  };
+
+  const handleSelectGoogleDoc = async () => {
+    if (!selectedCustomerForMeeting) return;
+    
+    handleMeetingSummaryMenuClose();
+    
+    try {
+      // Check if Google token exists
+      const tokenStatus = await googleService.checkTokenStatus();
+      
+      if (!tokenStatus.hasToken) {
+        // No token exists, need to authenticate
+        const { redirectUrl } = await googleService.getConnectionUrl();
+        
+        // Store customer info in sessionStorage to resume after OAuth
+        sessionStorage.setItem('pendingMeetingSummary', JSON.stringify({
+          customerId: selectedCustomerForMeeting._id,
+          customerName: selectedCustomerForMeeting.name,
+        }));
+        
+        // Open Google OAuth in popup window (like settings page)
+        const authWindow = window.open(
+          redirectUrl, 
+          'googleOAuth', 
+          'width=600,height=700,scrollbars=yes,resizable=yes'
+        );
+        
+        if (authWindow) {
+          // Check if the window was closed or redirected
+          const checkWindow = setInterval(() => {
+            if (authWindow.closed) {
+              clearInterval(checkWindow);
+              // Check connection status after window closes and create doc
+              setTimeout(async () => {
+                try {
+                  const newTokenStatus = await googleService.checkTokenStatus();
+                  if (newTokenStatus.hasToken) {
+                    console.log('✅ Google authentication successful, creating new document...');
+                    const doc = await googleService.createDoc(undefined, selectedCustomerForMeeting.name);
+                    console.log('📄 Opening new Google Doc:', doc.documentUrl);
+                    window.open(doc.documentUrl, '_blank');
+                  } else {
+                    console.log('❌ Google authentication failed or was cancelled');
+                  }
+                  sessionStorage.removeItem('pendingMeetingSummary');
+                } catch (error) {
+                  console.error('Error creating Google Doc after OAuth:', error);
+                  alert('Failed to create Google Doc after authentication. Please try again.');
+                }
+              }, 1000);
+            }
+          }, 1000);
+        } else {
+          alert('Popup blocked! Please allow popups and try again.');
+        }
+        return;
+      }
+      
+      // Token exists, create Google Doc directly
+      const doc = await googleService.createDoc(undefined, selectedCustomerForMeeting.name);
+      
+      // Open the document in a new tab
+      window.open(doc.documentUrl, '_blank');
+      
+    } catch (error: any) {
+      console.error('Error creating Google Doc:', error);
+      
+      let errorMessage = 'Failed to create Google Doc. ';
+      
+      if (error.response?.data?.error?.includes('expired') || 
+          error.response?.data?.error?.includes('reconnect')) {
+        errorMessage += 'Your Google account connection has expired. Please go to Settings and reconnect your Google Drive account.';
+      } else {
+        errorMessage += 'Please try again or check your Google Drive connection.';
+      }
+      
+      alert(errorMessage);
+    }
+  };
+
+  const handleManualEntry = () => {
+    // Close the menu but keep the selected customer
+    setMeetingSummaryMenuAnchor(null);
+    setMeetingSummaryModalOpen(true);
+  };
+
+  const handleMeetingSummaryModalClose = () => {
+    setMeetingSummaryModalOpen(false);
+    setSelectedCustomerForMeeting(null);
+  };
+
 
   const filteredCustomers = customersStore.customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -485,7 +600,12 @@ const CustomersPage: React.FC = () => {
                 </TableRow>
               ) : (
                 customersStore.customers.map((customer) => (
-                  <TableRow key={customer._id} hover>
+                  <TableRow 
+                    key={customer._id} 
+                    hover
+                    onClick={() => navigate(`/customers/${customer._id}`)}
+                    sx={{ cursor: 'pointer' }}
+                  >
                     <TableCell>
                       <Typography variant="body1" fontWeight="medium">
                         {customer.name}
@@ -511,30 +631,36 @@ const CustomersPage: React.FC = () => {
                     <TableCell>
                       {customer.startDate ? new Date(customer.startDate).toLocaleDateString() : '-'}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <Box display="flex" gap={1}>
                         <Tooltip title="Customer Dashboard">
                           <IconButton
                             size="medium"
                             color="secondary"
-                            onClick={() => navigate(`/customers/${customer._id}/dashboard`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/customers/${customer._id}/dashboard`);
+                            }}
                           >
                             <Dashboard sx={{ fontSize: 22 }} />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="View Customer">
+                        <Tooltip title="Add Meeting Summary">
                           <IconButton
                             size="medium"
                             color="primary"
-                            onClick={() => navigate(`/customers/${customer._id}`)}
+                            onClick={(e) => handleMeetingSummaryMenuOpen(e, customer)}
                           >
-                            <Visibility sx={{ fontSize: 22 }} />
+                            <NoteAdd sx={{ fontSize: 22 }} />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Edit Customer">
                           <IconButton
                             size="medium"
-                            onClick={() => navigate(`/customers/edit/${customer._id}`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/customers/edit/${customer._id}`);
+                            }}
                           >
                             <Edit sx={{ fontSize: 22 }} />
                           </IconButton>
@@ -543,7 +669,10 @@ const CustomersPage: React.FC = () => {
                           <IconButton
                             size="medium"
                             color="error"
-                            onClick={() => openDeleteDialog(customer)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDeleteDialog(customer);
+                            }}
                           >
                             <Delete sx={{ fontSize: 22 }} />
                           </IconButton>
@@ -583,6 +712,33 @@ const CustomersPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Meeting Summary Menu */}
+      <Menu
+        anchorEl={meetingSummaryMenuAnchor}
+        open={Boolean(meetingSummaryMenuAnchor)}
+        onClose={handleMeetingSummaryMenuClose}
+      >
+        <MenuItem onClick={handleSelectGoogleDoc}>
+          <ListItemIcon>
+            <Description fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Google Doc</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleManualEntry}>
+          <ListItemIcon>
+            <Create fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Manual Entry</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Meeting Summary Modal */}
+      <MeetingSummaryModal
+        open={meetingSummaryModalOpen}
+        onClose={handleMeetingSummaryModalClose}
+        customer={selectedCustomerForMeeting}
+      />
     </Box>
   );
 };

@@ -17,6 +17,10 @@ import {
   IconButton,
   Tooltip,
   LinearProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   ArrowBack,
@@ -46,6 +50,7 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Line,
+  LineChart,
   AreaChart,
   Area,
 } from 'recharts';
@@ -108,6 +113,8 @@ const CustomerDashboardPage: React.FC = () => {
   const [insights, setInsights] = useState<any[]>([]);
   const [insightsAnalytics, setInsightsAnalytics] = useState<any>(null);
   const [paymentHistory, setPaymentHistory] = useState<any>(null);
+  const [activityAnalytics, setActivityAnalytics] = useState<any>(null);
+  const [selectedActivity, setSelectedActivity] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -127,8 +134,8 @@ const CustomerDashboardPage: React.FC = () => {
       setIsLoading(true);
       setError(null);
       
-      // Load dashboard data, insights analytics, and payment history in parallel
-      const [dashboardData, analyticsData, paymentData] = await Promise.all([
+      // Load dashboard data, insights analytics, payment history, and activity analytics in parallel
+      const [dashboardData, analyticsData, paymentData, activityData] = await Promise.all([
         customersStore.fetchDashboardData(customerId).then(() => customersStore.dashboardData),
         customersService.getInsightsAnalytics(customerId).catch(err => {
           console.warn('Failed to fetch insights analytics:', err);
@@ -136,6 +143,10 @@ const CustomerDashboardPage: React.FC = () => {
         }),
         customersService.getPaymentHistory(customerId).catch(err => {
           console.warn('Failed to fetch payment history:', err);
+          return null;
+        }),
+        customersService.getActivityAnalytics(customerId).catch(err => {
+          console.warn('Failed to fetch activity analytics:', err);
           return null;
         })
       ]);
@@ -149,6 +160,7 @@ const CustomerDashboardPage: React.FC = () => {
       
       setInsightsAnalytics(analyticsData);
       setPaymentHistory(paymentData);
+      setActivityAnalytics(activityData);
     } catch (err: any) {
       setError(err.message || 'Failed to load dashboard data');
     } finally {
@@ -765,6 +777,113 @@ const CustomerDashboardPage: React.FC = () => {
         </Paper>
       </Box>
 
+      {/* Charts Row 3 - Customer Activity */}
+      <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
+        {/* Customer Activity Chart */}
+        <Paper sx={{ p: 3, boxShadow: 2, flex: '0 0 calc(50% - 12px)', minWidth: '400px' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Support sx={{ fontSize: 20 }} />
+              Customer Activity Over Time
+            </Typography>
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel id="activity-select-label">Activity Type</InputLabel>
+              <Select
+                labelId="activity-select-label"
+                id="activity-select"
+                value={selectedActivity}
+                label="Activity Type"
+                onChange={(e) => setSelectedActivity(e.target.value)}
+              >
+                <MenuItem value="all">All Activities</MenuItem>
+                {activityAnalytics?.activityTypes?.map((type: string) => (
+                  <MenuItem key={type} value={type}>
+                    {type}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+          <Box sx={{ height: 250, width: '100%' }}>
+            {!activityAnalytics || activityAnalytics.chartData?.length === 0 ? (
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="h6" color="text.secondary">
+                  No Activity Data Available
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Activity data will appear here once customer activities are recorded.
+                </Typography>
+              </Box>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={activityAnalytics.chartData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeWidth={0.5} />
+                  <XAxis 
+                    dataKey="period" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    fontSize={12}
+                    stroke="#6b7280"
+                    tick={{ fill: '#6b7280' }}
+                  />
+                  <YAxis 
+                    stroke="#6b7280"
+                    tick={{ fill: '#6b7280' }}
+                  />
+                  <RechartsTooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#fff', 
+                      border: '1px solid #d1d5db',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      fontSize: '14px',
+                      zIndex: 9999
+                    }}
+                    formatter={(value, name) => [value, name as string]}
+                    labelFormatter={(label) => `Period: ${label}`}
+                  />
+                  <Legend />
+                  {selectedActivity === 'all' ? (
+                    // Show all activities
+                    activityAnalytics.activityTypes?.map((type: string, index: number) => {
+                      const colorKeys = Object.keys(COLORS.chart);
+                      const colorKey = colorKeys[index % colorKeys.length];
+                      const color = COLORS.chart[colorKey as keyof typeof COLORS.chart];
+                      return (
+                        <Line
+                          key={type}
+                          type="monotone"
+                          dataKey={type}
+                          stroke={color}
+                          strokeWidth={2}
+                          dot={{ r: 4 }}
+                          activeDot={{ r: 6 }}
+                          name={type}
+                        />
+                      );
+                    })
+                  ) : (
+                    // Show only selected activity
+                    <Line
+                      type="monotone"
+                      dataKey={selectedActivity}
+                      stroke={COLORS.primary}
+                      strokeWidth={3}
+                      dot={{ r: 5 }}
+                      activeDot={{ r: 7 }}
+                      name={selectedActivity}
+                    />
+                  )}
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </Box>
+        </Paper>
+      </Box>
 
       {/* Insights Summary */}
       <Paper sx={{ p: 3, boxShadow: 1 }}>

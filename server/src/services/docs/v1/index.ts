@@ -1,0 +1,217 @@
+import { DocumentModel, IDocument } from '../../../schemas/document.schema';
+import { IResponse } from '../../../types';
+import { UserContextManager } from '../../../context/userContext';
+
+export interface CreateDocumentRequest {
+  title: string;
+  content: string;
+  documentType?: 'meeting_summary' | 'note' | 'report' | 'other';
+  customerId?: string;
+  meetingDate?: Date;
+  meetingType?: 'customer_facing' | 'internal' | 'check_in' | 'escalation' | 'onboarding' | 'renewal' | 'other';
+  duration?: number;
+  attendees?: string[];
+  notes?: string;
+  keyPoints?: string[];
+  customerSatisfactionScore?: number;
+  tags?: string[];
+  sentiment?: 'positive' | 'neutral' | 'negative';
+}
+
+export async function createDocument(data: CreateDocumentRequest): Promise<IResponse> {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    const userId = UserContextManager.getCurrentUserId();
+    
+    if (!organizationId) {
+      return {
+        status: 400,
+        payload: { error: 'Organization ID not found in user context' },
+      };
+    }
+
+    if (!userId) {
+      return {
+        status: 400,
+        payload: { error: 'User ID not found in user context' },
+      };
+    }
+
+    const document = new DocumentModel({
+      organizationId,
+      createdBy: userId,
+      title: data.title,
+      content: data.content,
+      documentType: data.documentType || 'meeting_summary',
+      customerId: data.customerId,
+      meetingDate: data.meetingDate,
+      meetingType: data.meetingType,
+      duration: data.duration,
+      attendees: data.attendees || [],
+      notes: data.notes,
+      keyPoints: data.keyPoints || [],
+      customerSatisfactionScore: data.customerSatisfactionScore,
+      tags: data.tags || [],
+      sentiment: data.sentiment,
+    });
+
+    const savedDocument = await document.save();
+
+    return {
+      status: 201,
+      payload: savedDocument,
+    };
+  } catch (error) {
+    console.error('Error creating document:', error);
+    return {
+      status: 500,
+      payload: { error: 'Failed to create document' },
+    };
+  }
+}
+
+export async function getDocumentsByOrganization(): Promise<IResponse> {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!organizationId) {
+      return {
+        status: 400,
+        payload: { error: 'Organization ID not found in user context' },
+      };
+    }
+
+    const documents = await DocumentModel.find({ organizationId })
+      .populate('customerId', 'name')
+      .populate('createdBy', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return {
+      status: 200,
+      payload: documents,
+    };
+  } catch (error) {
+    console.error('Error fetching documents:', error);
+    return {
+      status: 500,
+      payload: { error: 'Failed to fetch documents' },
+    };
+  }
+}
+
+export async function getDocumentById(documentId: string): Promise<IResponse> {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!organizationId) {
+      return {
+        status: 400,
+        payload: { error: 'Organization ID not found in user context' },
+      };
+    }
+
+    const document = await DocumentModel.findOne({ 
+      _id: documentId, 
+      organizationId 
+    })
+      .populate('customerId', 'name')
+      .populate('createdBy', 'firstName lastName email')
+      .populate('actionItems.assignee', 'firstName lastName email')
+      .lean();
+
+    if (!document) {
+      return {
+        status: 404,
+        payload: { error: 'Document not found' },
+      };
+    }
+
+    return {
+      status: 200,
+      payload: document,
+    };
+  } catch (error) {
+    console.error('Error fetching document:', error);
+    return {
+      status: 500,
+      payload: { error: 'Failed to fetch document' },
+    };
+  }
+}
+
+export async function updateDocument(documentId: string, data: Partial<CreateDocumentRequest>): Promise<IResponse> {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!organizationId) {
+      return {
+        status: 400,
+        payload: { error: 'Organization ID not found in user context' },
+      };
+    }
+
+    const updatedDocument = await DocumentModel.findOneAndUpdate(
+      { _id: documentId, organizationId },
+      { ...data, updatedAt: new Date() },
+      { new: true }
+    )
+      .populate('customerId', 'name')
+      .populate('createdBy', 'firstName lastName email')
+      .lean();
+
+    if (!updatedDocument) {
+      return {
+        status: 404,
+        payload: { error: 'Document not found' },
+      };
+    }
+
+    return {
+      status: 200,
+      payload: updatedDocument,
+    };
+  } catch (error) {
+    console.error('Error updating document:', error);
+    return {
+      status: 500,
+      payload: { error: 'Failed to update document' },
+    };
+  }
+}
+
+export async function deleteDocument(documentId: string): Promise<IResponse> {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    
+    if (!organizationId) {
+      return {
+        status: 400,
+        payload: { error: 'Organization ID not found in user context' },
+      };
+    }
+
+    const deletedDocument = await DocumentModel.findOneAndDelete({
+      _id: documentId,
+      organizationId
+    });
+
+    if (!deletedDocument) {
+      return {
+        status: 404,
+        payload: { error: 'Document not found' },
+      };
+    }
+
+    return {
+      status: 200,
+      payload: { message: 'Document deleted successfully' },
+    };
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    return {
+      status: 500,
+      payload: { error: 'Failed to delete document' },
+    };
+  }
+}

@@ -110,4 +110,47 @@ router.get('/payment-history', authenticateJWT, hasPermission('customers:read'),
   }
 });
 
+/**
+ * GET /customers/dashboard/activity-analytics
+ * Get customer activity data aggregated by period for dashboard analytics
+ * Query params:
+ * - customerId (required): Get activities for a specific customer
+ */
+router.get('/activity-analytics', authenticateJWT, hasPermission('customers:read'), async (req, res) => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    const { customerId } = req.query;
+    
+    if (!organizationId) {
+      return res.status(400).json({ 
+        status: 400, 
+        error: 'Organization ID not found in user context' 
+      });
+    }
+
+    if (!customerId) {
+      return res.status(400).json({ 
+        status: 400, 
+        error: 'Customer ID is required' 
+      });
+    }
+
+    const { getActivityAnalytics } = await import('../../../services/customers/dashboard.service');
+    const analyticsData = await getActivityAnalytics(organizationId, customerId as string);
+
+    return res.status(200).json({
+      status: 200,
+      data: analyticsData
+    });
+
+  } catch (error: any) {
+    console.error('Error fetching activity analytics:', error);
+    return res.status(500).json({ 
+      status: 500, 
+      error: 'Failed to fetch activity analytics',
+      details: error.message 
+    });
+  }
+});
+
 export default router;

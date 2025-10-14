@@ -8,6 +8,9 @@ import { processGoogleDriveFiles } from "../../../qdrant/service";
 import { processGoogleDriveFilesSchema, searchGoogleDriveFilesSchema } from './validations';
 import { getUnprocessedGoogleFileIds } from '../../../services/google/drive/process';
 import { hasPermission } from '../../../middleware/permissions';
+import { TokenModel } from '../../../schemas/token.schema';
+import { google } from 'googleapis';
+import { setupOAuth2Client } from '../../../services/google/auth/setupClient';
 
 const router = express.Router();
 
@@ -115,6 +118,162 @@ router.post("/drive/process", authenticateJWT, hasPermission('google:connect'), 
       console.error("❌ Error processing Google Drive files:", err);
       res.status(500).json({ success: false, error: err.message });
     }
+});
+
+// Check if Google token exists for the organization
+router.get("/token-status", authenticateJWT, async (req, res) => {
+  const organizationId = req.user!.organization;
+
+  console.log('🔍 Checking Google token status for org:', organizationId);
+
+  if (!organizationId) {
+    return res.status(400).json({ error: "Missing organizationId" });
+  }
+
+  try {
+    const tokenDoc = await TokenModel.findOne({ organizationId, type: "google" });
+    console.log('🔍 Token doc found:', !!tokenDoc);
+    
+    // If token exists, test if it's still valid
+    if (tokenDoc) {
+      try {
+        await setupOAuth2Client(organizationId as string);
+        console.log('✅ Token is valid');
+      } catch (error: any) {
+        console.log('❌ Token is invalid, removing from DB');
+        await TokenModel.findOneAndDelete({ organizationId, type: "google" });
+        return res.json({ 
+          success: true, 
+          hasToken: false,
+          message: "Google token has expired. Please reconnect your Google account."
+        });
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      hasToken: !!tokenDoc,
+      message: tokenDoc ? "Google token found" : "No Google token found"
+    });
+  } catch (err: any) {
+    console.error("❌ Error checking Google token:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Create a new Google Doc
+router.post("/docs/create", authenticateJWT, hasPermission('google:connect'), async (req, res) => {
+  const organizationId = req.user!.organization;
+  const { title, customerName } = req.body;
+
+  console.log('📝 Creating Google Doc for org:', organizationId, 'customer:', customerName);
+
+  if (!organizationId) {
+    return res.status(400).json({ error: "Missing organizationId" });
+  }
+
+  try {
+    // Setup OAuth2 client with the organization's tokens
+    console.log('🔧 Setting up OAuth2 client...');
+    await setupOAuth2Client(organizationId as string);
+    console.log('✅ OAuth2 client setup complete');
+
+    // Create Google Docs API client
+    const docs = google.docs({ version: 'v1', auth: oauth2Client });
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    // Create a new document using Docs API
+    const docTitle = title || `Meeting Summary - ${customerName || 'Customer'} - ${new Date().toLocaleDateString()}`;
+    console.log('📄 Creating document with title:', docTitle);
+    
+    const createResponse = await docs.documents.create({
+      requestBody: {
+        title: docTitle,
+      },
+    });
+
+    const documentId = createResponse.data.documentId;
+    const documentUrl = `https://docs.google.com/document/d/${documentId}/edit`;
+    console.log('✅ Document created with ID:', documentId);
+
+    // Add formatted content with professional template
+    console.log('📝 Adding formatted content with professional template...');
+    await docs.documents.batchUpdate({
+      documentId: documentId!,
+      requestBody: {
+        requests: [
+          // Insert our template content
+          {
+            insertText: {
+              location: { index: 1 },
+              text: `Meeting Summary
+
+📅 Meeting Details
+Customer: ${customerName || 'N/A'}
+Date: ${new Date().toLocaleDateString()}
+Meeting Type:
+Attendees:
+Duration:
+
+---
+
+📋 Agenda
+
+•
+•
+•
+
+📝 Meeting Notes
+
+
+✅ Action Items
+
+□
+□
+□
+
+🎯 Next Steps
+
+•
+•
+•`,
+            },
+          },
+          // Format the title
+          {
+            updateTextStyle: {
+              range: {
+                startIndex: 1,
+                endIndex: 16,
+              },
+              textStyle: {
+                bold: true,
+                fontSize: { magnitude: 18, unit: 'PT' },
+              },
+              fields: 'bold,fontSize',
+            },
+          },
+        ],
+      },
+    });
+    console.log('✅ Professional template with date instructions added');
+
+    res.json({
+      success: true,
+      documentId,
+      documentUrl,
+      title: docTitle,
+    });
+  } catch (err: any) {
+    console.error("❌ Error creating Google Doc:", err);
+    console.error("❌ Error details:", {
+      message: err.message,
+      code: err.code,
+      status: err.status,
+      errors: err.errors
+    });
+    res.status(500).json({ success: false, error: err.message, details: err.errors });
+  }
 });
 
 export default router;

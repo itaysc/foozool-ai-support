@@ -1,4 +1,5 @@
 import { InsightModel } from '../../schemas/insights.schema';
+import { CustomerActivityModel } from '../../schemas/customerActivity.schema';
 
 /**
  * Helper function to calculate week-year period from date
@@ -156,6 +157,109 @@ export async function getInsightsAnalytics(
       totalInsights,
       totalPeriods,
       averageInsightsPerPeriod,
+      mostRecentPeriod,
+      mostRecentTotal
+    }
+  };
+}
+
+export interface ActivityAnalyticsResult {
+  chartData: Array<{
+    period: string;
+    [solutionName: string]: any;
+  }>;
+  activityTypes: string[];
+  periods: string[];
+  summary: {
+    totalActivities: number;
+    totalPeriods: number;
+    averageActivitiesPerPeriod: number;
+    mostRecentPeriod: string | null;
+    mostRecentTotal: number;
+  };
+}
+
+/**
+ * Get customer activity data aggregated by period for dashboard analytics
+ * @param organizationId - The organization ID to filter activities
+ * @param customerId - Customer ID to filter activities for a specific customer
+ * @returns Promise<ActivityAnalyticsResult>
+ */
+export async function getActivityAnalytics(
+  organizationId: string, 
+  customerId: string
+): Promise<ActivityAnalyticsResult> {
+  // Build query filter
+  const queryFilter: any = {
+    organizationId: organizationId,
+    customerId: customerId
+  };
+
+  // Get activities for the customer, sorted by activity date
+  const activities = await CustomerActivityModel.find(queryFilter)
+    .sort({ activityDate: 1 }) // Sort by activity date ascending
+    .lean();
+
+  // Aggregate by period and solution name
+  const activitiesByPeriod: Record<string, Record<string, number>> = {};
+  const allActivityTypes = new Set<string>();
+  
+  activities.forEach(activity => {
+    // Use activityDate or createdAt as the date for period calculation
+    const date = activity.activityDate || activity.createdAt || new Date();
+    const period = calculateWeekYear(date);
+    
+    // Get solution name as activity type
+    const activityType = activity.solutionName || 'unknown';
+    
+    // Initialize period object if it doesn't exist
+    if (!activitiesByPeriod[period]) {
+      activitiesByPeriod[period] = {};
+    }
+    
+    // Aggregate metric values by activity type
+    activitiesByPeriod[period][activityType] = (activitiesByPeriod[period][activityType] || 0) + activity.metricValue;
+    
+    // Collect all unique activity types
+    allActivityTypes.add(activityType);
+  });
+
+  // Get sorted periods and activity types
+  const periods = Object.keys(activitiesByPeriod).sort();
+  const activityTypes = Array.from(allActivityTypes).sort();
+  
+  // Create chart data
+  const chartData = periods.map(period => {
+    const dataPoint: any = {
+      period: period
+    };
+    
+    activityTypes.forEach(type => {
+      dataPoint[type] = activitiesByPeriod[period]?.[type] || 0;
+    });
+    
+    return dataPoint;
+  });
+
+  // Calculate summary statistics
+  const totalActivities = activities.length;
+  const totalPeriods = periods.length;
+  const averageActivitiesPerPeriod = totalPeriods > 0 ? Math.round(totalActivities / totalPeriods * 100) / 100 : 0;
+
+  // Get most recent period data
+  const mostRecentPeriod = periods[periods.length - 1] || null;
+  const mostRecentActivities = mostRecentPeriod ? activitiesByPeriod[mostRecentPeriod] : {};
+  const mostRecentTotal = mostRecentPeriod ? 
+    Object.values(mostRecentActivities).reduce((sum, count) => sum + count, 0) : 0;
+
+  return {
+    chartData,
+    activityTypes,
+    periods,
+    summary: {
+      totalActivities,
+      totalPeriods,
+      averageActivitiesPerPeriod,
       mostRecentPeriod,
       mostRecentTotal
     }

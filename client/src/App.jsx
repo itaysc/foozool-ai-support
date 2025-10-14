@@ -13,7 +13,18 @@ import './styles/main.css';
 const App = () => {
   return (
     <MUIThemeProvider theme={muiTheme}>
-      <SnackbarProvider maxSnack={3}>
+      <SnackbarProvider 
+        maxSnack={3}
+        autoHideDuration={3000}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        dense={false}
+        preventDuplicate={true}
+        transitionDuration={{ enter: 300, exit: 300 }}
+        hideIconVariant={false}
+      >
         <ThemeProvider theme={theme}>
           <AuthProvider>
             <MainLayoutProvider>

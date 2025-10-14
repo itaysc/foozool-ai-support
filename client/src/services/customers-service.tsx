@@ -119,6 +119,29 @@ const customersService = {
     const response = await axios.get(url);
     return response.data.data;
   },
+
+  // Get activity analytics for dashboard
+  async getActivityAnalytics(customerId: string): Promise<{
+    chartData: Array<{
+      period: string;
+      [activityType: string]: any;
+    }>;
+    activityTypes: string[];
+    periods: string[];
+    summary: {
+      totalActivities: number;
+      totalPeriods: number;
+      averageActivitiesPerPeriod: number;
+      mostRecentPeriod: string | null;
+      mostRecentTotal: number;
+    };
+  }> {
+    const params = new URLSearchParams();
+    params.append('customerId', customerId);
+    const url = getRoute('customers/dashboard/activity-analytics') + `?${params.toString()}`;
+    const response = await axios.get(url);
+    return response.data.data;
+  },
 };
 
 export default customersService;
