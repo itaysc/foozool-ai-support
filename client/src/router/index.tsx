@@ -13,6 +13,7 @@ import NewCustomer from "@/pages/customers/new";
 import EditCustomer from "@/pages/customers/edit";
 import ViewCustomer from "@/pages/customers/view";
 import CustomerDashboard from "@/pages/customers/dashboard";
+import Docs from "@/pages/docs";
 import NotFound from "@/pages/notFound";
 import Layout from "./layouts/main.layout";
 import ProtectedRoute from "./ProtectRoute";
@@ -29,6 +30,7 @@ export const supportedRoutes = [
     '/customers/:customerId',
     '/customers/:customerId/dashboard',
     '/customers/edit/:customerId',
+    '/docs',
     '/settings',
     '/invoice',
     '/invoice/:id'
@@ -55,6 +57,7 @@ const Router = () => {
                     <Route path="customers/:customerId" element={<ProtectedRoute element={<ViewCustomer />} />} />
                     <Route path="customers/:customerId/dashboard" element={<ProtectedRoute element={<CustomerDashboard />} />} />
                     <Route path="customers/edit/:customerId" element={<ProtectedRoute element={<EditCustomer />} />} />
+                    <Route path="docs" element={<ProtectedRoute element={<Docs />} />} />
                     <Route path="settings" element={<ProtectedRoute element={<Settings />} />} />
                 </Route>
                 
