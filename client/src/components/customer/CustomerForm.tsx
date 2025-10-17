@@ -23,6 +23,9 @@ import {
   MediaTab,
   FeaturesTab,
   FinancialTab,
+  CustomerSuccessTab,
+  SuccessMetricsTab,
+  CapacityGrowthTab,
   StakeholdersTab,
   BotsTab,
   SLATab,
@@ -48,7 +51,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [customer, setCustomer] = useState<ICustomer | null>(null);
-  const [tab, setTab] = useState<'general' | 'media' | 'geo' | 'features' | 'financial' | 'stakeholders' | 'bots' | 'sla'>('general');
+  const [tab, setTab] = useState<'general' | 'media' | 'geo' | 'features' | 'financial' | 'customerSuccess' | 'successMetrics' | 'capacityGrowth' | 'stakeholders' | 'bots' | 'sla'>('general');
   
   const [formData, setFormData] = useState<CreateCustomerRequest>({
     name: '',
@@ -90,6 +93,10 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
       averagePaymentDays: undefined,
       paymentReliability: 'good',
     },
+    // Success Criteria defaults
+    successCriteria: undefined,
+    // Capacity Growth defaults  
+    capacityGrowth: undefined,
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -366,12 +373,49 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         </Alert>
       )}
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
+      <Tabs 
+        value={tab} 
+        onChange={(_, v) => setTab(v)} 
+        sx={{ 
+          mb: 2,
+          '& .MuiTabs-scroller': {
+            overflowX: 'auto',
+            '&::-webkit-scrollbar': {
+              height: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              backgroundColor: 'rgba(0,0,0,0.1)',
+              borderRadius: '3px',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              borderRadius: '3px',
+              '&:hover': {
+                backgroundColor: 'rgba(0,0,0,0.5)',
+              },
+            },
+          },
+          '& .MuiTabs-flexContainer': {
+            minWidth: 'max-content',
+          },
+          '& .MuiTab-root': {
+            minWidth: 'auto',
+            paddingX: 2,
+            whiteSpace: 'nowrap',
+          }
+        }}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+      >
         <Tab label="General" value="general" />
         <Tab label="Geo" value="geo" />
         <Tab label="Media & Signals" value="media" />
         <Tab label="Customer Activity" value="features" />
         <Tab label="Financial" value="financial" />
+        <Tab label="Customer Success" value="customerSuccess" />
+        <Tab label="Success Metrics" value="successMetrics" />
+        <Tab label="Capacity & Growth" value="capacityGrowth" />
         <Tab label="SLA" value="sla" />
         {mode === 'edit' && <Tab label="Stakeholders" value="stakeholders" />}
         {mode === 'edit' && <Tab label="Bots" value="bots" />}
@@ -410,6 +454,27 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
 
         {tab === 'financial' && (
           <FinancialTab
+            formData={formData}
+            onInputChange={handleInputChange}
+          />
+        )}
+
+        {tab === 'customerSuccess' && (
+          <CustomerSuccessTab
+            formData={formData}
+            onInputChange={handleInputChange}
+          />
+        )}
+
+        {tab === 'successMetrics' && (
+          <SuccessMetricsTab
+            formData={formData}
+            onInputChange={handleInputChange}
+          />
+        )}
+
+        {tab === 'capacityGrowth' && (
+          <CapacityGrowthTab
             formData={formData}
             onInputChange={handleInputChange}
           />

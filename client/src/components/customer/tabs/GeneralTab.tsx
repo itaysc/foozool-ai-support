@@ -150,59 +150,9 @@ const GeneralTab: React.FC<GeneralTabProps> = ({
             }}
             sx={{ '& .MuiInputBase-root': { height: 40 } }}
           />
-          <TextField
-            fullWidth
-            size="small"
-            label="Account Manager"
-            value={formData.accountManager}
-            onChange={(e) => onInputChange('accountManager', e.target.value)}
-            placeholder="Name of the account manager"
-            sx={{ '& .MuiInputBase-root': { height: 40 } }}
-          />
         </Box>
       </Box>
 
-      {/* Health Assessment Section */}
-      <Box>
-        <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: 'text.primary', fontSize: '1rem' }}>
-          Health Assessment
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Health Score</InputLabel>
-            <Select
-              value={formData.healthScore?.toString() || ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (value === '') {
-                  onInputChange('healthScore', undefined);
-                } else {
-                  const numValue = Number(value);
-                  if (!isNaN(numValue)) {
-                    onInputChange('healthScore', numValue);
-                  }
-                }
-              }}
-              label="Health Score"
-              error={!!errors.healthScore}
-              sx={{ height: 40 }}
-            >
-              <MenuItem value="">
-                <em>Select health score</em>
-              </MenuItem>
-              {healthScoreOptions.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-            {errors.healthScore && (
-              <FormHelperText error>{errors.healthScore}</FormHelperText>
-            )}
-          </FormControl>
-          <Box sx={{ flex: 1 }} /> {/* Empty space to maintain layout */}
-        </Box>
-      </Box>
 
       {/* Usage Section */}
       <Box>

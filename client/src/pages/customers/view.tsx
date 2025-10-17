@@ -407,6 +407,9 @@ const CustomerViewPage: React.FC = () => {
           <Tab label="Media & Signals" />
           <Tab label="Usage & Activity" />
           <Tab label="Financial" />
+          <Tab label="Customer Success" />
+          <Tab label="Success Metrics" />
+          <Tab label="Capacity & Growth" />
           <Tab label="Stakeholders" />
           <Tab label="SLAs" />
         </Tabs>
@@ -919,8 +922,536 @@ const CustomerViewPage: React.FC = () => {
           </Box>
         </TabPanel>
 
-        {/* Stakeholders Tab */}
+        {/* Customer Success Tab */}
         <TabPanel value={currentTab} index={5}>
+          <Box sx={{ px: 3 }}>
+            <SectionTitle icon={<TrendingUp />}>Customer Health</SectionTitle>
+            
+            <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
+              <Card sx={{ flex: 1 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>Health Score</Typography>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography 
+                      variant="h3" 
+                      fontWeight="bold"
+                      color={customer.healthScore && customer.healthScore >= 70 ? 'success.main' : 
+                            customer.healthScore && customer.healthScore >= 40 ? 'warning.main' : 'error.main'}
+                    >
+                      {customer.healthScore || 'N/A'}
+                    </Typography>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">
+                        {customer.healthScore && customer.healthScore >= 70 ? 'Healthy' : 
+                         customer.healthScore && customer.healthScore >= 40 ? 'At Risk' : 'Critical'}
+                      </Typography>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={customer.healthScore || 0} 
+                        sx={{ mt: 1, height: 8, borderRadius: 4 }}
+                        color={customer.healthScore && customer.healthScore >= 70 ? 'success' : 
+                               customer.healthScore && customer.healthScore >= 40 ? 'warning' : 'error'}
+                      />
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+              
+              <Card sx={{ flex: 1 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>Account Manager</Typography>
+                  <Typography variant="h5" fontWeight="bold">
+                    {customer.accountManager || 'Not Assigned'}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
+
+            <SectionTitle icon={<Assessment />}>Success Definition & Satisfaction Benchmarks</SectionTitle>
+            
+            {customer.successCriteria?.successDefinition && (
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>Success Definition</Typography>
+                  <Typography variant="body1">
+                    {customer.successCriteria.successDefinition}
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+
+            <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
+              {customer.successCriteria?.satisfactionBenchmarks?.nps && (
+                <Card sx={{ flex: 1 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>Net Promoter Score (NPS)</Typography>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Typography variant="h4" fontWeight="bold" color="primary">
+                        {customer.successCriteria.satisfactionBenchmarks.nps.current || 'N/A'}
+                      </Typography>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Target: {customer.successCriteria.satisfactionBenchmarks.nps.target || 'N/A'}
+                        </Typography>
+                        {customer.successCriteria.satisfactionBenchmarks.nps.lastUpdated && (
+                          <Typography variant="caption" color="text.secondary">
+                            Updated: {new Date(customer.successCriteria.satisfactionBenchmarks.nps.lastUpdated).toLocaleDateString()}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+
+              {customer.successCriteria?.satisfactionBenchmarks?.csat && (
+                <Card sx={{ flex: 1 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>Customer Satisfaction (CSAT)</Typography>
+                    <Box display="flex" alignItems="center" gap={2}>
+                      <Typography variant="h4" fontWeight="bold" color="primary">
+                        {customer.successCriteria.satisfactionBenchmarks.csat.current || 'N/A'}
+                      </Typography>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          Target: {customer.successCriteria.satisfactionBenchmarks.csat.target || 'N/A'}
+                        </Typography>
+                        {customer.successCriteria.satisfactionBenchmarks.csat.lastUpdated && (
+                          <Typography variant="caption" color="text.secondary">
+                            Updated: {new Date(customer.successCriteria.satisfactionBenchmarks.csat.lastUpdated).toLocaleDateString()}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+            </Box>
+          </Box>
+        </TabPanel>
+
+        {/* Success Metrics Tab */}
+        <TabPanel value={currentTab} index={6}>
+          <Box sx={{ px: 3 }}>
+            <SectionTitle icon={<Assessment />}>Primary Business Metrics</SectionTitle>
+            
+            {customer.successCriteria?.primaryMetrics && customer.successCriteria.primaryMetrics.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+                {customer.successCriteria.primaryMetrics.map((metric, index) => (
+                  <Card key={index} sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {metric.name}
+                        </Typography>
+                        <Chip 
+                          label={metric.importance} 
+                          size="small" 
+                          color={metric.importance === 'critical' ? 'error' : 
+                                 metric.importance === 'high' ? 'warning' : 'default'}
+                        />
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Current</Typography>
+                          <Typography variant="h5" fontWeight="bold" color="primary">
+                            {metric.currentValue} {metric.unit}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Target</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {metric.targetValue} {metric.unit}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Performance</Typography>
+                          <Typography variant="h5" fontWeight="bold" 
+                            color={metric.currentValue >= metric.targetValue * 0.9 ? 'success.main' : 
+                                   metric.currentValue >= metric.targetValue * 0.7 ? 'warning.main' : 'error.main'}>
+                            {((metric.currentValue / metric.targetValue) * 100).toFixed(1)}%
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            ) : (
+              <Alert severity="info" sx={{ mb: 3 }}>No primary business metrics defined</Alert>
+            )}
+
+            <SectionTitle icon={<TrendingUp />}>Key Performance Indicators (KPIs)</SectionTitle>
+            
+            {customer.successCriteria?.kpis && customer.successCriteria.kpis.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+                {customer.successCriteria.kpis.map((kpi, index) => (
+                  <Card key={index} sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {kpi.name}
+                        </Typography>
+                        <Chip 
+                          label={kpi.measurementPeriod} 
+                          size="small" 
+                          variant="outlined"
+                        />
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Current</Typography>
+                          <Typography variant="h5" fontWeight="bold" color="primary">
+                            {kpi.currentValue} {kpi.unit}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Target</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {kpi.targetValue} {kpi.unit}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Performance</Typography>
+                          <Typography variant="h5" fontWeight="bold" 
+                            color={kpi.currentValue >= kpi.targetValue * 0.9 ? 'success.main' : 
+                                   kpi.currentValue >= kpi.targetValue * 0.7 ? 'warning.main' : 'error.main'}>
+                            {((kpi.currentValue / kpi.targetValue) * 100).toFixed(1)}%
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            ) : (
+              <Alert severity="info" sx={{ mb: 3 }}>No KPIs defined</Alert>
+            )}
+
+            <SectionTitle icon={<Assessment />}>Custom Satisfaction Metrics</SectionTitle>
+            
+            {customer.successCriteria?.satisfactionBenchmarks?.customMetrics && 
+             customer.successCriteria.satisfactionBenchmarks.customMetrics.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {customer.successCriteria.satisfactionBenchmarks.customMetrics.map((metric, index) => (
+                  <Card key={index} sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        {metric.name}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Current Score</Typography>
+                          <Typography variant="h5" fontWeight="bold" color="primary">
+                            {metric.current}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Target Score</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {metric.target}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Scale</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {metric.scale}
+                          </Typography>
+                        </Box>
+                        {metric.lastUpdated && (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">Last Updated</Typography>
+                            <Typography variant="body2" fontWeight="bold">
+                              {new Date(metric.lastUpdated).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            ) : (
+              <Alert severity="info">No custom satisfaction metrics defined</Alert>
+            )}
+          </Box>
+        </TabPanel>
+
+        {/* Capacity & Growth Tab */}
+        <TabPanel value={currentTab} index={7}>
+          <Box sx={{ px: 3 }}>
+            <SectionTitle icon={<Speed />}>Current Limits & Usage</SectionTitle>
+            
+            {customer.capacityGrowth?.currentLimits && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 4 }}>
+                {/* Storage */}
+                {customer.capacityGrowth.currentLimits.storage && (
+                  <Card sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>Storage</Typography>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Current Usage</Typography>
+                          <Typography variant="h5" fontWeight="bold" color="primary">
+                            {customer.capacityGrowth.currentLimits.storage.current} {customer.capacityGrowth.currentLimits.storage.unit}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Limit</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {customer.capacityGrowth.currentLimits.storage.limit} {customer.capacityGrowth.currentLimits.storage.unit}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Utilization</Typography>
+                          <Typography variant="h5" fontWeight="bold" 
+                            color={((customer.capacityGrowth.currentLimits.storage.current / customer.capacityGrowth.currentLimits.storage.limit) * 100) > 90 ? 'error.main' : 
+                                   ((customer.capacityGrowth.currentLimits.storage.current / customer.capacityGrowth.currentLimits.storage.limit) * 100) > 75 ? 'warning.main' : 'success.main'}>
+                            {((customer.capacityGrowth.currentLimits.storage.current / customer.capacityGrowth.currentLimits.storage.limit) * 100).toFixed(1)}%
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Users */}
+                {customer.capacityGrowth.currentLimits.users && (
+                  <Card sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>Users</Typography>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Current Users</Typography>
+                          <Typography variant="h5" fontWeight="bold" color="primary">
+                            {customer.capacityGrowth.currentLimits.users.current}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Limit</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {customer.capacityGrowth.currentLimits.users.limit}
+                          </Typography>
+                        </Box>
+                        {customer.capacityGrowth.currentLimits.users.projectedGrowth && (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">Projected Growth</Typography>
+                            <Typography variant="h5" fontWeight="bold" color="warning.main">
+                              +{customer.capacityGrowth.currentLimits.users.projectedGrowth}%
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Transactions */}
+                {customer.capacityGrowth.currentLimits.transactions && (
+                  <Card sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>Transactions (Monthly)</Typography>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Current</Typography>
+                          <Typography variant="h5" fontWeight="bold" color="primary">
+                            {customer.capacityGrowth.currentLimits.transactions.current.toLocaleString()}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Limit</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {customer.capacityGrowth.currentLimits.transactions.limit.toLocaleString()}
+                          </Typography>
+                        </Box>
+                        {customer.capacityGrowth.currentLimits.transactions.peakUsage && (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">Peak Usage</Typography>
+                            <Typography variant="h5" fontWeight="bold" color="warning.main">
+                              {customer.capacityGrowth.currentLimits.transactions.peakUsage.toLocaleString()}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* API Calls */}
+                {customer.capacityGrowth.currentLimits.apiCalls && (
+                  <Card sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>API Calls (Monthly)</Typography>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Current</Typography>
+                          <Typography variant="h5" fontWeight="bold" color="primary">
+                            {customer.capacityGrowth.currentLimits.apiCalls.current.toLocaleString()}
+                          </Typography>
+                        </Box>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Limit</Typography>
+                          <Typography variant="h5" fontWeight="bold">
+                            {customer.capacityGrowth.currentLimits.apiCalls.limit.toLocaleString()}
+                          </Typography>
+                        </Box>
+                        {customer.capacityGrowth.currentLimits.apiCalls.projectedGrowth && (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">Projected Growth</Typography>
+                            <Typography variant="h5" fontWeight="bold" color="warning.main">
+                              +{customer.capacityGrowth.currentLimits.apiCalls.projectedGrowth}%
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
+              </Box>
+            )}
+
+            <SectionTitle icon={<TrendingUp />}>Scaling Plans</SectionTitle>
+            
+            {customer.capacityGrowth?.scalingPlans && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mb: 4 }}>
+                {/* Next Upgrade */}
+                {customer.capacityGrowth.scalingPlans.nextUpgrade && (
+                  <Card sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>Next Planned Upgrade</Typography>
+                      <Box sx={{ display: 'flex', gap: 3 }}>
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">Type</Typography>
+                          <Chip 
+                            label={customer.capacityGrowth.scalingPlans.nextUpgrade.upgradeType} 
+                            size="small"
+                            color="primary"
+                          />
+                        </Box>
+                        {customer.capacityGrowth.scalingPlans.nextUpgrade.plannedDate && (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">Planned Date</Typography>
+                            <Typography variant="body1" fontWeight="bold">
+                              {new Date(customer.capacityGrowth.scalingPlans.nextUpgrade.plannedDate).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        )}
+                        {customer.capacityGrowth.scalingPlans.nextUpgrade.triggerMetric && (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">Trigger Metric</Typography>
+                            <Typography variant="body1" fontWeight="bold">
+                              {customer.capacityGrowth.scalingPlans.nextUpgrade.triggerMetric}
+                            </Typography>
+                          </Box>
+                        )}
+                        {customer.capacityGrowth.scalingPlans.nextUpgrade.triggerThreshold && (
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">Trigger Threshold</Typography>
+                            <Typography variant="body1" fontWeight="bold">
+                              {customer.capacityGrowth.scalingPlans.nextUpgrade.triggerThreshold}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Growth Projections */}
+                {customer.capacityGrowth.scalingPlans.growthProjections && 
+                 customer.capacityGrowth.scalingPlans.growthProjections.length > 0 && (
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ mb: 2 }}>Growth Projections</Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      {customer.capacityGrowth.scalingPlans.growthProjections.map((projection, index) => (
+                        <Card key={index} sx={{ boxShadow: 1 }}>
+                          <CardContent>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                              <Typography variant="h6" fontWeight="bold">
+                                {projection.metric}
+                              </Typography>
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Chip 
+                                  label={projection.timeframe} 
+                                  size="small" 
+                                  variant="outlined"
+                                />
+                                <Chip 
+                                  label={projection.confidence} 
+                                  size="small" 
+                                  color={projection.confidence === 'high' ? 'success' : 
+                                         projection.confidence === 'medium' ? 'warning' : 'default'}
+                                />
+                              </Box>
+                            </Box>
+                            <Box sx={{ display: 'flex', gap: 3 }}>
+                              <Box>
+                                <Typography variant="body2" color="text.secondary">Current</Typography>
+                                <Typography variant="h5" fontWeight="bold" color="primary">
+                                  {projection.currentValue.toLocaleString()}
+                                </Typography>
+                              </Box>
+                              <Box>
+                                <Typography variant="body2" color="text.secondary">Projected</Typography>
+                                <Typography variant="h5" fontWeight="bold" color="warning.main">
+                                  {projection.projectedValue.toLocaleString()}
+                                </Typography>
+                              </Box>
+                              <Box>
+                                <Typography variant="body2" color="text.secondary">Growth</Typography>
+                                <Typography variant="h5" fontWeight="bold" color="success.main">
+                                  +{(((projection.projectedValue - projection.currentValue) / projection.currentValue) * 100).toFixed(1)}%
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            <SectionTitle icon={<Warning />}>Resource Constraints</SectionTitle>
+            
+            {customer.capacityGrowth?.resourceConstraints && 
+             customer.capacityGrowth.resourceConstraints.length > 0 ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {customer.capacityGrowth.resourceConstraints.map((constraint, index) => (
+                  <Card key={index} sx={{ boxShadow: 2 }}>
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" fontWeight="bold">
+                          {constraint.type.charAt(0).toUpperCase() + constraint.type.slice(1)} Constraint
+                        </Typography>
+                        <Chip 
+                          label={constraint.impact} 
+                          size="small" 
+                          color={constraint.impact === 'high' ? 'error' : 
+                                 constraint.impact === 'medium' ? 'warning' : 'default'}
+                        />
+                      </Box>
+                      <Typography variant="body1" sx={{ mb: 2 }}>
+                        {constraint.description}
+                      </Typography>
+                      {constraint.resolutionTimeline && (
+                        <Typography variant="body2" color="text.secondary">
+                          Resolution Timeline: {new Date(constraint.resolutionTimeline).toLocaleDateString()}
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            ) : (
+              <Alert severity="info">No resource constraints identified</Alert>
+            )}
+          </Box>
+        </TabPanel>
+
+        {/* Stakeholders Tab */}
+        <TabPanel value={currentTab} index={8}>
           <Box sx={{ px: 3 }}>
             <SectionTitle icon={<Group />}>Stakeholders</SectionTitle>
 
@@ -979,7 +1510,7 @@ const CustomerViewPage: React.FC = () => {
         </TabPanel>
 
         {/* SLAs Tab */}
-        <TabPanel value={currentTab} index={6}>
+        <TabPanel value={currentTab} index={9}>
           <Box sx={{ px: 3 }}>
             <SectionTitle icon={<Timer />}>Service Level Agreements</SectionTitle>
 
@@ -1008,6 +1539,7 @@ const CustomerViewPage: React.FC = () => {
             )}
           </Box>
         </TabPanel>
+
       </Paper>
     </Box>
   );

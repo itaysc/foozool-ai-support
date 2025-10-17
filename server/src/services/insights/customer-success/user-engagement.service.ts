@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { UserActivityModel } from '../../../schemas/userActivity.schema';
-import { CustomerSuccessInsight } from '../../../types/customerSuccessInsight';
+import { CustomerSuccessInsight, EnhancedInsightGuidance } from '../../../types/customerSuccessInsight';
 
 /**
  * Generate user engagement insights based on individual user activity
@@ -298,7 +298,45 @@ export async function generateUserEngagementInsights(customerId: mongoose.Types.
     }
 
     // 7. Feature Discovery Analysis
-    const keyFeatures = ['Analytics Platform', 'Reporting Tool', 'API Gateway', 'Integration Hub'];
+    // First, get the actual features this customer has access to
+    const availableFeatures = await UserActivityModel.aggregate([
+      {
+        $match: {
+          customerId: customerId,
+          organizationId: organizationId,
+          timestamp: { $gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } // Last 90 days
+        }
+      },
+      {
+        $group: {
+          _id: '$solutionName',
+          usageCount: { $sum: 1 },
+          uniqueUsers: { $addToSet: '$userId' }
+        }
+      },
+      {
+        $project: {
+          featureName: '$_id',
+          usageCount: 1,
+          uniqueUserCount: { $size: '$uniqueUsers' }
+        }
+      },
+      {
+        $sort: { usageCount: -1 }
+      },
+      {
+        $limit: 10 // Top 10 most used features
+      }
+    ]);
+
+    if (availableFeatures.length === 0) {
+      // No feature usage data available
+      return insights;
+    }
+
+    const keyFeatures = availableFeatures.map(f => f.featureName);
+    
+    // Now analyze feature discovery for these actual features
     const featureDiscovery = await UserActivityModel.aggregate([
       {
         $match: {
@@ -333,15 +371,80 @@ export async function generateUserEngagementInsights(customerId: mongoose.Types.
       const avgUndiscovered = usersWithUndiscoveredFeatures.reduce((sum, user) => 
         sum + user.undiscoveredFeatures.length, 0) / usersWithUndiscoveredFeatures.length;
       
+      // Get the most commonly undiscovered features
+      const undiscoveredFeatureCounts = {};
+      usersWithUndiscoveredFeatures.forEach(user => {
+        user.undiscoveredFeatures.forEach(feature => {
+          undiscoveredFeatureCounts[feature] = (undiscoveredFeatureCounts[feature] || 0) + 1;
+        });
+      });
+      
+      const topUndiscoveredFeatures = Object.entries(undiscoveredFeatureCounts)
+        .sort(([,a], [,b]) => (b as number) - (a as number))
+        .slice(0, 3)
+        .map(([feature]) => feature);
+      
+      const featureList = topUndiscoveredFeatures.length > 0 
+        ? topUndiscoveredFeatures.join(', ') + (topUndiscoveredFeatures.length < keyFeatures.length ? ', and others' : '')
+        : 'key features';
+      
       insights.push({
         type: 'feature_discovery',
-        message: `${usersWithUndiscoveredFeatures.length} users haven't discovered key features (avg ${avgUndiscovered.toFixed(1)} undiscovered)`,
+        message: `${usersWithUndiscoveredFeatures.length} users haven't discovered ${featureList} (avg ${avgUndiscovered.toFixed(1)} undiscovered per user)`,
         severity: 'yellow',
         category: 'customer_success',
         meta: { 
           usersWithUndiscoveredFeatures: usersWithUndiscoveredFeatures.length,
           avgUndiscoveredFeatures: avgUndiscovered.toFixed(1),
-          keyFeatures
+          keyFeatures,
+          topUndiscoveredFeatures,
+          undiscoveredFeatureCounts,
+          totalAvailableFeatures: keyFeatures.length
+        },
+        guidance: {
+          summary: `${usersWithUndiscoveredFeatures.length} users haven't discovered important features like ${topUndiscoveredFeatures.slice(0, 2).join(' and ')}`,
+          whyItMatters: `Low feature discovery indicates users aren't getting full value from your solution. This can lead to reduced satisfaction, lower renewal rates, and missed upsell opportunities.`,
+          signals: [
+            `${usersWithUndiscoveredFeatures.length} users with undiscovered features`,
+            `Average of ${avgUndiscovered.toFixed(1)} undiscovered features per user`,
+            `Top undiscovered features: ${topUndiscoveredFeatures.join(', ')}`,
+            `${keyFeatures.length} total features available to this customer`
+          ],
+          recommendedActions: [
+            `Create targeted training sessions focusing on ${topUndiscoveredFeatures[0]} and ${topUndiscoveredFeatures[1] || topUndiscoveredFeatures[0]}`,
+            'Send personalized feature discovery emails to users with multiple undiscovered features',
+            'Implement in-app feature highlights and tooltips for key features',
+            'Schedule 1:1 sessions with power users to demonstrate advanced features',
+            'Create feature adoption campaigns with success metrics and rewards'
+          ],
+          investigationPath: [
+            'Review user onboarding completion rates and time-to-first-value',
+            'Analyze which user roles are most affected by feature discovery gaps',
+            'Check if there are technical barriers preventing feature access',
+            'Survey users about their awareness of available features'
+          ],
+          considerations: [
+            'Feature complexity may require additional training',
+            'Some features may not be relevant to certain user roles',
+            'Technical setup or permissions may be blocking access',
+            'Users may need more guided discovery paths'
+          ],
+          owner: 'Customer Success Manager',
+          sla: { name: 'Feature Discovery Campaign', amount: 5, unit: 'days' }
+        },
+        evidence: {
+          supportingData: {
+            totalUsersWithUndiscoveredFeatures: usersWithUndiscoveredFeatures.length,
+            averageUndiscoveredFeatures: avgUndiscovered.toFixed(1),
+            topUndiscoveredFeatures: topUndiscoveredFeatures,
+            totalAvailableFeatures: keyFeatures.length,
+            featureDiscoveryRate: `${((keyFeatures.length - avgUndiscovered) / keyFeatures.length * 100).toFixed(1)}%`
+          },
+          relatedLinks: [
+            { title: 'Feature Usage Dashboard', url: `/customers/${customerId}/features` },
+            { title: 'User Training Materials', url: `/docs/features/${topUndiscoveredFeatures[0]?.toLowerCase().replace(/\s+/g, '-')}` },
+            { title: 'Feature Adoption Best Practices', url: '/docs/feature-adoption' }
+          ]
         }
       });
     }

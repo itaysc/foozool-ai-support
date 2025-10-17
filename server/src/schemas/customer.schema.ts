@@ -1,5 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import { ICustomer } from '../types/customer';
+import { SuccessCriteriaSchema } from './successCriteria.schema';
+import { CapacityGrowthSchema } from './capacityGrowth.schema';
 
 const CustomerSchema: Schema = new Schema<ICustomer>({
   organizationId: {
@@ -157,7 +159,13 @@ const CustomerSchema: Schema = new Schema<ICustomer>({
     name: { type: String, required: true },
     amount: { type: Number, required: true, min: 1 },
     unit: { type: String, enum: ['minutes', 'hours', 'days'], required: true }
-  }]
+  }],
+  
+  // Success Criteria and KPIs
+  successCriteria: SuccessCriteriaSchema,
+  
+  // Capacity and Growth Planning
+  capacityGrowth: CapacityGrowthSchema
 }, {
   timestamps: true,
 });

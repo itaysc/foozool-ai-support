@@ -18,6 +18,8 @@ import { generateRiskAlerts } from './risk-alerts.service';
 import { generateUpsellOpportunities } from './upsell-opportunities.service';
 import { generateCustomerSuccessPrep } from './success-prep.service';
 import { generateStrategicInsights } from './strategic-insights.service';
+import { generateSuccessCriteriaInsights } from './success-criteria.service';
+import { generateCapacityGrowthInsights } from './capacity-growth.service';
 
 const { ObjectId } = mongoose.Types;
 
@@ -210,6 +212,14 @@ Return ONLY a JSON object with fields {"name": string, "amount": number, "unit":
   // Generate stakeholder-specific insights (these are persisted separately)
   const stakeholderInsights = generateStakeholderInsightsFromModule(customer);
 
+  // Generate Success Criteria insights
+  const successCriteriaInsights = generateSuccessCriteriaInsights(customer);
+  console.log(`[CS Insights] 📊 success criteria insights | count=${successCriteriaInsights.length}`);
+
+  // Generate Capacity Growth insights
+  const capacityGrowthInsights = generateCapacityGrowthInsights(customer);
+  console.log(`[CS Insights] 📈 capacity growth insights | count=${capacityGrowthInsights.length}`);
+
   // Generate Enhanced Ticket Insights
   let ticketInsights: CustomerSuccessInsight[] = [];
   try {
@@ -253,7 +263,9 @@ Return ONLY a JSON object with fields {"name": string, "amount": number, "unit":
     ...upsellInsights,
     ...successPrepInsights,
     ...strategicInsights,
-    ...ticketInsights
+    ...ticketInsights,
+    ...successCriteriaInsights,
+    ...capacityGrowthInsights
   ];
 
   try {
@@ -271,6 +283,8 @@ Return ONLY a JSON object with fields {"name": string, "amount": number, "unit":
   insights.push(...strategicInsights);
   insights.push(...stakeholderInsights);
   insights.push(...ticketInsights);
+  insights.push(...successCriteriaInsights);
+  insights.push(...capacityGrowthInsights);
 
   console.log(`[CS Insights] ✅ completed | total insights=${insights.length}`);
   return insights;

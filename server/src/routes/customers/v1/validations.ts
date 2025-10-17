@@ -1,5 +1,92 @@
 import { z } from 'zod';
 
+// Success Criteria validation schema
+const successCriteriaSchema = z.object({
+  primaryMetrics: z.array(z.object({
+    name: z.string().min(1),
+    currentValue: z.coerce.number(),
+    targetValue: z.coerce.number(),
+    unit: z.string().min(1),
+    importance: z.enum(['critical', 'high', 'medium', 'low']).optional()
+  })).optional(),
+  kpis: z.array(z.object({
+    name: z.string().min(1),
+    currentValue: z.coerce.number(),
+    targetValue: z.coerce.number(),
+    unit: z.string().min(1),
+    measurementPeriod: z.enum(['daily', 'weekly', 'monthly', 'quarterly', 'annually']).optional()
+  })).optional(),
+  satisfactionBenchmarks: z.object({
+    nps: z.object({
+      current: z.coerce.number().min(-100).max(100),
+      target: z.coerce.number().min(-100).max(100),
+      lastUpdated: z.string().datetime().optional()
+    }).optional(),
+    csat: z.object({
+      current: z.coerce.number().min(1).max(5),
+      target: z.coerce.number().min(1).max(5),
+      lastUpdated: z.string().datetime().optional()
+    }).optional(),
+    customMetrics: z.array(z.object({
+      name: z.string().min(1),
+      current: z.coerce.number(),
+      target: z.coerce.number(),
+      scale: z.string().min(1),
+      lastUpdated: z.string().datetime().optional()
+    })).optional()
+  }).optional(),
+  successDefinition: z.string().optional(),
+  lastUpdated: z.string().datetime().optional()
+}).optional();
+
+// Capacity Growth validation schema
+const capacityGrowthSchema = z.object({
+  currentLimits: z.object({
+    storage: z.object({
+      limit: z.coerce.number().min(0),
+      current: z.coerce.number().min(0),
+      unit: z.enum(['GB', 'TB']).optional()
+    }).optional(),
+    users: z.object({
+      limit: z.coerce.number().min(0),
+      current: z.coerce.number().min(0),
+      projectedGrowth: z.coerce.number().min(0).optional()
+    }).optional(),
+    transactions: z.object({
+      limit: z.coerce.number().min(0),
+      current: z.coerce.number().min(0),
+      peakUsage: z.coerce.number().min(0).optional()
+    }).optional(),
+    apiCalls: z.object({
+      limit: z.coerce.number().min(0),
+      current: z.coerce.number().min(0),
+      projectedGrowth: z.coerce.number().min(0).optional()
+    }).optional()
+  }).optional(),
+  scalingPlans: z.object({
+    nextUpgrade: z.object({
+      plannedDate: z.string().datetime(),
+      triggerMetric: z.string().min(1),
+      triggerThreshold: z.coerce.number(),
+      upgradeType: z.enum(['plan_upgrade', 'addon', 'custom']).optional()
+    }).optional(),
+    growthProjections: z.array(z.object({
+      metric: z.string().min(1),
+      currentValue: z.coerce.number(),
+      projectedValue: z.coerce.number(),
+      timeframe: z.enum(['3months', '6months', '1year']).optional(),
+      confidence: z.enum(['high', 'medium', 'low']).optional()
+    })).optional()
+  }).optional(),
+  resourceConstraints: z.array(z.object({
+    type: z.enum(['budget', 'technical', 'personnel', 'time']),
+    description: z.string().min(1),
+    impact: z.enum(['high', 'medium', 'low']).optional(),
+    resolutionTimeline: z.string().datetime().optional()
+  })).optional(),
+  lastUpdated: z.string().datetime().optional()
+}).optional();
+
 // Validation schemas for customer routes
 export const createCustomerSchema = z.object({
   name: z.string().min(1, 'Customer name is required'),
@@ -70,6 +157,12 @@ export const createCustomerSchema = z.object({
     amount: z.coerce.number().min(1),
     unit: z.enum(['minutes', 'hours', 'days'])
   })).optional(),
+  
+  // Success Criteria and KPIs
+  successCriteria: successCriteriaSchema,
+  
+  // Capacity and Growth Planning
+  capacityGrowth: capacityGrowthSchema,
 });
 
 export const updateCustomerSchema = z.object({
@@ -140,6 +233,12 @@ export const updateCustomerSchema = z.object({
     amount: z.coerce.number().min(1),
     unit: z.enum(['minutes', 'hours', 'days'])
   })).optional(),
+  
+  // Success Criteria and KPIs
+  successCriteria: successCriteriaSchema,
+  
+  // Capacity and Growth Planning
+  capacityGrowth: capacityGrowthSchema,
 });
 
 export const getCustomersQuerySchema = z.object({

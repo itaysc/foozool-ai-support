@@ -239,6 +239,7 @@ const FinancialTab: React.FC<FinancialTabProps> = ({
           <Box sx={{ flex: 2 }} /> {/* Empty space to maintain layout */}
         </Box>
       </Box>
+
     </Box>
   );
 };

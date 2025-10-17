@@ -1,3 +1,88 @@
+export interface ISuccessCriteria {
+  primaryMetrics: Array<{
+    name: string;
+    currentValue: number;
+    targetValue: number;
+    unit: string;
+    importance: 'critical' | 'high' | 'medium' | 'low';
+  }>;
+  kpis: Array<{
+    name: string;
+    currentValue: number;
+    targetValue: number;
+    unit: string;
+    measurementPeriod: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'annually';
+  }>;
+  satisfactionBenchmarks: {
+    nps?: {
+      current: number;
+      target: number;
+      lastUpdated: Date;
+    };
+    csat?: {
+      current: number;
+      target: number;
+      lastUpdated: Date;
+    };
+    customMetrics: Array<{
+      name: string;
+      current: number;
+      target: number;
+      scale: string;
+      lastUpdated: Date;
+    }>;
+  };
+  successDefinition?: string;
+  lastUpdated: Date;
+}
+
+export interface ICapacityGrowth {
+  currentLimits: {
+    storage?: {
+      limit: number;
+      current: number;
+      unit: 'GB' | 'TB';
+    };
+    users?: {
+      limit: number;
+      current: number;
+      projectedGrowth: number;
+    };
+    transactions?: {
+      limit: number;
+      current: number;
+      peakUsage: number;
+    };
+    apiCalls?: {
+      limit: number;
+      current: number;
+      projectedGrowth: number;
+    };
+  };
+  scalingPlans: {
+    nextUpgrade?: {
+      plannedDate: Date;
+      triggerMetric: string;
+      triggerThreshold: number;
+      upgradeType: 'plan_upgrade' | 'addon' | 'custom';
+    };
+    growthProjections: Array<{
+      metric: string;
+      currentValue: number;
+      projectedValue: number;
+      timeframe: '3months' | '6months' | '1year';
+      confidence: 'high' | 'medium' | 'low';
+    }>;
+  };
+  resourceConstraints: Array<{
+    type: 'budget' | 'technical' | 'personnel' | 'time';
+    description: string;
+    impact: 'high' | 'medium' | 'low';
+    resolutionTimeline?: Date;
+  }>;
+  lastUpdated: Date;
+}
+
 export interface StakeholderData {
   name: string;
   title: string;
@@ -115,6 +200,12 @@ export interface ICustomer {
     unit: 'minutes' | 'hours' | 'days';
   }>;
   
+  // Success Criteria and KPIs
+  successCriteria?: ISuccessCriteria;
+  
+  // Capacity and Growth Planning
+  capacityGrowth?: ICapacityGrowth;
+  
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -179,6 +270,12 @@ export interface CreateCustomerRequest {
     amount: number;
     unit: 'minutes' | 'hours' | 'days';
   }>;
+  
+  // Success Criteria and KPIs
+  successCriteria?: ISuccessCriteria;
+  
+  // Capacity and Growth Planning
+  capacityGrowth?: ICapacityGrowth;
 }
 
 export interface UpdateCustomerRequest {
@@ -241,6 +338,12 @@ export interface UpdateCustomerRequest {
     amount: number;
     unit: 'minutes' | 'hours' | 'days';
   }>;
+  
+  // Success Criteria and KPIs
+  successCriteria?: ISuccessCriteria;
+  
+  // Capacity and Growth Planning
+  capacityGrowth?: ICapacityGrowth;
 }
 
 export interface CustomerStats {

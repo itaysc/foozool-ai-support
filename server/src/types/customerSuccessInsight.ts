@@ -28,43 +28,42 @@ export interface CustomerSuccessInsight {
         'user_adoption' | 'power_users' | 'solution_adoption' | 'role_engagement' | 'session_engagement' |
         'activity_trend_decline' | 'feature_discovery' | 'usage_pattern_anomaly' |
         // Health score risk insights
-        'health_score_at_risk';
+        'health_score_at_risk' |
+        // Success criteria insights
+        'critical_metric_underperformance' | 'high_metric_underperformance' | 'metric_exceeding_target' |
+        'kpi_underperformance' | 'nps_below_target' | 'csat_below_target' | 'custom_satisfaction_metric_below_target' |
+        // Capacity growth insights
+        'storage_capacity_critical' | 'storage_capacity_warning' | 'user_capacity_critical' | 'user_growth_planning' |
+        'transaction_capacity_warning' | 'api_capacity_growth_planning' | 'upgrade_approaching' | 'upgrade_overdue' |
+        'significant_growth_projection' | 'constraint_resolution_approaching' | 'ongoing_high_impact_constraint';
   message: string;
   severity: 'red' | 'yellow' | 'info';
-  category: 'risk' | 'upsell' | 'customer_success' | 'strategic' | 'financial_risk' | 'opportunity';
+  category: 'risk' | 'upsell' | 'customer_success' | 'strategic' | 'financial_risk' | 'opportunity' | 'success_criteria' | 'capacity_planning' | 'capacity_risk' | 'resource_management';
   meta?: Record<string, any>;
   assignee?: string; // Optional user ID assigned to handle this insight
   status?: 'new' | 'in_progress' | 'resolved' | 'closed' | 'reopened'; // Jira-like status
   createdAt?: string; // Creation date in ISO string format
   customerId?: string; // Customer ID this insight belongs to
   customerName?: string; // Customer name for display
+  guidance?: EnhancedInsightGuidance; // Enhanced guidance for actionable insights
+  evidence?: {
+    supportingData?: Record<string, any>;
+    relatedLinks?: Array<{ title: string; url: string }>;
+  }; // Evidence and supporting data
 }
 
 // Enhanced guidance interface for better insight actionability
 export interface EnhancedInsightGuidance {
   summary: string;
-  why: string;
-  signals: string[];
-  actions: string[];
-  considerations: string;
+  whyItMatters: string;
+  signals?: string[];
+  recommendedActions: string[];
+  investigationPath?: string[];
+  considerations?: string[];
   owner: string;
-  slaDays: number;
-  investigationPath?: {
-    immediate: string[];
-    rootCause: string[];
-    customerCommunication: string[];
-    longTermSolutions: string[];
-  };
-  evidence?: {
-    ticketReferences: string[];
-    errorPatterns: string[];
-    affectedSystems: string[];
-    timePatterns: string[];
-    links?: Array<{
-      label: string;
-      url: string;
-      type: 'log' | 'dashboard' | 'documentation' | 'ticket' | 'system' | 'other';
-      description?: string;
-    }>;
+  sla: {
+    name: string;
+    amount: number;
+    unit: 'minutes' | 'hours' | 'days';
   };
 }

@@ -1,5 +1,5 @@
 import { ICustomer } from '../../types/customer';
-import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
+import { CustomerSuccessInsight, EnhancedInsightGuidance } from '../../types/customerSuccessInsight';
 
 /**
  * Generate stakeholder-specific insights
@@ -47,29 +47,86 @@ function generateDisengagementInsights(stakeholders: ICustomer['stakeholders']):
   const inactiveStakeholders = stakeholders.filter(s => s.engagement?.level === 'inactive');
   const lowEngagementStakeholders = stakeholders.filter(s => s.engagement?.level === 'low');
   
-  if (inactiveStakeholders.length > 0) {
-    const primaryInactive = inactiveStakeholders.filter(s => s.stakeholderType === 'primary');
-    if (primaryInactive.length > 0) {
-      insights.push({
-        type: 'key_stakeholder_risk',
-        message: `${primaryInactive.length} primary stakeholder(s) inactive - immediate attention required`,
-        severity: 'red',
-        category: 'risk',
-        meta: { 
-          inactivePrimaryStakeholders: primaryInactive.length,
-          stakeholderNames: primaryInactive.map(s => s.name)
+  // Process each inactive stakeholder individually for specific insights
+  inactiveStakeholders.forEach(stakeholder => {
+    const isPrimary = stakeholder.stakeholderType === 'primary';
+    const lastContact = stakeholder.engagement?.lastContact;
+    const daysSinceContact = lastContact ? Math.floor((new Date().getTime() - lastContact.getTime()) / (24 * 60 * 60 * 1000)) : 999;
+    
+    insights.push({
+      type: isPrimary ? 'key_stakeholder_risk' : 'stakeholder_disengagement',
+      message: `${isPrimary ? 'Primary' : 'Secondary'} stakeholder ${stakeholder.name} (${stakeholder.title}) is inactive`,
+      severity: isPrimary ? 'red' : (inactiveStakeholders.length > 2 ? 'yellow' : 'info'),
+      category: 'risk',
+      meta: { 
+        stakeholderName: stakeholder.name,
+        stakeholderTitle: stakeholder.title,
+        stakeholderType: stakeholder.stakeholderType,
+        department: stakeholder.department,
+        engagementLevel: stakeholder.engagement?.level,
+        usageRate: stakeholder.engagement?.usageRate || 0,
+        daysSinceContact: daysSinceContact,
+        lastContact: lastContact,
+        decisionPower: stakeholder.influence?.decisionPower || 0
+      },
+      guidance: {
+        summary: `${isPrimary ? 'Primary' : 'Secondary'} stakeholder ${stakeholder.name} is marked as inactive and requires attention`,
+        whyItMatters: `${isPrimary ? 'Primary stakeholders are critical to customer success and retention. Inactive primary stakeholders often indicate serious disengagement that can lead to churn or reduced contract value.' : 'While secondary stakeholders have less direct impact, multiple inactive stakeholders can indicate broader engagement issues that may affect overall customer satisfaction.'}`,
+        signals: [
+          `Stakeholder: ${stakeholder.name} (${stakeholder.title})`,
+          `Department: ${stakeholder.department}`,
+          `Type: ${stakeholder.stakeholderType}`,
+          `Engagement Level: ${stakeholder.engagement?.level || 'unknown'}`,
+          `Usage Rate: ${stakeholder.engagement?.usageRate || 0}%`,
+          `Decision Power: ${stakeholder.influence?.decisionPower || 0}/10`,
+          `Last Contact: ${lastContact ? lastContact.toLocaleDateString() : 'Never'}`
+        ],
+        recommendedActions: [
+          `Schedule ${isPrimary ? 'immediate' : 'planned'} meeting with ${stakeholder.name}`,
+          'Understand reasons for decreased engagement',
+          'Assess if stakeholder needs additional training or support',
+          'Review stakeholder\'s current role and responsibilities',
+          'Identify any technical or access issues',
+          'Develop re-engagement plan with specific actions'
+        ],
+        investigationPath: [
+          'Review recent support tickets from this stakeholder',
+          'Check stakeholder\'s login activity and usage patterns',
+          'Analyze stakeholder\'s team engagement patterns',
+          'Review any recent organizational changes',
+          'Assess stakeholder satisfaction with current solutions'
+        ],
+        considerations: [
+          'Stakeholder may have changed roles or left the company',
+          'Technical issues may be preventing engagement',
+          'Competitive pressure or dissatisfaction with service',
+          'Organizational restructuring affecting stakeholder priorities'
+        ],
+        owner: 'Customer Success Manager',
+        sla: { 
+          name: `${isPrimary ? 'Primary Stakeholder' : 'Stakeholder'} Re-engagement`, 
+          amount: isPrimary ? 2 : 5, 
+          unit: 'days' 
         }
-      });
-    } else {
-      insights.push({
-        type: 'stakeholder_disengagement',
-        message: `${inactiveStakeholders.length} stakeholder(s) inactive - monitor engagement`,
-        severity: inactiveStakeholders.length > 2 ? 'yellow' : 'info',
-        category: 'risk',
-        meta: { inactiveStakeholders: inactiveStakeholders.length }
-      });
-    }
-  }
+      },
+      evidence: {
+        supportingData: {
+          stakeholderName: stakeholder.name,
+          stakeholderTitle: stakeholder.title,
+          stakeholderType: stakeholder.stakeholderType,
+          department: stakeholder.department,
+          engagementLevel: stakeholder.engagement?.level || 'unknown',
+          usageRate: `${stakeholder.engagement?.usageRate || 0}%`,
+          decisionPower: `${stakeholder.influence?.decisionPower || 0}/10`,
+          daysSinceContact: daysSinceContact > 999 ? 'Never contacted' : `${daysSinceContact} days ago`
+        },
+        relatedLinks: [
+          { title: 'Stakeholder Engagement Dashboard', url: '/stakeholders/engagement' },
+          { title: 'Customer Success Playbook', url: '/resources/playbooks' }
+        ]
+      }
+    });
+  });
 
   return insights;
 }
@@ -287,30 +344,155 @@ function generateChurnRiskInsights(stakeholders: ICustomer['stakeholders']): Cus
   if (!stakeholders) return insights;
 
   const now = new Date();
-  const stakeholdersAtRisk = stakeholders.filter(s => {
-    const lastContact = s.engagement?.lastContact;
-    const daysSinceContact = lastContact ? Math.floor((now.getTime() - lastContact.getTime()) / (24 * 60 * 60 * 1000)) : 999;
-    
-    return s.stakeholderType === 'primary' && 
-           (s.engagement?.level === 'inactive' || daysSinceContact > 60);
-  });
   
-  if (stakeholdersAtRisk.length > 0) {
-    insights.push({
-      type: 'stakeholder_churn_risk',
-      message: `${stakeholdersAtRisk.length} primary stakeholder(s) at high churn risk`,
-      severity: 'red',
-      category: 'risk',
-      meta: { 
-        atRiskStakeholders: stakeholdersAtRisk.map(s => ({
-          name: s.name,
-          title: s.title,
-          lastContact: s.engagement?.lastContact,
-          engagementLevel: s.engagement?.level
-        }))
-      }
-    });
-  }
+  // Process each stakeholder individually for specific insights
+  stakeholders.forEach(stakeholder => {
+    if (stakeholder.stakeholderType !== 'primary') return;
+    
+    const lastContact = stakeholder.engagement?.lastContact;
+    const daysSinceContact = lastContact ? Math.floor((now.getTime() - lastContact.getTime()) / (24 * 60 * 60 * 1000)) : 999;
+    const isInactive = stakeholder.engagement?.level === 'inactive';
+    const isLongTimeNoContact = daysSinceContact > 60;
+    
+    // Generate specific insights for each risk factor
+    if (isInactive) {
+      insights.push({
+        type: 'stakeholder_churn_risk',
+        message: `Primary stakeholder ${stakeholder.name} (${stakeholder.title}) is marked as inactive`,
+        severity: 'red',
+        category: 'risk',
+        meta: { 
+          stakeholderName: stakeholder.name,
+          stakeholderTitle: stakeholder.title,
+          stakeholderDepartment: stakeholder.department,
+          riskReason: 'inactive_engagement',
+          engagementLevel: stakeholder.engagement?.level,
+          lastContact: stakeholder.engagement?.lastContact,
+          daysSinceContact: daysSinceContact,
+          usageRate: stakeholder.engagement?.usageRate || 0,
+          decisionPower: stakeholder.influence?.decisionPower || 0
+        },
+        guidance: {
+          summary: `Primary stakeholder ${stakeholder.name} has been marked as inactive and requires immediate attention`,
+          whyItMatters: `Primary stakeholders are critical to customer success and retention. Inactive primary stakeholders often indicate disengagement that can lead to churn or reduced contract value.`,
+          signals: [
+            `Stakeholder: ${stakeholder.name} (${stakeholder.title})`,
+            `Department: ${stakeholder.department}`,
+            `Engagement Level: ${stakeholder.engagement?.level || 'unknown'}`,
+            `Usage Rate: ${stakeholder.engagement?.usageRate || 0}%`,
+            `Decision Power: ${stakeholder.influence?.decisionPower || 0}/10`,
+            `Last Contact: ${lastContact ? lastContact.toLocaleDateString() : 'Never'}`
+          ],
+          recommendedActions: [
+            'Schedule immediate 1:1 meeting with the stakeholder',
+            'Understand reasons for decreased engagement',
+            'Assess if stakeholder needs additional training or support',
+            'Review stakeholder\'s role and responsibilities',
+            'Identify alternative stakeholders if needed',
+            'Develop re-engagement plan with specific actions'
+          ],
+          investigationPath: [
+            'Review recent support tickets from this stakeholder',
+            'Check if stakeholder has access issues or technical problems',
+            'Analyze stakeholder\'s team engagement patterns',
+            'Review any recent organizational changes',
+            'Assess stakeholder satisfaction with current solutions'
+          ],
+          considerations: [
+            'Stakeholder may have changed roles or left the company',
+            'Technical issues may be preventing engagement',
+            'Competitive pressure or dissatisfaction with service',
+            'Organizational restructuring affecting stakeholder priorities'
+          ],
+          owner: 'Customer Success Manager',
+          sla: { name: 'Primary Stakeholder Re-engagement', amount: 2, unit: 'days' }
+        },
+        evidence: {
+          supportingData: {
+            stakeholderName: stakeholder.name,
+            stakeholderTitle: stakeholder.title,
+            engagementLevel: stakeholder.engagement?.level || 'unknown',
+            usageRate: `${stakeholder.engagement?.usageRate || 0}%`,
+            decisionPower: `${stakeholder.influence?.decisionPower || 0}/10`,
+            daysSinceContact: daysSinceContact > 999 ? 'Never contacted' : `${daysSinceContact} days ago`
+          },
+          relatedLinks: [
+            { title: 'Stakeholder Engagement Dashboard', url: '/stakeholders/engagement' },
+            { title: 'Customer Success Playbook', url: '/resources/playbooks' }
+          ]
+        }
+      });
+    }
+    
+    if (isLongTimeNoContact && !isInactive) {
+      insights.push({
+        type: 'stakeholder_churn_risk',
+        message: `Primary stakeholder ${stakeholder.name} (${stakeholder.title}) hasn't been contacted in ${daysSinceContact} days`,
+        severity: 'red',
+        category: 'risk',
+        meta: { 
+          stakeholderName: stakeholder.name,
+          stakeholderTitle: stakeholder.title,
+          stakeholderDepartment: stakeholder.department,
+          riskReason: 'long_time_no_contact',
+          daysSinceContact: daysSinceContact,
+          lastContact: stakeholder.engagement?.lastContact,
+          engagementLevel: stakeholder.engagement?.level,
+          usageRate: stakeholder.engagement?.usageRate || 0,
+          decisionPower: stakeholder.influence?.decisionPower || 0
+        },
+        guidance: {
+          summary: `Primary stakeholder ${stakeholder.name} hasn't been contacted in ${daysSinceContact} days`,
+          whyItMatters: `Regular contact with primary stakeholders is essential for relationship maintenance and early risk detection. Extended periods without contact can lead to stakeholder disengagement and increased churn risk.`,
+          signals: [
+            `Stakeholder: ${stakeholder.name} (${stakeholder.title})`,
+            `Department: ${stakeholder.department}`,
+            `Days since last contact: ${daysSinceContact}`,
+            `Last contact: ${lastContact ? lastContact.toLocaleDateString() : 'Never'}`,
+            `Current engagement level: ${stakeholder.engagement?.level || 'unknown'}`,
+            `Usage rate: ${stakeholder.engagement?.usageRate || 0}%`
+          ],
+          recommendedActions: [
+            'Schedule immediate check-in call with the stakeholder',
+            'Review stakeholder\'s recent activity and engagement patterns',
+            'Assess if stakeholder needs additional support or training',
+            'Plan regular touchpoint schedule going forward',
+            'Identify any blockers preventing stakeholder engagement',
+            'Document stakeholder feedback and concerns'
+          ],
+          investigationPath: [
+            'Check stakeholder\'s recent login activity and usage patterns',
+            'Review any recent support tickets or interactions',
+            'Analyze stakeholder\'s team activity and engagement',
+            'Assess stakeholder satisfaction with current service level',
+            'Review any recent customer feedback or surveys'
+          ],
+          considerations: [
+            'Stakeholder may be on vacation or leave',
+            'Organizational changes may have affected stakeholder priorities',
+            'Technical issues may be preventing stakeholder engagement',
+            'Competitive pressure or dissatisfaction may be growing'
+          ],
+          owner: 'Customer Success Manager',
+          sla: { name: 'Stakeholder Contact Follow-up', amount: 1, unit: 'days' }
+        },
+        evidence: {
+          supportingData: {
+            stakeholderName: stakeholder.name,
+            stakeholderTitle: stakeholder.title,
+            daysSinceContact: daysSinceContact,
+            lastContactDate: lastContact ? lastContact.toLocaleDateString() : 'Never',
+            engagementLevel: stakeholder.engagement?.level || 'unknown',
+            usageRate: `${stakeholder.engagement?.usageRate || 0}%`
+          },
+          relatedLinks: [
+            { title: 'Contact History Dashboard', url: '/stakeholders/contacts' },
+            { title: 'Engagement Tracking', url: '/stakeholders/engagement' }
+          ]
+        }
+      });
+    }
+  });
 
   return insights;
 }
