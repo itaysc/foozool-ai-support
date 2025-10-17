@@ -120,6 +120,41 @@ router.post("/drive/process", authenticateJWT, hasPermission('google:connect'), 
     }
 });
 
+// List Google Docs for document selection
+router.get("/drive/documents", authenticateJWT, hasPermission('google:connect'), async (req, res) => {
+  try {
+    const organizationId = req.user!.organization;
+
+    if (!organizationId) {
+      return res.status(400).json({ error: "Missing organizationId" });
+    }
+
+    await setupOAuth2Client(organizationId.toString());
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    // Get Google Docs (Google Docs files have mimeType 'application/vnd.google-apps.document')
+    const response = await drive.files.list({
+      q: "mimeType='application/vnd.google-apps.document' and trashed=false",
+      fields: 'files(id,name,webViewLink,modifiedTime,mimeType)',
+      orderBy: 'modifiedTime desc',
+      pageSize: 100 // Limit to 100 most recent docs
+    });
+
+    const docs = response.data.files?.map(file => ({
+      id: file.id,
+      name: file.name,
+      webViewLink: file.webViewLink,
+      modifiedTime: file.modifiedTime,
+      mimeType: file.mimeType
+    })) || [];
+
+    res.json(docs);
+  } catch (err: any) {
+    console.error("❌ Error listing Google Docs:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Check if Google token exists for the organization
 router.get("/token-status", authenticateJWT, async (req, res) => {
   const organizationId = req.user!.organization;

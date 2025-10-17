@@ -49,6 +49,36 @@
       "description": "ID of an NPS upload to test with (get from upload responses)"
     },
     {
+      "key": "document_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a document to test with (get from document creation/listing responses)"
+    },
+    {
+      "key": "folder_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a folder to test with (get from folder creation/listing responses)"
+    },
+    {
+      "key": "folder_path",
+      "value": "/",
+      "type": "string",
+      "description": "Path of a folder to test with (e.g., /AWS, /test, etc.)"
+    },
+    {
+      "key": "parent_folder_id",
+      "value": "null",
+      "type": "string",
+      "description": "Parent folder ID (null for root folder, or specific folder ID)"
+    },
+    {
+      "key": "item_id",
+      "value": "",
+      "type": "string",
+      "description": "ID of a document or folder to move (get from document/folder creation responses)"
+    },
+    {
       "key": "insight_id",
       "value": "",
       "type": "string",
@@ -2307,6 +2337,332 @@
               "response": []
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "📁 Documents & Folders",
+      "item": [
+        {
+          "name": "Create Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sample Document\",\n  \"content\": \"This is a sample document content\",\n  \"documentType\": \"meeting_summary\",\n  \"folderPath\": \"/\",\n  \"customerId\": \"{{customer_id}}\",\n  \"meetingDate\": \"2024-01-15T10:00:00Z\",\n  \"meetingType\": \"customer_facing\",\n  \"duration\": 60,\n  \"attendees\": [],\n  \"notes\": \"Sample meeting notes\",\n  \"keyPoints\": [\"Key point 1\", \"Key point 2\"],\n  \"customerSatisfactionScore\": 8,\n  \"tags\": [\"important\", \"follow-up\"],\n  \"sentiment\": \"positive\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs"]
+            },
+            "description": "Create a new document"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs"]
+            },
+            "description": "Get all documents for the organization (excluding folders)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/{{document_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "{{document_id}}"]
+            },
+            "description": "Get a specific document by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Document Title\",\n  \"content\": \"Updated document content\",\n  \"customerSatisfactionScore\": 9\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/{{document_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "{{document_id}}"]
+            },
+            "description": "Update a specific document"
+          },
+          "response": []
+        },
+        {
+          "name": "Rename Document",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Document Name\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/{{document_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "{{document_id}}"]
+            },
+            "description": "Rename a document by updating its title"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/{{document_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "{{document_id}}"]
+            },
+            "description": "Delete a specific document"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Folder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderName\": \"New Folder\",\n  \"folderPath\": \"/\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/folders",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "folders"]
+            },
+            "description": "Create a new folder"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Root Folder Contents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/folders",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "folders"]
+            },
+            "description": "Get contents of root folder"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Folder Contents by Path",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/folders/{{folder_path}}?parentFolderId={{parent_folder_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "folders", "{{folder_path}}"],
+              "query": [
+                {
+                  "key": "parentFolderId",
+                  "value": "{{parent_folder_id}}",
+                  "description": "Parent folder ID (null for root folder)"
+                }
+              ]
+            },
+            "description": "Get contents of a specific folder by path"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Folder Tree",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/folders/tree",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "folders", "tree"]
+            },
+            "description": "Get complete folder tree structure"
+          },
+          "response": []
+        },
+        {
+          "name": "Rename Folder",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newName\": \"Renamed Folder\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/folders/{{folder_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "folders", "{{folder_id}}"]
+            },
+            "description": "Rename a folder"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Folder",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/folders/{{folder_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "folders", "{{folder_id}}"]
+            },
+            "description": "Delete a folder (must be empty)"
+          },
+          "response": []
+        },
+        {
+          "name": "Move Document/Folder",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"folderPath\": \"/destination/folder\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/{{item_id}}/move",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "{{item_id}}", "move"]
+            },
+            "description": "Move a document or folder to a new location"
+          },
+          "response": []
+        },
+        {
+          "name": "Fix Malformed Folder Paths",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/docs/folders/fix-paths",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "docs", "folders", "fix-paths"]
+            },
+            "description": "Fix malformed folder paths (utility endpoint)"
+          },
+          "response": []
         }
       ]
     },

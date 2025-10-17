@@ -12,12 +12,19 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 import {
   Description,
   Add,
-  Refresh
+  Refresh,
+  Link,
+  CloudQueue,
+  Create
 } from '@mui/icons-material';
 import documentsStore from '@/stores/documents.store';
 import customersStore from '@/stores/customers.store';
@@ -31,6 +38,9 @@ import FolderView from '@/components/docs/FolderView';
 import Breadcrumb from '@/components/docs/Breadcrumb';
 import FolderDialog from '@/components/docs/FolderDialog';
 import MoveDialog from '@/components/docs/MoveDialog';
+import RenameDialog from '@/components/docs/RenameDialog';
+import LinkDocumentDialog from '@/components/docs/LinkDocumentDialog';
+import GoogleDocSelectionDialog from '@/components/docs/GoogleDocSelectionDialog';
 
 const DocsPage: React.FC = () => {
   // State management
@@ -63,12 +73,21 @@ const DocsPage: React.FC = () => {
     isFolder: boolean;
     currentPath: string;
   } | null>(null);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [itemToRename, setItemToRename] = useState<{
+    id: string;
+    name: string;
+    isFolder: boolean;
+  } | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{
     id: string;
     name: string;
     isFolder: boolean;
   } | null>(null);
+  const [documentTypeMenuAnchor, setDocumentTypeMenuAnchor] = useState<null | HTMLElement>(null);
+  const [linkDocumentDialogOpen, setLinkDocumentDialogOpen] = useState(false);
+  const [googleDocDialogOpen, setGoogleDocDialogOpen] = useState(false);
 
   // Load customers on mount
   useEffect(() => {
@@ -103,6 +122,19 @@ const DocsPage: React.FC = () => {
 
   // Handle document view
   const handleViewDocument = (document: IDocument) => {
+    // If it's a Google Doc, open it in Google Drive
+    if (document.documentType === 'google_doc' && document.googleDocUrl) {
+      window.open(document.googleDocUrl, '_blank');
+      return;
+    }
+    
+    // If it's a link document, open the link
+    if (document.documentType === 'link' && document.linkUrl) {
+      window.open(document.linkUrl, '_blank');
+      return;
+    }
+    
+    // For other document types, open in our modal
     setSelectedDocument(document);
     setViewModalOpen(true);
   };
@@ -124,6 +156,16 @@ const DocsPage: React.FC = () => {
     setMoveDialogOpen(true);
   };
 
+  // Handle document rename
+  const handleRenameDocument = (document: IDocument) => {
+    setItemToRename({
+      id: document._id,
+      name: document.title,
+      isFolder: false
+    });
+    setRenameDialogOpen(true);
+  };
+
   // Handle folder create
   const handleCreateFolder = (parentPath: string) => {
     setFolderDialogParent(parentPath);
@@ -139,6 +181,16 @@ const DocsPage: React.FC = () => {
       path: folder.folderPath
     });
     setFolderDialogOpen(true);
+  };
+
+  // Handle folder rename
+  const handleRenameFolder = (folder: IDocument) => {
+    setItemToRename({
+      id: folder._id,
+      name: folder.folderName || folder.title,
+      isFolder: true
+    });
+    setRenameDialogOpen(true);
   };
 
   // Handle folder move
@@ -174,6 +226,27 @@ const DocsPage: React.FC = () => {
   const handleDocumentSaved = async () => {
     triggerRefresh();
     toast.success('Document saved successfully');
+  };
+
+  // Handle document type menu
+  const handleDocumentTypeMenuClose = () => {
+    setDocumentTypeMenuAnchor(null);
+  };
+
+  const handleManualEntry = () => {
+    handleDocumentTypeMenuClose();
+    setDocumentToEdit(null);
+    setEditModalOpen(true);
+  };
+
+  const handleLinkDocument = () => {
+    handleDocumentTypeMenuClose();
+    setLinkDocumentDialogOpen(true);
+  };
+
+  const handleGoogleDoc = () => {
+    handleDocumentTypeMenuClose();
+    setGoogleDocDialogOpen(true);
   };
 
   // Handle document delete
@@ -239,6 +312,11 @@ const DocsPage: React.FC = () => {
     setItemToMove(null);
   };
 
+  const handleCloseRenameDialog = () => {
+    setRenameDialogOpen(false);
+    setItemToRename(null);
+  };
+
   const handleCloseDeleteConfirm = () => {
     setDeleteConfirmOpen(false);
     setItemToDelete(null);
@@ -254,22 +332,29 @@ const DocsPage: React.FC = () => {
         Documents
       </Typography>
 
-          <Box display="flex" gap={2}>
-            <Button
-              variant="outlined"
-              startIcon={<Add />}
-              onClick={() => handleCreateFolder(currentPath)}
-            >
-              New Folder
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Refresh />}
-              onClick={() => window.location.reload()}
-            >
-              Refresh
-            </Button>
-          </Box>
+                  <Box display="flex" gap={2}>
+                    <Button
+                      variant="contained"
+                      startIcon={<Description />}
+                      onClick={(e) => setDocumentTypeMenuAnchor(e.currentTarget)}
+                    >
+                      New Document
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Add />}
+                      onClick={() => handleCreateFolder(currentPath)}
+                    >
+                      New Folder
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Refresh />}
+                      onClick={() => window.location.reload()}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
         </Box>
 
         {/* Breadcrumb */}
@@ -324,20 +409,22 @@ const DocsPage: React.FC = () => {
         {/* Right Content - Folder View */}
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           <Box sx={{ p: 3 }}>
-                  <FolderView
-                    currentPath={currentPath}
-                    currentFolderId={currentFolderId}
-                    onDocumentView={handleViewDocument}
-                    onDocumentEdit={handleEditDocument}
-                    onDocumentMove={handleMoveDocument}
-                    onDocumentDelete={handleDeleteDocument}
-                    onFolderCreate={handleCreateFolder}
-                    onFolderEdit={handleEditFolder}
-                    onFolderMove={handleMoveFolder}
-                    onFolderDelete={handleDeleteFolder}
-                    onFolderNavigate={handleFolderNavigate}
-                    refreshTrigger={refreshTrigger}
-                  />
+                    <FolderView
+                      currentPath={currentPath}
+                      currentFolderId={currentFolderId}
+                      onDocumentView={handleViewDocument}
+                      onDocumentEdit={handleEditDocument}
+                      onDocumentRename={handleRenameDocument}
+                      onDocumentMove={handleMoveDocument}
+                      onDocumentDelete={handleDeleteDocument}
+                      onFolderCreate={handleCreateFolder}
+                      onFolderEdit={handleEditFolder}
+                      onFolderRename={handleRenameFolder}
+                      onFolderMove={handleMoveFolder}
+                      onFolderDelete={handleDeleteFolder}
+                      onFolderNavigate={handleFolderNavigate}
+                      refreshTrigger={refreshTrigger}
+                    />
           </Box>
         </Box>
       </Box>
@@ -349,12 +436,14 @@ const DocsPage: React.FC = () => {
         document={selectedDocument}
       />
 
-      <DocumentEditModal
-        open={editModalOpen}
-        onClose={handleCloseEditModal}
-        document={documentToEdit}
-        onSaved={handleDocumentSaved}
-      />
+              <DocumentEditModal
+                open={editModalOpen}
+                onClose={handleCloseEditModal}
+                document={documentToEdit}
+                onSaved={handleDocumentSaved}
+                currentPath={currentPath}
+                currentFolderId={currentFolderId}
+              />
 
       <FolderDialog
         open={folderDialogOpen}
@@ -364,39 +453,90 @@ const DocsPage: React.FC = () => {
         editFolder={editFolder}
       />
 
-      <MoveDialog
-        open={moveDialogOpen}
-        onClose={handleCloseMoveDialog}
-        onSuccess={handleMoveDialogSuccess}
-        item={itemToMove}
-      />
+              <MoveDialog
+                open={moveDialogOpen}
+                onClose={handleCloseMoveDialog}
+                onSuccess={handleMoveDialogSuccess}
+                item={itemToMove}
+              />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteConfirmOpen} onClose={handleCloseDeleteConfirm}>
-        <DialogTitle>
-          Delete {itemToDelete?.isFolder ? 'Folder' : 'Document'}
-        </DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete "{itemToDelete?.name}"?
-            {itemToDelete?.isFolder && (
-              <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-                Note: Folders can only be deleted if they are empty.
-              </Typography>
-            )}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDeleteConfirm}>Cancel</Button>
-          <Button 
-            onClick={handleConfirmDelete} 
-            color="error" 
-            variant="contained"
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+              <RenameDialog
+                open={renameDialogOpen}
+                onClose={handleCloseRenameDialog}
+                onSuccess={handleDocumentSaved}
+                item={itemToRename}
+              />
+
+              {/* Delete Confirmation Dialog */}
+              <Dialog open={deleteConfirmOpen} onClose={handleCloseDeleteConfirm}>
+                <DialogTitle>
+                  Delete {itemToDelete?.isFolder ? 'Folder' : 'Document'}
+                </DialogTitle>
+                <DialogContent>
+                  <Typography>
+                    Are you sure you want to delete "{itemToDelete?.name}"?
+                    {itemToDelete?.isFolder && (
+                      <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                        Note: Folders can only be deleted if they are empty.
+                      </Typography>
+                    )}
+                  </Typography>
+                </DialogContent>
+                <DialogActions>
+                  <Button onClick={handleCloseDeleteConfirm}>Cancel</Button>
+                  <Button 
+                    onClick={handleConfirmDelete} 
+                    color="error" 
+                    variant="contained"
+                  >
+                    Delete
+                  </Button>
+                </DialogActions>
+              </Dialog>
+
+              {/* Document Type Selection Menu */}
+              <Menu
+                anchorEl={documentTypeMenuAnchor}
+                open={Boolean(documentTypeMenuAnchor)}
+                onClose={handleDocumentTypeMenuClose}
+              >
+                <MenuItem onClick={handleManualEntry}>
+                  <ListItemIcon>
+                    <Create fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Manual Entry</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleLinkDocument}>
+                  <ListItemIcon>
+                    <Link fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Link</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleGoogleDoc}>
+                  <ListItemIcon>
+                    <CloudQueue fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText>Google Doc</ListItemText>
+                </MenuItem>
+              </Menu>
+
+              {/* Link Document Dialog */}
+              <LinkDocumentDialog
+                open={linkDocumentDialogOpen}
+                onClose={() => setLinkDocumentDialogOpen(false)}
+                onSuccess={handleDocumentSaved}
+                currentPath={currentPath}
+                currentFolderId={currentFolderId}
+              />
+
+              {/* Google Doc Selection Dialog */}
+              <GoogleDocSelectionDialog
+                open={googleDocDialogOpen}
+                onClose={() => setGoogleDocDialogOpen(false)}
+                onSuccess={handleDocumentSaved}
+                currentPath={currentPath}
+                currentFolderId={currentFolderId}
+              />
     </Box>
   );
 };

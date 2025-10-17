@@ -14,8 +14,8 @@ export interface IDocument extends Document {
   customerId?: mongoose.Types.ObjectId | string;
   createdBy: mongoose.Types.ObjectId | string;
   title: string;
-  content?: string; // Optional for folders
-  documentType: 'meeting_summary' | 'note' | 'report' | 'other';
+  content?: string; // Optional for folders and link documents
+  documentType: 'meeting_summary' | 'note' | 'report' | 'other' | 'link' | 'google_doc';
   meetingDate?: Date;
   meetingType?: 'customer_facing' | 'internal' | 'check_in' | 'escalation' | 'onboarding' | 'renewal' | 'other';
   duration?: number;
@@ -26,6 +26,14 @@ export interface IDocument extends Document {
   actionItems: IActionItem[];
   tags?: string[];
   sentiment?: 'positive' | 'neutral' | 'negative';
+  
+  // Link document fields
+  linkUrl?: string; // For link documents
+  linkDescription?: string; // Description of the linked content
+  
+  // Google Doc fields
+  googleDocId?: string; // Google Drive document ID
+  googleDocUrl?: string; // Direct link to Google Doc
   
   // Folder structure fields
   folderPath: string;        // e.g., "/Customer Meetings/Q4 2024/"
@@ -95,7 +103,7 @@ const DocumentSchema = new Schema<IDocument>({
   },
   documentType: { 
     type: String, 
-    enum: ['meeting_summary', 'note', 'report', 'other'],
+    enum: ['meeting_summary', 'note', 'report', 'other', 'link', 'google_doc'],
     required: true,
     default: 'meeting_summary'
   },
@@ -130,6 +138,22 @@ const DocumentSchema = new Schema<IDocument>({
   sentiment: { 
     type: String, 
     enum: ['positive', 'neutral', 'negative']
+  },
+  
+  // Link document fields
+  linkUrl: { 
+    type: String   // For link documents
+  },
+  linkDescription: { 
+    type: String   // Description of the linked content
+  },
+  
+  // Google Doc fields
+  googleDocId: { 
+    type: String   // Google Drive document ID
+  },
+  googleDocUrl: { 
+    type: String   // Direct link to Google Doc
   },
   
   // Folder structure fields

@@ -52,6 +52,8 @@ interface DocumentEditModalProps {
   onClose: () => void;
   document: IDocument | null;
   onSaved?: () => void;
+  currentPath?: string;
+  currentFolderId?: string | null;
 }
 
 const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
@@ -59,6 +61,8 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
   onClose,
   document,
   onSaved,
+  currentPath = '/',
+  currentFolderId = null,
 }) => {
   const [title, setTitle] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -263,28 +267,44 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
   }, [editor, document, open]);
 
   const handleSave = async () => {
-    if (!editor || !title.trim() || !document) {
+    if (!editor || !title.trim()) {
       return;
     }
 
     try {
       const content = editor.getHTML();
 
-      await documentsStore.updateDocument(document._id, {
-        title,
-        content,
-      });
+      if (document) {
+        // Update existing document
+        await documentsStore.updateDocument(document._id, {
+          title,
+          content,
+        });
+        toast.success('Document updated successfully!', {
+          autoHideDuration: 3000,
+          persist: false,
+        });
+      } else {
+        // Create new document
+        await documentsStore.createDocument({
+          title,
+          content,
+          documentType: 'note',
+          folderPath: currentPath,
+          parentFolderId: currentFolderId,
+        });
+        toast.success('Document created successfully!', {
+          autoHideDuration: 3000,
+          persist: false,
+        });
+      }
 
-      toast.success('Document updated successfully!', {
-        autoHideDuration: 3000,
-        persist: false,
-      });
       setHasUnsavedChanges(false);
       onSaved?.();
       onClose();
     } catch (error: any) {
-      console.error('Error updating document:', error);
-      toast.error(error.response?.data?.error || 'Failed to update document. Please try again.', {
+      console.error('Error saving document:', error);
+      toast.error(error.response?.data?.error || 'Failed to save document. Please try again.', {
         autoHideDuration: 5000,
         persist: false,
       });
@@ -333,26 +353,32 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
             pb: 2,
           }}
         >
-          <TextField
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              setHasUnsavedChanges(true);
-            }}
-            placeholder="Document Title"
-            variant="standard"
-            fullWidth
-            sx={{ mr: 2 }}
-            InputProps={{
-              style: { fontSize: '1.25rem', fontWeight: 500 },
-            }}
-          />
+          <Typography variant="h6">
+            {document ? 'Edit Document' : 'Create New Document'}
+          </Typography>
           <IconButton edge="end" color="inherit" onClick={handleClose} aria-label="close">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
 
         <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column' }}>
+          {/* Document Title */}
+          <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <TextField
+              value={title}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                setHasUnsavedChanges(true);
+              }}
+              placeholder="Document Title"
+              variant="standard"
+              fullWidth
+              InputProps={{
+                style: { fontSize: '1.25rem', fontWeight: 500 },
+              }}
+            />
+          </Box>
+          
           {/* Editor Toolbar */}
           <Toolbar
             sx={{
@@ -453,7 +479,12 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
             startIcon={documentsStore.isSaving ? <CircularProgress size={20} /> : <SaveIcon />}
             disabled={!title.trim() || documentsStore.isSaving}
           >
-            {documentsStore.isSaving ? 'Saving...' : 'Save Changes'}
+            {documentsStore.isSaving 
+              ? 'Saving...' 
+              : document 
+                ? 'Save Changes' 
+                : 'Create Document'
+            }
           </Button>
         </DialogActions>
       </Dialog>

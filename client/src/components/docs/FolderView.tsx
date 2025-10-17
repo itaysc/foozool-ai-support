@@ -18,8 +18,6 @@ import {
   FormControl,
   InputLabel,
   Select,
-  MenuList,
-  Paper,
   List,
   ListItem,
   ListItemButton,
@@ -31,8 +29,6 @@ import {
   Folder,
   Description,
   Search,
-  FilterList,
-  Sort,
   MoreVert,
   Edit,
   Delete,
@@ -42,7 +38,10 @@ import {
   GridView,
   ViewList,
   SortByAlpha,
-  DateRange
+  DateRange,
+  CloudQueue,
+  Link,
+  DriveFileRenameOutline
 } from '@mui/icons-material';
 import { IDocument } from '@/services/documents-service';
 import documentsService from '@/services/documents-service';
@@ -54,10 +53,12 @@ interface FolderViewProps {
   currentFolderId?: string | null;
   onDocumentView: (document: IDocument) => void;
   onDocumentEdit: (document: IDocument) => void;
+  onDocumentRename: (document: IDocument) => void;
   onDocumentMove: (document: IDocument) => void;
   onDocumentDelete: (document: IDocument) => void;
   onFolderCreate: (parentPath: string) => void;
   onFolderEdit: (folder: IDocument) => void;
+  onFolderRename: (folder: IDocument) => void;
   onFolderMove: (folder: IDocument) => void;
   onFolderDelete: (folder: IDocument) => void;
   onFolderNavigate: (folder: IDocument) => void;
@@ -73,10 +74,12 @@ const FolderView: React.FC<FolderViewProps> = ({
   currentFolderId,
   onDocumentView,
   onDocumentEdit,
+  onDocumentRename,
   onDocumentMove,
   onDocumentDelete,
   onFolderCreate,
   onFolderEdit,
+  onFolderRename,
   onFolderMove,
   onFolderDelete,
   onFolderNavigate,
@@ -153,6 +156,21 @@ const FolderView: React.FC<FolderViewProps> = ({
         return 'success';
       default:
         return 'default';
+    }
+  };
+
+  const getDocumentIcon = (document: IDocument) => {
+    if (document.isFolder) {
+      return <Folder color="primary" />;
+    }
+    
+    switch (document.documentType) {
+      case 'google_doc':
+        return <CloudQueue color="primary" />;
+      case 'link':
+        return <Link color="primary" />;
+      default:
+        return <Description color="action" />;
     }
   };
 
@@ -237,6 +255,10 @@ const FolderView: React.FC<FolderViewProps> = ({
         if (item.isFolder) onFolderEdit(item);
         else onDocumentEdit(item);
         break;
+      case 'rename':
+        if (item.isFolder) onFolderRename(item);
+        else onDocumentRename(item);
+        break;
       case 'move':
         if (item.isFolder) onFolderMove(item);
         else onDocumentMove(item);
@@ -256,40 +278,59 @@ const FolderView: React.FC<FolderViewProps> = ({
       {filteredAndSortedItems.map((item) => (
         // @ts-ignore
         <Grid item key={item._id} xs={12} sm={6} md={4} lg={3}>
-          <Card
-            sx={{
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: 4,
-              },
-            }}
-            onContextMenu={(e) => handleContextMenu(e, item)}
-            onClick={() => {
-              if (item.isFolder) {
-                onFolderNavigate(item);
-              } else {
-                onDocumentView(item);
-              }
-            }}
+          <Tooltip 
+            title={
+              item.isFolder 
+                ? `Open folder: ${item.title}`
+                : item.documentType === 'google_doc' 
+                  ? `Open in Google Docs: ${item.title}`
+                  : item.documentType === 'link'
+                    ? `Open link: ${item.title}`
+                    : `View document: ${item.title}`
+            }
+            placement="top"
           >
-            <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-              <Box display="flex" alignItems="flex-start" mb={1}>
-                {item.isFolder ? (
-                  <Folder color="primary" sx={{ mr: 1, mt: 0.5 }} />
-                ) : (
-                  <Description color="action" sx={{ mr: 1, mt: 0.5 }} />
-                )}
-                <Box flexGrow={1}>
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 2,
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 6,
+                  borderColor: 'primary.main',
+                },
+              }}
+              onContextMenu={(e) => handleContextMenu(e, item)}
+              onClick={() => {
+                if (item.isFolder) {
+                  onFolderNavigate(item);
+                } else {
+                  onDocumentView(item);
+                }
+              }}
+            >
+            <CardContent sx={{ flexGrow: 1, pb: 2, px: 2 }}>
+              <Box display="flex" alignItems="flex-start" mb={1.5}>
+                <Box sx={{ mr: 1.5, mt: 0.5 }}>
+                  {getDocumentIcon(item)}
+                </Box>
+                <Box flexGrow={1} minWidth={0}>
                   <Typography
-                    variant="subtitle2"
+                    variant="subtitle1"
                     noWrap
                     title={item.title}
-                    sx={{ fontWeight: 600, mb: 0.5 }}
+                    sx={{ 
+                      fontWeight: 600, 
+                      mb: 1,
+                      fontSize: '1rem',
+                      lineHeight: 1.3
+                    }}
                   >
                     {item.title}
                   </Typography>
@@ -298,9 +339,32 @@ const FolderView: React.FC<FolderViewProps> = ({
                       label={item.documentType.replace('_', ' ')}
                       size="small"
                       color={getDocumentTypeColor(item.documentType)}
-                      sx={{ mb: 1 }}
+                      sx={{ mb: 1.5 }}
                     />
                   )}
+                  
+                  {/* Customer badge - only show if customer exists and is valid */}
+                  {item.customerId && getCustomerName(item.customerId) !== 'Unknown Customer' && (
+                    <Chip
+                      label={getCustomerName(item.customerId)}
+                      size="small"
+                      variant="outlined"
+                      color="primary"
+                      sx={{ mb: 1.5, mr: 1 }}
+                    />
+                  )}
+                  
+                  {/* Date - smaller font */}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ 
+                      fontSize: '0.75rem',
+                      display: 'block'
+                    }}
+                  >
+                    Created: {formatDate(item.createdAt)}
+                  </Typography>
                 </Box>
                 <IconButton
                   size="small"
@@ -313,24 +377,16 @@ const FolderView: React.FC<FolderViewProps> = ({
                 </IconButton>
               </Box>
 
-              {!item.isFolder && (
-                <Box>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Customer: {getCustomerName(item.customerId)}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    Created: {formatDate(item.createdAt)}
+              {item.isFolder && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {item.childrenCount || 0} item{(item.childrenCount || 0) !== 1 ? 's' : ''}
                   </Typography>
                 </Box>
               )}
-
-              {item.isFolder && (
-                <Typography variant="caption" color="text.secondary">
-                  {item.childrenCount || 0} item{(item.childrenCount || 0) !== 1 ? 's' : ''}
-                </Typography>
-              )}
             </CardContent>
-          </Card>
+            </Card>
+          </Tooltip>
         </Grid>
       ))}
     </Grid>
@@ -354,59 +410,80 @@ const FolderView: React.FC<FolderViewProps> = ({
             }}
             sx={{
               borderRadius: 1,
-              mb: 0.5,
+              mb: 0.25,
+              alignItems: 'center',
+              py: 0.75,
+              minHeight: 48,
               '&:hover': {
                 backgroundColor: 'action.hover',
               },
             }}
           >
-            <ListItemIcon>
-              {item.isFolder ? (
-                <Folder color="primary" />
-              ) : (
-                <Description color="action" />
-              )}
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              {getDocumentIcon(item)}
             </ListItemIcon>
             
-            <ListItemText
-              primary={item.title}
-              secondary={
-                <Box>
-                  {!item.isFolder && (
-                    <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+            <Box sx={{ flex: 1, minWidth: 0, mr: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    fontWeight: 500, 
+                    fontSize: '0.875rem',
+                    flex: 1,
+                    minWidth: 0,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {item.title}
+                </Typography>
+                
+                {/* Document type and customer chips - inline */}
+                {!item.isFolder && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                    <Chip
+                      label={item.documentType.replace('_', ' ')}
+                      size="small"
+                      color={getDocumentTypeColor(item.documentType)}
+                      sx={{ height: 20, fontSize: '0.6875rem' }}
+                    />
+                    {item.customerId && getCustomerName(item.customerId) !== 'Unknown Customer' && (
                       <Chip
-                        label={item.documentType.replace('_', ' ')}
+                        label={getCustomerName(item.customerId)}
                         size="small"
-                        color={getDocumentTypeColor(item.documentType)}
+                        variant="outlined"
+                        color="primary"
+                        sx={{ height: 20, fontSize: '0.6875rem' }}
                       />
-                      <Typography variant="caption" color="text.secondary">
-                        {getCustomerName(item.customerId)}
-                      </Typography>
-                    </Box>
-                  )}
-                  <Typography variant="caption" color="text.secondary">
-                    Created: {formatDate(item.createdAt)}
-                    {item.isFolder && ` • ${item.childrenCount || 0} items`}
-                  </Typography>
-                </Box>
-              }
-              primaryTypographyProps={{
-                fontWeight: 600,
-              }}
-            />
-
-            <ListItemSecondaryAction>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleContextMenu(e, item);
-                }}
+                    )}
+                  </Box>
+                )}
+              </Box>
+              
+              <Typography 
+                variant="caption" 
+                color="text.secondary"
+                sx={{ fontSize: '0.6875rem' }}
               >
-                <MoreVert fontSize="small" />
-              </IconButton>
-            </ListItemSecondaryAction>
+                Created: {formatDate(item.createdAt)}
+                {item.isFolder && ` • ${item.childrenCount || 0} items`}
+              </Typography>
+            </Box>
           </ListItemButton>
+          
+          <ListItemSecondaryAction>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleContextMenu(e, item);
+              }}
+            >
+              <MoreVert fontSize="small" />
+            </IconButton>
+          </ListItemSecondaryAction>
         </ListItem>
       ))}
     </List>
@@ -548,6 +625,10 @@ const FolderView: React.FC<FolderViewProps> = ({
         <MenuItem onClick={() => handleContextMenuAction('edit', contextMenu?.item!)}>
           <Edit fontSize="small" sx={{ mr: 1 }} />
           Edit
+        </MenuItem>
+        <MenuItem onClick={() => handleContextMenuAction('rename', contextMenu?.item!)}>
+          <DriveFileRenameOutline fontSize="small" sx={{ mr: 1 }} />
+          Rename
         </MenuItem>
         <MenuItem onClick={() => handleContextMenuAction('move', contextMenu?.item!)}>
           <DriveFileMove fontSize="small" sx={{ mr: 1 }} />

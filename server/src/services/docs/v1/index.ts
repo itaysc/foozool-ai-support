@@ -4,8 +4,8 @@ import { UserContextManager } from '../../../context/userContext';
 
 export interface CreateDocumentRequest {
   title: string;
-  content?: string; // Optional for folders
-  documentType?: 'meeting_summary' | 'note' | 'report' | 'other';
+  content?: string; // Optional for folders and link documents
+  documentType?: 'meeting_summary' | 'note' | 'report' | 'other' | 'link' | 'google_doc';
   customerId?: string;
   meetingDate?: Date;
   meetingType?: 'customer_facing' | 'internal' | 'check_in' | 'escalation' | 'onboarding' | 'renewal' | 'other';
@@ -16,6 +16,14 @@ export interface CreateDocumentRequest {
   customerSatisfactionScore?: number;
   tags?: string[];
   sentiment?: 'positive' | 'neutral' | 'negative';
+  
+  // Link document fields
+  linkUrl?: string;
+  linkDescription?: string;
+  
+  // Google Doc fields
+  googleDocId?: string;
+  googleDocUrl?: string;
   
   // Folder structure fields
   folderPath?: string;        // e.g., "/Customer Meetings/Q4 2024/"
@@ -65,7 +73,7 @@ export async function createDocument(data: CreateDocumentRequest): Promise<IResp
       organizationId,
       createdBy: userId,
       title: data.title,
-      content: data.content || '', // Default to empty string for folders
+      content: data.content || '', // Default to empty string for folders and link documents
       documentType: data.documentType || 'meeting_summary',
       customerId: data.customerId,
       meetingDate: data.meetingDate,
@@ -77,6 +85,14 @@ export async function createDocument(data: CreateDocumentRequest): Promise<IResp
       customerSatisfactionScore: data.customerSatisfactionScore,
       tags: data.tags || [],
       sentiment: data.sentiment,
+      
+      // Link document fields
+      linkUrl: data.linkUrl,
+      linkDescription: data.linkDescription,
+      
+      // Google Doc fields
+      googleDocId: data.googleDocId,
+      googleDocUrl: data.googleDocUrl,
       
       // Folder structure fields
       folderPath,

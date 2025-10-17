@@ -5,8 +5,8 @@ const getRoute = (endpoint: string) => `${config.apiUrl}/${endpoint}`;
 
 export interface CreateDocumentRequest {
   title: string;
-  content?: string; // Optional for folders
-  documentType?: 'meeting_summary' | 'note' | 'report' | 'other';
+  content?: string; // Optional for folders and link documents
+  documentType?: 'meeting_summary' | 'note' | 'report' | 'other' | 'link' | 'google_doc';
   customerId?: string;
   meetingDate?: Date;
   meetingType?: 'customer_facing' | 'internal' | 'check_in' | 'escalation' | 'onboarding' | 'renewal' | 'other';
@@ -17,6 +17,14 @@ export interface CreateDocumentRequest {
   customerSatisfactionScore?: number;
   tags?: string[];
   sentiment?: 'positive' | 'neutral' | 'negative';
+  
+  // Link document fields
+  linkUrl?: string;
+  linkDescription?: string;
+  
+  // Google Doc fields
+  googleDocId?: string;
+  googleDocUrl?: string;
   
   // Folder structure fields
   folderPath?: string;        // e.g., "/Customer Meetings/Q4 2024/"
@@ -31,7 +39,7 @@ export interface IDocument {
   customerId?: string;
   createdBy: string;
   title: string;
-  content?: string; // Optional for folders
+  content?: string; // Optional for folders and link documents
   documentType: string;
   meetingDate?: Date;
   meetingType?: string;
@@ -42,6 +50,14 @@ export interface IDocument {
   customerSatisfactionScore?: number;
   tags: string[];
   sentiment?: string;
+  
+  // Link document fields
+  linkUrl?: string;
+  linkDescription?: string;
+  
+  // Google Doc fields
+  googleDocId?: string;
+  googleDocUrl?: string;
   
   // Folder structure fields
   folderPath: string;        // e.g., "/Customer Meetings/Q4 2024/"
