@@ -14,7 +14,7 @@ export interface IDocument extends Document {
   customerId?: mongoose.Types.ObjectId | string;
   createdBy: mongoose.Types.ObjectId | string;
   title: string;
-  content: string;
+  content?: string; // Optional for folders
   documentType: 'meeting_summary' | 'note' | 'report' | 'other';
   meetingDate?: Date;
   meetingType?: 'customer_facing' | 'internal' | 'check_in' | 'escalation' | 'onboarding' | 'renewal' | 'other';
@@ -26,6 +26,17 @@ export interface IDocument extends Document {
   actionItems: IActionItem[];
   tags?: string[];
   sentiment?: 'positive' | 'neutral' | 'negative';
+  
+  // Folder structure fields
+  folderPath: string;        // e.g., "/Customer Meetings/Q4 2024/"
+  parentFolderId?: mongoose.Types.ObjectId | string; // For easier queries
+  isFolder: boolean;         // true for folders, false for documents
+  folderName?: string;       // Only for folders
+  
+  // Metadata for folders
+  childrenCount?: number;    // Number of items in folder
+  lastModified?: Date;       // When folder contents were last modified
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,7 +89,9 @@ const DocumentSchema = new Schema<IDocument>({
   },
   content: { 
     type: String, 
-    required: true 
+    required: function() {
+      return !this.isFolder; // Content is only required for documents, not folders
+    }
   },
   documentType: { 
     type: String, 
@@ -117,19 +130,46 @@ const DocumentSchema = new Schema<IDocument>({
   sentiment: { 
     type: String, 
     enum: ['positive', 'neutral', 'negative']
+  },
+  
+  // Folder structure fields
+  folderPath: { 
+    type: String, 
+    default: '/'  // Root folder
+  },
+  parentFolderId: { 
+    type: Schema.Types.ObjectId, 
+    ref: 'Document'  // Self-reference for folders
+  },
+  isFolder: { 
+    type: Boolean, 
+    default: false
+  },
+  folderName: { 
+    type: String   // Only populated for folders
+  },
+  
+  // Folder metadata (only for folders)
+  childrenCount: { 
+    type: Number, 
+    default: 0 
+  },
+  lastModified: { 
+    type: Date, 
+    default: Date.now 
   }
 }, { 
   timestamps: true,
   collection: 'documents'
 });
 
-// Indexes for efficient querying
-DocumentSchema.index({ organizationId: 1, createdAt: -1 });
-DocumentSchema.index({ customerId: 1, createdAt: -1 });
-DocumentSchema.index({ documentType: 1 });
-DocumentSchema.index({ 'actionItems.assignee': 1, 'actionItems.status': 1 });
-DocumentSchema.index({ createdBy: 1 });
-DocumentSchema.index({ meetingType: 1 });
+DocumentSchema.index({ organizationId: 1, parentFolderId: 1, isFolder: -1, title: 1 }); // Main folder contents query with sort
+DocumentSchema.index({ organizationId: 1, isFolder: 1, createdAt: -1 }); // Documents vs folders with creation date sort
+DocumentSchema.index({ organizationId: 1, folderPath: 1 }); // Find folder by path
+DocumentSchema.index({ _id: 1, organizationId: 1 }); // Get by ID with org check
+DocumentSchema.index({ organizationId: 1, createdAt: -1 }); // General document listing
+DocumentSchema.index({ customerId: 1, createdAt: -1 }); // Customer-specific documents
+DocumentSchema.index({ 'actionItems.assignee': 1, 'actionItems.status': 1 }); // Action items
 
 export const DocumentModel: Model<IDocument> =
   mongoose.models.Document || mongoose.model<IDocument>('Document', DocumentSchema);

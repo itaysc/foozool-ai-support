@@ -4,7 +4,7 @@ import { UserContextManager } from '../../../context/userContext';
 
 export interface CreateDocumentRequest {
   title: string;
-  content: string;
+  content?: string; // Optional for folders
   documentType?: 'meeting_summary' | 'note' | 'report' | 'other';
   customerId?: string;
   meetingDate?: Date;
@@ -16,6 +16,12 @@ export interface CreateDocumentRequest {
   customerSatisfactionScore?: number;
   tags?: string[];
   sentiment?: 'positive' | 'neutral' | 'negative';
+  
+  // Folder structure fields
+  folderPath?: string;        // e.g., "/Customer Meetings/Q4 2024/"
+  parentFolderId?: string;    // For easier queries
+  isFolder?: boolean;         // true for folders, false for documents
+  folderName?: string;        // Only for folders
 }
 
 export async function createDocument(data: CreateDocumentRequest): Promise<IResponse> {
@@ -37,11 +43,29 @@ export async function createDocument(data: CreateDocumentRequest): Promise<IResp
       };
     }
 
+    // Build folder path for documents (default to root if not specified)
+    const folderPath = data.folderPath || '/';
+    const isFolder = data.isFolder || false;
+    
+    // Find parent folder ID if folderPath is not root
+    let parentFolderId: any = null;
+    if (folderPath !== '/' && data.parentFolderId) {
+      parentFolderId = data.parentFolderId;
+    } else if (folderPath !== '/') {
+      // Find parent folder by path
+      const parentFolder = await DocumentModel.findOne({
+        organizationId,
+        folderPath: folderPath.substring(0, folderPath.lastIndexOf('/')) || '/',
+        isFolder: true
+      });
+      parentFolderId = parentFolder?._id as any;
+    }
+
     const document = new DocumentModel({
       organizationId,
       createdBy: userId,
       title: data.title,
-      content: data.content,
+      content: data.content || '', // Default to empty string for folders
       documentType: data.documentType || 'meeting_summary',
       customerId: data.customerId,
       meetingDate: data.meetingDate,
@@ -53,9 +77,28 @@ export async function createDocument(data: CreateDocumentRequest): Promise<IResp
       customerSatisfactionScore: data.customerSatisfactionScore,
       tags: data.tags || [],
       sentiment: data.sentiment,
+      
+      // Folder structure fields
+      folderPath,
+      parentFolderId,
+      isFolder,
+      folderName: isFolder ? data.folderName || data.title : undefined,
+      childrenCount: isFolder ? 0 : undefined,
+      lastModified: isFolder ? new Date() : undefined,
     });
 
     const savedDocument = await document.save();
+
+    // Update parent folder's children count if this is a document (not a folder)
+    if (!isFolder && parentFolderId) {
+      await DocumentModel.updateOne(
+        { _id: parentFolderId },
+        { 
+          $inc: { childrenCount: 1 },
+          lastModified: new Date()
+        }
+      );
+    }
 
     return {
       status: 201,
@@ -81,7 +124,10 @@ export async function getDocumentsByOrganization(): Promise<IResponse> {
       };
     }
 
-    const documents = await DocumentModel.find({ organizationId })
+    const documents = await DocumentModel.find({ 
+      organizationId,
+      isFolder: false // Only return documents, not folders
+    })
       .populate('customerId', 'name')
       .populate('createdBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
@@ -201,6 +247,17 @@ export async function deleteDocument(documentId: string): Promise<IResponse> {
         status: 404,
         payload: { error: 'Document not found' },
       };
+    }
+
+    // Update parent folder's children count if this was a document (not a folder)
+    if (!deletedDocument.isFolder && deletedDocument.parentFolderId) {
+      await DocumentModel.updateOne(
+        { _id: deletedDocument.parentFolderId },
+        { 
+          $inc: { childrenCount: -1 },
+          lastModified: new Date()
+        }
+      );
     }
 
     return {

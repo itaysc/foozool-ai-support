@@ -5,7 +5,7 @@ const getRoute = (endpoint: string) => `${config.apiUrl}/${endpoint}`;
 
 export interface CreateDocumentRequest {
   title: string;
-  content: string;
+  content?: string; // Optional for folders
   documentType?: 'meeting_summary' | 'note' | 'report' | 'other';
   customerId?: string;
   meetingDate?: Date;
@@ -17,6 +17,12 @@ export interface CreateDocumentRequest {
   customerSatisfactionScore?: number;
   tags?: string[];
   sentiment?: 'positive' | 'neutral' | 'negative';
+  
+  // Folder structure fields
+  folderPath?: string;        // e.g., "/Customer Meetings/Q4 2024/"
+  parentFolderId?: string;    // For easier queries
+  isFolder?: boolean;         // true for folders, false for documents
+  folderName?: string;        // Only for folders
 }
 
 export interface IDocument {
@@ -25,7 +31,7 @@ export interface IDocument {
   customerId?: string;
   createdBy: string;
   title: string;
-  content: string;
+  content?: string; // Optional for folders
   documentType: string;
   meetingDate?: Date;
   meetingType?: string;
@@ -36,6 +42,17 @@ export interface IDocument {
   customerSatisfactionScore?: number;
   tags: string[];
   sentiment?: string;
+  
+  // Folder structure fields
+  folderPath: string;        // e.g., "/Customer Meetings/Q4 2024/"
+  parentFolderId?: string;   // For easier queries
+  isFolder: boolean;         // true for folders, false for documents
+  folderName?: string;       // Only for folders
+  
+  // Metadata for folders
+  childrenCount?: number;    // Number of items in folder
+  lastModified?: Date;       // When folder contents were last modified
+  
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +80,54 @@ export const documentsService = {
 
   async deleteDocument(id: string): Promise<void> {
     await axios.delete(getRoute(`docs/${id}`));
+  },
+
+  // Folder management methods
+  async createFolder(folderName: string, parentFolderPath: string = '/'): Promise<IDocument> {
+    const response = await axios.post(getRoute('docs/folders'), {
+      folderName,
+      folderPath: parentFolderPath, // Let server build the final path
+      isFolder: true,
+      title: folderName,
+      content: '', // Empty content for folders
+      documentType: 'other'
+    });
+    return response.data;
+  },
+
+  async getFolderContents(folderPath: string = '/', parentFolderId?: string | null): Promise<IDocument[]> {
+    const url = getRoute(`docs/folders${folderPath === '/' ? '' : `/${encodeURIComponent(folderPath)}`}`);
+    const params = new URLSearchParams();
+    if (parentFolderId !== undefined) {
+      params.append('parentFolderId', parentFolderId || 'null');
+    }
+    const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
+    const response = await axios.get(fullUrl);
+    return response.data;
+  },
+
+  async getFolderTree(): Promise<IDocument[]> {
+    const response = await axios.get(getRoute('docs/folders/tree'));
+    return response.data;
+  },
+
+  async renameFolder(folderId: string, newName: string): Promise<IDocument> {
+    const response = await axios.put(getRoute(`docs/folders/${folderId}`), {
+      folderName: newName,
+      title: newName
+    });
+    return response.data;
+  },
+
+  async deleteFolder(folderId: string): Promise<void> {
+    await axios.delete(getRoute(`docs/folders/${folderId}`));
+  },
+
+  async moveItem(itemId: string, newFolderPath: string): Promise<IDocument> {
+    const response = await axios.post(getRoute(`docs/${itemId}/move`), {
+      folderPath: newFolderPath
+    });
+    return response.data;
   },
 };
 
