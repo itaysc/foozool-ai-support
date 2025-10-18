@@ -13,6 +13,10 @@ import {
   Toolbar,
   Divider,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -43,6 +47,7 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import usersStore from '@/stores/users.store';
 import documentsStore from '@/stores/documents.store';
+import customersStore from '@/stores/customers.store';
 import { IDocument } from '@/services/documents-service';
 import toast from '@/utils/toast';
 import './styles.css';
@@ -65,20 +70,27 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
   currentFolderId = null,
 }) => {
   const [title, setTitle] = useState('');
+  const [customerId, setCustomerId] = useState<string>('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  // Load users from the store when modal opens
+  // Load users and customers from the store when modal opens
   useEffect(() => {
     if (open) {
       usersStore.loadUsers();
+      customersStore.fetchCustomers();
     }
   }, [open]);
 
-  // Initialize title and content when document changes
+  // Initialize title, customer and content when document changes
   useEffect(() => {
     if (document) {
       setTitle(document.title);
+      setCustomerId(document.customerId || '');
+    } else {
+      // Reset for new document
+      setTitle('');
+      setCustomerId('');
     }
   }, [document]);
 
@@ -138,7 +150,7 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
               return;
             }
             items.forEach((item: any, index: number) => {
-              const button = document.createElement('button');
+              const button = window.document.createElement('button');
               button.className = `mention-item ${index === selectedIndex ? 'is-selected' : ''}`;
               button.innerHTML = `
                 <div class="mention-user-info">
@@ -146,59 +158,59 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
                   <span>${item.email}</span>
                 </div>
               `;
-              button.addEventListener('click', () => props.command({ id: item.id, label: item.name }));
-              component.appendChild(button);
-            });
-            positionPopup(props);
-          }
+                      button.addEventListener('click', () => props.command({ id: item.id, label: item.name }));
+                      component.appendChild(button);
+                    });
+                    positionPopup(props);
+                  }
 
-          const handleKeyDown = (event: KeyboardEvent, props: any) => {
-            const items = props.items;
-            if (!items || items.length === 0) return false;
+                  const handleKeyDown = (event: KeyboardEvent, props: any) => {
+                    const items = props.items;
+                    if (!items || items.length === 0) return false;
 
-            if (event.key === 'Escape') {
-              event.preventDefault();
-              event.stopPropagation();
-              return true;
-            }
+                    if (event.key === 'Escape') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      return true;
+                    }
 
-            if (event.key === 'ArrowDown') {
-              event.preventDefault();
-              event.stopPropagation();
-              selectedIndex = (selectedIndex + 1) % items.length;
-              updatePopup(props);
-              return true;
-            }
+                    if (event.key === 'ArrowDown') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      selectedIndex = (selectedIndex + 1) % items.length;
+                      updatePopup(props);
+                      return true;
+                    }
 
-            if (event.key === 'ArrowUp') {
-              event.preventDefault();
-              event.stopPropagation();
-              selectedIndex = (selectedIndex - 1 + items.length) % items.length;
-              updatePopup(props);
-              return true;
-            }
+                    if (event.key === 'ArrowUp') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                      updatePopup(props);
+                      return true;
+                    }
 
-            if (event.key === 'Enter' || event.key === 'Tab') {
-              event.preventDefault();
-              event.stopPropagation();
-              if (items[selectedIndex]) {
-                props.command({ id: items[selectedIndex].id, label: items[selectedIndex].name });
-              }
-              return true;
-            }
+                    if (event.key === 'Enter' || event.key === 'Tab') {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      if (items[selectedIndex]) {
+                        props.command({ id: items[selectedIndex].id, label: items[selectedIndex].name });
+                      }
+                      return true;
+                    }
 
-            return false;
-          };
+                    return false;
+                  };
 
-          return {
-            onStart: (props: any) => {
-              component = document.createElement('div');
+                  return {
+                    onStart: (props: any) => {
+                      component = window.document.createElement('div');
               component.className = 'mention-suggestions';
               popup = component;
-              document.body.appendChild(popup);
+              window.document.body.appendChild(popup);
 
               const keydownHandler = (event: KeyboardEvent) => handleKeyDown(event, props);
-              document.addEventListener('keydown', keydownHandler);
+              window.document.addEventListener('keydown', keydownHandler);
               (component as any)._keydownHandler = keydownHandler;
 
               selectedIndex = 0;
@@ -210,17 +222,17 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
               updatePopup(props);
               positionPopup(props);
             },
-            onExit: () => {
-              if (component) {
-                const keydownHandler = (component as any)._keydownHandler;
-                if (keydownHandler) {
-                  document.removeEventListener('keydown', keydownHandler);
-                }
-                component.remove();
-              }
-              popup = null;
-              component = null;
-            },
+                    onExit: () => {
+                      if (component) {
+                        const keydownHandler = (component as any)._keydownHandler;
+                        if (keydownHandler) {
+                          window.document.removeEventListener('keydown', keydownHandler);
+                        }
+                        component.remove();
+                      }
+                      popup = null;
+                      component = null;
+                    },
           };
         },
       },
@@ -292,6 +304,7 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
           documentType: 'note',
           folderPath: currentPath,
           parentFolderId: currentFolderId,
+          customerId: customerId || undefined, // Include customer ID
         });
         toast.success('Document created successfully!', {
           autoHideDuration: 3000,
@@ -377,6 +390,30 @@ const DocumentEditModal: React.FC<DocumentEditModalProps> = ({
                 style: { fontSize: '1.25rem', fontWeight: 500 },
               }}
             />
+            
+            {/* Customer Selector */}
+            <Box sx={{ mt: 2 }}>
+              <FormControl fullWidth variant="standard">
+                <InputLabel>Customer (Optional)</InputLabel>
+                <Select
+                  value={customerId}
+                  onChange={(e) => {
+                    setCustomerId(e.target.value);
+                    setHasUnsavedChanges(true);
+                  }}
+                  label="Customer (Optional)"
+                >
+                  <MenuItem value="">
+                    <em>No customer selected</em>
+                  </MenuItem>
+                  {customersStore.customers.map((customer) => (
+                    <MenuItem key={customer._id} value={customer._id}>
+                      {customer.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
           </Box>
           
           {/* Editor Toolbar */}

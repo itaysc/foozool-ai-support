@@ -23,12 +23,12 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
 }) => {
   const getPathSegments = (path: string): Array<{ name: string; path: string }> => {
     if (path === '/') {
-      return [{ name: 'All Documents', path: '/' }];
+      return [{ name: 'Root', path: '/' }];
     }
 
     const segments = path.split('/').filter(segment => segment.length > 0);
     const breadcrumbs: Array<{ name: string; path: string }> = [
-      { name: 'All Documents', path: '/' }
+      { name: 'Root', path: '/' }
     ];
 
     let currentSegmentPath = '';

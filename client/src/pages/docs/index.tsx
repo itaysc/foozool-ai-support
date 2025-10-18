@@ -108,16 +108,9 @@ const DocsPage: React.FC = () => {
   };
 
   // Handle folder selection
-  const handleFolderSelect = (folderPath: string) => {
+  const handleFolderSelect = (folderPath: string, folderId?: string | null) => {
     setCurrentPath(folderPath);
-    // For root folder, set folder ID to null
-    if (folderPath === '/') {
-      setCurrentFolderId(null);
-    } else {
-      // For other folders, we'll need to find the folder ID
-      // This will be handled by the FolderView component
-      setCurrentFolderId(null);
-    }
+    setCurrentFolderId(folderId || null);
   };
 
   // Handle document view
@@ -342,13 +335,6 @@ const DocsPage: React.FC = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      startIcon={<Add />}
-                      onClick={() => handleCreateFolder(currentPath)}
-                    >
-                      New Folder
-                    </Button>
-                    <Button
-                      variant="outlined"
                       startIcon={<Refresh />}
                       onClick={() => window.location.reload()}
                     >
@@ -436,11 +422,11 @@ const DocsPage: React.FC = () => {
         document={selectedDocument}
       />
 
-              <DocumentEditModal
-                open={editModalOpen}
-                onClose={handleCloseEditModal}
-                document={documentToEdit}
-                onSaved={handleDocumentSaved}
+      <DocumentEditModal
+        open={editModalOpen}
+        onClose={handleCloseEditModal}
+        document={documentToEdit}
+        onSaved={handleDocumentSaved}
                 currentPath={currentPath}
                 currentFolderId={currentFolderId}
               />
@@ -536,7 +522,7 @@ const DocsPage: React.FC = () => {
                 onSuccess={handleDocumentSaved}
                 currentPath={currentPath}
                 currentFolderId={currentFolderId}
-              />
+      />
     </Box>
   );
 };

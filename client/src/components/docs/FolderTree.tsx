@@ -26,7 +26,7 @@ import documentsService from '@/services/documents-service';
 import toast from '@/utils/toast';
 
 interface FolderTreeProps {
-  onFolderSelect: (folderPath: string) => void;
+  onFolderSelect: (folderPath: string, folderId?: string | null) => void;
   selectedFolderPath: string;
   onFolderCreate: (parentPath: string) => void;
   refreshTrigger?: number; // Add refresh trigger prop
@@ -50,77 +50,91 @@ const FolderTree: React.FC<FolderTreeProps> = ({
   const [folders, setFolders] = useState<FolderNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadingFolders, setLoadingFolders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadFolderTree();
+    loadRootFolders();
   }, [refreshTrigger]);
 
-  const loadFolderTree = async () => {
+  const loadRootFolders = async () => {
     try {
       setLoading(true);
       setError(null);
-      const folderList = await documentsService.getFolderTree();
-      const folderTree = buildFolderTree(folderList);
-      setFolders(folderTree);
+      // Load only root level folders (those with parentFolderId = null)
+      const rootItems = await documentsService.getFolderContents('/', null);
+      const rootFolders = rootItems
+        .filter(item => item.isFolder)
+        .map(item => ({
+          id: item._id,
+          name: item.folderName || item.title,
+          path: item.folderPath,
+          children: [],
+          expanded: false,
+          childrenCount: item.childrenCount || 0
+        }));
+      setFolders(rootFolders);
     } catch (err) {
-      console.error('Error loading folder tree:', err);
-      setError('Failed to load folder tree');
-      toast.error('Failed to load folder tree');
+      console.error('Error loading root folders:', err);
+      setError('Failed to load folder structure');
+      toast.error('Failed to load folder structure');
     } finally {
       setLoading(false);
     }
   };
 
-  const buildFolderTree = (folderList: IDocument[]): FolderNode[] => {
-    const folderMap = new Map<string, FolderNode>();
-    const rootFolders: FolderNode[] = [];
-
-    // Create folder nodes
-    folderList.forEach(folder => {
-      if (folder.isFolder && folder.folderName) {
-        folderMap.set(folder.folderPath, {
-          id: folder._id,
-          name: folder.folderName,
-          path: folder.folderPath,
+  const loadFolderChildren = async (folderId: string, folderPath: string): Promise<FolderNode[]> => {
+    try {
+      setLoadingFolders(prev => new Set(prev).add(folderId));
+      const childItems = await documentsService.getFolderContents(folderPath, folderId);
+      const childFolders = childItems
+        .filter(item => item.isFolder)
+        .map(item => ({
+          id: item._id,
+          name: item.folderName || item.title,
+          path: item.folderPath,
           children: [],
           expanded: false,
-          childrenCount: folder.childrenCount || 0
-        });
-      }
-    });
-
-    // Build tree structure
-    folderMap.forEach((folder, path) => {
-      const parentPath = path.substring(0, path.lastIndexOf('/')) || '/';
-      
-      if (parentPath === '/' && path !== '/') {
-        // Root level folder
-        rootFolders.push(folder);
-      } else if (folderMap.has(parentPath)) {
-        // Child folder - parent exists
-        folderMap.get(parentPath)!.children.push(folder);
-      } else if (parentPath !== '/' && path !== '/') {
-        // Handle malformed paths - if parent doesn't exist, treat as root level
-        console.warn(`Folder "${path}" has parent "${parentPath}" which doesn't exist. Treating as root level.`);
-        rootFolders.push(folder);
-      }
-    });
-
-    // Sort folders alphabetically
-    const sortFolders = (folders: FolderNode[]) => {
-      folders.sort((a, b) => a.name.localeCompare(b.name));
-      folders.forEach(folder => sortFolders(folder.children));
-    };
-
-    sortFolders(rootFolders);
-    return rootFolders;
+          childrenCount: item.childrenCount || 0
+        }));
+      return childFolders.sort((a, b) => a.name.localeCompare(b.name));
+    } catch (err) {
+      console.error('Error loading folder children:', err);
+      toast.error('Failed to load folder contents');
+      return [];
+    } finally {
+      setLoadingFolders(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(folderId);
+        return newSet;
+      });
+    }
   };
 
-  const toggleFolder = (folderPath: string) => {
+  const toggleFolder = async (folderPath: string, folderId: string) => {
     const updateExpanded = (folders: FolderNode[]): FolderNode[] => {
       return folders.map(folder => {
         if (folder.path === folderPath) {
-          return { ...folder, expanded: !folder.expanded };
+          const newExpanded = !folder.expanded;
+          
+          // If expanding and children haven't been loaded yet, load them
+          if (newExpanded && folder.children.length === 0 && folder.childrenCount > 0) {
+            loadFolderChildren(folderId, folderPath).then(children => {
+              const updateWithChildren = (folders: FolderNode[]): FolderNode[] => {
+                return folders.map(f => {
+                  if (f.path === folderPath) {
+                    return { ...f, children, expanded: newExpanded };
+                  }
+                  if (f.children.length > 0) {
+                    return { ...f, children: updateWithChildren(f.children) };
+                  }
+                  return f;
+                });
+              };
+              setFolders(currentFolders => updateWithChildren(currentFolders));
+            });
+          }
+          
+          return { ...folder, expanded: newExpanded };
         }
         if (folder.children.length > 0) {
           return { ...folder, children: updateExpanded(folder.children) };
@@ -129,11 +143,11 @@ const FolderTree: React.FC<FolderTreeProps> = ({
       });
     };
 
-    setFolders(updateExpanded(folders));
+    setFolders(currentFolders => updateExpanded(currentFolders));
   };
 
-  const handleFolderClick = (folderPath: string) => {
-    onFolderSelect(folderPath);
+  const handleFolderClick = (folderPath: string, folderId?: string) => {
+    onFolderSelect(folderPath, folderId);
   };
 
   const renderFolder = (folder: FolderNode, level: number = 0) => {
@@ -155,7 +169,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({
         >
           <ListItemButton
             selected={isSelected}
-            onClick={() => handleFolderClick(folder.path)}
+            onClick={() => handleFolderClick(folder.path, folder.id)}
             sx={{
               minHeight: 40,
               '&.Mui-selected': {
@@ -171,19 +185,26 @@ const FolderTree: React.FC<FolderTreeProps> = ({
             }}
           >
             <ListItemIcon sx={{ minWidth: 36 }}>
-              {hasChildren ? (
+              {hasChildren || folder.childrenCount > 0 ? (
                 <IconButton
                   size="small"
                   onClick={(e) => {
                     e.stopPropagation();
-                    toggleFolder(folder.path);
+                    toggleFolder(folder.path, folder.id);
                   }}
                   sx={{ 
                     p: 0.5,
                     color: 'inherit'
                   }}
+                  disabled={loadingFolders.has(folder.id)}
                 >
-                  {folder.expanded ? <ExpandMore fontSize="small" /> : <ChevronRight fontSize="small" />}
+                  {loadingFolders.has(folder.id) ? (
+                    <CircularProgress size={16} />
+                  ) : folder.expanded ? (
+                    <ExpandMore fontSize="small" />
+                  ) : (
+                    <ChevronRight fontSize="small" />
+                  )}
                 </IconButton>
               ) : (
                 <Box sx={{ width: 24, height: 24 }} />
@@ -251,7 +272,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({
       <ListItem disablePadding>
         <ListItemButton
           selected={selectedFolderPath === '/'}
-          onClick={() => handleFolderClick('/')}
+          onClick={() => handleFolderClick('/', null)}
           sx={{
             minHeight: 40,
             borderRadius: 1,
@@ -278,7 +299,7 @@ const FolderTree: React.FC<FolderTreeProps> = ({
           </ListItemIcon>
           
           <ListItemText 
-            primary="All Documents"
+            primary="Root"
             primaryTypographyProps={{
               fontSize: '0.875rem',
               fontWeight: selectedFolderPath === '/' ? 600 : 400
