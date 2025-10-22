@@ -16,6 +16,51 @@ Foozool AI Support is a comprehensive customer success and support automation pl
 - **Usage Analytics**: Track feature adoption, utilization rates, and growth patterns
 - **Meeting Intelligence**: Analyze meeting summaries, extract action items, and track customer satisfaction scores
 
+#### **Comprehensive Insight Types (50+ Types)**
+
+**Customer Health & Risk Insights:**
+- Health score at risk, declining activity, inactive customer, low utilization
+- One solution dependency, stakeholder churn risk, engagement velocity decline
+- Contact frequency gaps, over/under contact risks, engagement momentum shifts
+
+**Support & Ticket Insights:**
+- High ticket volume, escalating issues, sentiment decline, recurring problems
+- Resolution delays, support patterns, urgent trends, positive feedback
+- Technical debt, user experience issues, integration problems, performance concerns
+
+**Stakeholder & Engagement Insights:**
+- Stakeholder disengagement, key stakeholder risk, influence concentration
+- Engagement trends, decision maker activity, technical adoption barriers
+- Stakeholder influence opportunities, cross-departmental engagement
+- New stakeholder momentum, stakeholder training opportunities, decision power shifts
+
+**Financial & Business Insights:**
+- Outstanding balance, payment reliability, contract renewal, credit score
+- Payment delays, revenue growth, renewal warnings, correlation to value
+- Critical metric underperformance, KPI underperformance, NPS/CSAT below targets
+
+**Capacity & Growth Insights:**
+- Storage capacity critical/warning, user capacity critical, user growth planning
+- Transaction capacity warning, API capacity growth planning, upgrade approaching/overdue
+- Significant growth projection, constraint resolution approaching, ongoing high impact constraints
+
+**User Adoption & Success Insights:**
+- User adoption, power users, solution adoption, role engagement, session engagement
+- Activity trend decline, feature discovery, usage pattern anomaly
+- High utilization, solution gaps, increasing usage, top solutions, adoption milestones
+
+**Departmental & Role Insights:**
+- Department engagement health, department adoption gaps, cross-department silos
+- Role engagement patterns, role adoption barriers, role influence distribution
+
+**Document & Content Insights:**
+- Document-based stakeholder engagement gaps, sentiment decline, solution gaps
+- Correlation to value, positive feedback, engagement trends, renewal warnings
+- **AI-Powered Document Analysis**: Automatic insight generation from meeting summaries, notes, reports, and customer feedback
+- **Meeting Summary Intelligence**: Extract action items, sentiment analysis, and business relevance scoring from meeting documents
+- **Feature Request Detection**: Identify solution gaps and upsell opportunities from customer notes and feedback
+- **Content Classification**: Automatic categorization of documents by type, sentiment, and business relevance
+
 ### **Predictive Analytics**
 - **Churn Prediction**: Early warning system for customers at risk of churning
 - **Expansion Opportunities**: Identify upsell and cross-sell opportunities based on usage patterns
@@ -63,6 +108,7 @@ Foozool AI Support is a comprehensive customer success and support automation pl
 - **Content Intelligence**: Extract key topics, action items, and business relevance scores
 - **Folder Organization**: Hierarchical folder structure with customer-specific organization
 - **Batch Processing**: Efficient bulk document analysis with pre-classification filtering
+- **Meeting Prep Document Creation**: Automated Google Doc creation with professional templates for customer meetings
 
 ### **Google Drive Integration**
 - **Seamless Sync**: Direct integration with Google Drive for document access
@@ -173,6 +219,8 @@ Foozool AI Support is a comprehensive customer success and support automation pl
 - **Talking Points**: Automated generation of relevant talking points and discussion topics
 - **Action Items**: Pre-meeting action item identification and follow-up tracking
 - **Customer Context**: Complete customer profile with health scores, recent activity, and news
+- **Professional Document Templates**: Automated Google Doc creation with structured meeting templates
+- **Meeting Summary Intelligence**: Post-meeting analysis with sentiment scoring and action item extraction
 
 ### **Stakeholder Management**
 - **Engagement Tracking**: Monitor stakeholder engagement levels and communication patterns
