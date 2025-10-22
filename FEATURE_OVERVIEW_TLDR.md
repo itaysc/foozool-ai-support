@@ -1,9 +1,4 @@
-# Foozool AI Support - Quick Overview
-
-## 🎯 **What We Do**
-AI-powered customer success platform that automates support, generates insights, and drives customer growth through intelligent analysis of tickets, documents, and customer interactions.
-
----
+# Quick Overview
 
 ## 🚀 **Core Capabilities**
 
@@ -94,7 +89,3 @@ AI-powered customer success platform that automates support, generates insights,
 3. **Configure AI**: Set up action thresholds and customer tiers
 4. **Get Insights**: Start receiving automated insights and recommendations
 5. **Scale**: Expand to full autonomous support operations
-
----
-
-*Transform your customer success operations with AI-powered insights and automation. Reduce churn, increase expansion, and deliver exceptional customer experiences.*
