@@ -1,7 +1,5 @@
-import { Request, Response } from 'express';
-import mongoose from 'mongoose';
 import { HealthScoreService } from '../../services/insights/healthScore.service';
-import QdrantService from '../../qdrant/service';
+import { getCustomerTicketStats } from '../../qdrant/service';
 import { CustomerModel } from '../../schemas/customer.schema';
 import { UserContextManager } from '../../context/userContext';
 
@@ -54,11 +52,9 @@ export interface DataIntelligenceMetrics {
 
 export class DataIntelligenceService {
   private healthScoreService: HealthScoreService;
-  private qdrantService: QdrantService;
 
   constructor() {
     this.healthScoreService = new HealthScoreService();
-    this.qdrantService = new QdrantService();
   }
 
   /**
@@ -278,7 +274,7 @@ export class DataIntelligenceService {
     }
     
     // Get ticket analytics
-    const ticketStats = await this.qdrantService.getCustomerTicketStats(customerId);
+    const ticketStats = await getCustomerTicketStats(customerId);
     
     // Get predictive insights from insights collection
     const { getPredictionInsights } = await import('./index');

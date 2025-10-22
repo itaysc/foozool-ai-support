@@ -145,6 +145,11 @@ export const documentsService = {
     });
     return response.data;
   },
+
+  async analyzeDocument(documentId: string): Promise<{ message: string; analysis?: any }> {
+    const response = await axios.post(getRoute(`docs/${documentId}/analyze`));
+    return response.data;
+  },
 };
 
 export default documentsService;

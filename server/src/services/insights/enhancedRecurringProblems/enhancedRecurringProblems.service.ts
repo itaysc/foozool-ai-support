@@ -1,5 +1,5 @@
 import { UserContextManager } from 'src/context/userContext';
-import QdrantService from 'src/qdrant/service';
+import { searchTicketsByCustomer } from 'src/qdrant/service';
 import { CustomerModel } from 'src/schemas';
 import { EnhancedRecurringProblem, ProblemCluster, ENHANCED_THRESHOLDS } from './types';
 import { analyzeRecurringPatterns } from './patternAnalysis.service';
@@ -18,10 +18,9 @@ export async function generateEnhancedRecurringProblemsInsights(customerId: stri
   }
 
   try {
-    const qdrantService = new QdrantService();
     
     // Get recent tickets for the customer
-    const recentTickets = await qdrantService.searchTicketsByCustomer(customerId, 100);
+    const recentTickets = await searchTicketsByCustomer(customerId, 100);
     
     if (recentTickets.length === 0) {
       console.log(`[Enhanced Recurring Problems] ℹ️ no tickets found for customer`);

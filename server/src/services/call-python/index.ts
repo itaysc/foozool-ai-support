@@ -87,6 +87,188 @@ export async function getSBERTEmbedding(tickets: Partial<ITicket>[]) : Promise<n
     throw lastError;
 }
 
+// Document Analysis Functions
+
+export interface DocumentAnalysisRequest {
+    title: string;
+    content: string;
+    documentType: string;
+    mimeType?: string;
+}
+
+export interface DocumentAnalysisResult {
+    category: string;
+    topics: string[];
+    sentiment: 'positive' | 'neutral' | 'negative';
+    businessRelevance: number; // 0-1 score
+    keyEntities: {
+        people: string[];
+        companies: string[];
+        products: string[];
+        locations: string[];
+    };
+    summary: string;
+    confidence: number; // 0-1 score
+}
+
+export async function analyzeDocument(document: DocumentAnalysisRequest): Promise<DocumentAnalysisResult> {
+    const maxRetries = 3;
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`Attempt ${attempt}/${maxRetries}: Analyzing document "${document.title}"`);
+            
+            console.log(`Making request to: ${Config.PYTHON_ML_SERVICE_URL}/api/v1/analyze-document`);
+            console.log(`Document type: ${document.documentType}, Content length: ${document.content?.length || 0}`);
+            
+            const res = await api.post('/api/v1/analyze-document', document, {
+                timeout: 300000, // 5 minutes
+                maxContentLength: 50 * 1024 * 1024, // 50MB
+                maxBodyLength: 50 * 1024 * 1024, // 50MB
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                validateStatus: (status) => status < 500,
+            });
+
+            console.log(`Document analysis request successful on attempt ${attempt}`);
+            return res.data as DocumentAnalysisResult;
+
+        } catch (error: any) {
+            lastError = error;
+            console.error(`Attempt ${attempt}/${maxRetries} failed:`, {
+                message: error.message,
+                code: error.code,
+                status: error.response?.status,
+                data: error.response?.data,
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    headers: error.config?.headers
+                }
+            });
+
+            if (attempt === maxRetries) {
+                console.error('All retry attempts failed for document analysis');
+                // Return default result as fallback
+                return {
+                    category: 'unknown',
+                    topics: [],
+                    sentiment: 'neutral',
+                    businessRelevance: 0.5,
+                    keyEntities: {
+                        people: [],
+                        companies: [],
+                        products: [],
+                        locations: []
+                    },
+                    summary: 'Analysis failed - unable to process document',
+                    confidence: 0.0
+                };
+            }
+
+            const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+            console.log(`Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+    }
+
+    throw lastError;
+}
+
+export async function classifyDocumentCategory(documents: DocumentAnalysisRequest[]): Promise<string[]> {
+    const maxRetries = 3;
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`Attempt ${attempt}/${maxRetries}: Classifying ${documents.length} documents`);
+            
+            console.log(`Making request to: ${Config.PYTHON_ML_SERVICE_URL}/api/v1/classify-documents`);
+            
+            const res = await api.post('/api/v1/classify-documents', { documents }, {
+                timeout: 300000, // 5 minutes
+                maxContentLength: 50 * 1024 * 1024, // 50MB
+                maxBodyLength: 50 * 1024 * 1024, // 50MB
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                validateStatus: (status) => status < 500,
+            });
+
+            console.log(`Document classification request successful on attempt ${attempt}`);
+            return res.data as string[];
+
+        } catch (error: any) {
+            lastError = error;
+            console.error(`Attempt ${attempt}/${maxRetries} failed:`, {
+                message: error.message,
+                code: error.code,
+                status: error.response?.status,
+                data: error.response?.data
+            });
+
+            if (attempt === maxRetries) {
+                console.error('All retry attempts failed for document classification');
+                return documents.map(() => 'unknown');
+            }
+
+            const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+            console.log(`Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+    }
+
+    throw lastError;
+}
+
+export async function extractDocumentTopics(documents: DocumentAnalysisRequest[]): Promise<string[][]> {
+    const maxRetries = 3;
+    let lastError: any;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`Attempt ${attempt}/${maxRetries}: Extracting topics from ${documents.length} documents`);
+            
+            console.log(`Making request to: ${Config.PYTHON_ML_SERVICE_URL}/api/v1/extract-document-topics`);
+            
+            const res = await api.post('/api/v1/extract-document-topics', { documents }, {
+                timeout: 300000, // 5 minutes
+                maxContentLength: 50 * 1024 * 1024, // 50MB
+                maxBodyLength: 50 * 1024 * 1024, // 50MB
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                validateStatus: (status) => status < 500,
+            });
+
+            console.log(`Document topic extraction request successful on attempt ${attempt}`);
+            return res.data as string[][];
+
+        } catch (error: any) {
+            lastError = error;
+            console.error(`Attempt ${attempt}/${maxRetries} failed:`, {
+                message: error.message,
+                code: error.code,
+                status: error.response?.status,
+                data: error.response?.data
+            });
+
+            if (attempt === maxRetries) {
+                console.error('All retry attempts failed for document topic extraction');
+                return documents.map(() => []);
+            }
+
+            const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+            console.log(`Waiting ${waitTime}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
+    }
+
+    throw lastError;
+}
+
 export async function getDistilBERTEmbedding(tickets: Partial<ITicket>[]) : Promise<number[][]> {
     const maxRetries = 3;
     let lastError: any;

@@ -7,7 +7,7 @@ import { buildAgentSuggestionPrompt, buildPrompt } from './prompts';
 import { callLLM } from '../llm';
 import { addCommentToTicket } from '../zendesk';
 import sanitizeText, { extractCustomerMessage } from '../../utils/text-sanitize';
-import QdrantService from '../../qdrant/service';
+import { updateTicketPoint, addSingleTicket, retrieveTicketPoints } from '../../qdrant/service';
 import { QdrantTicketPoint } from '../../qdrant/schemas/ticket';
 import { analyzeSentiment } from '../nlp';
 import { executeAutonomousActions } from '../autonomousAI';
@@ -259,7 +259,6 @@ async function analyzeResolutionTimePrediction({
 
   // Get resolution time data from Qdrant for similar tickets
   try {
-    const qdrantService = new QdrantService();
     const similarTicketIds = similarTickets.map(t => t.externalId).filter(Boolean);
     
     // Get Qdrant points for similar tickets to check resolution times
@@ -267,13 +266,10 @@ async function analyzeResolutionTimePrediction({
       similarTicketIds.map(async (ticketId) => {
         try {
           const qdrantPointId = uuidv5(ticketId.toString(), QDRANT_POINT_NAMESPACE);
-          const result = await qdrantService.client.retrieve(ticketCollectionConfig.name, {
-            ids: [qdrantPointId],
-            with_payload: true,
-          });
+          const result = await retrieveTicketPoints([qdrantPointId], true);
           
-          if (result && (result as any).points && (result as any).points.length > 0) {
-            const point = (result as any).points[0];
+          if (result && result.length > 0) {
+            const point = result[0];
             return {
               ticketId,
               resolution_time_ms: point.payload?.resolution_time_ms,
@@ -340,10 +336,9 @@ async function updateQdrantWithPrediction({
   }
 
   try {
-    const qdrantService = new QdrantService();
     const qdrantPointId = uuidv5(ticketId.toString(), QDRANT_POINT_NAMESPACE);
     
-    const updateSuccess = await qdrantService.updateTicketPoint(qdrantPointId, {
+    const updateSuccess = await updateTicketPoint(qdrantPointId, {
       long_resolution_predicted: true,
       prediction_confidence: predictionConfidence,
       prediction_added_at: Date.now(),
@@ -372,10 +367,9 @@ async function updateQdrantWithResolution({
   resolvedAt: number;
 }): Promise<void> {
   try {
-    const qdrantService = new QdrantService();
     const qdrantPointId = uuidv5(ticketId.toString(), QDRANT_POINT_NAMESPACE);
     
-    const updateSuccess = await qdrantService.updateTicketPoint(qdrantPointId, {
+    const updateSuccess = await updateTicketPoint(qdrantPointId, {
       resolution_time_ms: resolutionTimeMs,
       resolved_at: resolvedAt,
     });
@@ -421,8 +415,6 @@ async function handleNewTicketWebhook(ticket: ZendeskTicketWebhookPayload): Prom
 
     const [sbertEmbedding] = await getSBERTEmbedding([ticketPayload]);
     // Save ticket point in qdrant
-    const qdrantService = new QdrantService();
-    
     // Generate a UUID for the Qdrant point ID based on the ticket ID
     const qdrantPointId = uuidv5(ticket.ticket_id.toString(), QDRANT_POINT_NAMESPACE);
     
@@ -440,7 +432,7 @@ async function handleNewTicketWebhook(ticket: ZendeskTicketWebhookPayload): Prom
         intent: Array.isArray(intents) && intents.length > 0 ? intents[0] : '',
       },
     };
-    const qdrantResult = await qdrantService.addSingleTicket(qdrantPoint);
+    const qdrantResult = await addSingleTicket(qdrantPoint);
     if (qdrantResult) {
       console.log(`Ticket ${ticket.ticket_id} added to Qdrant.`);
     } else {

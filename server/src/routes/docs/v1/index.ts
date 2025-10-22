@@ -5,6 +5,7 @@ import {
   getDocumentById, 
   updateDocument, 
   deleteDocument,
+  analyzeDocument,
   CreateDocumentRequest 
 } from '../../../services/docs/v1';
 import { 
@@ -193,6 +194,19 @@ router.post('/:id/move', authenticateJWT, hasPermission('docs:update'), async (r
 router.post('/folders/fix-paths', authenticateJWT, hasPermission('docs:update'), async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await fixMalformedFolderPaths();
+    res.status(result.status).json(result.payload);
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /docs/:id/analyze
+ * Analyze a document using ML models
+ */
+router.post('/:id/analyze', authenticateJWT, hasPermission('docs:update'), async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await analyzeDocument(req.params.id);
     res.status(result.status).json(result.payload);
   } catch (err) {
     res.status(500).json({ message: 'Internal server error' });

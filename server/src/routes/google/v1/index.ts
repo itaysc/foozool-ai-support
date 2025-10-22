@@ -101,18 +101,23 @@ router.post("/drive/process", authenticateJWT, hasPermission('google:connect'), 
         });
       }
       
-      const result = await processGoogleDriveFiles({
-        organizationId: organizationId as string,
-        fileIds: newFilesToProcess
-      });
+      const results = await processGoogleDriveFiles(organizationId as string, newFilesToProcess);
 
+      // Calculate statistics from results
+      const successfulFiles = results.filter(r => r.success);
+      const failedFiles = results.filter(r => !r.success);
+      
       res.json({
-        success: result.success,
-        processedFiles: result.processedFiles,
-        totalChunks: result.totalChunks,
-        errors: result.errors,
+        success: failedFiles.length === 0,
+        processedFiles: successfulFiles.length,
+        totalChunks: successfulFiles.length, // Simplified - could be enhanced to count actual chunks
+        errors: failedFiles.map(f => ({ fileId: f.fileId, error: 'Processing failed' })),
         totalFilesFound: newFilesToProcess.length,
-        processingStats: result.processingStats
+        processingStats: {
+          total: results.length,
+          successful: successfulFiles.length,
+          failed: failedFiles.length
+        }
       });
     } catch (err: any) {
       console.error("❌ Error processing Google Drive files:", err);

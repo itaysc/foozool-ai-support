@@ -14,6 +14,7 @@ import {
 import { RiskAssessmentService } from '../customers/riskAssessment.service';
 import { EnhancedMeetingPrepPromptGenerator } from '../customers/enhancedMeetingPrepPrompt.service';
 import { MeetingPrepResult } from './types';
+import { getCustomerTicketStats } from '../../qdrant/service';
 
 /**
  * Generate customer meeting prep document
@@ -91,8 +92,7 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
   // Get ticket data for enhanced analysis
   let ticketData: any = null;
   try {
-    const qdrantService = new (await import('../../qdrant/service')).default();
-    ticketData = await qdrantService.getCustomerTicketStats(customerId);
+    ticketData = await getCustomerTicketStats(customerId);
   } catch (error) {
     console.log('Ticket data not available for meeting prep:', error);
   }

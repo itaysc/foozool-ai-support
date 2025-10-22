@@ -41,7 +41,9 @@ import {
   DateRange,
   CloudQueue,
   Link,
-  DriveFileRenameOutline
+  DriveFileRenameOutline,
+  Psychology,
+  Info
 } from '@mui/icons-material';
 import { IDocument } from '@/services/documents-service';
 import documentsService from '@/services/documents-service';
@@ -231,6 +233,31 @@ const FolderView: React.FC<FolderViewProps> = ({
       }
     });
 
+  const handleAnalyzeDocument = async (document: IDocument) => {
+    try {
+      console.log(`🔍 Analyzing document: ${document.title}`);
+      toast.info('Starting document analysis...', { autoHideDuration: 3000 });
+      
+      const result = await documentsService.analyzeDocument(document._id);
+      
+      console.log('Analysis result:', result);
+      toast.success(result.message || 'Document analysis completed successfully!', {
+        autoHideDuration: 5000,
+        persist: false,
+      });
+      
+      // Refresh the document list to show updated analysis data
+      window.location.reload();
+      
+    } catch (error: any) {
+      console.error('Error analyzing document:', error);
+      toast.error(error.response?.data?.error || 'Failed to analyze document. Please try again.', {
+        autoHideDuration: 5000,
+        persist: false,
+      });
+    }
+  };
+
   const handleContextMenu = (event: React.MouseEvent, item: IDocument) => {
     event.preventDefault();
     setContextMenu({
@@ -262,6 +289,9 @@ const FolderView: React.FC<FolderViewProps> = ({
       case 'move':
         if (item.isFolder) onFolderMove(item);
         else onDocumentMove(item);
+        break;
+      case 'analyze':
+        if (!item.isFolder) handleAnalyzeDocument(item);
         break;
       case 'delete':
         if (item.isFolder) {
@@ -634,6 +664,15 @@ const FolderView: React.FC<FolderViewProps> = ({
           <DriveFileMove fontSize="small" sx={{ mr: 1 }} />
           Move
         </MenuItem>
+        {contextMenu?.item && !contextMenu.item.isFolder && (
+          <Tooltip title="Analyze document content using AI to extract topics, sentiment, and business insights for better customer understanding" placement="left">
+            <MenuItem onClick={() => handleContextMenuAction('analyze', contextMenu.item!)}>
+              <Psychology fontSize="small" sx={{ mr: 1 }} />
+              Analyze
+              <Info fontSize="small" sx={{ ml: 1, opacity: 0.6 }} />
+            </MenuItem>
+          </Tooltip>
+        )}
         <MenuItem onClick={() => handleContextMenuAction('delete', contextMenu?.item!)}>
           <Delete fontSize="small" sx={{ mr: 1 }} />
           Delete

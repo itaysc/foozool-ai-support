@@ -1,4 +1,4 @@
-import QdrantService from '../../qdrant/service';
+import { getRecentVectors } from '../../qdrant/service';
 import { OrganizationModel } from '../../schemas/organization.schema';
 import { AnomalyDetectionSettings } from '../../types';
 
@@ -38,11 +38,6 @@ export interface SentimentAnomaly {
 }
 
 export class AnomalyDetectionService {
-  private qdrantService: QdrantService;
-
-  constructor() {
-    this.qdrantService = new QdrantService();
-  }
 
   /**
    * Get anomaly detection settings for an organization
@@ -392,7 +387,7 @@ export class AnomalyDetectionService {
   ): Promise<Array<{ timestamp: Date; volume: number }>> {
     try {
       // Get tickets from Qdrant for the time window
-      const tickets = await this.qdrantService.getRecentVectors({
+      const tickets = await getRecentVectors({
         organizationId,
         createdAfter: startTime,
         limit: 1000
@@ -429,7 +424,7 @@ export class AnomalyDetectionService {
   ): Promise<Array<{ timestamp: Date; sentiment: number }>> {
     try {
       // Get tickets from Qdrant for the time window
-      const tickets = await this.qdrantService.getRecentVectors({
+      const tickets = await getRecentVectors({
         organizationId,
         createdAfter: startTime,
         limit: 1000
@@ -592,7 +587,7 @@ export class AnomalyDetectionService {
       console.log(`🔍 Getting volume data from ${startTime.toISOString()} to ${endTime.toISOString()}`);
       
       // Get tickets from Qdrant from the beginning of time
-      const tickets = await this.qdrantService.getRecentVectors({
+      const tickets = await getRecentVectors({
         organizationId,
         createdAfter: startTime,
         limit: 10000 // Increased limit to get more historical data
@@ -634,7 +629,7 @@ export class AnomalyDetectionService {
       console.log(`🔍 Getting sentiment data from ${startTime.toISOString()} to ${endTime.toISOString()}`);
       
       // Get tickets from Qdrant from the beginning of time
-      const tickets = await this.qdrantService.getRecentVectors({
+      const tickets = await getRecentVectors({
         organizationId,
         createdAfter: startTime,
         limit: 10000 // Increased limit to get more historical data

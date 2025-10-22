@@ -1,6 +1,6 @@
 import { HealthScoreFactors } from '../insights/healthScore.service';
 import { CustomerSuccessInsight } from '../../types/customerSuccessInsight';
-import QdrantService from '../../qdrant/service';
+import { getCustomerTicketStats } from '../../qdrant/service';
 import { UserContextManager } from '../../context/userContext';
 
 export interface RiskAssessment {
@@ -34,12 +34,6 @@ export interface RiskAssessment {
 }
 
 export class RiskAssessmentService {
-  private qdrantService: QdrantService;
-
-  constructor() {
-    this.qdrantService = new QdrantService();
-  }
-
   /**
    * Perform comprehensive risk assessment for a customer
    */
@@ -57,7 +51,7 @@ export class RiskAssessmentService {
     }
 
     // Get ticket statistics for deeper analysis
-    const ticketStats = await this.qdrantService.getCustomerTicketStats(customerId);
+    const ticketStats = await getCustomerTicketStats(customerId);
     
     // Get recent predictions from insights collection
     const { getPredictionInsights } = await import('../insights');

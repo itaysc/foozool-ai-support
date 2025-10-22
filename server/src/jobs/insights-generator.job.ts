@@ -1,5 +1,5 @@
 import { DBSCAN } from 'density-clustering';
-import QdrantService from '../qdrant/service';
+import { ticketQdrantService } from '../qdrant/service';
 import { getSummaryFromVector, calculateGrowthRate } from '../services/insights/summary.service';
 import { InsightModel } from '../schemas/insights.schema';
 import { OrganizationModel, CustomerModel } from '../schemas';
@@ -30,7 +30,7 @@ export const generateInsightsJob = async (targetOrganizationId?: string, userId?
       console.log(`Found ${organizations.length} organizations to process`);
     }
 
-    const qdrantService = new QdrantService();
+    // Use the singleton ticket service instance
     const anomalyDetectionService = new AnomalyDetectionService();
     const anomalyService = new AnomalyService();
     
@@ -40,7 +40,7 @@ export const generateInsightsJob = async (targetOrganizationId?: string, userId?
 
       try {
         // 1. Fetch recent vectors for the specific organization (last 24 hours)
-        const recentVectors = await qdrantService.getRecentVectors({
+        const recentVectors = await ticketQdrantService.getRecentVectors({
           organizationId: organizationId.toString(),
           createdAfter: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
           limit: 500 // Limit to avoid processing too many vectors

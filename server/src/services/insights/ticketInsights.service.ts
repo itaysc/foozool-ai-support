@@ -1,6 +1,5 @@
 import { UserContextManager } from 'src/context/userContext';
-import QdrantService from '../../qdrant/service';
-import { ticketCollectionConfig } from '../../qdrant/schemas/ticket';
+import { getCustomerTicketStats, searchTicketsByCustomer } from '../../qdrant/service';
 
 // Threshold constants for ticket insights
 const THRESHOLDS = {
@@ -63,10 +62,8 @@ export async function generateTicketInsights(customerId: string): Promise<Ticket
   }
 
   try {
-    const qdrantService = new QdrantService();
-    
     // Get ticket statistics for the customer
-    const ticketStats = await qdrantService.getCustomerTicketStats(customerId);
+    const ticketStats = await getCustomerTicketStats(customerId);
     console.log(`[Ticket Insights] 📊 stats | total=${ticketStats.totalTickets} avgSentiment=${ticketStats.avgSentiment.toFixed(2)}`);
     
     if (ticketStats.totalTickets === 0) {
@@ -75,7 +72,7 @@ export async function generateTicketInsights(customerId: string): Promise<Ticket
     }
 
     // Get recent tickets for detailed analysis
-    const recentTickets = await qdrantService.searchTicketsByCustomer(customerId, 100);
+    const recentTickets = await searchTicketsByCustomer(customerId, 100);
     
     // Analyze ticket volume patterns
     await analyzeTicketVolume(insights, ticketStats, recentTickets);

@@ -40,7 +40,7 @@ import docsRoutesV1 from './routes/docs/v1';
 import newsRoutesV1 from './routes/news/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
 import { seed } from "./seeds";
-import QdrantService from "./qdrant/service";
+import { qdrantClient } from "./qdrant/service";
 import { googleFileCollectionConfig } from './qdrant/schemas/googleFile';
 import { startAllJobs } from './jobs';
 import searchRoutesV1 from './routes/search/v1';
@@ -207,35 +207,34 @@ export default class Server{
   }
 
   public async initQdrant() {
-    const qdrantService = new QdrantService();
-    await qdrantService.createCollection({ collectionName: ticketCollectionConfig.name, vectorSize: 768 });
-    await qdrantService.createCollection({
-      collectionName: googleFileCollectionConfig.name,
-      vectorSize: googleFileCollectionConfig.vectorConfig.size,
-      distance: googleFileCollectionConfig.vectorConfig.distance,
-    });
+    // Use the singleton qdrantClient instance
+    // Create collections using the service instances
+    const { createTicketCollection, createGoogleFileCollection } = await import('./qdrant/service');
+    await createTicketCollection();
+    await createGoogleFileCollection();
+    
     // Create index for organization_id for filtering
-    await qdrantService.client.createPayloadIndex(googleFileCollectionConfig.name, {
+    await qdrantClient.createPayloadIndex(googleFileCollectionConfig.name, {
       field_name: 'organization_id',
       field_schema: 'keyword'
     });
     // Create index for embedding_quality_score for filtering/searching
-    await qdrantService.client.createPayloadIndex(googleFileCollectionConfig.name, {
+    await qdrantClient.createPayloadIndex(googleFileCollectionConfig.name, {
       field_name: 'embedding_quality_score',
       field_schema: 'float'
     });
     // Create index for created_at for date range filtering in tickets collection
-    await qdrantService.client.createPayloadIndex(ticketCollectionConfig.name, {
+    await qdrantClient.createPayloadIndex(ticketCollectionConfig.name, {
       field_name: 'created_at',
       field_schema: 'integer'
     });
     // Create index for organization for filtering in tickets collection
-    await qdrantService.client.createPayloadIndex(ticketCollectionConfig.name, {
+    await qdrantClient.createPayloadIndex(ticketCollectionConfig.name, {
       field_name: 'organization',
       field_schema: 'keyword'
     });
     // Create index for customer_id for filtering in tickets collection
-    await qdrantService.client.createPayloadIndex(ticketCollectionConfig.name, {
+    await qdrantClient.createPayloadIndex(ticketCollectionConfig.name, {
       field_name: 'customer_id',
       field_schema: 'keyword'
     });

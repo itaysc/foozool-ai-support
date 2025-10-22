@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import QdrantService from '../../qdrant/service';
+import { getCustomerTicketStats } from '../../qdrant/service';
 import { CustomerModel } from '../../schemas/customer.schema';
 import { callLLM } from '../llm';
 import { UserContextManager } from '../../context/userContext';
@@ -50,12 +50,6 @@ export interface HealthScoreFactors {
 }
 
 export class HealthScoreService {
-  private qdrantService: QdrantService;
-
-  constructor() {
-    this.qdrantService = new QdrantService();
-  }
-
   /**
    * Calculate comprehensive health score for a customer
    */
@@ -75,7 +69,7 @@ export class HealthScoreService {
     }
 
     // Get ticket statistics
-    const ticketStats = await this.qdrantService.getCustomerTicketStats(customerId);
+    const ticketStats = await getCustomerTicketStats(customerId);
     
     // Get recent predictions from insights collection
     const { getPredictionInsights } = await import('./index');
