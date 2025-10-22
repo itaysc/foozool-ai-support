@@ -1,9 +1,4 @@
-# Foozool AI Support - Feature Overview
-
-## 🎯 **System Overview**
-Foozool AI Support is a comprehensive customer success and support automation platform that combines AI-powered insights, CRM integration, document management, and autonomous support capabilities to help organizations deliver exceptional customer experiences.
-
----
+# Feature Overview
 
 ## 📊 **INSIGHTS & ANALYTICS**
 
