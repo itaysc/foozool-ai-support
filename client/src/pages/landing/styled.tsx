@@ -320,38 +320,47 @@ export const FeatureCard = styled.div`
 `;
 
 export const FeatureIcon = styled.div`
-  width: 70px;
-  height: 70px;
-  background: linear-gradient(135deg, ${landingPageColors.primary.main}, ${landingPageColors.primary.light});
+  width: 90px;
+  height: 90px;
+  background: transparent;
   border-radius: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  font-size: 2.5rem;
   margin-bottom: 1.5rem;
   position: relative;
-  box-shadow: 
-    0 8px 20px rgba(25, 118, 210, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+  color: transparent;
+  background-image: linear-gradient(135deg, #6b7280 0%, #9ca3af 50%, #d1d5db 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   
-  /* Glow effect */
-  &::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(135deg, ${landingPageColors.primary.main}, ${landingPageColors.primary.light});
-    border-radius: 1.5rem;
-    opacity: 0;
-    filter: blur(8px);
-    transition: opacity 0.3s ease;
-    z-index: -1;
+  &:hover {
+    background-image: linear-gradient(135deg, #4b5563 0%, #6b7280 50%, #9ca3af 100%);
+    transform: scale(1.05);
+    transition: all 0.3s ease;
   }
+`;
+
+export const ColoredFeatureIcon = styled.div<{ color?: string }>`
+  width: 90px;
+  height: 90px;
+  background: transparent;
+  border-radius: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  color: ${props => props.color || '#6b7280'};
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
   
-  &:hover::before {
-    opacity: 0.5;
+  &:hover {
+    transform: scale(1.05);
+    transition: all 0.3s ease;
   }
 `;
 

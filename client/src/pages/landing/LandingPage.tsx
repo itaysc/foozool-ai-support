@@ -181,7 +181,7 @@ const LandingPage: React.FC = () => {
         
         <styled.FeaturesGrid>
           <styled.FeatureCard>
-            <styled.FeatureIcon>🤖</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon color="#fbbf24">⚡</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>Intelligent Data Analysis</styled.FeatureTitle>
             <styled.FeatureDescription>
               Smart data analysis with intelligent recommendations and insights 
@@ -190,7 +190,7 @@ const LandingPage: React.FC = () => {
           </styled.FeatureCard>
 
           <styled.FeatureCard>
-            <styled.FeatureIcon>📊</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon color="#fbbf24">💡</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>50+ AI Insights</styled.FeatureTitle>
             <styled.FeatureDescription>
               Business intelligence scoring, trend prediction, sentiment analysis, growth opportunities, 
@@ -199,7 +199,7 @@ const LandingPage: React.FC = () => {
           </styled.FeatureCard>
 
           <styled.FeatureCard>
-            <styled.FeatureIcon>📁</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon color="#3b82f6">📄</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>Document Intelligence</styled.FeatureTitle>
             <styled.FeatureDescription>
               AI document analysis with automatic classification, sentiment analysis, 
@@ -208,7 +208,7 @@ const LandingPage: React.FC = () => {
           </styled.FeatureCard>
 
           <styled.FeatureCard>
-            <styled.FeatureIcon>🎫</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon color="#8b5cf6">🔗</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>System Integration</styled.FeatureTitle>
             <styled.FeatureDescription>
               Multi-platform support with unified interface, real-time sync, 
@@ -217,7 +217,7 @@ const LandingPage: React.FC = () => {
           </styled.FeatureCard>
 
           <styled.FeatureCard>
-            <styled.FeatureIcon>🔍</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon color="#06b6d4">🔎</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>Advanced Search</styled.FeatureTitle>
             <styled.FeatureDescription>
               Vector search across data, documents, and files using semantic understanding 
@@ -226,7 +226,7 @@ const LandingPage: React.FC = () => {
           </styled.FeatureCard>
 
           <styled.FeatureCard>
-            <styled.FeatureIcon>⚡</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon>🚀</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>Real-time Processing</styled.FeatureTitle>
             <styled.FeatureDescription>
               Webhook integration, background jobs, and live analytics for instant processing 
@@ -283,7 +283,7 @@ const LandingPage: React.FC = () => {
         
         <styled.FeaturesGrid>
           <styled.FeatureCard>
-            <styled.FeatureIcon>🎯</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon color="#059669">💼</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>Business Native</styled.FeatureTitle>
             <styled.FeatureDescription>
               Our platform understands complicated business processes, parses unstructured documentation, 
@@ -292,7 +292,7 @@ const LandingPage: React.FC = () => {
           </styled.FeatureCard>
 
           <styled.FeatureCard>
-            <styled.FeatureIcon>🔧</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon color="#dc2626">⚙️</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>Versatile Application</styled.FeatureTitle>
             <styled.FeatureDescription>
               Use our ready-to-go workflows that generate immediate impact, or fully customize our tools 
@@ -301,7 +301,7 @@ const LandingPage: React.FC = () => {
           </styled.FeatureCard>
 
           <styled.FeatureCard>
-            <styled.FeatureIcon>🤝</styled.FeatureIcon>
+            <styled.ColoredFeatureIcon color="#0ea5e9">🌐</styled.ColoredFeatureIcon>
             <styled.FeatureTitle>Flexible Deployment</styled.FeatureTitle>
             <styled.FeatureDescription>
               Built with enterprise IT in mind—with robust APIs, clean documentation, and secure infrastructure 
@@ -435,7 +435,7 @@ const LandingPage: React.FC = () => {
             <styled.Logo>TKTAI</styled.Logo>
           </Box>
           <Typography variant="body2" color="text.secondary">
-            © 2024 TKTAI. All rights reserved.
+            © 2025 TKTAI. All rights reserved.
           </Typography>
         </Container>
       </styled.Footer>
