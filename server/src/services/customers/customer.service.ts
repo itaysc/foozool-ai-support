@@ -1,5 +1,6 @@
 import { CustomerModel } from '../../schemas/customer.schema';
 import { CreateCustomerRequest, UpdateCustomerRequest, ICustomer, CustomerStats } from '../../types/customer';
+import { invalidateCustomerMeetingPrepCache } from '../cache/cacheInvalidation.service';
 
 export interface CustomerQueryOptions {
   page?: number;
@@ -175,6 +176,21 @@ export interface CustomerQueryOptions {
       { new: true }
     ).lean();
 
+    // Invalidate meeting prep cache if customer was updated
+    if (customer) {
+      try {
+        const updatedFields = Object.keys(updateData);
+        await invalidateCustomerMeetingPrepCache(
+          organizationId, 
+          customerId, 
+          `Customer update: ${updatedFields.join(', ')}`
+        );
+      } catch (error) {
+        console.warn('Failed to invalidate meeting prep cache after customer update:', error);
+        // Don't throw error - cache invalidation failure shouldn't break the main flow
+      }
+    }
+
     return customer;
   }
 
@@ -186,6 +202,20 @@ export interface CustomerQueryOptions {
       _id: customerId,
       organizationId
     });
+
+    // Invalidate meeting prep cache if customer was deleted
+    if (result.deletedCount > 0) {
+      try {
+        await invalidateCustomerMeetingPrepCache(
+          organizationId, 
+          customerId, 
+          'Customer deleted'
+        );
+      } catch (error) {
+        console.warn('Failed to invalidate meeting prep cache after customer deletion:', error);
+        // Don't throw error - cache invalidation failure shouldn't break the main flow
+      }
+    }
 
     return result.deletedCount > 0;
   }

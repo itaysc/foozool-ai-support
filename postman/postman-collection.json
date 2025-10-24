@@ -1510,8 +1510,16 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"forceRegenerate\": false\n}"
+            },
             "url": {
               "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep/{{customer_id}}",
               "host": [
@@ -1525,7 +1533,156 @@
                 "{{customer_id}}"
               ]
             },
-            "description": "Generate a comprehensive customer meeting prep document with customer insights and AI-generated recommendations. The LLM will search for relevant recent news and market context online. Returns a professionally formatted PDF document. Requires 'insights:meeting-prep' permission."
+            "description": "Generate a comprehensive customer meeting prep document with customer insights and AI-generated recommendations. The LLM will search for relevant recent news and market context online. Returns a professionally formatted PDF document. Requires 'insights:meeting-prep' permission. Set forceRegenerate to true to bypass cache."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Meeting Prep Cache Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep/cache/stats",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-meeting-prep",
+                "cache",
+                "stats"
+              ]
+            },
+            "description": "Get cache statistics for meeting prep documents including total cached documents, organization-specific counts, and memory usage."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Meeting Prep Cache Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep/{{customer_id}}/cache/metadata",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-meeting-prep",
+                "{{customer_id}}",
+                "cache",
+                "metadata"
+              ]
+            },
+            "description": "Get cache metadata for a specific customer's meeting prep document including generation timestamp, version, and expiration information."
+          },
+          "response": []
+        },
+        {
+          "name": "Invalidate Meeting Prep Cache",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customer_id}}\",\n  \"reason\": \"Manual cache invalidation\"\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep/cache/invalidate",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-meeting-prep",
+                "cache",
+                "invalidate"
+              ]
+            },
+            "description": "Manually trigger cache invalidation for meeting prep documents. Provide customerId to invalidate specific customer cache, or omit to invalidate all caches for the organization."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Customer Meeting Prep Cache",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep/{{customer_id}}/cache",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-meeting-prep",
+                "{{customer_id}}",
+                "cache"
+              ]
+            },
+            "description": "Delete cached meeting prep document for a specific customer."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Cache Cleanup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep/cache/cleanup",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-meeting-prep",
+                "cache",
+                "cleanup"
+              ]
+            },
+            "description": "Manually trigger cache cleanup to remove expired meeting prep documents."
           },
           "response": []
         },

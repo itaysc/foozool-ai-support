@@ -15,15 +15,31 @@ import { RiskAssessmentService } from '../customers/riskAssessment.service';
 import { EnhancedMeetingPrepPromptGenerator } from '../customers/enhancedMeetingPrepPrompt.service';
 import { MeetingPrepResult } from './types';
 import { getCustomerTicketStats } from '../../qdrant/service';
+import { MeetingPrepCacheService } from '../cache/meetingPrepCache.service';
 
 /**
- * Generate customer meeting prep document
+ * Generate customer meeting prep document with caching
  */
-export async function generateCustomerMeetingPrep(customerId: string): Promise<MeetingPrepResult> {
+export async function generateCustomerMeetingPrep(customerId: string, forceRegenerate: boolean = false): Promise<MeetingPrepResult> {
   const organizationId = UserContextManager.getCurrentOrganizationId();
   
   if (!organizationId) {
     throw new Error('Organization ID not found in user context');
+  }
+
+  const cacheService = MeetingPrepCacheService.getInstance();
+  
+  // Check cache first unless force regeneration is requested
+  if (!forceRegenerate) {
+    try {
+      const cachedResult = await cacheService.getCachedMeetingPrep(organizationId, customerId);
+      if (cachedResult) {
+        console.log(`📋 Using cached meeting prep document for customer ${customerId}`);
+        return cachedResult;
+      }
+    } catch (error) {
+      console.warn('Cache retrieval failed, proceeding with fresh generation:', error);
+    }
   }
 
   // Get customer details
@@ -230,6 +246,22 @@ export async function generateCustomerMeetingPrep(customerId: string): Promise<M
 
   const pdfDoc = generateMeetingPrepPdf(pdfData);
   const filename = `meeting-prep-${customer.name?.replace(/[^a-zA-Z0-9]/g, '-') || 'customer'}-${new Date().toISOString().split('T')[0]}.pdf`;
+  
+  // Cache the generated document
+  try {
+    await cacheService.cacheMeetingPrep(
+      organizationId,
+      customerId,
+      customer.name || 'Unknown Customer',
+      pdfDoc,
+      filename,
+      UserContextManager.getCurrentUserId() || 'System'
+    );
+    console.log(`💾 Cached meeting prep document for customer ${customerId}`);
+  } catch (error) {
+    console.warn('Failed to cache meeting prep document:', error);
+    // Don't throw error - caching failure shouldn't break the main flow
+  }
   
   return { pdfDoc, filename };
 }

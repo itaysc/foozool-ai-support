@@ -54,7 +54,9 @@ router.get('/customer-success', authenticateJWT, hasPermission('insights:read'),
 router.post('/customer-meeting-prep/:customerId', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
   try {
     const { customerId } = req.params;
-    const { pdfDoc, filename } = await generateCustomerMeetingPrep(customerId);
+    const { forceRegenerate } = req.body;
+    
+    const { pdfDoc, filename } = await generateCustomerMeetingPrep(customerId, forceRegenerate);
     
     // Set response headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
@@ -70,6 +72,176 @@ router.post('/customer-meeting-prep/:customerId', authenticateJWT, hasPermission
                    err.message === 'Organization ID not found in user context' ? 400 :
                    err.message === 'User ID is required for LLM operations' ? 400 : 500;
     return res.status(status).json({ status, error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * DELETE /insights/customer-meeting-prep/:customerId/cache
+ * Invalidate cached meeting prep document for a specific customer
+ */
+router.delete('/customer-meeting-prep/:customerId/cache', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const organizationId = req.user!.organization;
+    
+    if (!organizationId) {
+      return res.status(400).json({ error: "Missing organizationId" });
+    }
+
+    const { MeetingPrepCacheService } = await import('../../../services/cache/meetingPrepCache.service');
+    const cacheService = MeetingPrepCacheService.getInstance();
+    
+    await cacheService.invalidateCache(organizationId.toString(), customerId);
+    
+    res.json({ 
+      success: true, 
+      message: `Cache invalidated for customer ${customerId}` 
+    });
+
+  } catch (err: any) {
+    console.error('Error invalidating meeting prep cache:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * GET /insights/customer-meeting-prep/cache/stats
+ * Get cache statistics for meeting prep documents
+ */
+router.get('/customer-meeting-prep/cache/stats', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
+  try {
+    const organizationId = req.user!.organization;
+    
+    if (!organizationId) {
+      return res.status(400).json({ error: "Missing organizationId" });
+    }
+
+    const { MeetingPrepCacheService } = await import('../../../services/cache/meetingPrepCache.service');
+    const cacheService = MeetingPrepCacheService.getInstance();
+    
+    const stats = await cacheService.getCacheStats(organizationId.toString());
+    
+    res.json({ 
+      success: true, 
+      stats 
+    });
+
+  } catch (err: any) {
+    console.error('Error getting cache stats:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * GET /insights/customer-meeting-prep/:customerId/cache/metadata
+ * Get cache metadata for a specific customer's meeting prep document
+ */
+router.get('/customer-meeting-prep/:customerId/cache/metadata', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const organizationId = req.user!.organization;
+    
+    if (!organizationId) {
+      return res.status(400).json({ error: "Missing organizationId" });
+    }
+
+    const { MeetingPrepCacheService } = await import('../../../services/cache/meetingPrepCache.service');
+    const cacheService = MeetingPrepCacheService.getInstance();
+    
+    const metadata = await cacheService.getCacheMetadata(organizationId.toString(), customerId);
+    
+    if (!metadata) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'No cached document found for this customer' 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      metadata 
+    });
+
+  } catch (err: any) {
+    console.error('Error getting cache metadata:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * POST /insights/customer-meeting-prep/cache/invalidate
+ * Manually trigger cache invalidation for meeting prep documents
+ */
+router.post('/customer-meeting-prep/cache/invalidate', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
+  try {
+    const organizationId = req.user!.organization;
+    const { customerId, reason } = req.body;
+    
+    if (!organizationId) {
+      return res.status(400).json({ error: "Missing organizationId" });
+    }
+
+    const { CacheInvalidationService } = await import('../../../services/cache/cacheInvalidation.service');
+    const cacheInvalidationService = CacheInvalidationService.getInstance();
+    
+    if (customerId) {
+      // Invalidate specific customer cache
+      await cacheInvalidationService.invalidateCustomerCache(
+        organizationId.toString(), 
+        customerId, 
+        reason || 'Manual invalidation'
+      );
+      
+      res.json({ 
+        success: true, 
+        message: `Cache invalidated for customer ${customerId}`,
+        invalidatedCustomer: customerId
+      });
+    } else {
+      // Invalidate all caches for the organization
+      await cacheInvalidationService.invalidateOrganizationCache(
+        organizationId.toString(), 
+        reason || 'Manual organization-wide invalidation'
+      );
+      
+      res.json({ 
+        success: true, 
+        message: `All caches invalidated for organization ${organizationId}`,
+        invalidatedOrganization: organizationId
+      });
+    }
+
+  } catch (err: any) {
+    console.error('Error invalidating meeting prep cache:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * POST /insights/customer-meeting-prep/cache/cleanup
+ * Manually trigger cache cleanup (remove expired caches)
+ */
+router.post('/customer-meeting-prep/cache/cleanup', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
+  try {
+    const organizationId = req.user!.organization;
+    
+    if (!organizationId) {
+      return res.status(400).json({ error: "Missing organizationId" });
+    }
+
+    const { CacheCleanupJob } = await import('../../../jobs/cache-cleanup.job');
+    const cacheCleanupJob = CacheCleanupJob.getInstance();
+    
+    await cacheCleanupJob.runCleanupNow();
+    
+    res.json({ 
+      success: true, 
+      message: 'Cache cleanup completed successfully'
+    });
+
+  } catch (err: any) {
+    console.error('Error running cache cleanup:', err);
+    return res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
