@@ -36,6 +36,7 @@ import botsRoutesV1 from './routes/bots/v1';
 import utilsRoutesV1 from './routes/utils/v1';
 import permissionsRoutesV1 from './routes/permissions/v1';
 import docsRoutesV1 from './routes/docs/v1';
+import leadsRoutesV1 from './routes/leads/v1';
 
 import newsRoutesV1 from './routes/news/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
@@ -107,6 +108,7 @@ export default class Server{
       this.app.use('/api/v1/utils', utilsRoutesV1);
       this.app.use('/api/v1/permissions', permissionsRoutesV1);
       this.app.use('/api/v1/docs', docsRoutesV1);
+      this.app.use('/api/v1', leadsRoutesV1);
 
       this.app.use('/api/v1/news', newsRoutesV1);
       this.app.use('/api/v1/train', modelTrainingRoutesV1);

@@ -2,6 +2,7 @@ import AvatarScene from "@/3d";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Test from "@/pages/test";
 import Login from "@/pages/login";
+import LandingPage from "@/pages/landing/LandingPage";
 // Dashboard page removed
 
 import Settings from "@/pages/settings";
@@ -19,21 +20,21 @@ import Layout from "./layouts/main.layout";
 import ProtectedRoute from "./ProtectRoute";
 
 export const supportedRoutes = [
-    '/insights',
-    '/insights/:organizationId',
-    '/performance',
-    '/performance/:organizationId',
-    '/anomalies',
-    '/anomalies/:organizationId',
-    '/customers',
-    '/customers/new',
-    '/customers/:customerId',
-    '/customers/:customerId/dashboard',
-    '/customers/edit/:customerId',
-    '/docs',
-    '/settings',
-    '/invoice',
-    '/invoice/:id'
+    '/dashboard/insights',
+    '/dashboard/insights/:organizationId',
+    '/dashboard/performance',
+    '/dashboard/performance/:organizationId',
+    '/dashboard/anomalies',
+    '/dashboard/anomalies/:organizationId',
+    '/dashboard/customers',
+    '/dashboard/customers/new',
+    '/dashboard/customers/:customerId',
+    '/dashboard/customers/:customerId/dashboard',
+    '/dashboard/customers/edit/:customerId',
+    '/dashboard/docs',
+    '/dashboard/settings',
+    '/dashboard/invoice',
+    '/dashboard/invoice/:id'
 ]
 
 const Router = () => {
@@ -41,10 +42,11 @@ const Router = () => {
         <BrowserRouter>
             <Routes>
                 {/* Public routes */}
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />                
                 {/* Protected routes with layout */}
-                <Route path="/" element={<Layout />}>
-                    <Route index element={<Navigate to="/insights" replace />} />
+                <Route path="/dashboard" element={<Layout />}>
+                    <Route index element={<Navigate to="/dashboard/insights" replace />} />
 
                     <Route path="insights" element={<ProtectedRoute element={<Insights />} />} />
                     <Route path="insights/:organizationId" element={<ProtectedRoute element={<Insights />} />} />

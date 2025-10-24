@@ -30,11 +30,11 @@ const Login = () => {
   const { requestedUrl, setRequestedUrl } = useMainLayoutContext();
   const { login, isAuthenticated, isLoading } = useAuth();
 
-  // Redirect to home page if user is already authenticated
+  // Redirect to dashboard if user is already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      console.log('🔄 User already authenticated, redirecting to home...');
-      navigate('/');
+      console.log('🔄 User already authenticated, redirecting to dashboard...');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, isLoading, navigate]);
 
@@ -87,7 +87,7 @@ const Login = () => {
             navigate(requestedUrl);
             setRequestedUrl(null);
           } else {
-            navigate("/");
+            navigate("/dashboard");
           }
         } else {
           setIsWrongCredentials(true);
