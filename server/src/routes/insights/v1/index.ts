@@ -7,11 +7,12 @@ import {
   getAllInsights,
   getCustomerSuccessInsights,
   getAllCustomerSuccessInsights,
-  generateCustomerMeetingPrep,
   updateInsightAssignee,
   updateInsightStatus,
   getAllUnifiedInsights
 } from '../../../services/insights';
+
+import { generateCustomerMeetingPrep } from '../../../services/meeting-prep/v1';
 
 // Import comment routes
 import commentsRouter from './comments';
@@ -55,8 +56,12 @@ router.post('/customer-meeting-prep/:customerId', authenticateJWT, hasPermission
   try {
     const { customerId } = req.params;
     const { forceRegenerate } = req.body;
+    const { useCache = 'true' } = req.query;
     
-    const { pdfDoc, filename } = await generateCustomerMeetingPrep(customerId, forceRegenerate);
+    // Convert useCache string to boolean
+    const shouldUseCache = useCache === 'true';
+    
+    const { pdfDoc, filename } = await generateCustomerMeetingPrep(customerId, forceRegenerate || !shouldUseCache);
     
     // Set response headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
@@ -242,6 +247,70 @@ router.post('/customer-meeting-prep/cache/cleanup', authenticateJWT, hasPermissi
   } catch (err: any) {
     console.error('Error running cache cleanup:', err);
     return res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * POST /insights/customer-meeting-prep-v2/:customerId
+ * Generate a lightweight customer meeting prep document V2 (minimal LLM usage)
+ */
+router.post('/customer-meeting-prep-v2/:customerId', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { forceRegenerate } = req.body;
+    const { useCache = 'true' } = req.query;
+    
+    // Convert useCache string to boolean
+    const shouldUseCache = useCache === 'true';
+    
+    const { generateCustomerMeetingPrepV2 } = await import('../../../services/meeting-prep/v2');
+    const { pdfBuffer, filename } = await generateCustomerMeetingPrepV2(customerId, forceRegenerate || !shouldUseCache);
+    
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    // Send the PDF buffer to the response
+    res.send(pdfBuffer);
+
+  } catch (err: any) {
+    console.error('Error generating customer meeting prep document V2:', err);
+    const status = err.message === 'Customer not found' ? 404 : 
+                   err.message === 'Organization ID not found in user context' ? 400 :
+                   err.message === 'User ID is required for LLM operations' ? 400 : 500;
+    return res.status(status).json({ status, error: err.message || 'Internal server error' });
+  }
+});
+
+/**
+ * POST /insights/customer-meeting-prep-v2-minimal/:customerId
+ * Generate a minimal customer meeting prep document V2 (ultra-lightweight)
+ */
+router.post('/customer-meeting-prep-v2-minimal/:customerId', authenticateJWT, hasPermission('insights:meeting-prep'), async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { forceRegenerate } = req.body;
+    const { useCache = 'true' } = req.query;
+    
+    // Convert useCache string to boolean
+    const shouldUseCache = useCache === 'true';
+    
+    const { generateCustomerMeetingPrepV2Minimal } = await import('../../../services/meeting-prep/v2');
+    const { pdfBuffer, filename } = await generateCustomerMeetingPrepV2Minimal(customerId, forceRegenerate || !shouldUseCache);
+    
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    // Send the PDF buffer to the response
+    res.send(pdfBuffer);
+
+  } catch (err: any) {
+    console.error('Error generating customer meeting prep document V2 Minimal:', err);
+    const status = err.message === 'Customer not found' ? 404 : 
+                   err.message === 'Organization ID not found in user context' ? 400 :
+                   err.message === 'User ID is required for LLM operations' ? 400 : 500;
+    return res.status(status).json({ status, error: err.message || 'Internal server error' });
   }
 });
 

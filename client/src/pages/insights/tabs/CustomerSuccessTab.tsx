@@ -53,7 +53,7 @@ const CustomerSuccessTab: React.FC<CustomerSuccessTabProps> = ({
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `meeting-prep-${sanitizedCustomerName}.pdf`;
+    link.download = `meeting-prep-v2-${sanitizedCustomerName}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

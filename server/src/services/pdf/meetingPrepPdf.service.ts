@@ -90,18 +90,34 @@ export class MeetingPrepPdfGenerator {
   }
 
   generatePdf(data: MeetingPrepData): any {
+    console.log('PDF: Starting PDF generation...');
     this.addHeader(data.customer.name, data.generatedAt);
+    console.log('PDF: Header added');
+    
     this.addCustomerProfile(data.customer);
+    console.log('PDF: Customer profile added');
+    
     this.addHealthScore(data.healthScore);
+    console.log('PDF: Health score added');
+    
     this.addRiskAssessment(data.riskAssessment);
-    this.addCustomerNews(data.customerNews);
+    console.log('PDF: Risk assessment added');
+    
+    
     this.addInsights(data.insights);
+    console.log('PDF: Insights added');
+    
     this.addDocumentContent(data.documentContent);
+    console.log('PDF: Document content added');
+    
     this.addFooter(data.generatedBy);
+    console.log('PDF: Footer added');
 
     // Ensure no empty pages at the end
     this.ensureNoEmptyPages();
+    console.log('PDF: Empty pages check completed');
 
+    console.log('PDF: PDF generation completed successfully');
     return this.doc;
   }
 
@@ -195,7 +211,7 @@ export class MeetingPrepPdfGenerator {
       .fontSize(16)
       .font('Helvetica-Bold')
       .fillColor(overallColor)
-      .text(`Overall Health Score: ${healthScore.overallScore}/100`, this.margin, this.currentY);
+      .text(`Overall Health Score: ${healthScore.overallScore}/10`, this.margin, this.currentY);
     
     this.currentY += 20;
 
@@ -208,16 +224,16 @@ export class MeetingPrepPdfGenerator {
 
     healthData.forEach(item => {
       this.doc
-        .fontSize(10)
+        .fontSize(12)
         .font('Helvetica-Bold')
         .fillColor('#4a5568')
         .text(`${item.label}:`, this.margin, this.currentY);
       
       this.doc
-        .fontSize(10)
+        .fontSize(12)
         .font('Helvetica')
         .fillColor(item.color)
-        .text(`${item.score}/100`, this.margin + 120, this.currentY);
+        .text(`${item.score}/10`, this.margin + 120, this.currentY);
       
       this.currentY += 15;
     });
@@ -271,7 +287,7 @@ export class MeetingPrepPdfGenerator {
         
         this.currentY += 15;
 
-        // Evidence
+        // Evidence - simplified positioning
         if (riskItem.risk.evidence.length > 0) {
           this.doc
             .fontSize(9)
@@ -281,19 +297,20 @@ export class MeetingPrepPdfGenerator {
           
           this.currentY += 12;
           
-          riskItem.risk.evidence.forEach(evidence => {
-            this.doc
-              .fontSize(8)
-              .font('Helvetica')
-              .fillColor('#718096')
-              .text(`• ${evidence}`, this.margin + 30, this.currentY, {
-                width: this.contentWidth - 30
-              });
-            this.currentY += 12;
-          });
+          // Let PDFKit handle text flow for evidence items
+          const evidenceText = riskItem.risk.evidence.map(e => `• ${e}`).join('\n');
+          this.doc
+            .fontSize(8)
+            .font('Helvetica')
+            .fillColor('#718096')
+            .text(evidenceText, this.margin + 30, this.currentY, {
+              width: this.contentWidth - 30
+            });
+          
+          this.currentY += (riskItem.risk.evidence.length * 12) + 5;
         }
 
-        // Recommendations
+        // Recommendations - simplified positioning
         if (riskItem.risk.recommendations.length > 0) {
           this.doc
             .fontSize(9)
@@ -303,16 +320,17 @@ export class MeetingPrepPdfGenerator {
           
           this.currentY += 12;
           
-          riskItem.risk.recommendations.slice(0, 3).forEach(rec => {
-            this.doc
-              .fontSize(8)
-              .font('Helvetica')
-              .fillColor('#4a5568')
-              .text(`• ${rec}`, this.margin + 30, this.currentY, {
-                width: this.contentWidth - 30
-              });
-            this.currentY += 12;
-          });
+          // Let PDFKit handle text flow for recommendations
+          const recommendationsText = riskItem.risk.recommendations.slice(0, 3).map(r => `• ${r}`).join('\n');
+          this.doc
+            .fontSize(8)
+            .font('Helvetica')
+            .fillColor('#4a5568')
+            .text(recommendationsText, this.margin + 30, this.currentY, {
+              width: this.contentWidth - 30
+            });
+          
+          this.currentY += (Math.min(riskItem.risk.recommendations.length, 3) * 12) + 5;
         }
 
         this.currentY += 10;
@@ -320,192 +338,6 @@ export class MeetingPrepPdfGenerator {
     });
   }
 
-  private addCustomerNews(customerNews?: NewsResult): void {
-    console.log('PDF: addCustomerNews called with:', {
-      hasCustomerNews: !!customerNews,
-      hasNewsArray: !!customerNews?.news,
-      newsLength: customerNews?.news?.length || 0,
-      hasSummary: !!customerNews?.summary,
-      hasActionItems: !!customerNews?.actionItems,
-      actionItemsLength: customerNews?.actionItems?.length || 0
-    });
-
-    // Always add the section title, even if no news
-    this.addSectionTitle('Recent Company News');
-
-    if (!customerNews || !customerNews.news || customerNews.news.length === 0) {
-      console.log('PDF: No customer news to display - showing fallback message');
-      
-      this.doc
-        .fontSize(10)
-        .font('Helvetica')
-        .fillColor('#718096')
-        .text('No recent news items found for this customer. This could be due to:', this.margin, this.currentY, {
-          width: this.contentWidth
-        });
-      
-      this.currentY += 15;
-      
-      this.doc
-        .fontSize(9)
-        .font('Helvetica')
-        .fillColor('#a0aec0')
-        .text('• Customer name not available for news search', this.margin + 20, this.currentY);
-      
-      this.currentY += 12;
-      
-      this.doc
-        .fontSize(9)
-        .font('Helvetica')
-        .fillColor('#a0aec0')
-        .text('• No recent news articles found', this.margin + 20, this.currentY);
-      
-      this.currentY += 12;
-      
-      this.doc
-        .fontSize(9)
-        .font('Helvetica')
-        .fillColor('#a0aec0')
-        .text('• News service temporarily unavailable', this.margin + 20, this.currentY);
-      
-      this.currentY += 20;
-      return;
-    }
-
-    console.log('PDF: Adding customer news section with', customerNews.news.length, 'items');
-
-    // News summary
-    if (customerNews.summary) {
-      this.doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .fillColor('#2d3748')
-        .text('Summary:', this.margin, this.currentY);
-      
-      this.currentY += 15;
-      
-      this.doc
-        .fontSize(9)
-        .font('Helvetica')
-        .fillColor('#4a5568')
-        .text(this.cleanTextForPdf(customerNews.summary), this.margin, this.currentY, {
-          width: this.contentWidth
-        });
-      
-      this.currentY += 20;
-    }
-
-    // Individual news items
-    const relevantNews = customerNews.news.filter(item => 
-      item.relevance === 'high' || item.relevance === 'medium'
-    ).slice(0, 5); // Limit to top 5 most relevant items
-
-    if (relevantNews.length > 0) {
-      this.doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .fillColor('#2d3748')
-        .text('Key News Items:', this.margin, this.currentY);
-      
-      this.currentY += 15;
-
-      relevantNews.forEach((item, index) => {
-        this.checkPageBreak(60);
-        
-        // News title
-        this.doc
-          .fontSize(10)
-          .font('Helvetica-Bold')
-          .fillColor('#1a365d')
-          .text(`${index + 1}. ${this.cleanTextForPdf(item.title)}`, this.margin, this.currentY, {
-            width: this.contentWidth
-          });
-        
-        this.currentY += 15;
-
-        // News metadata (date, source, relevance, impact)
-        const metadata = [
-          `Date: ${new Date(item.pubDate).toLocaleDateString()}`,
-          `Source: ${item.source}`,
-          `Relevance: ${item.relevance.toUpperCase()}`,
-          `Impact: ${item.impact.toUpperCase()}`
-        ].join(' | ');
-
-        this.doc
-          .fontSize(8)
-          .font('Helvetica')
-          .fillColor('#718096')
-          .text(metadata, this.margin, this.currentY);
-        
-        this.currentY += 12;
-
-        // News summary or content snippet
-        const content = item.summary || item.contentSnippet || item.content;
-        if (content) {
-          const truncatedContent = content.length > 200 ? content.substring(0, 200) + '...' : content;
-          
-          this.doc
-            .fontSize(9)
-            .font('Helvetica')
-            .fillColor('#4a5568')
-            .text(this.cleanTextForPdf(truncatedContent), this.margin, this.currentY, {
-              width: this.contentWidth
-            });
-          
-          this.currentY += 20;
-        }
-
-        // Categories if available
-        if (item.categories && item.categories.length > 0) {
-          this.doc
-            .fontSize(8)
-            .font('Helvetica-Bold')
-            .fillColor('#805ad5')
-            .text(`Categories: ${item.categories.join(', ')}`, this.margin, this.currentY);
-          
-          this.currentY += 15;
-        }
-
-        this.currentY += 10;
-      });
-    }
-
-    // Action items from news if available
-    if (customerNews.actionItems && customerNews.actionItems.length > 0) {
-      this.doc
-        .fontSize(11)
-        .font('Helvetica-Bold')
-        .fillColor('#2d3748')
-        .text('News-Based Action Items:', this.margin, this.currentY);
-      
-      this.currentY += 15;
-
-      customerNews.actionItems.slice(0, 3).forEach((actionItem, index) => {
-        this.checkPageBreak(40);
-        
-        const priorityColor = actionItem.priority === 'high' ? '#e53e3e' : 
-                             actionItem.priority === 'medium' ? '#dd6b20' : '#38a169';
-        
-        this.doc
-          .fontSize(9)
-          .font('Helvetica-Bold')
-          .fillColor(priorityColor)
-          .text(`${index + 1}. [${actionItem.priority.toUpperCase()}] ${this.cleanTextForPdf(actionItem.title)}`, this.margin, this.currentY);
-        
-        this.currentY += 12;
-        
-        this.doc
-          .fontSize(8)
-          .font('Helvetica')
-          .fillColor('#4a5568')
-          .text(this.cleanTextForPdf(actionItem.description), this.margin, this.currentY, {
-            width: this.contentWidth
-          });
-        
-        this.currentY += 15;
-      });
-    }
-  }
 
   private addInsights(insights: CustomerSuccessInsight[]): void {
     if (insights.length === 0) return;
@@ -533,23 +365,9 @@ export class MeetingPrepPdfGenerator {
     console.log('PDF: Document content length:', content.length);
     console.log('PDF: Document content preview:', content.substring(0, 500));
 
-    // Parse the content into sections
-    const sections = this.parseDocumentSections(content);
-    
-    console.log('PDF: Parsed sections count:', sections.length);
-    sections.forEach((section, index) => {
-      console.log(`PDF: Section ${index + 1}: "${section.title}" (${section.content.length} chars)`);
-    });
-    
-    if (sections.length > 0) {
-      sections.forEach(section => {
-        this.addDocumentSection(section.title, section.content);
-      });
-    } else {
-      // Fallback: if parsing fails, show the raw content
-      console.log('PDF: No sections parsed, using raw content fallback');
-      this.addRawContent(content);
-    }
+    // Render content directly using PDFKit's native formatting - no complex parsing needed!
+    console.log('PDF: Rendering content directly with PDFKit formatting');
+    this.addRawContent(content);
   }
 
   private addFooter(generatedBy: string): void {
@@ -562,9 +380,6 @@ export class MeetingPrepPdfGenerator {
       .fontSize(8)
       .font('Helvetica')
       .fillColor('#718096')
-      .text(`Generated by ${generatedBy}`, this.margin, footerY, {
-        align: 'left'
-      })
       .text(`Page ${this.doc.pageNumber}`, this.pageWidth - this.margin - 50, footerY, {
         align: 'right'
       });
@@ -611,54 +426,52 @@ export class MeetingPrepPdfGenerator {
   private addTwoColumnData(leftData: Array<{label: string, value: string}>, rightData: Array<{label: string, value: string}>): void {
     this.checkPageBreak(30);
     
-    const columnWidth = (this.contentWidth - 20) / 2;
-    const startY = this.currentY;
-    const labelWidth = 100; // Fixed width for labels to prevent overlap
-    const valueStartX = this.margin + labelWidth + 10; // 10px gap between label and value
-
+    // Simple approach: render left column first, then right column
+    // PDFKit will handle text flow automatically
+    
     // Left column
-    leftData.forEach((item, index) => {
-      const yPos = startY + (index * 15);
-      
+    leftData.forEach(item => {
       this.doc
-        .fontSize(10)
+        .fontSize(12)
         .font('Helvetica-Bold')
         .fillColor('#4a5568')
-        .text(item.label + ':', this.margin, yPos, { width: labelWidth });
+        .text(`${item.label}:`, this.margin, this.currentY);
       
       this.doc
-        .fontSize(10)
+        .fontSize(12)
         .font('Helvetica')
         .fillColor('#2d3748')
-        .text(item.value, valueStartX, yPos, { width: columnWidth - labelWidth - 10 });
+        .text(item.value, this.margin + 120, this.currentY);
+      
+      this.currentY += 15;
     });
-
-    // Right column
-    const rightColumnStartX = this.margin + columnWidth + 20;
+    
+    // Right column - start at same Y as left column
+    const rightColumnStartY = this.currentY - (leftData.length * 15);
     rightData.forEach((item, index) => {
-      const yPos = startY + (index * 15);
+      const yPos = rightColumnStartY + (index * 15);
       
       this.doc
-        .fontSize(10)
+        .fontSize(12)
         .font('Helvetica-Bold')
         .fillColor('#4a5568')
-        .text(item.label + ':', rightColumnStartX, yPos, { width: labelWidth });
+        .text(`${item.label}:`, this.margin + 300, yPos);
       
       this.doc
-        .fontSize(10)
+        .fontSize(12)
         .font('Helvetica')
         .fillColor('#2d3748')
-        .text(item.value, rightColumnStartX + labelWidth + 10, yPos, { width: columnWidth - labelWidth - 10 });
+        .text(item.value, this.margin + 420, yPos);
     });
-
-    this.currentY = startY + (Math.max(leftData.length, rightData.length) * 15) + 15;
+    
+    this.currentY += 15;
   }
 
   private addFieldWithList(label: string, items: string[]): void {
     this.checkPageBreak(25);
     
     this.doc
-      .fontSize(10)
+      .fontSize(12)
       .font('Helvetica-Bold')
       .fillColor('#4a5568')
       .text(label + ':', this.margin, this.currentY);
@@ -666,7 +479,7 @@ export class MeetingPrepPdfGenerator {
     this.currentY += 15;
     
     this.doc
-      .fontSize(10)
+      .fontSize(12)
       .font('Helvetica')
       .fillColor('#2d3748')
       .text(items.join(', '), this.margin + 20, this.currentY, {
@@ -680,7 +493,7 @@ export class MeetingPrepPdfGenerator {
     this.checkPageBreak(25);
     
     this.doc
-      .fontSize(10)
+      .fontSize(12)
       .font('Helvetica-Bold')
       .fillColor('#4a5568')
       .text('Usage Data:', this.margin, this.currentY);
@@ -690,7 +503,7 @@ export class MeetingPrepPdfGenerator {
     const usageText = `Active Users: ${usageData.activeUsersCount || 'N/A'} | Seats Used: ${usageData.seatsUsed || 'N/A'} / ${usageData.seatsPurchased || 'N/A'}`;
     
     this.doc
-      .fontSize(10)
+      .fontSize(12)
       .font('Helvetica')
       .fillColor('#2d3748')
       .text(usageText, this.margin + 20, this.currentY);
@@ -704,16 +517,16 @@ export class MeetingPrepPdfGenerator {
     const severityColor = this.getSeverityColor(insight.severity);
     const typeText = insight.type.replace(/_/g, ' ').toUpperCase();
     
-    // Insight type and severity
+    // Insight type and severity - let PDFKit handle positioning
     this.doc
-      .fontSize(10)
+      .fontSize(12)
       .font('Helvetica-Bold')
       .fillColor(severityColor)
       .text(`• ${typeText} (${insight.severity.toUpperCase()})`, this.margin, this.currentY);
     
     this.currentY += 15;
     
-    // Insight message
+    // Insight message - let PDFKit handle text wrapping
     this.doc
       .fontSize(9)
       .font('Helvetica')
@@ -725,129 +538,75 @@ export class MeetingPrepPdfGenerator {
     this.currentY += 20;
   }
 
-  private addDocumentSection(title: string, content: string): void {
-    this.checkPageBreak(40);
-    
-    // Section title (clean for PDF) - make it more prominent
-    const cleanTitle = this.cleanTextForPdf(title);
-    this.doc
-      .fontSize(16)
-      .font('Helvetica-Bold')
-      .fillColor('#1a365d')
-      .text(cleanTitle, this.margin, this.currentY);
-    
-    this.currentY += 25;
-    
-    // Add a subtle line under the title
-    this.doc
-      .strokeColor('#e2e8f0')
-      .lineWidth(0.5)
-      .moveTo(this.margin, this.currentY - 5)
-      .lineTo(this.pageWidth - this.margin, this.currentY - 5)
-      .stroke();
-    
-    this.currentY += 15;
-    
-    // Section content (clean for PDF)
-    const cleanContent = this.cleanTextForPdf(content);
-    this.doc
-      .fontSize(10)
-      .font('Helvetica')
-      .fillColor('#4a5568')
-      .text(cleanContent, this.margin, this.currentY, {
-        width: this.contentWidth,
-        align: 'justify'
-      });
-    
-    this.currentY += this.doc.heightOfString(cleanContent, {
-      width: this.contentWidth
-    }) + 20;
-  }
-
-  private parseDocumentSections(content: string): Array<{title: string, content: string}> {
-    const sections: Array<{title: string, content: string}> = [];
-    const lines = content.split('\n');
-    let currentSection = { title: '', content: '' };
-    
-    console.log('PDF: Parsing document sections, total lines:', lines.length);
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmedLine = line.trim();
-      
-      // Enhanced section header detection for the new format
-      const isSectionHeader = 
-        // Numbered sections (1. CRITICAL RISK ALERTS) - prioritize this format
-        trimmedLine.match(/^\d+\.\s+[A-Z\s]+/) ||
-        // New format with brackets [CRITICAL] CRITICAL RISK ALERTS
-        trimmedLine.match(/^\[[A-Z\s]+\]\s+[A-Z\s]+/) ||
-        // All caps sections (EXECUTIVE SUMMARY)
-        (trimmedLine.length > 3 && trimmedLine === trimmedLine.toUpperCase() && trimmedLine.match(/^[A-Z\s]+$/)) ||
-        // Bold sections (**EXECUTIVE SUMMARY**)
-        trimmedLine.match(/^\*\*[A-Z\s]+\*\*$/) ||
-        // Hash sections (# EXECUTIVE SUMMARY)
-        trimmedLine.match(/^#\s+[A-Z\s]+$/);
-      
-      if (isSectionHeader) {
-        console.log(`PDF: Found section header at line ${i}: "${trimmedLine}"`);
-        
-        // Save previous section if it exists
-        if (currentSection.title) {
-          sections.push({ ...currentSection });
-          console.log(`PDF: Saved section: "${currentSection.title}"`);
-        }
-        
-        // Clean up the title (remove markdown formatting and brackets)
-        let cleanTitle = trimmedLine
-          .replace(/^\d+\.\s+/, '') // Remove numbering first
-          .replace(/^\[[A-Z\s]+\]\s+/, '') // Remove [CRITICAL] prefix
-          .replace(/^\*\*/, '').replace(/\*\*$/, '') // Remove bold markers
-          .replace(/^#\s+/, '') // Remove hash
-          .trim();
-        
-        console.log(`PDF: Clean title: "${cleanTitle}"`);
-        
-        // Start new section
-        currentSection = {
-          title: cleanTitle,
-          content: ''
-        };
-      } else {
-        // Add content to current section (or start first section if no header found)
-        if (!currentSection.title && sections.length === 0) {
-          currentSection.title = 'Meeting Preparation Content';
-        }
-        currentSection.content += (currentSection.content ? '\n' : '') + line;
-      }
-    }
-    
-    // Add the last section
-    if (currentSection.title) {
-      sections.push(currentSection);
-      console.log(`PDF: Saved final section: "${currentSection.title}"`);
-    }
-    
-    console.log('PDF: Total sections parsed:', sections.length);
-    return sections;
-  }
 
   private addRawContent(content: string): void {
     this.checkPageBreak(50);
     
     const cleanContent = this.cleanTextForPdf(content);
-    this.doc
-      .fontSize(10)
-      .font('Helvetica')
-      .fillColor('#4a5568')
-      .text(cleanContent, this.margin, this.currentY, {
-        width: this.contentWidth,
-        align: 'left'
-      });
     
-    this.currentY += this.doc.heightOfString(cleanContent, {
-      width: this.contentWidth
-    }) + 20;
+    // Use PDFKit's native text rendering with colored severity tags
+    const lines = cleanContent.split('\n');
+    let currentY = this.currentY;
+    
+    lines.forEach(line => {
+      if (line.trim()) {
+        this.renderLineWithColoredTags(line, currentY);
+        currentY += 15; // Standard line height
+      } else {
+        currentY += 10; // Empty line spacing
+      }
+    });
+    
+    this.currentY = currentY + 20;
   }
+  
+  private renderLineWithColoredTags(line: string, y: number): void {
+    // Split line by severity tags using PDFKit's native text positioning
+    const parts = line.split(/(\[HIGH\]|\[MED\]|\[LOW\])/);
+    let currentX = this.margin;
+    
+    parts.forEach(part => {
+      if (part === '[HIGH]') {
+        this.doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .fillColor('#dc2626') // Red for high
+          .text(part, currentX, y);
+        currentX += this.doc.widthOfString(part);
+      } else if (part === '[MED]') {
+        this.doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .fillColor('#d97706') // Orange for medium
+          .text(part, currentX, y);
+        currentX += this.doc.widthOfString(part);
+      } else if (part === '[LOW]') {
+        this.doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .fillColor('#059669') // Green for low
+          .text(part, currentX, y);
+        currentX += this.doc.widthOfString(part);
+      } else if (part.trim()) {
+        // Regular text
+        this.doc
+          .fontSize(12)
+          .font('Helvetica')
+          .fillColor('#4a5568')
+          .text(part, currentX, y, {
+            width: this.contentWidth - (currentX - this.margin),
+            align: 'left'
+          });
+        // Update currentX for next part
+        const textWidth = this.doc.widthOfString(part, { 
+          width: this.contentWidth - (currentX - this.margin) 
+        });
+        currentX += textWidth;
+      }
+    });
+  }
+  
+  // Removed isSectionHeader method - using PDFKit's native text rendering
 
   private getSeverityColor(severity: string): string {
     switch (severity) {
@@ -859,10 +618,10 @@ export class MeetingPrepPdfGenerator {
   }
 
   private getHealthScoreColor(score: number): string {
-    if (score >= 80) return '#38a169'; // Green
-    if (score >= 60) return '#d69e2e'; // Yellow
-    if (score >= 40) return '#ed8936'; // Orange
-    return '#e53e3e'; // Red
+    if (score >= 8) return '#38a169'; // Green (8-10)
+    if (score >= 6) return '#d69e2e'; // Yellow (6-7)
+    if (score >= 4) return '#ed8936'; // Orange (4-5)
+    return '#e53e3e'; // Red (0-3)
   }
 
   private getRiskColor(level: string): string {
@@ -876,38 +635,14 @@ export class MeetingPrepPdfGenerator {
   }
 
   /**
-   * Clean text for PDF generation by replacing emojis and special characters
+   * Basic text cleanup for PDF generation - minimal processing
    */
   private cleanTextForPdf(text: string): string {
     if (!text) return '';
     
+    // Only remove problematic Unicode characters that PDFKit can't handle
     return text
-      // Replace emojis with text equivalents
-      .replace(/🚨/g, '[CRITICAL]')
-      .replace(/⚠️/g, '[WARNING]')
-      .replace(/🔄/g, '[CHURN]')
-      .replace(/😞/g, '[SATISFACTION]')
-      .replace(/📞/g, '[ENGAGEMENT]')
-      .replace(/📰/g, '[NEWS]')
-      .replace(/📊/g, '[HEALTH]')
-      .replace(/💬/g, '[TALKING POINTS]')
-      .replace(/📋/g, '[ACTIONS]')
-      .replace(/❓/g, '[QUESTIONS]')
-      .replace(/🎯/g, '[OPPORTUNITIES]')
-      .replace(/📈/g, '[METRICS]')
-      .replace(/🔄/g, '[FOLLOW-UP]')
-      .replace(/💎/g, '[HIGH VALUE]')
-      .replace(/✅/g, '[EXCELLENT]')
-      .replace(/👍/g, '[GOOD]')
-      .replace(/🔍/g, '[INSIGHTS]')
-      .replace(/🚀/g, '[GROWTH]')
-      .replace(/💻/g, '[USAGE]')
-      .replace(/🏥/g, '[HEALTH SCORE]')
-      .replace(/🔍/g, '[RISK ASSESSMENT]')
-      // Remove any remaining problematic Unicode characters
-      .replace(/[^\x00-\x7F]/g, '')
-      // Clean up extra spaces
-      .replace(/\s+/g, ' ')
+      .replace(/[^\x00-\x7F\n]/g, '') // Remove non-ASCII characters except line breaks
       .trim();
   }
 
@@ -926,6 +661,8 @@ export class MeetingPrepPdfGenerator {
       console.log('PDF: Current page appears to be mostly empty, ensuring proper footer placement');
     }
   }
+
+  // Simplified PDF generation - using PDFKit's native formatting capabilities
 }
 
 export function generateMeetingPrepPdf(data: MeetingPrepData): any {

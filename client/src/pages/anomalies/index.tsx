@@ -362,7 +362,7 @@ const AnomaliesPage: React.FC = () => {
           <Button
             variant="outlined"
             startIcon={<SettingsIcon />}
-            onClick={() => navigate(`/settings?tab=anomalies`)}
+            onClick={() => navigate(`/dashboard/settings?tab=anomalies`)}
           >
             Settings
           </Button>

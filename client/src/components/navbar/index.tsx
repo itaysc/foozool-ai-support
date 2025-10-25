@@ -92,12 +92,12 @@ export const Navbar = observer(() => {
   };
 
   const navigationItems = [
-    { path: '/insights', label: 'Insights', icon: InsightsIcon },
-    { path: '/performance', label: 'Performance', icon: AnalyticsIcon },
-    { path: '/anomalies', label: 'Anomalies', icon: WarningIcon },
-    { path: '/customers', label: 'Customers', icon: PeopleIcon },
-    { path: '/docs', label: 'Docs', icon: DescriptionIcon },
-    { path: '/settings', label: 'Settings', icon: SettingsIcon },
+    { path: '/dashboard/insights', label: 'Insights', icon: InsightsIcon },
+    { path: '/dashboard/performance', label: 'Performance', icon: AnalyticsIcon },
+    { path: '/dashboard/anomalies', label: 'Anomalies', icon: WarningIcon },
+    { path: '/dashboard/customers', label: 'Customers', icon: PeopleIcon },
+    { path: '/dashboard/docs', label: 'Docs', icon: DescriptionIcon },
+    { path: '/dashboard/settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   const isActive = (path: string) => {

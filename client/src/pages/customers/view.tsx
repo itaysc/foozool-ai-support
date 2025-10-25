@@ -194,7 +194,7 @@ const CustomerViewPage: React.FC = () => {
       <Box>
         <Button
           startIcon={<ArrowBack />}
-          onClick={() => navigate('/customers')}
+          onClick={() => navigate('/dashboard/customers')}
           sx={{ mb: 2 }}
         >
           Back to Customers
@@ -214,7 +214,7 @@ const CustomerViewPage: React.FC = () => {
       <Box sx={{ mb: 4 }}>
         <Button
           startIcon={<ArrowBack />}
-          onClick={() => navigate('/customers')}
+          onClick={() => navigate('/dashboard/customers')}
           sx={{ mb: 2, color: 'text.secondary' }}
         >
           Back to Customers
@@ -260,7 +260,7 @@ const CustomerViewPage: React.FC = () => {
             <Button
               variant="outlined"
               startIcon={<Assessment />}
-              onClick={() => navigate(`/customers/${customer._id}/dashboard`)}
+              onClick={() => navigate(`/dashboard/customers/${customer._id}/dashboard`)}
               size="large"
             >
               Dashboard
@@ -268,7 +268,7 @@ const CustomerViewPage: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<Edit />}
-              onClick={() => navigate(`/customers/edit/${customer._id}`)}
+              onClick={() => navigate(`/dashboard/customers/edit/${customer._id}`)}
               size="large"
             >
               Edit Customer

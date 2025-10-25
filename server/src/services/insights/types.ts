@@ -40,7 +40,8 @@ export interface AllCustomerSuccessInsightsResult {
 }
 
 export interface MeetingPrepResult {
-  pdfDoc: any;
+  pdfDoc?: any;
+  pdfBuffer?: Buffer;
   filename: string;
 }
 

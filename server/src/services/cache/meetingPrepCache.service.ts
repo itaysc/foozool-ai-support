@@ -165,13 +165,14 @@ export class MeetingPrepCacheService {
 
       const cachedData: CachedMeetingPrepData = JSON.parse(cachedDataStr);
       
-      // Convert buffer back to PDF document
-      const pdfDoc = await this.bufferToPdf(cachedData.pdfBuffer);
-      
       console.log(`✅ Retrieved cached meeting prep document for org ${organizationId}, customer ${customerId} (version ${cachedData.version})`);
+      
+      // Return both pdfDoc and pdfBuffer to support both v1 and v2
+      const pdfDoc = await this.bufferToPdf(cachedData.pdfBuffer);
       
       return {
         pdfDoc,
+        pdfBuffer: cachedData.pdfBuffer,
         filename: cachedData.filename
       };
     } catch (error) {
@@ -298,17 +299,53 @@ export class MeetingPrepCacheService {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       
-      pdfDoc.on('data', (chunk: Buffer) => {
-        chunks.push(chunk);
-      });
-      
-      pdfDoc.on('end', () => {
-        resolve(Buffer.concat(chunks));
-      });
-      
-      pdfDoc.on('error', (error: Error) => {
-        reject(error);
-      });
+      // Handle PDFKit document objects
+      if (pdfDoc && typeof pdfDoc.on === 'function') {
+        // It's a stream-like object
+        pdfDoc.on('data', (chunk: Buffer) => {
+          chunks.push(chunk);
+        });
+        
+        pdfDoc.on('end', () => {
+          resolve(Buffer.concat(chunks));
+        });
+        
+        pdfDoc.on('error', (error: Error) => {
+          reject(error);
+        });
+      } else {
+        // It's a PDFKit document object, we need to get its buffer
+        try {
+          // For PDFKit documents, we need to call end() to finalize and get the buffer
+          if (pdfDoc && typeof pdfDoc.end === 'function') {
+            pdfDoc.end();
+          }
+          
+          // If it's already a buffer, return it directly
+          if (Buffer.isBuffer(pdfDoc)) {
+            resolve(pdfDoc);
+            return;
+          }
+          
+          // Try to get the buffer from the document
+          if (pdfDoc && pdfDoc._buffer) {
+            resolve(pdfDoc._buffer);
+            return;
+          }
+          
+          // Fallback: try to get buffer from the document's internal representation
+          if (pdfDoc && pdfDoc._pageBuffer) {
+            resolve(pdfDoc._pageBuffer);
+            return;
+          }
+          
+          // If all else fails, create an empty buffer
+          console.warn('Could not extract buffer from PDF document, using empty buffer');
+          resolve(Buffer.alloc(0));
+        } catch (error) {
+          reject(error);
+        }
+      }
     });
   }
 
@@ -317,7 +354,7 @@ export class MeetingPrepCacheService {
    */
   private async bufferToPdf(buffer: Buffer): Promise<any> {
     const { Readable } = require('stream');
-    return Readable.from(buffer);
+    return Readable.from([buffer]);
   }
 
   /**

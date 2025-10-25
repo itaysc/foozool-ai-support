@@ -1538,6 +1538,76 @@
           "response": []
         },
         {
+          "name": "Generate Customer Meeting Prep Document V2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"forceRegenerate\": false\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep-v2/{{customer_id}}",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-meeting-prep-v2",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "Generate a lightweight customer meeting prep document V2 with minimal LLM usage. Uses template-based content generation with only news analysis requiring LLM calls. Much faster than V1. Set forceRegenerate to true to bypass cache."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Customer Meeting Prep Document V2 Minimal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"forceRegenerate\": false\n}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/insights/customer-meeting-prep-v2-minimal/{{customer_id}}",
+              "host": [
+                "{{nodejs_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "insights",
+                "customer-meeting-prep-v2-minimal",
+                "{{customer_id}}"
+              ]
+            },
+            "description": "Generate an ultra-lightweight customer meeting prep document V2 Minimal. Uses only template-based content generation with minimal LLM usage. Fastest option for quick meeting preparation. Set forceRegenerate to true to bypass cache."
+          },
+          "response": []
+        },
+        {
           "name": "Get Meeting Prep Cache Stats",
           "request": {
             "method": "GET",

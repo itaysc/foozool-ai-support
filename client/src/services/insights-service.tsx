@@ -115,10 +115,12 @@ export const insightsService = {
   },
 
   /**
-   * Generate customer meeting prep document for a specific customer
+   * Generate customer meeting prep document for a specific customer (V2 - lightweight)
    */
-  async generateCustomerMeetingPrep(customerId: string): Promise<Blob> {
-    const response = await axios.post(getRoute(`insights/customer-meeting-prep/${customerId}`), {}, {
+  async generateCustomerMeetingPrep(customerId: string, forceRegenerate: boolean = false): Promise<Blob> {
+    const response = await axios.post(getRoute(`insights/customer-meeting-prep-v2/${customerId}?useCache=false`), {
+      forceRegenerate
+    }, {
       responseType: 'blob'
     });
     return response.data;

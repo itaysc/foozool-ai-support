@@ -1,21 +1,21 @@
-import { CustomerModel } from '../../schemas';
-import { UserContextManager } from '../../context/userContext';
-import { generateCustomerSuccessInsights } from './customer-success';
-import { HealthScoreService } from './healthScore.service';
-import { callLLM } from '../llm';
-import { generateMeetingPrepPdf, MeetingPrepData } from '../pdf/meetingPrepPdf.service';
+import { CustomerModel } from '../../../schemas';
+import { UserContextManager } from '../../../context/userContext';
+import { generateCustomerSuccessInsights } from '../../insights/customer-success';
+import { HealthScoreService } from '../../insights/healthScore.service';
+import { callLLM } from '../../llm';
+import { generateMeetingPrepPdf, MeetingPrepData } from '../../pdf/meetingPrepPdf.service';
 import { 
   generateSimpleMeetingPrepPrompt,
   MEETING_PREP_SYSTEM_MESSAGE,
   SIMPLE_MEETING_PREP_SYSTEM_MESSAGE,
   CustomerData,
   InsightData
-} from './prompts';
-import { RiskAssessmentService } from '../customers/riskAssessment.service';
-import { EnhancedMeetingPrepPromptGenerator } from '../customers/enhancedMeetingPrepPrompt.service';
-import { MeetingPrepResult } from './types';
-import { getCustomerTicketStats } from '../../qdrant/service';
-import { MeetingPrepCacheService } from '../cache/meetingPrepCache.service';
+} from '../../insights/prompts';
+import { RiskAssessmentService } from '../../customers/riskAssessment.service';
+import { EnhancedMeetingPrepPromptGenerator } from '../../customers/enhancedMeetingPrepPrompt.service';
+import { MeetingPrepResult } from '../../insights/types';
+import { getCustomerTicketStats } from '../../../qdrant/service';
+import { MeetingPrepCacheService } from '../../cache/meetingPrepCache.service';
 
 /**
  * Generate customer meeting prep document with caching
@@ -74,7 +74,7 @@ export async function generateCustomerMeetingPrep(customerId: string, forceRegen
   // Get CUSTOMER-SPECIFIC CSAT insights (not organization-wide)
   let csatInsights: any = null;
   try {
-    const { SurveysService } = await import('../surveys');
+    const { SurveysService } = await import('../../surveys');
     const surveysService = SurveysService.getInstance();
     csatInsights = await surveysService.getSurveyInsights(organizationId, 'csat', customerId);
   } catch (error) {
@@ -84,7 +84,7 @@ export async function generateCustomerMeetingPrep(customerId: string, forceRegen
   // Get news about the customer company
   let customerNews: any = null;
   try {
-    const { newsService } = await import('../news');
+    const { newsService } = await import('../../news');
     customerNews = await newsService.getNewsForCustomer(customerId);
     console.log(`📰 Fetched ${customerNews?.news?.length || 0} news items about ${customer.name}`);
     console.log('📰 News data structure:', {

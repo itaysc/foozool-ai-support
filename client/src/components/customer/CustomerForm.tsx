@@ -238,7 +238,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
         await customersStore.updateCustomer(customerId, payload);
       }
       
-      navigate('/customers');
+      navigate('/dashboard/customers');
     } catch (err: any) {
       console.error('Error saving customer:', err);
     }
@@ -297,7 +297,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
       <Box sx={{ mb: 4 }}>
         <Button
           startIcon={<ArrowBack />}
-          onClick={() => navigate('/customers')}
+          onClick={() => navigate('/dashboard/customers')}
           variant="text"
           sx={{ mb: 2, color: 'text.secondary', p: 0 }}
         >
@@ -514,7 +514,7 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ mode }) => {
           <Button
             variant="outlined"
             startIcon={<Cancel />}
-            onClick={() => navigate('/customers')}
+            onClick={() => navigate('/dashboard/customers')}
             disabled={customersStore.isSaving}
             size="medium"
           >

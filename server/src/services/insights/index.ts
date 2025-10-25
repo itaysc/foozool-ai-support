@@ -25,7 +25,7 @@ export {
 // Re-export meeting prep service
 export {
   generateCustomerMeetingPrep
-} from './meetingPrep.service';
+} from '../meeting-prep/v1';
 
 // Re-export insight management services
 export {

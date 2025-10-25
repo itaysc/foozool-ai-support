@@ -247,7 +247,7 @@ const CustomerDashboardPage: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Button
-            onClick={() => navigate('/customers')}
+            onClick={() => navigate('/dashboard/customers')}
             startIcon={<ArrowBack />}
             variant="text"
             sx={{ mb: 2, color: 'text.secondary', p: 0 }}
@@ -293,7 +293,7 @@ const CustomerDashboardPage: React.FC = () => {
           <Button
             variant="contained"
             startIcon={<Person />}
-            onClick={() => navigate(`/customers/${customer._id}`)}
+            onClick={() => navigate(`/dashboard/customers/${customer._id}`)}
             size="large"
           >
             View Profile

@@ -316,7 +316,7 @@ const CustomersPage: React.FC = () => {
         <Button
           variant="contained"
           startIcon={<Add />}
-          onClick={() => navigate('/customers/new')}
+          onClick={() => navigate('/dashboard/customers/new')}
         >
           Add Customer
         </Button>
@@ -603,7 +603,7 @@ const CustomersPage: React.FC = () => {
                   <TableRow 
                     key={customer._id} 
                     hover
-                    onClick={() => navigate(`/customers/${customer._id}`)}
+                    onClick={() => navigate(`/dashboard/customers/${customer._id}`)}
                     sx={{ cursor: 'pointer' }}
                   >
                     <TableCell>
@@ -639,7 +639,7 @@ const CustomersPage: React.FC = () => {
                             color="secondary"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/customers/${customer._id}/dashboard`);
+                              navigate(`/dashboard/customers/${customer._id}/dashboard`);
                             }}
                           >
                             <Dashboard sx={{ fontSize: 22 }} />
@@ -659,7 +659,7 @@ const CustomersPage: React.FC = () => {
                             size="medium"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/customers/edit/${customer._id}`);
+                              navigate(`/dashboard/customers/edit/${customer._id}`);
                             }}
                           >
                             <Edit sx={{ fontSize: 22 }} />
