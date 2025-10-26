@@ -2062,7 +2062,197 @@
             "description": "Get all comments where a specific user is tagged"
           },
           "response": []
+    },
+    {
+      "name": "✅ Action Items",
+      "item": [
+        {
+          "name": "Get All Action Items",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items?customerId=&status=&assignee=&priority=&severity=",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items"],
+              "query": [
+                {"key": "customerId", "value": "", "description": "Filter by customer ID"},
+                {"key": "status", "value": "", "description": "Filter by status"},
+                {"key": "assignee", "value": "", "description": "Filter by assignee"},
+                {"key": "priority", "value": "", "description": "Filter by priority"},
+                {"key": "severity", "value": "", "description": "Filter by severity"}
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Action Items by Customer",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/customer/{{customer_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "customer", "{{customer_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Action Items by Insight",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/insight/{{insight_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "insight", "{{insight_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Action Item by ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/{{action_item_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "{{action_item_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Action Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{auth_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"title\": \"Follow up on payment\", \"description\": \"Contact customer\", \"status\": \"new\", \"priority\": \"P1\"}"
             },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Action Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{auth_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"assignee\": \"{{user_id}}\", \"status\": \"in_progress\", \"priority\": \"P0\"}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/{{action_item_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "{{action_item_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Action Item Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{auth_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\": \"resolved\"}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/{{action_item_id}}/status",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "{{action_item_id}}", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Action Item Assignee",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{auth_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"assignee\": \"{{user_id}}\"}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/{{action_item_id}}/assignee",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "{{action_item_id}}", "assignee"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Action Item Priority",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{auth_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"priority\": \"P0\"}"
+            },
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/{{action_item_id}}/priority",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "{{action_item_id}}", "priority"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Action Item",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/{{action_item_id}}/complete",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "{{action_item_id}}", "complete"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Action Item",
+          "request": {
+            "method": "DELETE",
+            "header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/action-items/{{action_item_id}}",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "action-items", "{{action_item_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
     {
       "name": "🚨 Anomaly Detection",
       "item": [

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Box, CircularProgress, Alert } from '@mui/material';
-import { BugReport, Analytics, Assessment, Dashboard } from '@mui/icons-material';
+import { BugReport, Analytics, Assessment, Dashboard, AssignmentInd } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
 import { CustomerSuccessInsight } from '@/types';
 import { insightsService } from '@/services/insights-service';
@@ -14,7 +14,8 @@ import { useInsightsQueryFilters } from '@/hooks/useInsightsQueryFilters';
 import { 
   TicketInsightsTab, 
   CustomerSuccessTab,
-  HealthScoreTab
+  HealthScoreTab,
+  ActionItemsTab
 } from './tabs';
 
 const InsightsPage: React.FC = () => {
@@ -156,6 +157,7 @@ const InsightsPage: React.FC = () => {
   // Determine visible navigation items based on data or configured bots
   const navItems: NavItem[] = [
     { id: 'ticket', label: 'Ticket Insights', icon: <BugReport />, visible: true },
+    { id: 'action-items', label: 'Action Items', icon: <AssignmentInd />, visible: true },
     { id: 'insights', label: 'Insights', icon: <Dashboard />, visible: true },
     { id: 'health', label: 'Customer Health', icon: <Assessment />, visible: true }
   ];
@@ -270,6 +272,14 @@ const InsightsPage: React.FC = () => {
           />
         )}
 
+
+        {activeTab === 'action-items' && (
+          <ActionItemsTab 
+            selectedCustomer={selectedCustomer}
+            customers={customers}
+            onCustomerChange={handleCustomerChange}
+          />
+        )}
 
         {activeTab === 'insights' && (
           <CustomerSuccessTab

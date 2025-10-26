@@ -97,6 +97,7 @@ const StatusSelector: React.FC<StatusSelectorProps> = ({
 
   const getStatusIcon = (statusKey: string) => {
     const config = statusConfig[statusKey as keyof typeof statusConfig];
+    if (!config) return <FiberManualRecord sx={{ fontSize: 14 }} />;
     const IconComponent = config.icon;
     return <IconComponent sx={{ fontSize: 14 }} />;
   };
@@ -124,7 +125,7 @@ const StatusSelector: React.FC<StatusSelectorProps> = ({
           className="status-chip"
           label={currentStatus.label}
           size="small"
-          icon={getStatusIcon(status)}
+          icon={getStatusIcon(status || 'new')}
           sx={{
             backgroundColor: updating ? alpha(currentStatus.color, 0.2) : currentStatus.bgColor,
             color: currentStatus.color,

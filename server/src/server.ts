@@ -37,7 +37,7 @@ import utilsRoutesV1 from './routes/utils/v1';
 import permissionsRoutesV1 from './routes/permissions/v1';
 import docsRoutesV1 from './routes/docs/v1';
 import leadsRoutesV1 from './routes/leads/v1';
-
+import actionItemsRoutes from './routes/action-items';
 import newsRoutesV1 from './routes/news/v1';
 import swaggerRoutesV1 from './routes/swagger/v1';
 import { seed } from "./seeds";
@@ -103,6 +103,7 @@ export default class Server{
       this.app.use('/api/v1/customers', customersRoutesV1);
       this.app.use('/api/v1/solutions', solutionsRoutesV1);
       this.app.use('/api/v1/customer-activity', customerActivityRoutesV1);
+      this.app.use('/api/v1/action-items', actionItemsRoutes);
       this.app.use('/api/v1/industries', industriesRoutesV1);
       this.app.use('/api/v1/bots', botsRoutesV1);
       this.app.use('/api/v1/utils', utilsRoutesV1);

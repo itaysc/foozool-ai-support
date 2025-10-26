@@ -14,7 +14,9 @@ const InsightEvidence: React.FC<InsightComponentProps> = ({ insight }) => {
   const handleLinkClick = (url: string, event: React.MouseEvent) => {
     if (url.startsWith('/')) {
       event.preventDefault();
-      navigate(url);
+      // Ensure URL has /dashboard prefix for internal routes
+      const prefixedUrl = url.startsWith('/dashboard') ? url : `/dashboard${url}`;
+      navigate(prefixedUrl);
     }
     // External links will open in new tab as usual
   };
@@ -123,7 +125,7 @@ const InsightEvidence: React.FC<InsightComponentProps> = ({ insight }) => {
                     <li key={i}>
                       <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 0.5 }}>
                         <a 
-                          href={link.url} 
+                          href={link.url.startsWith('/') ? (link.url.startsWith('/dashboard') ? link.url : `/dashboard${link.url}`) : link.url} 
                           target={link.url.startsWith('/') ? undefined : '_blank'}
                           rel={link.url.startsWith('/') ? undefined : 'noopener noreferrer'}
                           style={{ 
