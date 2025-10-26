@@ -18,6 +18,8 @@ import { UserActivityModel } from './userActivity.schema';
 import { IndustryModel } from './industry.schema';
 import { RoleModel } from './role.schema';
 import { PermissionModel } from './permission.schema';
+import { InsightModel } from './insights.schema';
+import { ActionItemModel } from './actionItem.schema';
 
 export {
   UserModel,
@@ -40,4 +42,6 @@ export {
   IndustryModel,
   RoleModel,
   PermissionModel,
+  InsightModel,
+  ActionItemModel,
 };

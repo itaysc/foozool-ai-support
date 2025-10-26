@@ -6,6 +6,7 @@ import { OrganizationModel, CustomerModel } from '../schemas';
 import AnomalyDetectionService from '../services/anomaly-detection';
 import AnomalyService from '../services/anomaly-detection/anomaly.service';
 import { generateCustomerSuccessInsightsForOrganization } from '../services/insights/customer-success';
+import { createActionItemsForInsight } from '../services/insights/actionItems.service';
 
 /**
  * Generate insights for all organizations or a specific organization by clustering recent ticket vectors
@@ -118,6 +119,17 @@ export const generateInsightsJob = async (targetOrganizationId?: string, userId?
                 lastUpdatedAt: new Date(),
               });
               console.log(`Created new insight for organization ${organization.name}: ${issueDescription}`);
+              
+              // Generate action items for the new insight
+              try {
+                const insightId = String(newInsight._id);
+                await createActionItemsForInsight(insightId, organizationId.toString(), userId);
+                console.log(`Created action items for insight: ${insightId}`);
+              } catch (actionItemError) {
+                const insightId = String(newInsight._id);
+                console.error(`Failed to create action items for insight ${insightId}:`, actionItemError);
+                // Don't fail the entire job if action item creation fails
+              }
             }
           } catch (clusterError) {
             console.error(`Error processing cluster ${i} for organization ${organization.name}:`, clusterError);

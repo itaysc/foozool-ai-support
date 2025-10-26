@@ -322,6 +322,16 @@ async function persistStakeholderInsights(organizationId: string, customerId: st
   for (const insight of insights) {
     const clusterId = generateClusterId(insight, customerId, 'stakeholder');
     
+    // Check if insight already exists
+    const existingInsight = await InsightModel.findOne({
+      organizationId: orgObjId,
+      customerId: custObjId,
+      insightType: 'customer_success',
+      clusterId: clusterId
+    });
+    
+    const isNewInsight = !existingInsight;
+    
     const attrs: any = {
         organizationId: orgObjId,
         customerId: custObjId,
@@ -356,6 +366,17 @@ async function persistStakeholderInsights(organizationId: string, customerId: st
     if (!saved.insightNumber) {
       await assignInsightNumberAtomic(saved._id as any);
     }
+    
+    // Create action items for new insights only
+    if (isNewInsight) {
+      try {
+        const { createActionItemsForInsight } = require('../actionItems.service');
+        await createActionItemsForInsight(String(saved._id), organizationId, undefined);
+        console.log(`[CS Insights] ✅ Created action items for new stakeholder insight: ${saved._id}`);
+      } catch (actionItemError) {
+        console.error(`[CS Insights] ❌ Failed to create action items for stakeholder insight ${saved._id}:`, actionItemError);
+      }
+    }
   }
 }
 
@@ -368,6 +389,16 @@ async function persistCustomerSuccessInsights(organizationId: string, customerId
 
   for (const insight of insights) {
     const clusterId = generateClusterId(insight, customerId, 'cs');
+    
+    // Check if insight already exists
+    const existingInsight = await InsightModel.findOne({
+      organizationId: orgObjId,
+      customerId: custObjId,
+      insightType: 'customer_success',
+      clusterId: clusterId
+    });
+    
+    const isNewInsight = !existingInsight;
     
     const savedChild = await InsightModel.findOneAndUpdate(
       {
@@ -399,8 +430,20 @@ async function persistCustomerSuccessInsights(organizationId: string, customerId
       },
       { upsert: true, new: true }
     );
+    
     if (!savedChild.insightNumber) {
       await assignInsightNumberAtomic(savedChild._id as any);
+    }
+    
+    // Create action items for new insights only
+    if (isNewInsight) {
+      try {
+        const { createActionItemsForInsight } = require('../actionItems.service');
+        await createActionItemsForInsight(String(savedChild._id), organizationId, undefined);
+        console.log(`[CS Insights] ✅ Created action items for new insight: ${savedChild._id}`);
+      } catch (actionItemError) {
+        console.error(`[CS Insights] ❌ Failed to create action items for insight ${savedChild._id}:`, actionItemError);
+      }
     }
   }
 }
