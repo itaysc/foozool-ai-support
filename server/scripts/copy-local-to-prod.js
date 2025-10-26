@@ -104,6 +104,7 @@ class DatabaseMigration {
         // Insights and analytics
         'insights',
         'insightcomments',
+        'actionitems',
         'predictions',
         'anomalies',
         
