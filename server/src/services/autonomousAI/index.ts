@@ -14,6 +14,13 @@ import { UserContextManager } from '../../context/userContext';
 import { createZendeskTicket } from '../zendesk';
 import { Types, ObjectId } from 'mongoose';
 
+/**
+ * Check if a string is a valid MongoDB ObjectId
+ */
+function isValidObjectId(id: string): boolean {
+  return Types.ObjectId.isValid(id) && (id.length === 24);
+}
+
 // Export the new Zendesk analysis service
 export { ZendeskAnalysisService } from './zendeskAnalysis.service';
 
@@ -106,7 +113,7 @@ export class AutonomousAIService {
     
     // Get historical actions
     const historicalActions = await ActionLogModel.find({
-      ticketId: new Types.ObjectId(ticketId),
+      ticketId: isValidObjectId(ticketId) ? new Types.ObjectId(ticketId) : ticketId,
       organization: new Types.ObjectId(organizationId)
     }).sort({ createdAt: -1 }).limit(10).lean() as unknown as IActionLog[];
 
@@ -463,7 +470,7 @@ export class AutonomousAIService {
     
     await ActionLogModel.create({
       organization: new Types.ObjectId(request.organizationId.toString()),
-      ticketId: new Types.ObjectId(request.ticketId.toString()),
+      ticketId: isValidObjectId(request.ticketId.toString()) ? new Types.ObjectId(request.ticketId.toString()) : request.ticketId.toString(),
       actionThresholdId: new Types.ObjectId(request.thresholdId.toString()),
       actionType: request.actionType,
       confidenceScore: request.confidenceScore,

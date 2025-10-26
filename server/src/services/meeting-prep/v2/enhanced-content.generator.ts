@@ -231,8 +231,108 @@ Provide concise, actionable insights for a customer success manager.`;
 
   content.push(`\n\n`);
 
-  // 6. Support Overview
-  content.push(`SUPPORT OVERVIEW`);
+  // 6. Financial Health Indicators
+  content.push(`FINANCIAL HEALTH INDICATORS`);
+  
+  if (customer.financialMetrics) {
+    content.push(`\nPayment Health:`);
+    content.push(`- Payment Reliability: ${customer.financialMetrics.paymentReliability || 'Not specified'}`);
+    content.push(`- Average Payment Days: ${customer.financialMetrics.averagePaymentDays || 'Not specified'} days`);
+    content.push(`- Payment Terms: ${customer.financialMetrics.paymentTerms || 'Not specified'}`);
+    
+    if (customer.financialMetrics.lastPaymentDate) {
+      content.push(`- Last Payment: ${new Date(customer.financialMetrics.lastPaymentDate).toLocaleDateString()}`);
+    }
+    
+    if (customer.financialMetrics.outstandingBalance && customer.financialMetrics.outstandingBalance > 0) {
+      content.push(`- Outstanding Balance: $${customer.financialMetrics.outstandingBalance.toLocaleString()}`);
+    }
+    
+    if (customer.financialMetrics.creditScore) {
+      content.push(`- Credit Score: ${customer.financialMetrics.creditScore}`);
+    }
+    
+    content.push(`\nContract Details:`);
+    if (customer.financialMetrics.contractRenewalDate) {
+      const renewalDate = new Date(customer.financialMetrics.contractRenewalDate);
+      const daysUntilRenewal = Math.ceil((renewalDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      content.push(`- Renewal Date: ${renewalDate.toLocaleDateString()}`);
+      content.push(`- Days Until Renewal: ${daysUntilRenewal}`);
+      
+      if (daysUntilRenewal <= 90) {
+        content.push(`- ⚠️ Renewal approaching - schedule renewal discussion`);
+      }
+    }
+    
+    if (customer.financialMetrics.annualRecurringRevenue) {
+      content.push(`- Annual Recurring Revenue: $${customer.financialMetrics.annualRecurringRevenue.toLocaleString()}`);
+    }
+    
+    if (customer.financialMetrics.monthlyRecurringRevenue) {
+      content.push(`- Monthly Recurring Revenue: $${customer.financialMetrics.monthlyRecurringRevenue.toLocaleString()}`);
+    }
+  } else {
+    content.push(`\nNo financial metrics available.`);
+  }
+
+  content.push(`\n\n`);
+
+  // 7. Usage & Adoption Analytics
+  content.push(`USAGE & ADOPTION ANALYTICS`);
+  
+  if (customer.usageData) {
+    content.push(`\nSeat Utilization:`);
+    content.push(`- Active Users: ${customer.usageData.activeUsersCount || 'Unknown'}`);
+    content.push(`- Seats Purchased: ${customer.usageData.seatsPurchased || 'Unknown'}`);
+    content.push(`- Seats Used: ${customer.usageData.seatsUsed || 'Unknown'}`);
+    
+    if (customer.usageData.seatsPurchased && customer.usageData.seatsUsed) {
+      const utilizationRate = Math.round((parseInt(customer.usageData.seatsUsed.toString()) / parseInt(customer.usageData.seatsPurchased.toString())) * 100);
+      content.push(`- Utilization Rate: ${utilizationRate}%`);
+      
+      if (utilizationRate > 90) {
+        content.push(`- 💡 High utilization - expansion opportunity`);
+      } else if (utilizationRate < 50) {
+        content.push(`- ⚠️ Low utilization - training opportunity`);
+      }
+    }
+  }
+  
+  if (customer.featureUsage && customer.featureUsage.length > 0) {
+    content.push(`\nFeature Adoption:`);
+    customer.featureUsage.forEach((feature, index) => {
+      content.push(`${index + 1}. ${feature.feature}: ${feature.utilizationPercent || 0}% adoption`);
+      if (feature.activeUsersCount) {
+        content.push(`   - Active Users: ${feature.activeUsersCount}`);
+      }
+    });
+  }
+  
+  if (customer.stakeholders && customer.stakeholders.length > 0) {
+    const totalStakeholders = customer.stakeholders.length;
+    const activeStakeholders = customer.stakeholders.filter(s => s.engagement?.level === 'high').length;
+    const mediumStakeholders = customer.stakeholders.filter(s => s.engagement?.level === 'medium').length;
+    
+    content.push(`\nStakeholder Engagement:`);
+    content.push(`- Total Stakeholders: ${totalStakeholders}`);
+    content.push(`- Highly Engaged: ${activeStakeholders}`);
+    content.push(`- Medium Engagement: ${mediumStakeholders}`);
+    content.push(`- Low/Inactive: ${totalStakeholders - activeStakeholders - mediumStakeholders}`);
+    
+    // Show decision makers
+    const decisionMakers = customer.stakeholders.filter(s => s.influence?.decisionPower && s.influence.decisionPower >= 7);
+    if (decisionMakers.length > 0) {
+      content.push(`\nKey Decision Makers:`);
+      decisionMakers.forEach((stakeholder, index) => {
+        content.push(`${index + 1}. ${stakeholder.name} (${stakeholder.title}) - Decision Power: ${stakeholder.influence?.decisionPower}/10`);
+      });
+    }
+  }
+
+  content.push(`\n\n`);
+
+  // 8. Support Intelligence
+  content.push(`SUPPORT INTELLIGENCE`);
   
   if (ticketStats) {
     content.push(`\nTicket Statistics:`);
@@ -260,7 +360,7 @@ Provide concise, actionable insights for a customer success manager.`;
 
   content.push(`\n\n`);
 
-  // 7. Account Sentiment
+  // 9. Account Sentiment
   content.push(`ACCOUNT SENTIMENT`);
   
   // Look for NPS/CSAT insights
@@ -307,7 +407,7 @@ Provide concise, actionable insights for a customer success manager.`;
 
   content.push(`\n\n`);
 
-  // Action Items
+  // 10. Recommended Action Items
   content.push(`RECOMMENDED ACTION ITEMS`);
   
   const actionItems: string[] = [];

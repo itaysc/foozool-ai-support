@@ -544,67 +544,27 @@ export class MeetingPrepPdfGenerator {
     
     const cleanContent = this.cleanTextForPdf(content);
     
-    // Use PDFKit's native text rendering with colored severity tags
-    const lines = cleanContent.split('\n');
-    let currentY = this.currentY;
+    // Use PDFKit's native text rendering - let it handle line flow automatically
+    this.doc
+      .fontSize(12)
+      .font('Helvetica')
+      .fillColor('#4a5568')
+      .text(cleanContent, this.margin, this.currentY, {
+        width: this.contentWidth,
+        align: 'left',
+        lineGap: 5 // PDFKit's built-in line spacing
+      });
     
-    lines.forEach(line => {
-      if (line.trim()) {
-        this.renderLineWithColoredTags(line, currentY);
-        currentY += 15; // Standard line height
-      } else {
-        currentY += 10; // Empty line spacing
-      }
+    // Let PDFKit calculate the actual height used
+    const textHeight = this.doc.heightOfString(cleanContent, {
+      width: this.contentWidth,
+      lineGap: 5
     });
     
-    this.currentY = currentY + 20;
+    this.currentY += textHeight + 20;
   }
   
-  private renderLineWithColoredTags(line: string, y: number): void {
-    // Split line by severity tags using PDFKit's native text positioning
-    const parts = line.split(/(\[HIGH\]|\[MED\]|\[LOW\])/);
-    let currentX = this.margin;
-    
-    parts.forEach(part => {
-      if (part === '[HIGH]') {
-        this.doc
-          .fontSize(12)
-          .font('Helvetica-Bold')
-          .fillColor('#dc2626') // Red for high
-          .text(part, currentX, y);
-        currentX += this.doc.widthOfString(part);
-      } else if (part === '[MED]') {
-        this.doc
-          .fontSize(12)
-          .font('Helvetica-Bold')
-          .fillColor('#d97706') // Orange for medium
-          .text(part, currentX, y);
-        currentX += this.doc.widthOfString(part);
-      } else if (part === '[LOW]') {
-        this.doc
-          .fontSize(12)
-          .font('Helvetica-Bold')
-          .fillColor('#059669') // Green for low
-          .text(part, currentX, y);
-        currentX += this.doc.widthOfString(part);
-      } else if (part.trim()) {
-        // Regular text
-        this.doc
-          .fontSize(12)
-          .font('Helvetica')
-          .fillColor('#4a5568')
-          .text(part, currentX, y, {
-            width: this.contentWidth - (currentX - this.margin),
-            align: 'left'
-          });
-        // Update currentX for next part
-        const textWidth = this.doc.widthOfString(part, { 
-          width: this.contentWidth - (currentX - this.margin) 
-        });
-        currentX += textWidth;
-      }
-    });
-  }
+  // Removed renderLineWithColoredTags method - using PDFKit's native text rendering
   
   // Removed isSectionHeader method - using PDFKit's native text rendering
 

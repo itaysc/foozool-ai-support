@@ -2,6 +2,13 @@ import { ActionLogModel } from '../../schemas';
 import { IActionLog, IActionLogInput, ActionType, ActionStatus, TriggerSource } from '../../types/autonomousAI';
 import { Types } from 'mongoose';
 
+/**
+ * Check if a string is a valid MongoDB ObjectId
+ */
+function isValidObjectId(id: string): boolean {
+  return Types.ObjectId.isValid(id) && (id.length === 24);
+}
+
 interface DailyStats {
   _id: ActionType;
   statuses: Array<{
@@ -70,7 +77,7 @@ export class ActionLogService {
   ): Promise<IActionLog[]> {
     try {
       const logs = await ActionLogModel.find({
-        ticketId: new Types.ObjectId(ticketId)
+        ticketId: isValidObjectId(ticketId) ? new Types.ObjectId(ticketId) : ticketId
       })
       .sort({ executedAt: -1 })
       .limit(limit)

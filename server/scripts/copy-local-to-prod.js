@@ -69,36 +69,59 @@ class DatabaseMigration {
         databaseName: 'test'
       },
       collections: [
+        // Core entities
         'users',
         'organizations',
-        'llmusages',
-        'llmprices',
-        'tickets',
-        'seedtracks',
-        'products',
-        'tokens',
-        'actionthresholds',
-        'actionlogs',
-        'customertiers',
-        'webhooks',
-        'crms',
-        'thresholdmisses',
         'customers',
         'customeractivities',
-        'industries',
+        'customertiers',
+        
+        // LLM and AI
+        'llmusages',
+        'llmprices',
+        
+        // Support and tickets
+        'tickets',
+        
+        // Products and solutions
+        'products',
+        'solutions',
+        
+        // Authentication and permissions
+        'tokens',
         'roles',
         'permissions',
-        'solutions',
-        'migrations',
-        'predictions',
-        'crmconfigs',
+        
+        // CRM and integrations
+        'crms',
+        'webhooks',
+        
+        // Autonomous AI
+        'actionthresholds',
+        'actionlogs',
+        'thresholdmisses',
+        
+        // Insights and analytics
         'insights',
-        'bot_performance_metrics',
-        'processedstubs',
+        'insightcomments',
+        'predictions',
         'anomalies',
+        
+        // System and configuration
+        'industries',
+        'migrations',
+        'seedtracks',
         'uploads',
         'useractivities',
-        'bots'
+        'bots',
+        'processedstubs',
+        'documents',
+        
+        // Additional collections that might exist
+        'counters',
+        'leads',
+        'successcriteria',
+        'capacitygrowths'
       ],
       batchSize: 1000,
       dryRun: process.env.DRY_RUN === 'true'

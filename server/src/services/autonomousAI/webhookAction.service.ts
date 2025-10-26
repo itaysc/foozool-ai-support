@@ -4,6 +4,13 @@ import { addCommentToTicket } from '../zendesk';
 import { WebhookService } from '../webhook';
 
 /**
+ * Check if a string is a valid MongoDB ObjectId
+ */
+function isValidObjectId(id: string): boolean {
+  return Types.ObjectId.isValid(id) && (id.length === 24);
+}
+
+/**
  * Execute autonomous actions based on action thresholds
  */
 export async function executeAutonomousActions(
@@ -36,7 +43,7 @@ export async function executeAutonomousActions(
           // Threshold not met - track this miss with enhanced metadata
           thresholdMisses.push({
             organization: new Types.ObjectId(organizationId),
-            ticketId: new Types.ObjectId(ticketId),
+            ticketId: isValidObjectId(ticketId) ? new Types.ObjectId(ticketId) : ticketId,
             actionType: actionType as any,
             thresholdId: threshold._id,
             thresholdName: threshold.name,
@@ -96,7 +103,7 @@ export async function executeAutonomousActions(
           // Log the action
           await ActionLogModel.create({
             organization: new Types.ObjectId(organizationId),
-            ticketId: new Types.ObjectId(ticketId),
+            ticketId: isValidObjectId(ticketId) ? new Types.ObjectId(ticketId) : ticketId,
             actionThresholdId: threshold._id,
             actionType: actionType as any,
             confidenceScore,
