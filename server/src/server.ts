@@ -46,6 +46,7 @@ import { googleFileCollectionConfig } from './qdrant/schemas/googleFile';
 import { startAllJobs } from './jobs';
 import searchRoutesV1 from './routes/search/v1';
 import migrationsRoutesV1 from './routes/migrations/v1';
+import slackRoutesV1 from './routes/slack/v1';
 import { ensureIndexes } from './utils/ensureIndexes';
 import { ticketCollectionConfig } from './qdrant/schemas/ticket';
 
@@ -120,6 +121,7 @@ export default class Server{
       this.app.use('/api/v1/google', googleRoutesV1);
       this.app.use('/api/v1/search', searchRoutesV1);
       this.app.use('/api/v1/migrations', migrationsRoutesV1);
+      this.app.use('/api/v1/slack', slackRoutesV1);
       // Swagger documentation
       this.app.use('/api/swagger', swaggerRoutesV1);
       

@@ -41,4 +41,10 @@ export interface IOrganization {
   // dashboardSettings removed with insights functionality
   createdAt?: Date;
   updatedAt?: Date;
+  slackConfig?: {
+    insights?: {
+      channelId: string;
+      botToken: string;
+    }
+  }
 }

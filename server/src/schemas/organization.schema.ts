@@ -38,6 +38,12 @@ const OrganizationSchema: Schema = new Schema<IOrganization>({
     minDataPoints: { type: Number, default: 10 },
     enabled: { type: Boolean, default: true },
   },
+  slackConfig: {
+    insights: {
+      channelId: String,
+      botToken: String,
+    }
+  },
   // dashboardSettings removed with insights functionality
 }, {
   timestamps: true,
