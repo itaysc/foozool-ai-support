@@ -103,6 +103,14 @@ class ActionItemsStore {
     }
   };
 
+  // Helper to fetch action items for the current context (all vs. specific customer)
+  fetchActionItemsForContext = async (customerId?: string | null) => {
+    if (customerId) {
+      return this.fetchActionItemsByCustomer(customerId);
+    }
+    return this.fetchAllActionItems();
+  };
+
   // Fetch action items by insight
   fetchActionItemsByInsight = async (insightId: string) => {
     try {
@@ -198,16 +206,13 @@ class ActionItemsStore {
       this.setSaving(true);
       this.setError(null);
 
-      const updated = await actionItemsService.updateActionItemStatus(actionItemId, status);
+      await actionItemsService.updateActionItemStatus(actionItemId, status);
       
+      // No need to update local state - optimistic update already did it
       runInAction(() => {
-        this.actionItems = this.actionItems.map(item => 
-          item._id === actionItemId ? { ...item, ...updated } : item
-        );
         this.lastUpdated = new Date();
+        this.isSaving = false;
       });
-
-      return updated;
     } catch (error: any) {
       runInAction(() => {
         this.error = error?.message || 'Failed to update status';
@@ -226,16 +231,13 @@ class ActionItemsStore {
       this.setSaving(true);
       this.setError(null);
 
-      const updated = await actionItemsService.updateActionItemAssignee(actionItemId, assignee);
+      await actionItemsService.updateActionItemAssignee(actionItemId, assignee);
       
+      // No need to update local state - optimistic update already did it
       runInAction(() => {
-        this.actionItems = this.actionItems.map(item => 
-          item._id === actionItemId ? { ...item, ...updated } : item
-        );
         this.lastUpdated = new Date();
+        this.isSaving = false;
       });
-
-      return updated;
     } catch (error: any) {
       runInAction(() => {
         this.error = error?.message || 'Failed to update assignee';

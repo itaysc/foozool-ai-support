@@ -3,6 +3,7 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { UserContextManager } from '../../../context/userContext';
 import { generateInsightsJob } from '../../../jobs/insights-generator.job';
 import { generateCustomerInsightsJob, migratePredictionsToInsightsJob } from '../../../jobs/customer-insights-generator.job';
+import { runActionItemsGenerationJob } from '../../../jobs/action-items-generator.job';
 import { createTicket } from '../../../services/faker/create-ticket';
 import { hasPermission } from '../../../middleware/permissions';
 
@@ -78,6 +79,20 @@ const availableJobs = {
       }
       
       const result = await migratePredictionsToInsightsJob(organizationId, userId);
+      return result;
+    }
+  },
+  'action-items-backfill': {
+    name: 'Action Item Backfill',
+    description: 'Generates action items for insights detected in a given date range',
+    requiresOrganization: false,
+    execute: async (_organizationId?: string, userId?: string, params?: { startDate?: string; endDate?: string; forceRegeneration?: boolean }) => {
+      const result = await runActionItemsGenerationJob({
+        startDate: params?.startDate,
+        endDate: params?.endDate,
+        forceRegeneration: params?.forceRegeneration,
+        userId
+      });
       return result;
     }
   }

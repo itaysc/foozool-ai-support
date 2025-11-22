@@ -12,6 +12,18 @@ export interface GeneratedActionItem {
   priority: 'P0' | 'P1' | 'P2' | 'P3' | 'P4' | 'P5'; // P0 is highest priority
 }
 
+function buildUniquenessKey(item: GeneratedActionItem): string {
+  const normalize = (value: string): string =>
+    value.trim().replace(/\s+/g, ' ').toLowerCase();
+
+  return [
+    normalize(item.title),
+    normalize(item.description),
+    item.severity.toLowerCase(),
+    item.priority.toLowerCase()
+  ].join('::');
+}
+
 // Initialize rule-based generators
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const generators: any[] = [];
@@ -26,7 +38,7 @@ try {
     SupportMetricsActionItemGenerator,
     StakeholderEngagementGenerator,
     RecurringProblemsGenerator
-  } = require('./generators');
+  } = require('./actionItems/generators');
   
   if (FinancialRiskActionItemGenerator && CapacityActionItemGenerator) {
     generators.push(
@@ -235,9 +247,15 @@ export async function createActionItemsForInsight(
     // Generate action items
     const generatedItems = await generateActionItemsFromInsight(insight, userId);
     
-    // Create action items in database
+    // Create action items in database (skip existing uniqueness keys)
     const createdItems: IActionItem[] = [];
     for (const item of generatedItems) {
+      const uniquenessKey = buildUniquenessKey(item);
+      const existing = await ActionItemModel.exists({ insightId, uniquenessKey });
+      if (existing) {
+        continue;
+      }
+
       const actionItem = await ActionItemModel.create({
         insightId,
         organizationId,
@@ -247,6 +265,7 @@ export async function createActionItemsForInsight(
         priority: item.priority,
         status: 'new',
         createdBy: userId,
+        uniquenessKey
       });
       
       createdItems.push(actionItem);

@@ -1,14 +1,15 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Box, Typography, Alert, Paper, CircularProgress, IconButton, Select as MuiSelect, MenuItem, FormControl, InputLabel, Button, alpha, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from '@mui/material';
-import { FilterList, Refresh, Clear, Analytics, AssignmentInd } from '@mui/icons-material';
-import { IActionItem, actionItemsService } from '@/services/action-items-service';
+import { FilterList, Refresh, Clear, AssignmentInd } from '@mui/icons-material';
+import { IActionItem } from '@/services/action-items-service';
 import actionItemsStore from '@/stores/actionItems.store';
-import { InsightsTable } from '@/components/insights';
 import Select from '@/components/base/Select';
 import AssigneeSelector from '@/components/insights/forms/AssigneeSelector';
 import StatusSelector from '@/components/insights/filters/StatusSelector';
 import { insightsService } from '@/services/insights-service';
+import ActionItemDetailDrawer from '@/components/action-items/ActionItemDetailDrawer';
+import { useSearchParams } from 'react-router-dom';
 
 interface ActionItemsTabProps {
   selectedCustomer?: string | null;
@@ -27,6 +28,20 @@ const ActionItemsTab: React.FC<ActionItemsTabProps> = ({
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
   const [users, setUsers] = useState<Array<{ _id: string; name: string; email: string }>>([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedActionItem, setSelectedActionItem] = useState<IActionItem | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const actionItemIdFromQuery = searchParams.get('actionItemId');
+
+  const updateActionItemQueryParam = useCallback((actionItemId?: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (actionItemId) {
+      params.set('actionItemId', actionItemId);
+    } else {
+      params.delete('actionItemId');
+    }
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   // Fetch users on component mount
   useEffect(() => {
@@ -57,11 +72,7 @@ const ActionItemsTab: React.FC<ActionItemsTabProps> = ({
     try {
       setLoading(true);
       setError(null);
-      if (selectedCustomer) {
-        await actionItemsStore.fetchActionItemsByCustomer(selectedCustomer);
-      } else {
-        await actionItemsStore.fetchAllActionItems();
-      }
+      await actionItemsStore.fetchActionItemsForContext(selectedCustomer);
     } catch (err) {
       console.error('Error fetching action items:', err);
       setError('Failed to load action items');
@@ -69,6 +80,23 @@ const ActionItemsTab: React.FC<ActionItemsTabProps> = ({
       setLoading(false);
     }
   };
+
+  // Sync drawer open state with URL param for deep linking
+  useEffect(() => {
+    if (!actionItemIdFromQuery) {
+      if (drawerOpen) {
+        setDrawerOpen(false);
+        setSelectedActionItem(null);
+      }
+      return;
+    }
+
+    const target = actionItemsStore.actionItems.find(item => item._id === actionItemIdFromQuery);
+    if (target) {
+      setSelectedActionItem(target);
+      setDrawerOpen(true);
+    }
+  }, [actionItemIdFromQuery, actionItemsStore.actionItems, drawerOpen]);
 
   // Filter action items based on selected filters
   const filteredActionItems = useMemo(() => {
@@ -91,23 +119,37 @@ const ActionItemsTab: React.FC<ActionItemsTabProps> = ({
 
   // Handle assignee change
   const handleAssigneeChange = async (actionItemId: string, assigneeId: string | null) => {
+    // Optimistic update - update UI immediately
+    actionItemsStore.actionItems = actionItemsStore.actionItems.map(item =>
+      item._id === actionItemId ? { ...item, assignee: assigneeId || undefined } : item
+    );
+    
     try {
       await actionItemsStore.updateAssignee(actionItemId, assigneeId);
       setError(null);
     } catch (err) {
       console.error('Error updating assignee:', err);
       setError('Failed to update assignee');
+      // Revert on error - reload from server
+      await fetchActionItems();
     }
   };
 
   // Handle status change
   const handleStatusChange = async (actionItemId: string, status: IActionItem['status']) => {
+    // Optimistic update - update UI immediately
+    actionItemsStore.actionItems = actionItemsStore.actionItems.map(item =>
+      item._id === actionItemId ? { ...item, status } : item
+    );
+    
     try {
       await actionItemsStore.updateStatus(actionItemId, status);
       setError(null);
     } catch (err) {
       console.error('Error updating status:', err);
       setError('Failed to update status');
+      // Revert on error - reload from server
+      await fetchActionItems();
     }
   };
 
@@ -359,8 +401,11 @@ const ActionItemsTab: React.FC<ActionItemsTabProps> = ({
                   key={item._id}
                   hover
                   onClick={() => {
-                    // TODO: Open action item details drawer
-                    console.log('Open action item:', item._id);
+                    setSelectedActionItem(item);
+                    setDrawerOpen(true);
+                    if (item._id) {
+                      updateActionItemQueryParam(item._id);
+                    }
                   }}
                   sx={{
                     cursor: 'pointer',
@@ -477,6 +522,28 @@ const ActionItemsTab: React.FC<ActionItemsTabProps> = ({
           </Table>
         </TableContainer>
       )}
+
+      {/* Action Item Detail Drawer */}
+      <ActionItemDetailDrawer
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setSelectedActionItem(null);
+          updateActionItemQueryParam();
+        }}
+        actionItem={selectedActionItem}
+        users={users}
+        onActionItemUpdate={async (actionItemId: string, updates: Partial<IActionItem>) => {
+          // Handle status update
+          if (updates.status) {
+            await handleStatusChange(actionItemId, updates.status);
+          }
+          // Handle assignee update
+          if (updates.assignee !== undefined) {
+            await handleAssigneeChange(actionItemId, updates.assignee || null);
+          }
+        }}
+      />
     </Box>
   );
 };

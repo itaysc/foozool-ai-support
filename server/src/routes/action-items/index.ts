@@ -3,16 +3,20 @@ import { authenticateJWT } from '../../middleware/authenticate';
 import { validateRequest } from '../../middleware/validateRequest';
 import { UserContextManager } from '../../context/userContext';
 import actionItemsService from '../../services/actionItems/actionItems.service';
+import { ActionItemCommentService } from '../../services/actionItems/actionItemComment.service';
 import {
   actionItemIdParamSchema,
   customerIdParamSchema,
   insightIdParamSchema,
+  commentIdParamSchema,
   actionItemsQuerySchema,
   createActionItemSchema,
   updateActionItemSchema,
   updateStatusSchema,
   updateAssigneeSchema,
   updatePrioritySchema,
+  createActionItemCommentSchema,
+  updateActionItemCommentSchema,
 } from './validations';
 
 const router = Router();
@@ -477,6 +481,201 @@ router.post('/:actionItemId/complete', authenticateJWT, async (req: Request, res
     res.status(404).json({
       status: 404,
       error: error?.message || 'Action item not found',
+    });
+  }
+});
+
+/**
+ * POST /api/action-items/:actionItemId/comments
+ * Create a comment for an action item
+ */
+router.post('/:actionItemId/comments', authenticateJWT, validateRequest(createActionItemCommentSchema), async (req: Request, res: Response) => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Organization ID not found in user context',
+      });
+    }
+
+    const userId = UserContextManager.getCurrentUserId();
+    if (!userId) {
+      return res.status(401).json({
+        status: 401,
+        error: 'User ID not found in user context',
+      });
+    }
+
+    // Validate params
+    const paramValidation = actionItemIdParamSchema.safeParse(req.params.actionItemId);
+    if (!paramValidation.success) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Invalid action item ID',
+        details: paramValidation.error.issues,
+      });
+    }
+
+    const comment = await ActionItemCommentService.createComment(
+      {
+        ...req.body,
+        actionItemId: paramValidation.data,
+      },
+      userId,
+      organizationId
+    );
+
+    res.status(201).json({
+      status: 201,
+      data: comment,
+    });
+  } catch (error: any) {
+    console.error('Error creating action item comment:', error);
+    res.status(500).json({
+      status: 500,
+      error: error?.message || 'Internal server error',
+    });
+  }
+});
+
+/**
+ * GET /api/action-items/:actionItemId/comments
+ * Get all comments for an action item
+ */
+router.get('/:actionItemId/comments', authenticateJWT, async (req: Request, res: Response) => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Organization ID not found in user context',
+      });
+    }
+
+    // Validate params
+    const paramValidation = actionItemIdParamSchema.safeParse(req.params.actionItemId);
+    if (!paramValidation.success) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Invalid action item ID',
+        details: paramValidation.error.issues,
+      });
+    }
+
+    const comments = await ActionItemCommentService.getCommentsByActionItem(paramValidation.data);
+
+    res.status(200).json({
+      status: 200,
+      data: comments,
+    });
+  } catch (error: any) {
+    console.error('Error fetching action item comments:', error);
+    res.status(500).json({
+      status: 500,
+      error: error?.message || 'Internal server error',
+    });
+  }
+});
+
+/**
+ * PUT /api/action-items/:actionItemId/comments/:commentId
+ * Update a comment
+ */
+router.put('/:actionItemId/comments/:commentId', authenticateJWT, validateRequest(updateActionItemCommentSchema), async (req: Request, res: Response) => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Organization ID not found in user context',
+      });
+    }
+
+    // Validate comment ID
+    const commentIdValidation = commentIdParamSchema.safeParse(req.params.commentId);
+    if (!commentIdValidation.success) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Invalid comment ID',
+        details: commentIdValidation.error.issues,
+      });
+    }
+
+    // Note: We also need to validate action item ID but we'll use it for authorization only
+    const paramValidation = actionItemIdParamSchema.safeParse(req.params.actionItemId);
+    if (!paramValidation.success) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Invalid action item ID',
+        details: paramValidation.error.issues,
+      });
+    }
+
+    const comment = await ActionItemCommentService.updateComment(
+      commentIdValidation.data,
+      req.body,
+      organizationId
+    );
+
+    res.status(200).json({
+      status: 200,
+      data: comment,
+    });
+  } catch (error: any) {
+    console.error('Error updating action item comment:', error);
+    res.status(404).json({
+      status: 404,
+      error: error?.message || 'Comment not found',
+    });
+  }
+});
+
+/**
+ * DELETE /api/action-items/:actionItemId/comments/:commentId
+ * Delete a comment
+ */
+router.delete('/:actionItemId/comments/:commentId', authenticateJWT, async (req: Request, res: Response) => {
+  try {
+    const organizationId = UserContextManager.getCurrentOrganizationId();
+    if (!organizationId) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Organization ID not found in user context',
+      });
+    }
+
+    // Validate comment ID
+    const commentIdValidation = commentIdParamSchema.safeParse(req.params.commentId);
+    if (!commentIdValidation.success) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Invalid comment ID',
+        details: commentIdValidation.error.issues,
+      });
+    }
+
+    // Note: We also need to validate action item ID but we'll use it for authorization only
+    const paramValidation = actionItemIdParamSchema.safeParse(req.params.actionItemId);
+    if (!paramValidation.success) {
+      return res.status(400).json({
+        status: 400,
+        error: 'Invalid action item ID',
+        details: paramValidation.error.issues,
+      });
+    }
+
+    await ActionItemCommentService.deleteComment(commentIdValidation.data, organizationId);
+
+    res.status(200).json({
+      status: 200,
+      message: 'Comment deleted successfully',
+    });
+  } catch (error: any) {
+    console.error('Error deleting action item comment:', error);
+    res.status(404).json({
+      status: 404,
+      error: error?.message || 'Comment not found',
     });
   }
 });

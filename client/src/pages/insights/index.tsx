@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Box, CircularProgress, Alert } from '@mui/material';
-import { BugReport, Analytics, Assessment, Dashboard, AssignmentInd } from '@mui/icons-material';
+import { BugReport, Analytics, Assessment, Dashboard, AssignmentInd, DynamicFeed } from '@mui/icons-material';
 import { Insight, InsightSummary } from '@/types/insight';
 import { CustomerSuccessInsight } from '@/types';
 import { insightsService } from '@/services/insights-service';
@@ -15,13 +15,15 @@ import {
   TicketInsightsTab, 
   CustomerSuccessTab,
   HealthScoreTab,
-  ActionItemsTab
+  ActionItemsTab,
+  ActionItemsFeedTab
 } from './tabs';
 
 const InsightsPage: React.FC = () => {
   const { organizationId: orgIdFromParams } = useParams<{ organizationId: string }>();
   const { user } = useAuth();
   const { filters, setCustomerFilter } = useInsightsQueryFilters();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // State management
   const [loading, setLoading] = useState(true);
@@ -157,6 +159,7 @@ const InsightsPage: React.FC = () => {
   // Determine visible navigation items based on data or configured bots
   const navItems: NavItem[] = [
     { id: 'ticket', label: 'Ticket Insights', icon: <BugReport />, visible: true },
+    { id: 'feed', label: 'Feed', icon: <DynamicFeed />, visible: true },
     { id: 'action-items', label: 'Action Items', icon: <AssignmentInd />, visible: true },
     { id: 'insights', label: 'Insights', icon: <Dashboard />, visible: true },
     { id: 'health', label: 'Customer Health', icon: <Assessment />, visible: true }
@@ -167,14 +170,25 @@ const InsightsPage: React.FC = () => {
     setActiveTab(tabId);
   };
 
+  const updateActionItemQueryParam = useCallback((actionItemId?: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (actionItemId) {
+      params.set('actionItemId', actionItemId);
+    } else {
+      params.delete('actionItemId');
+    }
+    setSearchParams(params, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  const handleNavigateToActionItem = (actionItemId: string) => {
+    updateActionItemQueryParam(actionItemId);
+    setActiveTab('action-items');
+  };
+
   // Customer change handler
-  const handleCustomerChange = (customerId: string) => {
-    // Handle empty string (when clear button is clicked) by setting to null
-    const newCustomerId = customerId === '' ? null : customerId;
-    setSelectedCustomer(newCustomerId);
-    
-    // Update URL query params using the custom hook
-    setCustomerFilter(newCustomerId);
+  const handleCustomerChange = (customerId: string | null) => {
+    setSelectedCustomer(customerId);
+    setCustomerFilter(customerId);
   };
 
   // Date filter change handler
@@ -272,6 +286,15 @@ const InsightsPage: React.FC = () => {
           />
         )}
 
+
+        {activeTab === 'feed' && (
+          <ActionItemsFeedTab
+            selectedCustomer={selectedCustomer}
+            customers={customers}
+            onCustomerChange={handleCustomerChange}
+            onNavigateToActionItem={handleNavigateToActionItem}
+          />
+        )}
 
         {activeTab === 'action-items' && (
           <ActionItemsTab 

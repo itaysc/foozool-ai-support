@@ -278,6 +278,7 @@ export default class Server{
       : `${connectionString}/test`;
       
     console.log('Final connection string (masked):', finalConnectionString.replace(/\/\/[^:]+:[^@]+@/, '//***:***@'));
+    console.log('Connecting to MongoDB with URI:', finalConnectionString);
     
     // Retry connection logic
     const maxRetries = 3;

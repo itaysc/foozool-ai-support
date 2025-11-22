@@ -16,6 +16,7 @@ export const priorityEnum = z.enum(['P0', 'P1', 'P2', 'P3', 'P4', 'P5']);
 export const actionItemIdParamSchema = objectIdSchema;
 export const customerIdParamSchema = objectIdSchema;
 export const insightIdParamSchema = objectIdSchema;
+export const commentIdParamSchema = objectIdSchema;
 
 // Query schemas
 export const actionItemsQuerySchema = z.object({
@@ -65,4 +66,18 @@ export const updateAssigneeSchema = z.object({
 // Body schema: update priority
 export const updatePrioritySchema = z.object({
   priority: priorityEnum,
+});
+
+// Body schema: create action item comment
+export const createActionItemCommentSchema = z.object({
+  title: z.string().max(200).optional(),
+  description: z.string().min(1).max(2000),
+  taggedUserIds: z.array(objectIdSchema).optional(),
+});
+
+// Body schema: update action item comment
+export const updateActionItemCommentSchema = z.object({
+  title: z.string().max(200).optional(),
+  description: z.string().min(1).max(2000).optional(),
+  taggedUserIds: z.array(objectIdSchema).optional(),
 });

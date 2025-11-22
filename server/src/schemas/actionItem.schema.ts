@@ -31,6 +31,7 @@ export interface IActionItem extends Document {
   // Additional metadata
   tags?: string[];
   metadata?: Record<string, unknown>;
+  uniquenessKey?: string;
 }
 
 const ActionItemSchema: Schema = new Schema({
@@ -120,7 +121,12 @@ const ActionItemSchema: Schema = new Schema({
   
   // Additional metadata
   tags: [{ type: String }],
-  metadata: { type: Schema.Types.Mixed }
+  metadata: { type: Schema.Types.Mixed },
+  uniquenessKey: {
+    type: String,
+    required: false,
+    index: true
+  }
 });
 
 // Update the updatedAt field before saving
@@ -142,5 +148,13 @@ ActionItemSchema.index({ organizationId: 1, dueDate: 1 });
 ActionItemSchema.index({ severity: 1, status: 1 });
 // Sparse index for customerId since it's optional
 ActionItemSchema.index({ customerId: 1, status: 1 }, { sparse: true });
+ActionItemSchema.index(
+  { insightId: 1, uniquenessKey: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { uniquenessKey: { $exists: true } }
+  }
+);
 
 export const ActionItemModel = mongoose.model<IActionItem>('ActionItem', ActionItemSchema);

@@ -20,6 +20,7 @@ import { RoleModel } from './role.schema';
 import { PermissionModel } from './permission.schema';
 import { InsightModel } from './insights.schema';
 import { ActionItemModel } from './actionItem.schema';
+import { ActionItemCommentModel } from './actionItemComment.schema';
 
 export {
   UserModel,
@@ -44,4 +45,5 @@ export {
   PermissionModel,
   InsightModel,
   ActionItemModel,
+  ActionItemCommentModel,
 };
