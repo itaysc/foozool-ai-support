@@ -42,6 +42,7 @@ const OrganizationSchema: Schema = new Schema<IOrganization>({
     insights: {
       channelId: String,
       botToken: String,
+      teamId: String, // Slack workspace/team ID for slash command mapping
     }
   },
   // dashboardSettings removed with insights functionality

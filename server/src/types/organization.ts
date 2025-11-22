@@ -45,6 +45,7 @@ export interface IOrganization {
     insights?: {
       channelId: string;
       botToken: string;
+      teamId?: string; // Slack workspace/team ID for slash command mapping
     }
   }
 }
