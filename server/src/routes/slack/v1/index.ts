@@ -60,18 +60,44 @@ router.post('/insights', authenticateJWT, hasPermission('slack:write'), async (r
  * - user_id: User who invoked the command
  * - response_url: URL to send delayed responses
  */
-router.post('/slash', express.urlencoded({ extended: true }), async (req, res) => {
+router.post('/slash', async (req, res) => {
+  // Log the incoming request for debugging
+  console.log('Slack slash command received:', {
+    body: req.body,
+    bodyKeys: Object.keys(req.body || {}),
+    contentType: req.headers['content-type'],
+    method: req.method
+  });
+
+  let responseUrl: string | undefined;
+  
   try {
     // Slack sends slash commands as form-urlencoded
-    const { team_id, text, user_id, response_url, channel_id } = req.body;
+    const { team_id, text, user_id, response_url, channel_id } = req.body || {};
+    responseUrl = response_url;
 
-    // Respond immediately to Slack (within 3 seconds)
-    res.status(200).json({
-      response_type: 'ephemeral', // Only visible to the user who invoked the command
-      text: text 
-        ? `Fetching insights for "${text}"...` 
+    console.log('Parsed Slack command:', { team_id, text, user_id, hasResponseUrl: !!response_url });
+
+    // Validate required fields
+    if (!team_id) {
+      console.error('Missing team_id in Slack slash command');
+      return res.status(200).json({
+        response_type: 'ephemeral',
+        text: '❌ Error: Missing team_id. Please contact support.'
+      });
+    }
+
+    // Respond immediately to Slack (within 3 seconds) - this is critical!
+    // Slack requires a response within 3 seconds
+    const immediateResponse = {
+      response_type: 'ephemeral' as const,
+      text: text && text.trim()
+        ? `Fetching insights for "${text.trim()}"...`
         : 'Please provide a customer name. Usage: /insights <customer_name>'
-    });
+    };
+
+    console.log('Sending immediate response to Slack:', immediateResponse);
+    res.status(200).json(immediateResponse);
 
     // If no customer name provided, return early
     if (!text || !text.trim()) {
@@ -109,11 +135,14 @@ router.post('/slash', express.urlencoded({ extended: true }), async (req, res) =
     }
 
     if (!organization) {
+      console.error('No organization found for team_id:', team_id);
       // Send error message to Slack
-      await sendSlackResponse(response_url, {
-        response_type: 'ephemeral',
-        text: '❌ No organization found with Slack integration configured.'
-      });
+      if (responseUrl) {
+        await sendSlackResponse(responseUrl, {
+          response_type: 'ephemeral',
+          text: '❌ No organization found with Slack integration configured. Please ensure teamId is set in slackConfig.insights.'
+        });
+      }
       return;
     }
 
@@ -124,12 +153,17 @@ router.post('/slash', express.urlencoded({ extended: true }), async (req, res) =
     }).lean();
 
     if (!customer) {
-      await sendSlackResponse(response_url, {
-        response_type: 'ephemeral',
-        text: `❌ Customer "${customerName}" not found in organization "${organization.name}".`
-      });
+      console.log(`Customer "${customerName}" not found in organization "${organization.name}"`);
+      if (responseUrl) {
+        await sendSlackResponse(responseUrl, {
+          response_type: 'ephemeral',
+          text: `❌ Customer "${customerName}" not found in organization "${organization.name}".`
+        });
+      }
       return;
     }
+
+    console.log(`Found customer: ${customer.name} (${customer._id})`);
 
     // Send insights for the customer
     const result = await InsightsSlackService.sendInsightsToSlack(
@@ -138,27 +172,33 @@ router.post('/slash', express.urlencoded({ extended: true }), async (req, res) =
     );
 
     if (!result.success) {
-      await sendSlackResponse(response_url, {
-        response_type: 'ephemeral',
-        text: `❌ Failed to send insights: ${result.error}`
-      });
+      console.error('Failed to send insights:', result.error);
+      if (responseUrl) {
+        await sendSlackResponse(responseUrl, {
+          response_type: 'ephemeral',
+          text: `❌ Failed to send insights: ${result.error}`
+        });
+      }
       return;
     }
 
     // Send success confirmation
-    await sendSlackResponse(response_url, {
-      response_type: 'ephemeral',
-      text: `✅ Insights for "${customer.name}" have been posted to the configured channel.`
-    });
+    if (responseUrl) {
+      await sendSlackResponse(responseUrl, {
+        response_type: 'ephemeral',
+        text: `✅ Insights for "${customer.name}" have been posted to the configured channel.`
+      });
+    }
 
   } catch (error: any) {
     console.error('Error handling Slack slash command:', error);
+    console.error('Error stack:', error.stack);
     // Try to send error to Slack if response_url is available
-    if (req.body?.response_url) {
+    if (responseUrl) {
       try {
-        await sendSlackResponse(req.body.response_url, {
+        await sendSlackResponse(responseUrl, {
           response_type: 'ephemeral',
-          text: '❌ An error occurred while processing your request. Please try again later.'
+          text: `❌ An error occurred while processing your request: ${error.message || 'Unknown error'}. Please try again later.`
         });
       } catch (err) {
         console.error('Failed to send error response to Slack:', err);
