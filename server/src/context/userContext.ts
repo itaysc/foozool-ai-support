@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import { IUser } from '../types/user';
+import mongoose from 'mongoose';
 
 // AsyncLocalStorage for storing user context
 import { AsyncLocalStorage } from 'async_hooks';
@@ -113,6 +114,47 @@ export class UserContextManager {
    */
   static clearContext(): void {
     userContextStorage.disable();
+  }
+
+  /**
+   * Set service context for system/service operations that don't have a user
+   * Creates a minimal user object for the context
+   * @param organizationId - The organization ID
+   * @param userId - Optional user ID (will create a dummy one if not provided)
+   */
+  static setServiceContext(organizationId: string, userId?: string): void {
+    const serviceUserId = userId || new mongoose.Types.ObjectId().toString();
+    
+    // Create a minimal user object for service context
+    const serviceUser: IUser = {
+      _id: new mongoose.Types.ObjectId(serviceUserId),
+      firstName: 'Service',
+      lastName: 'User',
+      fullName: 'Service User',
+      avatarImage: '',
+      llmModel: '',
+      email: { type: '' },
+      password: { type: '' },
+      registered: { type: false },
+      organization: organizationId,
+      department: { type: '' },
+      roles: [],
+      permissions: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      comparePassword: async () => false
+    };
+
+    const context: UserContext = {
+      user: serviceUser,
+      userId: serviceUserId,
+      organizationId: organizationId,
+      useCache: true,
+      permissions: [],
+      roles: []
+    };
+
+    userContextStorage.enterWith(context);
   }
 }
 

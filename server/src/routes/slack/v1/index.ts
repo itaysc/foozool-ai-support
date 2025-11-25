@@ -3,6 +3,7 @@ import { authenticateJWT } from '../../../middleware/authenticate';
 import { hasPermission } from '../../../middleware/permissions';
 import { InsightsSlackService } from '../../../services/slack/insightsSlack.service';
 import { OrganizationModel, CustomerModel } from '../../../schemas';
+import { UserContextManager } from '../../../context/userContext';
 
 const router = express.Router();
 
@@ -145,6 +146,9 @@ router.post('/slash', async (req, res) => {
       }
       return;
     }
+
+    // Set user context with organizationId so the rest of the logic will work
+    UserContextManager.setServiceContext(organization._id.toString());
 
     // Find customer by name in the organization
     const customer = await CustomerModel.findOne({
