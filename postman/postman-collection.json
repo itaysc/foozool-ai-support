@@ -4475,6 +4475,32 @@
             "description": "Post insights for specific customers to Slack. Replace {{customer_id}} with actual customer IDs or use multiple IDs in the array."
           },
           "response": []
+        },
+        {
+          "name": "Search Slack Messages (Customer Name)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{nodejs_base_url}}/api/v1/slack/search/messages?q={{customer_name}}&limit=20&page=1&sort=score&sortDir=desc",
+              "host": ["{{nodejs_base_url}}"],
+              "path": ["api", "v1", "slack", "search", "messages"],
+              "query": [
+                { "key": "q", "value": "{{customer_name}}" },
+                { "key": "limit", "value": "20" },
+                { "key": "page", "value": "1" },
+                { "key": "sort", "value": "score" },
+                { "key": "sortDir", "value": "desc" }
+              ]
+            },
+            "description": "Search public-channel Slack messages for a customer name (case-insensitive). Requires JWT auth and search:read permission. Note: Slack may block search.messages for bot tokens (xoxb); the server will then fall back to scanning recent channel history (slower). Results depend on channels/content accessible to the bot token."
+          },
+          "response": []
         }
       ]
     },

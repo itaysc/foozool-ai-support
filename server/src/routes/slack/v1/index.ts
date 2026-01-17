@@ -2,8 +2,11 @@ import express from 'express';
 import { authenticateJWT } from '../../../middleware/authenticate';
 import { hasPermission } from '../../../middleware/permissions';
 import { InsightsSlackService } from '../../../services/slack/insightsSlack.service';
-import { OrganizationModel, CustomerModel } from '../../../schemas';
+import { SlackSearchService } from '../../../services/slack/slackSearch.service';
+import { OrganizationModel, CustomerModel, UserModel } from '../../../schemas';
 import { UserContextManager } from '../../../context/userContext';
+import { callLLM } from '../../../services/llm';
+import { buildAnalyzeCustomerSlackConversationsPrompt } from '../../../services/slack/prompts/analyzeCustomerSlackConversations.prompt';
 
 const router = express.Router();
 
@@ -52,6 +55,74 @@ router.post('/insights', authenticateJWT, hasPermission('slack:write'), async (r
 });
 
 /**
+ * GET /slack/search/messages
+ * Search public-channel messages in Slack for a customer name.
+ *
+ * Query:
+ * - q (required): customer name to search for
+ * - limit (optional, default 20, max 100)
+ * - page (optional, default 1)
+ * - sort (optional: score|timestamp, default score)
+ * - sortDir (optional: asc|desc, default desc)
+ *
+ * Notes:
+ * - Search is performed using the organization's configured Slack bot token.
+ * - Slack may reject `search.messages` for bot tokens (xoxb). In that case we fall back to scanning recent channel history
+ *   using `conversations.list` + `conversations.history` (slower, and still limited to content the bot can access).
+ */
+router.get('/search/messages', authenticateJWT, hasPermission('search:read'), async (req, res) => {
+  try {
+    const organizationId = req.user!.organization;
+    if (!organizationId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Organization ID not found in user context'
+      });
+    }
+
+    const qRaw = typeof req.query.q === 'string' ? req.query.q : '';
+    const q = qRaw.trim();
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required query param: q'
+      });
+    }
+
+    const limitRaw = typeof req.query.limit === 'string' ? Number(req.query.limit) : undefined;
+    const pageRaw = typeof req.query.page === 'string' ? Number(req.query.page) : undefined;
+    const sortRaw = typeof req.query.sort === 'string' ? req.query.sort : undefined;
+    const sortDirRaw = typeof req.query.sortDir === 'string' ? req.query.sortDir : undefined;
+
+    const limit = Number.isFinite(limitRaw) && (limitRaw as number) > 0 ? Math.min(limitRaw as number, 100) : 20;
+    const page = Number.isFinite(pageRaw) && (pageRaw as number) > 0 ? Math.floor(pageRaw as number) : 1;
+    const sort = sortRaw === 'timestamp' ? 'timestamp' : 'score';
+    const sortDir = sortDirRaw === 'asc' ? 'asc' : 'desc';
+
+    const result = await SlackSearchService.searchMessages({
+      organizationId: organizationId.toString(),
+      q,
+      limit,
+      page,
+      sort,
+      sortDir
+    });
+
+    if (!result.success) {
+      return res.status(result.statusCode || 400).json(result);
+    }
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    console.error('Error searching Slack messages:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Internal server error'
+    });
+  }
+});
+
+/**
  * POST /slack/slash
  * Handle Slack slash command to get insights for a customer
  * 
@@ -74,10 +145,10 @@ router.post('/slash', async (req, res) => {
   
   try {
     // Slack sends slash commands as form-urlencoded
-    const { team_id, text, user_id, response_url, channel_id } = req.body || {};
+    const { team_id, text, user_id, response_url, channel_id, command } = req.body || {};
     responseUrl = response_url;
 
-    console.log('Parsed Slack command:', { team_id, text, user_id, hasResponseUrl: !!response_url });
+    console.log('Parsed Slack command:', { team_id, command, text, user_id, channel_id, hasResponseUrl: !!response_url });
 
     // Validate required fields
     if (!team_id) {
@@ -88,24 +159,44 @@ router.post('/slash', async (req, res) => {
       });
     }
 
+    const rawText = typeof text === 'string' ? text.trim() : '';
+    const rawCommand = typeof command === 'string' ? command.trim() : '';
+    const isAnalyzeCommand =
+      rawCommand === '/analyze' ||
+      rawText.toLowerCase().startsWith('analyze ');
+
+    // Extract customer name for analyze mode (supports "/analyze <name>" or "/insights analyze <name>")
+    const analyzeCustomerName = isAnalyzeCommand
+      ? (rawText.toLowerCase().startsWith('analyze ')
+          ? rawText.slice('analyze '.length).trim()
+          : rawText)
+      : '';
+
     // Respond immediately to Slack (within 3 seconds) - this is critical!
     // Slack requires a response within 3 seconds
     const immediateResponse = {
       response_type: 'ephemeral' as const,
-      text: text && text.trim()
-        ? `Fetching insights for "${text.trim()}"...`
-        : 'Please provide a customer name. Usage: /insights <customer_name>'
+      text: isAnalyzeCommand
+        ? (analyzeCustomerName
+            ? `Analyzing Slack conversations mentioning "${analyzeCustomerName}"...`
+            : 'Please provide a customer name. Usage: /analyze <customer_name>')
+        : (rawText
+            ? `Fetching insights for "${rawText}"...`
+            : 'Please provide a customer name. Usage: /insights <customer_name>')
     };
 
     console.log('Sending immediate response to Slack:', immediateResponse);
     res.status(200).json(immediateResponse);
 
-    // If no customer name provided, return early
-    if (!text || !text.trim()) {
+    // If no command text provided, return early
+    if (!rawText) {
       return;
     }
 
-    const customerName = text.trim();
+    // If analyze command without name, return early (we already sent usage)
+    if (isAnalyzeCommand && !analyzeCustomerName) {
+      return;
+    }
 
     // Find organization by Slack team_id
     // First try to find by teamId in slackConfig, if not found, try to find by team_id
@@ -147,8 +238,103 @@ router.post('/slash', async (req, res) => {
       return;
     }
 
-    // Set user context with organizationId so the rest of the logic will work
-    UserContextManager.setServiceContext(organization._id.toString());
+    // Set user context with organizationId so downstream services work.
+    // For LLM usage tracking, prefer a stable real userId from this organization (avoids creating many service usage rows).
+    const orgUser = await UserModel.findOne({ organization: organization._id }).select('_id').lean();
+    const orgUserId = orgUser?._id?.toString();
+    UserContextManager.setServiceContext(organization._id.toString(), orgUserId);
+
+    // Handle /analyze (or "analyze <name>")
+    if (isAnalyzeCommand) {
+      const customerName = analyzeCustomerName;
+
+      const searchResult = await SlackSearchService.searchMessages({
+        organizationId: organization._id.toString(),
+        q: customerName,
+        limit: 50,
+        page: 1,
+        sort: 'timestamp',
+        sortDir: 'desc'
+      });
+
+      if (!searchResult.success) {
+        if (responseUrl) {
+          await sendSlackResponse(responseUrl, {
+            response_type: 'ephemeral',
+            text: `❌ Slack search failed: ${searchResult.error}`
+          });
+        }
+        return;
+      }
+
+      const matchesWithText = (searchResult.matches || []).filter(m => (m.text || '').trim().length > 0);
+      if (matchesWithText.length === 0) {
+        if (responseUrl) {
+          await sendSlackResponse(responseUrl, {
+            response_type: 'ephemeral',
+            text: `No relevant Slack messages found for "${customerName}". If you expected matches, make sure the bot is invited to the channels where the conversations happened.`
+          });
+        }
+        return;
+      }
+
+      // Build conversation context (bounded to avoid oversized prompts)
+      const MAX_MESSAGES = 30;
+      const MAX_CHARS_TOTAL = 12000;
+      const MAX_CHARS_PER_MESSAGE = 600;
+
+      let conversationText = '';
+      let included = 0;
+      for (const m of matchesWithText.slice(0, MAX_MESSAGES)) {
+        const channelLabel = m.channel?.name ? `#${m.channel.name}` : `#${m.channel.id}`;
+        const permalink = m.permalink ? ` ${m.permalink}` : '';
+        const ts = Number.parseFloat(m.ts);
+        const tsIso = Number.isFinite(ts) ? new Date(ts * 1000).toISOString() : m.ts;
+        const msgText = (m.text || '').replace(/\s+/g, ' ').trim().slice(0, MAX_CHARS_PER_MESSAGE);
+
+        const block = `- ${channelLabel} @ ${tsIso}${permalink}\n  ${msgText}\n`;
+        if (conversationText.length + block.length > MAX_CHARS_TOTAL) break;
+        conversationText += block;
+        included += 1;
+      }
+
+      const prompt = buildAnalyzeCustomerSlackConversationsPrompt({
+        customerName,
+        conversationText
+      });
+
+      const llmUserId = UserContextManager.getCurrentUserId() || orgUserId || '';
+      const llmResp = await callLLM({
+        userId: llmUserId,
+        isChat: true,
+        prompt,
+        maxTokens: 600,
+        temperature: 0.2
+      });
+
+      const answerRaw = (llmResp.data || '').trim();
+      const answer = answerRaw || 'No meaningful insights found.';
+      const slackText = answer.length > 3500 ? `${answer.slice(0, 3500)}...` : answer;
+
+      if (responseUrl) {
+        await sendSlackResponse(responseUrl, {
+          response_type: 'ephemeral',
+          text: slackText
+        });
+      }
+
+      console.log('Analyze slash command complete', {
+        organizationId: organization._id?.toString(),
+        customerName,
+        includedMessages: included,
+        slackSearchMode: (searchResult as any).meta?.mode
+      });
+
+      return;
+    }
+
+    // Default behavior: /insights <customer name>
+    const customerName = rawText;
 
     // Find customer by name in the organization
     const customer = await CustomerModel.findOne({

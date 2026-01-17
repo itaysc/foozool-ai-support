@@ -32,6 +32,13 @@
       "type": "default",
       "enabled": true,
       "description": "ID of an anomaly to test with (get from Get All Anomalies response)"
+    },
+    {
+      "key": "customer_name",
+      "value": "Acme Corp",
+      "type": "default",
+      "enabled": true,
+      "description": "Customer name used for Slack search endpoint"
     }
   ],
   "_postman_variable_scope": "environment",
